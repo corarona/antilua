@@ -21,6 +21,7 @@
 #include "irrlichttypes_bloated.h"
 #include "log_internal.h"
 #include "sky.h"
+#include "gui/cheatMenu.h"
 #include "util/pointedthing.h"
 
 /* DO NOT INCLUDE THIS FROM OUTSIDE GAME.CPP */
@@ -167,6 +168,9 @@ protected:
 	void toggleCinematic();
 	void toggleBlockBounds();
 	void toggleAutoforward();
+	void toggleKillaura();
+	void toggleFreecam();
+	void toggleScaffold();
 
 	void toggleMinimap(bool shift_pressed);
 	void toggleFog();
@@ -328,6 +332,7 @@ private:
 	QuicktuneShortcutter *quicktune = nullptr;
 
 	std::unique_ptr<GameUI> m_game_ui;
+	CheatMenu *m_cheat_menu = nullptr;
 	irr_ptr<GUIChatConsole> gui_chat_console;
 	MapDrawControl *draw_control = nullptr;
 	Camera *camera = nullptr;

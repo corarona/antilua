@@ -394,6 +394,7 @@ Game::Game() :
 
 Game::~Game()
 {
+	delete m_cheat_menu;
 	delete client;
 	soundmaker.reset();
 	sound_manager.reset();
@@ -462,6 +463,13 @@ bool Game::startup(volatile std::sig_atomic_t *kill,
 
 	if (!createClient(start_data))
 		return false;
+
+	m_cheat_menu = new CheatMenu(client);
+	if (!m_cheat_menu) {
+		error_message = "Could not allocate memory for cheat menu";
+		errorstream << error_message << std::endl;
+		return false;
+	}
 
 	m_rendering_engine->initialize(client, hud);
 
@@ -1497,6 +1505,14 @@ void Game::processKeyInput()
 		m_game_ui->toggleChat(client);
 	} else if (wasKeyPressed(KeyType::TOGGLE_FOG)) {
 		toggleFog();
+	} else if (wasKeyDown(KeyType::TOGGLE_CHEAT_MENU)) {
+		m_game_ui->toggleCheatMenu();
+	} else if (wasKeyDown(KeyType::KILLAURA)) {
+		toggleKillaura();
+	} else if (wasKeyDown(KeyType::FREECAM)) {
+		toggleFreecam();
+	} else if (wasKeyDown(KeyType::SCAFFOLD)) {
+		toggleScaffold();
 	} else if (wasKeyDown(KeyType::TOGGLE_UPDATE_CAMERA)) {
 		toggleUpdateCamera();
 	} else if (wasKeyPressed(KeyType::CAMERA_MODE)) {
@@ -1522,6 +1538,16 @@ void Game::processKeyInput()
 		quicktune->inc();
 	} else if (wasKeyDown(KeyType::QUICKTUNE_DEC)) {
 		quicktune->dec();
+	} else if (wasKeyDown(KeyType::SELECT_UP)) {
+		m_cheat_menu->selectUp();
+	} else if (wasKeyDown(KeyType::SELECT_DOWN)) {
+		m_cheat_menu->selectDown();
+	} else if (wasKeyDown(KeyType::SELECT_LEFT)) {
+		m_cheat_menu->selectLeft();
+	} else if (wasKeyDown(KeyType::SELECT_RIGHT)) {
+		m_cheat_menu->selectRight();
+	} else if (wasKeyDown(KeyType::SELECT_CONFIRM)) {
+		m_cheat_menu->selectConfirm();
 	}
 
 	if (!isKeyDown(KeyType::JUMP) && runData.reset_jump_timer) {
@@ -1759,6 +1785,39 @@ void Game::toggleAutoforward()
 		m_game_ui->showTranslatedStatusText("Automatic forward enabled");
 	else
 		m_game_ui->showTranslatedStatusText("Automatic forward disabled");
+}
+
+void Game::toggleKillaura()
+{
+	bool killaura = !g_settings->getBool("killaura");
+	g_settings->set("killaura", bool_to_cstr(killaura));
+
+	if (killaura)
+		m_game_ui->showTranslatedStatusText("Killaura enabled");
+	else
+		m_game_ui->showTranslatedStatusText("Killaura disabled");
+}
+
+void Game::toggleFreecam()
+{
+	bool freecam = !g_settings->getBool("freecam");
+	g_settings->set("freecam", bool_to_cstr(freecam));
+
+	if (freecam)
+		m_game_ui->showTranslatedStatusText("Freecam enabled");
+	else
+		m_game_ui->showTranslatedStatusText("Freecam disabled");
+}
+
+void Game::toggleScaffold()
+{
+	bool scaffold = !g_settings->getBool("scaffold");
+	g_settings->set("scaffold", bool_to_cstr(scaffold));
+
+	if (scaffold)
+		m_game_ui->showTranslatedStatusText("Scaffold enabled");
+	else
+		m_game_ui->showTranslatedStatusText("Scaffold disabled");
 }
 
 void Game::toggleMinimap(bool shift_pressed)
@@ -3680,6 +3739,15 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
 
 	this->m_rendering_engine->draw_scene(sky_color, this->m_game_ui->m_flags.show_hud,
 			draw_wield_tool, draw_crosshair);
+
+	/*
+		Cheat menu
+	*/
+	if (this->m_game_ui->m_flags.show_cheat_menu)
+		this->m_cheat_menu->draw(this->driver,
+				this->m_game_ui->m_flags.show_minimal_debug);
+	if (g_settings->getBool("cheat_hud"))
+		this->m_cheat_menu->drawHUD(this->driver, this->runData.time_from_last_punch);
 
 	/*
 		Profiler graph
