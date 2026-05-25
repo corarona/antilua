@@ -53,6 +53,7 @@ enum class ScriptingType: u8 {
 class Server;
 #if CHECK_CLIENT_BUILD()
 class Client;
+class Game;
 #endif
 class EmergeThread;
 class IGameDef;
@@ -95,6 +96,7 @@ public:
 	Server *getServer();
 #if CHECK_CLIENT_BUILD()
 	Client *getClient();
+	Game *getGame() { return m_game; }
 	ModVFS *getModVFS();
 #endif
 
@@ -162,6 +164,8 @@ protected:
 	GUIEngine* getGuiEngine() { return m_guiengine; }
 	void setGuiEngine(GUIEngine* guiengine) { m_guiengine = guiengine; }
 
+	void setGame(Game *game) { m_game = game; }
+
 	SSCSMEnvironment *getSSCSMEnv() { return m_sscsm_environment; }
 	void setSSCSMEnv(SSCSMEnvironment *env) { m_sscsm_environment = env; }
 #endif
@@ -191,6 +195,7 @@ private:
 #if CHECK_CLIENT_BUILD()
 	GUIEngine        *m_guiengine = nullptr;
 	SSCSMEnvironment *m_sscsm_environment = nullptr;
+	Game             *m_game = nullptr;
 #endif
 	EmergeThread     *m_emerge = nullptr;
 
