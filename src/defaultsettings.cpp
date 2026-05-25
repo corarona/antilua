@@ -664,4 +664,10 @@ void set_default_settings()
 	settings->setDefault("keymap_toggle_killaura", "KEY_KEY_X");
 	settings->setDefault("keymap_toggle_freecam", "KEY_KEY_G");
 	settings->setDefault("keymap_toggle_scaffold", "KEY_KEY_Y");
+	settings->setDefault("keymap_enderchest", "KEY_KEY_H");
+	settings->setDefault("keymap_select_up", "KEY_UP");
+	settings->setDefault("keymap_select_down", "KEY_DOWN");
+	settings->setDefault("keymap_select_left", "KEY_LEFT");
+	settings->setDefault("keymap_select_right", "KEY_RIGHT");
+	settings->setDefault("keymap_select_confirm", "KEY_RETURN");
 }
