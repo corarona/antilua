@@ -34,6 +34,7 @@ set(client_SCRIPT_LUA_API_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/l_camera.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_client.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_clientobject.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/l_inventoryaction.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_client_common.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_client_sound.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_localplayer.cpp
