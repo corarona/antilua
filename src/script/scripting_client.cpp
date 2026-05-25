@@ -1,14 +1,32 @@
-// Luanti
-// SPDX-License-Identifier: LGPL-2.1-or-later
-// Copyright (C) 2013 celeron55, Perttu Ahola <celeron55@gmail.com>
-// Copyright (C) 2017 nerzhul, Loic Blot <loic.blot@unix-experience.fr>
+/*
+Minetest
+Copyright (C) 2013 celeron55, Perttu Ahola <celeron55@gmail.com>
+Copyright (C) 2017 nerzhul, Loic Blot <loic.blot@unix-experience.fr>
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 
 #include "scripting_client.h"
 #include "client/client.h"
+#include "client/game.h"
 #include "cpp_api/s_internal.h"
 #include "lua_api/l_client.h"
+#include "lua_api/l_clientobject.h"
 #include "lua_api/l_client_common.h"
 #include "lua_api/l_env.h"
+#include "lua_api/l_inventoryaction.h"
 #include "lua_api/l_item.h"
 #include "lua_api/l_itemstackmeta.h"
 #include "lua_api/l_minimap.h"
@@ -18,10 +36,12 @@
 #include "lua_api/l_util.h"
 #include "lua_api/l_item.h"
 #include "lua_api/l_nodemeta.h"
+#include "lua_api/l_noise.h"
 #include "lua_api/l_localplayer.h"
 #include "lua_api/l_camera.h"
 #include "lua_api/l_settings.h"
-#include "lua_api/l_client_sound.h"
+#include "lua_api/l_http.h"
+#include "lua_api/l_vmanip.h"
 
 ClientScripting::ClientScripting(Client *client):
 	ScriptApiBase(ScriptingType::Client)
@@ -52,6 +72,11 @@ ClientScripting::ClientScripting(Client *client):
 void ClientScripting::InitializeModApi(lua_State *L, int top)
 {
 	LuaItemStack::Register(L);
+	LuaValueNoise::Register(L);
+	LuaValueNoiseMap::Register(L);
+	LuaPseudoRandom::Register(L);
+	LuaPcgRandom::Register(L);
+	LuaSecureRandom::Register(L);
 	ItemStackMetaRef::Register(L);
 	LuaRaycast::Register(L);
 	StorageRef::Register(L);
@@ -61,17 +86,19 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	LuaCamera::Register(L);
 	ModChannelRef::Register(L);
 	LuaSettings::Register(L);
-	ClientSoundHandle::Register(L);
+	ClientObjectRef::Register(L);
+	LuaInventoryAction::Register(L);
+	LuaVoxelManip::Register(L);
 
-	ModApiUtil::InitializeClient(L, top);
-	ModApiClientCommon::Initialize(L, top);
-	ModApiClient::Initialize(L, top);
 	ModApiItem::InitializeClient(L, top);
+	ModApiUtil::InitializeClient(L, top);
+	ModApiHttp::Initialize(L, top);
+	ModApiClient::Initialize(L, top);
+	ModApiClientCommon::Initialize(L, top);
 	ModApiStorage::Initialize(L, top);
 	ModApiEnv::InitializeClient(L, top);
 	ModApiChannels::Initialize(L, top);
 	ModApiParticlesLocal::Initialize(L, top);
-	ModApiClientSound::Initialize(L, top);
 }
 
 void ClientScripting::on_client_ready(LocalPlayer *localplayer)
