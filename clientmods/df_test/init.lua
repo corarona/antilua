@@ -48,6 +48,15 @@ end
 
 -- Mod channel for server communication
 local mod_channel
+
+-- Register handler for incoming mod channel messages
+core.register_on_modchannel_message(function(channel_name, sender, message)
+	if channel_name ~= "df_test" then
+		return
+	end
+	core.log("info", "[DF_TEST] Mod channel received from " .. sender .. ": " .. message)
+end)
+
 do
 	local ok = pcall(function()
 		mod_channel = core.mod_channel_join("df_test")
