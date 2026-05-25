@@ -669,5 +669,5 @@ void set_default_settings()
 	settings->setDefault("keymap_select_down", "KEY_DOWN");
 	settings->setDefault("keymap_select_left", "KEY_LEFT");
 	settings->setDefault("keymap_select_right", "KEY_RIGHT");
-	settings->setDefault("keymap_select_confirm", "KEY_RETURN");
+	settings->setDefault("keymap_select_confirm", "KEY_KEY_F");
 }

@@ -266,7 +266,14 @@ void CheatMenu::selectConfirm()
 {
 	CHEAT_MENU_GET_SCRIPTPTR
 
-	if (m_cheat_layer)
-		script->toggle_cheat(script->m_cheat_categories[m_selected_category]
-						     ->m_cheats[m_selected_cheat]);
+	if (m_cheat_layer) {
+		ScriptApiCheatsCheat *cheat = script->m_cheat_categories[m_selected_category]
+				->m_cheats[m_selected_cheat];
+		bool was = cheat->is_enabled();
+		script->toggle_cheat(cheat);
+		infostream << "CheatMenu: confirm on \"" << cheat->m_name
+			<< "\" was=" << was << " now=" << cheat->is_enabled()
+			<< std::endl;
+	} else
+		selectRight();
 }
