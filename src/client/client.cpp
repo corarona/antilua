@@ -334,6 +334,9 @@ void Client::loadMods()
 	// Mods are done loading. Unlock callbacks
 	m_mods_loaded = true;
 
+	// Initialize cheat definitions from Lua
+	m_script->init_cheats();
+
 	// Run a callback when mods are loaded
 	m_script->on_mods_loaded();
 
