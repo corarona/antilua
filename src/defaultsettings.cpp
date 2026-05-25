@@ -607,4 +607,61 @@ void set_default_settings()
 	}
 	// Tablets >= 6.0 use non-Android defaults for these settings
 #endif
+
+	// Cheat menu
+	settings->setDefault("cheat_menu_font", "FM_Standard");
+	settings->setDefault("cheat_menu_bg_color", "(45, 45, 68)");
+	settings->setDefault("cheat_menu_bg_color_alpha", "173");
+	settings->setDefault("cheat_menu_active_bg_color", "(0, 0, 0)");
+	settings->setDefault("cheat_menu_active_bg_color_alpha", "210");
+	settings->setDefault("cheat_menu_font_color", "(255, 255, 255)");
+	settings->setDefault("cheat_menu_font_color_alpha", "195");
+	settings->setDefault("cheat_menu_selected_font_color", "(255, 255, 255)");
+	settings->setDefault("cheat_menu_selected_font_color_alpha", "235");
+	settings->setDefault("cheat_menu_head_height", "50");
+	settings->setDefault("cheat_menu_entry_height", "35");
+	settings->setDefault("cheat_menu_entry_width", "200");
+
+	// Cheat features
+	settings->setDefault("xray", "false");
+	settings->setDefault("xray_nodes", "default:stone,mcl_core:stone");
+	settings->setDefault("fullbright", "false");
+	settings->setDefault("freecam", "false");
+	settings->setDefault("priv_bypass", "true");
+	settings->setDefault("prevent_natural_damage", "true");
+	settings->setDefault("no_hurt_cam", "false");
+	settings->setDefault("reach", "true");
+	settings->setDefault("hud_flags_bypass", "true");
+	settings->setDefault("antiknockback", "false");
+	settings->setDefault("entity_speed", "false");
+	settings->setDefault("autodig", "false");
+	settings->setDefault("fastdig", "false");
+	settings->setDefault("jesus", "false");
+	settings->setDefault("fastplace", "false");
+	settings->setDefault("autoplace", "false");
+	settings->setDefault("instant_break", "false");
+	settings->setDefault("no_night", "false");
+	settings->setDefault("coords", "false");
+	settings->setDefault("point_liquids", "false");
+	settings->setDefault("spamclick", "false");
+	settings->setDefault("no_force_rotate", "false");
+	settings->setDefault("no_slow", "false");
+	settings->setDefault("float_above_parent", "false");
+	settings->setDefault("cheat_hud", "true");
+	settings->setDefault("node_esp_nodes", "");
+	settings->setDefault("jetpack", "false");
+	settings->setDefault("autohit", "false");
+	settings->setDefault("antislip", "false");
+	settings->setDefault("enable_node_esp", "false");
+	settings->setDefault("scaffold", "false");
+	settings->setDefault("killaura", "false");
+	settings->setDefault("airjump", "false");
+	settings->setDefault("spider", "false");
+	settings->setDefault("autojump", "false");
+
+	// Cheat key bindings
+	settings->setDefault("keymap_toggle_cheat_menu", "KEY_F8");
+	settings->setDefault("keymap_toggle_killaura", "KEY_KEY_X");
+	settings->setDefault("keymap_toggle_freecam", "KEY_KEY_G");
+	settings->setDefault("keymap_toggle_scaffold", "KEY_KEY_Y");
 }
