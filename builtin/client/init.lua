@@ -5,6 +5,7 @@ local commonpath = scriptpath.."common"..DIR_DELIM
 
 dofile(clientpath .. "register.lua")
 dofile(commonpath .. "after.lua")
+dofile(commonpath .. "item_s.lua")
 dofile(commonpath .. "chatcommands.lua")
 dofile(commonpath .. "vector.lua")
 dofile(commonpath .. "voxelarea.lua")
