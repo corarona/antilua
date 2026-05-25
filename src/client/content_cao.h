@@ -195,9 +195,13 @@ public:
 
 	inline const v3f &getRotation() const { return m_rotation; }
 
+	inline const v3f getAcceleration() const { return m_acceleration; }
+
 	bool isImmortal() const;
 
 	inline const ObjectProperties &getProperties() const { return m_prop; }
+	void setProperties(ObjectProperties newprops);
+	inline u16 getHp() const { return m_hp; }
 
 	inline const std::string &getName() const { return m_name; }
 

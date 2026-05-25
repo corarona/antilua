@@ -1978,5 +1978,26 @@ void GenericCAO::updateMeshCulling()
 	}
 }
 
+void GenericCAO::setProperties(ObjectProperties newprops)
+{
+	bool expire_visuals = visualExpiryRequired(newprops);
+	bool textures_changed = m_prop.textures != newprops.textures;
+
+	m_prop = std::move(newprops);
+
+	m_selection_box = m_prop.selectionbox;
+	m_selection_box.MinEdge *= BS;
+	m_selection_box.MaxEdge *= BS;
+
+	if (expire_visuals)
+		m_visuals_expired = true;
+
+	if (textures_changed)
+		updateTextures("");
+
+	m_animated_meshnode->setVisible(!m_prop.is_visible);
+	updateMeshCulling();
+}
+
 // Prototype
 static GenericCAO proto_GenericCAO(nullptr, nullptr);
