@@ -8,6 +8,7 @@
 #include <cassert>
 
 #include "cpp_api/s_base.h"
+#include "cpp_api/s_cheats.h"
 #include "cpp_api/s_client.h"
 #include "cpp_api/s_client_common.h"
 #include "cpp_api/s_modchannels.h"
@@ -21,6 +22,7 @@ class Minimap;
 class ClientScripting:
 	virtual public ScriptApiBase,
 	public ScriptApiSecurity,
+	public ScriptApiCheats,
 	public ScriptApiClientCommon,
 	public ScriptApiClient,
 	public ScriptApiModChannels
