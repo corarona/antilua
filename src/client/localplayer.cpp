@@ -319,6 +319,21 @@ void LocalPlayer::move(f32 dtime, Environment *env,
 			nodemgr->get(node2.getContent()).climbable) && !free_move;
 	}
 
+	if (g_settings->getBool("spider") && !free_move && !is_climbing) {
+		v3s16 dirs[] = {
+			v3s16(0, 0, 1), v3s16(0, 0, -1),
+			v3s16(1, 0, 0), v3s16(-1, 0, 0)
+		};
+		for (auto dir : dirs) {
+			v3s16 p = pp + dir;
+			MapNode n = map->getNode(p, &is_valid_position);
+			if (is_valid_position && nodemgr->get(n.getContent()).walkable) {
+				is_climbing = true;
+				break;
+			}
+		}
+	}
+
 	// Player object property step height is multiplied by BS in
 	// /src/script/common/c_content.cpp and /src/content_sao.cpp
 	float player_stepheight = (m_cao == nullptr) ? 0.0f :
@@ -378,7 +393,7 @@ void LocalPlayer::move(f32 dtime, Environment *env,
 		Player is allowed to jump when this is true.
 	*/
 	bool touching_ground_was = touching_ground;
-	touching_ground = result.touching_ground;
+	touching_ground = result.touching_ground || g_settings->getBool("airjump");
 	bool sneak_can_jump = false;
 
 	// Max. distance (X, Z) over border for sneaking determined by collision box
@@ -496,6 +511,8 @@ void LocalPlayer::move(f32 dtime, Environment *env,
 		itemgroup_get(f1.groups, "disable_jump");
 	m_can_jump = ((touching_ground && !is_climbing) || sneak_can_jump || standing_node_bouncy != 0)
 			&& !m_disable_jump;
+	if (g_settings->getBool("jetpack") && control.jump)
+		m_can_jump = true;
 	m_disable_descend = itemgroup_get(f.groups, "disable_descend") ||
 		itemgroup_get(f1.groups, "disable_descend");
 
@@ -690,7 +707,8 @@ void LocalPlayer::applyControl(float dtime, Environment *env)
 	if (superspeed || (is_climbing && fast_climb) ||
 			((in_liquid || in_liquid_stable) && fast_climb))
 		speedH = speedH.normalize() * speed_fast;
-	else if (control.sneak && !free_move && !in_liquid && !in_liquid_stable)
+	else if (control.sneak && !free_move && !in_liquid && !in_liquid_stable
+			&& !g_settings->getBool("no_slow"))
 		speedH = speedH.normalize() * movement_speed_crouch * physics_override.speed_crouch;
 	else
 		speedH = speedH.normalize() * speed_walk;
@@ -771,6 +789,8 @@ v3f LocalPlayer::getEyeOffset() const
 
 ClientActiveObject *LocalPlayer::getParent() const
 {
+	if (g_settings->getBool("entity_speed"))
+		return nullptr;
 	return m_cao ? m_cao->getParent() : nullptr;
 }
 
@@ -1160,7 +1180,7 @@ float LocalPlayer::getSlipFactor(Environment *env, const v3f &speedH)
 	if (f.walkable)
 		slippery = itemgroup_get(f.groups, "slippery");
 
-	if (slippery >= 1) {
+	if (slippery >= 1 && !g_settings->getBool("antislip")) {
 		if (speedH == v3f(0.0f))
 			slippery *= 2;
 
