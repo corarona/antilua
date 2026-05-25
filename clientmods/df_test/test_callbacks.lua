@@ -1,0 +1,110 @@
+-- Tests for DragonfireClient Lua callbacks
+
+function test_callback_registration(T)
+	-- Verify callbacks can be registered without error
+	T.run("register_on_death exists and accepts callbacks", function()
+		T.assert(type(core.register_on_death) == "function",
+			"core.register_on_death should be a function")
+		local ok = pcall(core.register_on_death, function() end)
+		T.assert(ok, "registering a death callback should not crash")
+	end)
+
+	T.run("register_on_formspec_input exists", function()
+		T.assert(type(core.register_on_formspec_input) == "function",
+			"core.register_on_formspec_input should be a function")
+		local ok = pcall(core.register_on_formspec_input, function() end)
+		T.assert(ok, "registering a formspec callback should not crash")
+	end)
+
+	T.run("register_on_receiving_inventory_form exists", function()
+		T.assert(type(core.register_on_receiving_inventory_form) == "function",
+			"core.register_on_receiving_inventory_form should be a function")
+		local ok = pcall(core.register_on_receiving_inventory_form, function() end)
+		T.assert(ok, "registering form callback should not crash")
+	end)
+
+	T.run("register_on_open_nodemeta_form exists", function()
+		T.assert(type(core.register_on_open_nodemeta_form) == "function",
+			"core.register_on_open_nodemeta_form should be a function")
+		local ok = pcall(core.register_on_open_nodemeta_form, function() end)
+		T.assert(ok, "registering nodemeta form callback should not crash")
+	end)
+
+	T.run("register_on_recieve_physics_override exists", function()
+		T.assert(type(core.register_on_recieve_physics_override) == "function",
+			"core.register_on_recieve_physics_override should be a function")
+		local ok = pcall(core.register_on_recieve_physics_override, function() end)
+		T.assert(ok, "registering physics callback should not crash")
+	end)
+
+	T.run("register_on_play_sound exists", function()
+		T.assert(type(core.register_on_play_sound) == "function",
+			"core.register_on_play_sound should be a function")
+		local ok = pcall(core.register_on_play_sound, function() end)
+		T.assert(ok, "registering sound callback should not crash")
+	end)
+
+	T.run("register_on_particlespawner exists", function()
+		T.assert(type(core.register_on_particlespawner) == "function",
+			"core.register_on_particlespawner should be a function")
+		local ok = pcall(core.register_on_particlespawner, function() end)
+		T.assert(ok, "registering particle callback should not crash")
+	end)
+
+	-- Object callbacks
+	T.run("register_on_object_add exists", function()
+		T.assert(type(core.register_on_object_add) == "function",
+			"core.register_on_object_add should be a function")
+		local ok = pcall(core.register_on_object_add, function() end)
+		T.assert(ok, "registering object add callback should not crash")
+	end)
+
+	T.run("register_on_object_hp_change exists", function()
+		T.assert(type(core.register_on_object_hp_change) == "function",
+			"core.register_on_object_hp_change should be a function")
+		local ok = pcall(core.register_on_object_hp_change, function() end)
+		T.assert(ok, "registering hp change callback should not crash")
+	end)
+
+	T.run("register_on_object_properties_change exists", function()
+		T.assert(type(core.register_on_object_properties_change) == "function",
+			"core.register_on_object_properties_change should be a function")
+		local ok = pcall(core.register_on_object_properties_change, function() end)
+		T.assert(ok, "registering properties change callback should not crash")
+	end)
+
+	-- Verify callback tables exist
+	T.run("registered_on_death table exists", function()
+		T.assert(type(core.registered_on_death) == "table",
+			"core.registered_on_death should be a table")
+	end)
+
+	T.run("registered_on_object_add table exists", function()
+		T.assert(type(core.registered_on_object_add) == "table",
+			"core.registered_on_object_add should be a table")
+	end)
+
+	-- Test sending chat messages
+	T.run("send_chat_message exists", function()
+		T.assert(type(core.send_chat_message) == "function",
+			"core.send_chat_message should be a function")
+		local ok = pcall(core.send_chat_message, "[DF_TEST] Test message from client")
+		T.assert(ok, "sending a chat message should not crash")
+	end)
+
+	-- Test on_death can be registered multiple times
+	T.run("register_on_death multiple callbacks", function()
+		local count = 0
+		local reg1 = pcall(core.register_on_death, function() count = count + 1 end)
+		local reg2 = pcall(core.register_on_death, function() count = count + 1 end)
+		T.assert(reg1 and reg2, "registering multiple death callbacks should work")
+	end)
+
+	-- Test detached inventory callback
+	T.run("register_on_detached_inventory_update exists", function()
+		T.assert(type(core.register_on_detached_inventory_update) == "function",
+			"core.register_on_detached_inventory_update should be a function")
+		local ok = pcall(core.register_on_detached_inventory_update, function() end)
+		T.assert(ok, "registering detached inventory callback should not crash")
+	end)
+end
