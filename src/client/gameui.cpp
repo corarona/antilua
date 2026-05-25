@@ -295,6 +295,11 @@ void GameUI::toggleProfiler()
 	}
 }
 
+void GameUI::toggleCheatMenu()
+{
+	m_flags.show_cheat_menu = !m_flags.show_cheat_menu;
+}
+
 void GameUI::clearText()
 {
 	if (m_guitext_chat) {
