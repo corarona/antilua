@@ -25,6 +25,9 @@
 #include <SColor.h>
 #include <json/json.h>
 #include "mapgen/treegen.h"
+#include "sound.h"
+#include "tileanimation.h"
+#include "particles.h"
 
 #if CHECK_CLIENT_BUILD()
 #include "client/node_visuals.h"
@@ -2684,4 +2687,64 @@ void push_mod_spec(lua_State *L, const ModSpec &spec, bool include_unsatisfied)
 		}
 		lua_setfield(L, -2, "unsatisfied_depends");
 	}
+}
+
+void push_soundspec(lua_State *L, const SimpleSoundSpec &spec)
+{
+	lua_createtable(L, 0, 3);
+	lua_pushstring(L, spec.name.c_str());
+	lua_setfield(L, -2, "name");
+	lua_pushnumber(L, spec.gain);
+	lua_setfield(L, -2, "gain");
+	lua_pushnumber(L, spec.fade);
+	lua_setfield(L, -2, "fade");
+	lua_pushnumber(L, spec.pitch);
+	lua_setfield(L, -2, "pitch");
+}
+
+void push_animation_definition(lua_State *L, TileAnimationParams anim)
+{
+	switch (anim.type) {
+	case TAT_NONE:
+		lua_pushnil(L);
+		break;
+	case TAT_VERTICAL_FRAMES:
+		lua_newtable(L);
+		setstringfield(L, -1, "type", "vertical_frames");
+		setfloatfield(L, -1, "aspect_w", anim.vertical_frames.aspect_w);
+		setfloatfield(L, -1, "aspect_h", anim.vertical_frames.aspect_h);
+		setfloatfield(L, -1, "length", anim.vertical_frames.length);
+		break;
+	case TAT_SHEET_2D:
+		lua_newtable(L);
+		setstringfield(L, -1, "type", "sheet_2d");
+		setintfield(L, -1, "frames_w", anim.sheet_2d.frames_w);
+		setintfield(L, -1, "frames_h", anim.sheet_2d.frames_h);
+		setintfield(L, -1, "frame_length", anim.sheet_2d.frame_length);
+		break;
+	}
+}
+
+void push_physics_override(lua_State *L, float speed, float jump, float gravity,
+		bool sneak, bool sneak_glitch, bool new_move)
+{
+	lua_createtable(L, 0, 6);
+
+	lua_pushnumber(L, speed);
+	lua_setfield(L, -2, "speed");
+
+	lua_pushnumber(L, jump);
+	lua_setfield(L, -2, "jump");
+
+	lua_pushnumber(L, gravity);
+	lua_setfield(L, -2, "gravity");
+
+	lua_pushboolean(L, sneak);
+	lua_setfield(L, -2, "sneak");
+
+	lua_pushboolean(L, sneak_glitch);
+	lua_setfield(L, -2, "sneak_glitch");
+
+	lua_pushboolean(L, new_move);
+	lua_setfield(L, -2, "new_move");
 }

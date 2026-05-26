@@ -119,6 +119,12 @@ public:
 	void shutdown();
 
 	Client *getClient() { return client; }
+	Camera *getCamera() { return camera; }
+	InputHandler *getInput() { return input; }
+	GameRunData &getRunData() { return runData; }
+
+	void dropSelectedItem(bool single_item = false);
+	void processItemSelection(u16 *new_playeritem);
 
 	// Pre-calculated value
 	int crack_animation_length;
@@ -155,10 +161,8 @@ protected:
 	// Input related
 	void processUserInput(f32 dtime);
 	void processKeyInput();
-	void processItemSelection(u16 *new_playeritem);
 	bool shouldShowTouchControls();
 
-	void dropSelectedItem(bool single_item = false);
 	void openConsole(float scale, const wchar_t *line=NULL);
 	void toggleFreeMove();
 	void toggleFreeMoveAlt();

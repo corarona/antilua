@@ -230,6 +230,7 @@ public:
 	void clearOutChatQueue();
 	void sendChangePassword(const std::string &oldpassword,
 		const std::string &newpassword);
+	void sendPlayerPos();
 	void sendDamage(u16 damage);
 	void sendRespawnLegacy();
 	void sendReady();
@@ -466,8 +467,6 @@ private:
 	void initLocalMapSaving(const Address &address, const std::string &hostname);
 
 	void ReceiveAll();
-
-	void sendPlayerPos();
 
 	void deleteAuthData();
 	// helper method shared with clientpackethandler

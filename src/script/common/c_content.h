@@ -25,6 +25,7 @@ extern "C" {
 // We do an explicit path include because by default c_content.h include src/client/hud.h
 // prior to the src/hud_element.h, which is not good on server only build
 #include "hud_element.h"
+#include "sound.h"
 
 class IGameDef;
 class IItemDefManager;
@@ -175,3 +176,8 @@ bool read_hud_change(lua_State *L, HudElementStat &stat, HudElement *elem, void 
 void push_collision_move_result(lua_State *L, const CollisionMoveResult &res);
 
 void push_mod_spec(lua_State *L, const ModSpec &spec, bool include_unsatisfied);
+
+void push_soundspec(lua_State *L, const SimpleSoundSpec &spec);
+void push_animation_definition(lua_State *L, struct TileAnimationParams anim);
+void push_physics_override(lua_State *L, float speed, float jump, float gravity,
+		bool sneak, bool sneak_glitch, bool new_move);

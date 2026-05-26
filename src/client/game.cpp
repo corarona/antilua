@@ -471,8 +471,8 @@ bool Game::startup(volatile std::sig_atomic_t *kill,
 
 	m_cheat_menu = new CheatMenu(client);
 	if (!m_cheat_menu) {
-		error_message = "Could not allocate memory for cheat menu";
-		errorstream << error_message << std::endl;
+		errordata.setError("Could not allocate memory for cheat menu");
+		errorstream << "Could not allocate memory for cheat menu" << std::endl;
 		return false;
 	}
 

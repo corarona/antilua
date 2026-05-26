@@ -1,6 +1,21 @@
-// Luanti
-// SPDX-License-Identifier: LGPL-2.1-or-later
-// Copyright (C) 2017 Dumbeldor, Vincent Glize <vincent.glize@live.fr>
+/*
+Minetest
+Copyright (C) 2017 Dumbeldor, Vincent Glize <vincent.glize@live.fr>
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation; either version 2.1 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with this program; if not, write to the Free Software Foundation, Inc.,
+51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+*/
 
 #pragma once
 
@@ -11,6 +26,7 @@ class LocalPlayer;
 class LuaLocalPlayer : public ModApiBase
 {
 private:
+	static const char className[];
 	static const luaL_Reg methods[];
 
 	// garbage collector
@@ -18,6 +34,21 @@ private:
 
 	// get_velocity(self)
 	static int l_get_velocity(lua_State *L);
+
+	// set_velocity(self, vel)
+	static int l_set_velocity(lua_State *L);
+
+	// get_yaw(self)
+	static int l_get_yaw(lua_State *L);
+
+	// set_yaw(self, yaw)
+	static int l_set_yaw(lua_State *L);
+
+	// get_pitch(self)
+	static int l_get_pitch(lua_State *L);
+
+	// set_pitch(self,pitch)
+	static int l_set_pitch(lua_State *L);
 
 	// get_hp(self)
 	static int l_get_hp(lua_State *L);
@@ -28,8 +59,14 @@ private:
 	// get_wield_index(self)
 	static int l_get_wield_index(lua_State *L);
 
+	// set_wield_index(self)
+	static int l_set_wield_index(lua_State *L);
+
 	// get_wielded_item(self)
 	static int l_get_wielded_item(lua_State *L);
+
+	// get_hotbar_size(self)
+	static int l_get_hotbar_size(lua_State *L);
 
 	static int l_is_attached(lua_State *L);
 	static int l_is_touching_ground(lua_State *L);
@@ -39,6 +76,7 @@ private:
 	static int l_swimming_vertical(lua_State *L);
 
 	static int l_get_physics_override(lua_State *L);
+	static int l_set_physics_override(lua_State *L);
 
 	static int l_get_override_pos(lua_State *L);
 
@@ -55,6 +93,9 @@ private:
 
 	// get_pos(self)
 	static int l_get_pos(lua_State *L);
+
+	// set_pos(self, pos)
+	static int l_set_pos(lua_State *L);
 
 	// get_movement_acceleration(self)
 	static int l_get_movement_acceleration(lua_State *L);
@@ -78,13 +119,11 @@ private:
 	static int l_hud_change(lua_State *L);
 	// hud_get(self, id)
 	static int l_hud_get(lua_State *L);
-	// hud_get_all(self)
-	static int l_hud_get_all(lua_State *L);
 
 	static int l_get_move_resistance(lua_State *L);
 
-	static LocalPlayer *getobject(LuaLocalPlayer *ref);
-	static LocalPlayer *getobject(lua_State *L, int narg);
+	// get_object(self)
+	static int l_get_object(lua_State *L);
 
 	LocalPlayer *m_localplayer = nullptr;
 
@@ -94,7 +133,9 @@ public:
 
 	static void create(lua_State *L, LocalPlayer *m);
 
-	static void Register(lua_State *L);
+	static LuaLocalPlayer *checkobject(lua_State *L, int narg);
+	static LocalPlayer *getobject(LuaLocalPlayer *ref);
+	static LocalPlayer *getobject(lua_State *L, int narg);
 
-	static const char className[];
+	static void Register(lua_State *L);
 };
