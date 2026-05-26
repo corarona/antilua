@@ -66,25 +66,6 @@ notes why the port is non-trivial.
 
 ---
 
-## Player — Physics Override Refactor (`src/client/localplayer.cpp`, `src/client/localplayer.h`)
-
-**What changed in DF:**
-- Physics override fields changed from a struct
-  (`PlayerPhysicsOverride physics_override`) to flat member fields
-  (`physics_override_speed`, `physics_override_jump`, `physics_override_gravity`,
-  `physics_override_sneak`, `physics_override_sneak_glitch`,
-  `physics_override_new_move`)
-- `isWaitingForReattach()` / `tryReattach()` — entity_speed reattach logic
-
-**Why it's hard:**
-- The flat-field change cascades through `localplayer.cpp`, `player.cpp`,
-  `client.cpp`, `clientenvironment.cpp` — all need updating together.
-- `move()` signature changed (added `f32 pos_max_d` parameter).
-- `PlayerSettings` class was removed from `localplayer.h` and moved to `player.h`.
-- The gravity/acceleration system interacts with `clientenvironment.cpp`.
-
----
-
 ## Client — Mod Loading & Constructor (`src/client/client.cpp`, `src/client/client.h`)
 
 **DF diff**: ~massive (constructor, mod loading, protocol changes)
@@ -107,18 +88,4 @@ notes why the port is non-trivial.
   expectations.
 - The sound system replacement is a separate large change.
 
----
 
-## Network — Protocol Simplification
-
-**DF diff**: Multiple files (`network/clientpackethandler.cpp`, `client.cpp`, etc.)
-
-**What changed in DF:**
-- Removed several TOCLIENT handlers (`MovePlayerRel`, `DeathScreenLegacy`,
-  `SpawnParticleBatch`, `Camera`)
-- Simplified packet structures (player position, init sequence)
-- Reduced compression options
-
-**Why it's hard:**
-- Protocol changes must be coordinated with server code.
-- luanti master's protocol has evolved significantly since DF forked.
