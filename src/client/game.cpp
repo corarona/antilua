@@ -56,6 +56,10 @@
 	#include "client/sound/sound_openal.h"
 #endif
 
+#include "filesys.h"
+
+Game *g_game = nullptr;
+
 typedef s32 SamplerLayer_t;
 
 
@@ -428,6 +432,7 @@ bool Game::startup(volatile std::sig_atomic_t *kill,
 {
 
 	// "cache"
+	g_game = this;
 	m_rendering_engine        = rendering_engine;
 	device                    = m_rendering_engine->get_raw_device();
 	this->kill                = kill;

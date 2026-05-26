@@ -18,6 +18,9 @@ class ChatBackend;
 class RenderingEngine;
 struct GameErrorData;
 struct GameStartData;
+class Game;
+
+extern Game *g_game;
 
 struct Jitter {
 	f32 max, min, avg, counter, max_sample, min_sample, max_fraction;
