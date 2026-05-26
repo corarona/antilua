@@ -69,6 +69,24 @@ public:
 		mouse_wheel = 0;
 	}
 
+	void setKeypress(const KeyPress &keyCode)
+	{
+		auto it = keysListenedFor.find(keyCode);
+		if (it != keysListenedFor.end()) {
+			auto action = it->second;
+			keyIsDown.set(action);
+			keyWasDown.set(action);
+			keyWasPressed.set(action);
+		}
+	}
+
+	void unsetKeypress(const KeyPress &keyCode)
+	{
+		auto it = keysListenedFor.find(keyCode);
+		if (it != keysListenedFor.end())
+			keyIsDown.reset(it->second);
+	}
+
 	void releaseAllKeys()
 	{
 		physicalKeyDown.clear();
@@ -198,6 +216,8 @@ public:
 		return getAxisValue(k) > 0;
 	}
 	virtual bool wasKeyDown(GameKeyType k) = 0;
+	virtual void setKeypress(const KeyPress &keyCode) {}
+	virtual void unsetKeypress(const KeyPress &keyCode) {}
 	virtual bool wasKeyPressed(GameKeyType k) = 0;
 	virtual bool wasKeyReleased(GameKeyType k) = 0;
 	virtual bool cancelPressed() = 0;
