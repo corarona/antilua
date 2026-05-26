@@ -4,15 +4,29 @@ These are DF features that exist in the old `big_rebase` branch but have
 not yet been ported to modern Luanti master on `df-rebased`. Each entry
 notes why the port is non-trivial.
 
+## Recently Ported (from CloakV4)
+
+| Feature | Commit | Date |
+|---------|--------|------|
+| Freecam (detached camera + legit position freeze) | `62506474f` | 2026-05-26 |
+| Fullbright (max brightness via decode_light override) | `9919217de` | 2026-05-26 |
+| Xray (selectively hide nodes at mesh gen time) | `2d36fd5c4` | 2026-05-26 |
+| Cheat menu Y offset (dynamic below recent chat) | `62506474f` | 2026-05-26 |
+
 ---
 
 ## Camera — Freecam & Nametag Images (`src/client/camera.cpp`, `src/client/camera.h`)
 
-**DF diff**: ~300 insertions, ~317 deletions (619 lines changed)
+**Status**: Freecam ✅ ported (see commit `62506474f`). Nametag images ❌ not yet.
 
-**What changed in DF:**
+**What changed in DF (freecam, now ported):**
 - Freecam mode: camera detaches from player position when `freecam` setting is on
-- Fall-bobbing animation (`m_view_bobbing_fall`, `m_cache_fall_bobbing_amount`)
+- Legit position/speed tracking for network freeze during freecam
+- `freecamEnable()` / `freecamDisable()` save/restore player position
+- `getLegitPosition()` / `getSendSpeed()` report pre-freecam state to server
+- Mesh culling and visibility overrides for first-person player model
+
+**What remains (nametag images):**
 - `Nametag` struct expanded with `images` / `images_dim` / `texture_source` fields
 - `addNametag()` signature changed from `(const Nametag &params)` to individual
   parameters plus an `image_names` vector
@@ -20,7 +34,7 @@ notes why the port is non-trivial.
 - `CameraMode` changed from `enum class` to plain `enum`
 - `updateWieldedTool()` inlined into `wield()`
 
-**Why it's hard:**
+**Why nametag images are hard:**
 - The `Nametag` struct in luanti master is simpler — uses `std::optional<SColor>`
   for `bgcolor` (DF used a custom `Optional<T>` wrapper). The struct layout and
   `getBgColor()` logic differ slightly.
@@ -74,21 +88,25 @@ notes why the port is non-trivial.
 
 ## Player — Physics Override Refactor (`src/client/localplayer.cpp`, `src/client/localplayer.h`)
 
-**DF diff**: 325 insertions, 356 deletions (681 lines changed)
+**Status**: Freecam methods ✅ ported. Physics override flat fields ❌ not yet.
 
-**What changed in DF:**
+**What changed in DF (freecam, now ported):**
+- `freecamEnable()` / `freecamDisable()` methods — save/restore player
+  position when toggling freecam
+- `getLegitPosition()` / `getSendSpeed()` — report pre-freecam position/speed
+  to the server during freecam
+- `moveFreecam()` / `applyFreecamControl()` — separate freecam movement
+- `empty_control` / `lua_control` — input isolation during freecam
+
+**What remains (physics refactor):**
 - Physics override fields changed from a struct
   (`PlayerPhysicsOverride physics_override`) to flat member fields
   (`physics_override_speed`, `physics_override_jump`, `physics_override_gravity`,
   `physics_override_sneak`, `physics_override_sneak_glitch`,
   `physics_override_new_move`)
-- `freecamEnable()` / `freecamDisable()` methods added — save/restore player
-  position when toggling freecam
-- `getLegitPosition()` / `getSendSpeed()` — report pre-freecam position/speed
-  to the server during freecam
 - `isWaitingForReattach()` / `tryReattach()` — entity_speed reattach logic
 
-**Why it's hard:**
+**Why physics refactor is hard:**
 - The flat-field change cascades through `localplayer.cpp`, `player.cpp`,
   `client.cpp`, `clientenvironment.cpp` — all need updating together.
 - `move()` signature changed (added `f32 pos_max_d` parameter).
