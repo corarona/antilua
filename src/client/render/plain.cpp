@@ -8,10 +8,13 @@
 #include "settings.h"
 #include "client/camera.h"
 #include "client/client.h"
+#include "client/clientenvironment.h"
 #include "client/clientmap.h"
+#include "client/content_cao.h"
 #include "client/hud.h"
 #include "client/minimap.h"
 #include "client/shadows/dynamicshadowsrender.h"
+#include "util/numeric.h"
 #include <IGUIEnvironment.h>
 
 /// Draw3D pipeline step
@@ -26,6 +29,88 @@ void Draw3D::run(PipelineContext &context)
 		return;
 	context.hud->drawBlockBounds();
 	context.hud->drawSelectionMesh();
+}
+
+void DrawTracersAndESP::run(PipelineContext &context)
+{
+	v3f camera_pos = context.client->getCamera()->getPosition();
+
+	if (g_settings->getBool("enable_entity_esp") || g_settings->getBool("enable_entity_tracers"))
+		drawEntityESP(context, camera_pos);
+
+	if (g_settings->getBool("enable_player_esp") || g_settings->getBool("enable_player_tracers"))
+		drawPlayerESP(context, camera_pos);
+}
+
+video::SColor DrawTracersAndESP::parseColor(const std::string &setting, u8 alpha)
+{
+	auto color = g_settings->getV3F(setting);
+	if (color.has_value())
+		return video::SColor(alpha,
+			rangelim((int)color->X, 0, 255),
+			rangelim((int)color->Y, 0, 255),
+			rangelim((int)color->Z, 0, 255));
+	return video::SColor(alpha, 255, 255, 255);
+}
+
+void DrawTracersAndESP::drawEntityESP(PipelineContext &context, const v3f &camera_pos)
+{
+	ClientEnvironment &env = context.client->getEnv();
+	video::IVideoDriver *driver = context.device->getVideoDriver();
+
+	std::vector<DistanceSortedActiveObject> objects;
+	env.getActiveObjects(camera_pos, 1000.0f * BS, objects);
+
+	video::SColor esp_color = parseColor("entity_esp_color", 255);
+	video::SColor tracer_color = parseColor("entity_esp_color", 200);
+	bool show_esp = g_settings->getBool("enable_entity_esp");
+	bool show_tracers = g_settings->getBool("enable_entity_tracers");
+
+	for (auto &obj : objects) {
+		GenericCAO *cao = dynamic_cast<GenericCAO *>(obj.obj);
+		if (!cao || cao->isPlayer() || cao->isLocalPlayer())
+			continue;
+
+		v3f pos = cao->getPosition();
+		aabb3f box(v3f(0,0,0), v3f(0,0,0));
+		if (show_esp && cao->getSelectionBox(&box)) {
+			box.MinEdge += pos;
+			box.MaxEdge += pos;
+			driver->draw3DBox(box, esp_color);
+		}
+		if (show_tracers)
+			driver->draw3DLine(camera_pos, pos, tracer_color);
+	}
+}
+
+void DrawTracersAndESP::drawPlayerESP(PipelineContext &context, const v3f &camera_pos)
+{
+	ClientEnvironment &env = context.client->getEnv();
+	video::IVideoDriver *driver = context.device->getVideoDriver();
+
+	std::vector<DistanceSortedActiveObject> objects;
+	env.getActiveObjects(camera_pos, 1000.0f * BS, objects);
+
+	video::SColor esp_color = parseColor("player_esp_color", 255);
+	video::SColor tracer_color = parseColor("player_esp_color", 200);
+	bool show_esp = g_settings->getBool("enable_player_esp");
+	bool show_tracers = g_settings->getBool("enable_player_tracers");
+
+	for (auto &obj : objects) {
+		GenericCAO *cao = dynamic_cast<GenericCAO *>(obj.obj);
+		if (!cao || !cao->isPlayer() || cao->isLocalPlayer())
+			continue;
+
+		v3f pos = cao->getPosition();
+		aabb3f box(v3f(0,0,0), v3f(0,0,0));
+		if (show_esp && cao->getSelectionBox(&box)) {
+			box.MinEdge += pos;
+			box.MaxEdge += pos;
+			driver->draw3DBox(box, esp_color);
+		}
+		if (show_tracers)
+			driver->draw3DLine(camera_pos, pos, tracer_color);
+	}
 }
 
 void DrawWield::run(PipelineContext &context)
@@ -149,6 +234,7 @@ void populatePlainPipeline(RenderPipeline *pipeline, Client *client)
 	auto downscale_factor = getDownscaleFactor();
 	auto step3D = pipeline->own(create3DStage(client, downscale_factor));
 	pipeline->addStep(step3D);
+	pipeline->addStep<DrawTracersAndESP>();
 	pipeline->addStep<DrawWield>();
 	pipeline->addStep<MapPostFxStep>();
 

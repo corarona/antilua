@@ -64,6 +64,17 @@ public:
 	virtual void run(PipelineContext &context) override;
 };
 
+class DrawTracersAndESP : public TrivialRenderStep
+{
+public:
+	virtual void run(PipelineContext &context) override;
+
+private:
+	video::SColor parseColor(const std::string &setting, u8 alpha = 255);
+	void drawEntityESP(PipelineContext &context, const v3f &camera_pos);
+	void drawPlayerESP(PipelineContext &context, const v3f &camera_pos);
+};
+
 /**
  * UpscaleStep step performs rescaling of the image
  * in the source texture 0 to the size of the target.

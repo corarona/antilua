@@ -11,6 +11,8 @@ function test_cheat_settings(T)
 		"priv_bypass", "prevent_natural_damage", "no_hurt_cam",
 		"reach", "hud_flags_bypass", "float_above_parent",
 		"killaura", "scaffold", "autohit",
+		"enable_entity_esp", "enable_entity_tracers",
+		"enable_player_esp", "enable_player_tracers",
 	}
 
 	for _, name in ipairs(expected_cheats) do
