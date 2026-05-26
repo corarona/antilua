@@ -488,10 +488,11 @@ int LuaLocalPlayer::l_hud_get(lua_State *L)
 int LuaLocalPlayer::l_get_object(lua_State *L)
 {
 	LocalPlayer *player = getobject(L, 1);
-	ClientEnvironment &env = getClient(L)->getEnv();
-	ClientActiveObject *obj = env.getGenericCAO(player->getCAO()->getId());
+	GenericCAO *cao = player->getCAO();
+	if (!cao)
+		return 0;
 
-	push_objectRef(L, obj->getId());
+	ClientObjectRef::create(L, cao);
 
 	lua_newtable(L);
 	u32 id = 0;

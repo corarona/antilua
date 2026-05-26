@@ -136,36 +136,29 @@ function test_api_registration_no_player(T)
 		T.assert(core.registered_chatcommands.setpitch ~= nil)
 	end)
 
-	-- LocalPlayer extensions need l_localplayer.cpp porting
-	T.known_failure("LocalPlayer:get_yaw (needs l_localplayer.cpp)", function()
+	-- LocalPlayer extensions (now ported from DF, deferred until localplayer ready)
+	T.defer("LocalPlayer:get_yaw exists", function()
 		T.assert(type(core.localplayer.get_yaw) == "function")
 	end)
-
-	T.known_failure("LocalPlayer:set_yaw (needs l_localplayer.cpp)", function()
+	T.defer("LocalPlayer:set_yaw exists", function()
 		T.assert(type(core.localplayer.set_yaw) == "function")
 	end)
-
-	T.known_failure("LocalPlayer:get_pitch (needs l_localplayer.cpp)", function()
+	T.defer("LocalPlayer:get_pitch exists", function()
 		T.assert(type(core.localplayer.get_pitch) == "function")
 	end)
-
-	T.known_failure("LocalPlayer:set_pitch (needs l_localplayer.cpp)", function()
+	T.defer("LocalPlayer:set_pitch exists", function()
 		T.assert(type(core.localplayer.set_pitch) == "function")
 	end)
-
-	T.known_failure("LocalPlayer:set_pos (needs l_localplayer.cpp)", function()
+	T.defer("LocalPlayer:set_pos exists", function()
 		T.assert(type(core.localplayer.set_pos) == "function")
 	end)
-
-	T.known_failure("LocalPlayer:get_hotbar_size (needs l_localplayer.cpp)", function()
+	T.defer("LocalPlayer:get_hotbar_size exists", function()
 		T.assert(type(core.localplayer.get_hotbar_size) == "function")
 	end)
-
-	T.known_failure("LocalPlayer:get_object (needs l_localplayer.cpp)", function()
+	T.defer("LocalPlayer:get_object exists", function()
 		T.assert(type(core.localplayer.get_object) == "function")
 	end)
-
-	T.known_failure("LocalPlayer:set_physics_override (needs l_localplayer.cpp)", function()
+	T.defer("LocalPlayer:set_physics_override exists", function()
 		T.assert(type(core.localplayer.set_physics_override) == "function")
 	end)
 
