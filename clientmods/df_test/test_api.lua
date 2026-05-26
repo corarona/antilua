@@ -69,9 +69,6 @@ function test_api_registration_no_player(T)
 	T.run("get_perlin exists", function()
 		T.assert(type(core.get_perlin) == "function",
 			"core.get_perlin should exist")
-	end)
-
-	-- HTTP API
 	T.run("core.request_http_api exists", function()
 		T.assert(type(core.request_http_api) == "function",
 			"core.request_http_api should be a function")
