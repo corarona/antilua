@@ -1428,6 +1428,9 @@ void ModApiEnv::InitializeClient(lua_State *L, int top)
 	API_FCT(find_nodes_in_area_under_air);
 	API_FCT(line_of_sight);
 	API_FCT(raycast);
+	API_FCT(get_voxel_manip);
+	API_FCT(get_value_noise);
+	API_FCT(get_value_noise_map);
 }
 
 #define GET_VM_PTR               \

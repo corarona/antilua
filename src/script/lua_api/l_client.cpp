@@ -373,7 +373,11 @@ int ModApiClient::l_get_privilege_list(lua_State *L)
 // get_builtin_path()
 int ModApiClient::l_get_builtin_path(lua_State *L)
 {
-	lua_pushstring(L, BUILTIN_MOD_NAME ":");
+	// SSCSM uses "*client_builtin*", regular client uses "*builtin*"
+	if (getScriptApiBase(L)->getType() == ScriptingType::SSCSM)
+		lua_pushstring(L, "*client_builtin*:");
+	else
+		lua_pushstring(L, BUILTIN_MOD_NAME ":");
 	return 1;
 }
 

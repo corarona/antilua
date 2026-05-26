@@ -71,12 +71,16 @@ function test_api_registration_no_player(T)
 	end)
 
 	-- Known failures (features not yet ported from DF)
-	T.known_failure("get_voxel_manip exists (needs ModApiEnv client init)", function()
+	T.run("get_voxel_manip exists", function()
 		T.assert(type(core.get_voxel_manip) == "function")
 	end)
 
-	T.known_failure("get_perlin exists (needs ModApiEnv client init)", function()
-		T.assert(type(core.get_perlin) == "function")
+	T.run("get_value_noise exists", function()
+		T.assert(type(core.get_value_noise) == "function")
+	end)
+
+	T.run("get_value_noise_map exists", function()
+		T.assert(type(core.get_value_noise_map) == "function")
 	end)
 
 	T.run("core.get_inventory exists", function()

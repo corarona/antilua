@@ -43,8 +43,8 @@ function test_callback_registration(T)
 		T.assert(ok, "registering sound callback should not crash")
 	end)
 
-	T.known_failure("register_on_particlespawner (needs ModApiClient)", function()
-		T.assert(type(core.register_on_particlespawner) == "function")
+	T.run("register_on_receive_particlespawner exists", function()
+		T.assert(type(core.register_on_receive_particlespawner) == "function")
 	end)
 
 	T.run("register_on_object_add exists", function()
