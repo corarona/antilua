@@ -445,6 +445,8 @@ void MapblockMeshGenerator::drawSolidNode()
 		v3s16 p2 = blockpos_nodes + cur_node.p + tile_dirs[face];
 		MapNode neighbor = data->m_vmanip.getNodeNoEx(p2);
 		content_t n2 = neighbor.getContent();
+		if (m_xray_enabled && m_xray_set.count(n2))
+			n2 = CONTENT_AIR;
 		bool backface_culling = cur_node.f->drawtype == NDT_NORMAL;
 		if (n2 == n1)
 			continue;
@@ -1835,6 +1837,8 @@ void MapblockMeshGenerator::generate()
 	for (cur_node.p.X = 0; cur_node.p.X < data->m_side_length; cur_node.p.X++) {
 		cur_node.n = data->m_vmanip.getNodeNoEx(blockpos_nodes + cur_node.p);
 		cur_node.f = &nodedef->get(cur_node.n);
+		if (m_xray_enabled && m_xray_set.count(cur_node.n.getContent()))
+			continue;
 		drawNode();
 	}
 }

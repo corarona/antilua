@@ -670,11 +670,33 @@ MapBlockMesh::MapBlockMesh(Client *client, MeshMakeData *data):
 	// algin vertices to mesh grid, not meshgen area
 	v3f offset = intToFloat((data->m_blockpos - mesh_grid.getMeshPos(data->m_blockpos)) * MAP_BLOCKSIZE, BS);
 
+	std::set<content_t> xraySet;
+	if (g_settings->getBool("xray")) {
+		std::string xray_nodes = g_settings->get("xray_nodes");
+		xray_nodes += "\n";
+		std::string buf;
+		for (char c : xray_nodes) {
+			if (c == ',' || c == '\n') {
+				if (!buf.empty()) {
+					xraySet.insert(data->m_nodedef->getId(buf));
+				}
+				buf.clear();
+			} else {
+				buf += c;
+			}
+		}
+	}
+
 	MeshCollector collector(m_bounding_sphere_center, offset);
 
 	{
 		// Generate everything
-		MapblockMeshGenerator(data, &collector).generate();
+		MapblockMeshGenerator generator(data, &collector);
+		if (!xraySet.empty()) {
+			generator.m_xray_enabled = true;
+			generator.m_xray_set = xraySet;
+		}
+		generator.generate();
 	}
 
 	/*

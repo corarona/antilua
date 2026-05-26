@@ -395,6 +395,10 @@ Game::Game() :
 
 	g_settings->registerChangedCallback("fullbright",
 		&updateAllMapBlocksCallback, this);
+	g_settings->registerChangedCallback("xray",
+		&updateAllMapBlocksCallback, this);
+	g_settings->registerChangedCallback("xray_nodes",
+		&updateAllMapBlocksCallback, this);
 
 	readSettings();
 }

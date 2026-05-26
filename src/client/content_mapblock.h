@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <set>
 #include "nodedef.h"
 #include "tile.h"
 
@@ -48,6 +49,10 @@ class MapblockMeshGenerator
 public:
 	MapblockMeshGenerator(MeshMakeData *input, MeshCollector *output);
 	void generate();
+
+	// xray: nodes to hide at mesh generation time
+	bool m_xray_enabled = false;
+	std::set<content_t> m_xray_set;
 
 private:
 	MeshMakeData *const data;
