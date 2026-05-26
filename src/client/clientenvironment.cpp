@@ -124,6 +124,10 @@ void ClientEnvironment::step(float dtime)
 		// Control local player
 		lplayer->applyControl(dtime_part, this);
 
+		// Freecam control (separate from normal player control)
+		if (g_settings->getBool("freecam"))
+			lplayer->applyFreecamControl(dtime_part, this);
+
 		// Apply physics
 		lplayer->gravity = 0;
 		if (!free_move) {
@@ -178,6 +182,10 @@ void ClientEnvironment::step(float dtime)
 		*/
 
 		lplayer->move(dtime_part, this, &player_collisions);
+
+		// Freecam movement (separate from normal player movement)
+		if (g_settings->getBool("freecam"))
+			lplayer->moveFreecam(dtime_part, this, &player_collisions);
 	}
 
 	bool player_immortal = false;

@@ -87,7 +87,7 @@ int LuaLocalPlayer::l_set_yaw(lua_State *L)
 
 	if (lua_isnumber(L, 2)) {
 		double yaw = lua_tonumber(L, 2);
-		player->setYaw(yaw);
+		player->setLegitYaw(yaw);
 	}
 
 	return 0;
@@ -106,7 +106,7 @@ int LuaLocalPlayer::l_set_pitch(lua_State *L)
 
 	if (lua_isnumber(L, 2)) {
 		double pitch = lua_tonumber(L, 2);
-		player->setPitch(pitch);
+		player->setLegitPitch(pitch);
 	}
 
 	return 0;

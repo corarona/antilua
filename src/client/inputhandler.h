@@ -74,7 +74,6 @@ public:
 		auto it = keysListenedFor.find(keyCode);
 		if (it != keysListenedFor.end()) {
 			auto action = it->second;
-			keyIsDown.set(action);
 			keyWasDown.set(action);
 			keyWasPressed.set(action);
 		}
@@ -84,7 +83,7 @@ public:
 	{
 		auto it = keysListenedFor.find(keyCode);
 		if (it != keysListenedFor.end())
-			keyIsDown.reset(it->second);
+			keyWasDown.reset(it->second);
 	}
 
 	void releaseAllKeys()

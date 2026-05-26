@@ -388,6 +388,7 @@ Game::Game() :
 		"repeat_place_time", "repeat_dig_time", "noclip", "free_move", "fog_start",
 		"cinematic", "cinematic_camera_smoothing", "camera_smoothing", "invert_mouse",
 		"enable_hotbar_mouse_wheel", "invert_hotbar_mouse_wheel", "pause_on_lost_focus",
+		"keyboard_camera_speed", "freecam",
 	};
 	for (auto s : settings)
 		g_settings->registerChangedCallback(s, &settingChangedCallback, this);
@@ -703,6 +704,9 @@ bool Game::init(
 		const SubgameSpec &gamespec)
 {
 	texture_src = createTextureSource();
+
+	// Reset freecam at game start
+	g_settings->setBool("freecam", false);
 
 	showOverlayMessage(N_("Loading..."), 0, 0);
 
@@ -1272,7 +1276,8 @@ void Game::updateDebugState()
 	}
 
 	// noclip
-	draw_control->allow_noclip = m_cache_enable_noclip && client->checkPrivilege("noclip");
+	draw_control->allow_noclip = (m_cache_enable_noclip && client->checkPrivilege("noclip"))
+		|| g_settings->getBool("freecam");
 }
 
 void Game::updateProfilers(const RunStats &stats, const FpsControl &draw_times,
@@ -1520,7 +1525,7 @@ void Game::processKeyInput()
 		toggleScaffold();
 	} else if (wasKeyDown(KeyType::TOGGLE_UPDATE_CAMERA)) {
 		toggleUpdateCamera();
-	} else if (wasKeyPressed(KeyType::CAMERA_MODE)) {
+	} else if (wasKeyPressed(KeyType::CAMERA_MODE) && !g_settings->getBool("freecam")) {
 		camera->toggleCameraMode();
 		updateCameraMode();
 	} else if (wasKeyPressed(KeyType::TOGGLE_DEBUG)) {
@@ -1808,10 +1813,26 @@ void Game::toggleFreecam()
 	bool freecam = !g_settings->getBool("freecam");
 	g_settings->set("freecam", bool_to_cstr(freecam));
 
+	// Apply immediately (the setting callback may not fire for toggling the same setting)
+	freecamChangedCallback("freecam", this);
+
 	if (freecam)
 		m_game_ui->showTranslatedStatusText("Freecam enabled");
 	else
 		m_game_ui->showTranslatedStatusText("Freecam disabled");
+}
+
+void Game::freecamChangedCallback(const std::string &, void *data)
+{
+	Game *game = (Game *)data;
+	LocalPlayer *player = game->client->getEnv().getLocalPlayer();
+	if (g_settings->getBool("freecam")) {
+		game->camera->setCameraMode(CAMERA_MODE_THIRD);
+		player->freecamEnable();
+	} else {
+		player->freecamDisable();
+	}
+	game->updateCameraMode();
 }
 
 void Game::toggleScaffold()
@@ -2663,7 +2684,8 @@ void Game::updateCameraMode()
 	if (playercao) {
 		// Make the player visible depending on camera mode.
 		playercao->updateMeshCulling();
-		playercao->setChildrenVisible(camera->getCameraMode() > CAMERA_MODE_FIRST);
+		playercao->setChildrenVisible(g_settings->getBool("freecam")
+			|| camera->getCameraMode() > CAMERA_MODE_FIRST);
 	}
 }
 

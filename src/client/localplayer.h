@@ -7,6 +7,7 @@
 #include "player.h"
 #include "constants.h"
 #include "lighting.h"
+#include "settings.h"
 #include <string>
 
 class Client;
@@ -19,6 +20,7 @@ struct CollisionMoveResult;
 
 struct PlayerSettings
 {
+	bool freecam = false;
 	bool free_move = false;
 	bool pitch_move = false;
 	bool fast_move = false;
@@ -62,8 +64,11 @@ public:
 	void move(f32 dtime, Environment *env);
 	void move(f32 dtime, Environment *env,
 			std::vector<CollisionInfo> *collision_info);
+	void moveFreecam(f32 dtime, Environment *env,
+			std::vector<CollisionInfo> *collision_info);
 
 	void applyControl(float dtime, Environment *env);
+	void applyFreecamControl(float dtime, Environment *env);
 
 	v3s16 getStandingNodePos();
 	v3s16 getFootstepNodePos();
@@ -114,24 +119,79 @@ public:
 
 	v3s16 getLightPosition() const;
 
-	void setYaw(f32 yaw) { m_yaw = yaw; }
+	void setYaw(f32 yaw) {
+		m_yaw = yaw;
+		if (!m_freecam && !g_settings->getBool("detached_camera"))
+			m_legit_yaw = yaw;
+	}
 	f32 getYaw() const { return m_yaw; }
+	f32 getLegitYaw() const { return m_legit_yaw; }
+	void setLegitYaw(f32 yaw) {
+		if (m_freecam || g_settings->getBool("detached_camera"))
+			m_legit_yaw = yaw;
+		m_yaw = yaw;
+	}
 
-	void setPitch(f32 pitch) { m_pitch = pitch; }
+	void setPitch(f32 pitch) {
+		m_pitch = pitch;
+		if (!m_freecam && !g_settings->getBool("detached_camera"))
+			m_legit_pitch = pitch;
+	}
 	f32 getPitch() const { return m_pitch; }
+	f32 getLegitPitch() const { return m_legit_pitch; }
+	void setLegitPitch(f32 pitch) {
+		if (m_freecam || g_settings->getBool("detached_camera"))
+			m_legit_pitch = pitch;
+		m_pitch = pitch;
+	}
 
 	inline void setPosition(const v3f &position)
 	{
 		m_position = position;
+		if (!m_freecam)
+			m_legit_position = position;
 		m_sneak_node_exists = false;
 	}
 	inline void addPosition(const v3f &added_pos)
 	{
 		m_position += added_pos;
+		if (!m_freecam)
+			m_legit_position += added_pos;
 		m_sneak_node_exists = false;
 	}
 
 	v3f getPosition() const { return m_position; }
+	v3f getLegitPosition() const { return m_legit_position; }
+	v3f getLegitSpeed() const { return m_freecam ? m_legit_speed : m_speed; }
+	v3f getSendSpeed() { return getLegitSpeed(); }
+
+	void setLegitPosition(const v3f &position)
+	{
+		if (m_freecam)
+			m_legit_position = position;
+		else
+			m_legit_position = position;
+		setPosition(position);
+	}
+	void setLegitSpeed(const v3f &speed)
+	{
+		if (m_freecam)
+			m_legit_speed = speed;
+		else
+			m_legit_speed = speed;
+		setSpeed(speed);
+	}
+
+	inline void freecamEnable()
+	{
+		m_freecam = true;
+	}
+	inline void freecamDisable()
+	{
+		m_freecam = false;
+		setPosition(m_legit_position);
+		setSpeed(m_legit_speed);
+	}
 
 	// Non-transformed eye offset getters
 	// For accurate positions, use the Camera functions
@@ -162,6 +222,8 @@ public:
 private:
 	void accelerate(const v3f &target_speed, const f32 max_increase_H,
 		const f32 max_increase_V, const bool use_pitch);
+	void accelerateFreecam(const v3f &target_speed, const f32 max_increase_H,
+		const f32 max_increase_V, const bool use_pitch);
 	bool updateSneakNode(Map *map, const v3f &position, const v3f &sneak_max);
 	float getSlipFactor(Environment *env, const v3f &speedH);
 	void old_move(f32 dtime, Environment *env,
@@ -169,6 +231,12 @@ private:
 	void handleAutojump(f32 dtime, Environment *env,
 		const CollisionMoveResult &result,
 		v3f position_before_move, v3f speed_before_move);
+
+	bool m_freecam = false;
+	v3f m_legit_position;
+	v3f m_legit_speed;
+	f32 m_legit_yaw = 0.0f;
+	f32 m_legit_pitch = 0.0f;
 
 	v3f m_position;
 	v3s16 m_standing_node;

@@ -84,7 +84,7 @@ CheatMenu::CheatMenu(Client *client) : m_client(client)
 void CheatMenu::drawEntry(video::IVideoDriver *driver, std::string name, int number,
 		bool selected, bool active, CheatMenuEntryType entry_type)
 {
-	int x = m_gap, y = m_gap, width = m_entry_width, height = m_entry_height;
+	int x = m_gap, y = m_gap + m_y_offset, width = m_entry_width, height = m_entry_height;
 	video::SColor *bgcolor = &m_bg_color, *fontcolor = &m_font_color;
 	if (entry_type == CHEAT_MENU_ENTRY_TYPE_HEAD) {
 		bgcolor = &m_active_bg_color;
@@ -120,6 +120,11 @@ void CheatMenu::drawEntry(video::IVideoDriver *driver, std::string name, int num
 void CheatMenu::draw(video::IVideoDriver *driver, bool show_debug)
 {
 	CHEAT_MENU_GET_SCRIPTPTR
+
+	// Place the cheat menu below the recent chat area
+	u32 recent_chat_lines = g_settings->getU16("recent_chat_messages");
+	u32 font_height = g_fontengine->getTextHeight(FM_Unspecified);
+	m_y_offset = 5 + font_height * (recent_chat_lines + 15);
 
 	if (!show_debug)
 		drawEntry(driver, "Dragonfireclient", 0, false, false,

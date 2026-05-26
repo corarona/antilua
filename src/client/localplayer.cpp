@@ -19,12 +19,13 @@
 */
 
 const static std::string PlayerSettings_names[] = {
-	"free_move", "pitch_move", "fast_move", "continuous_forward", "always_fly_fast",
+	"freecam", "free_move", "pitch_move", "fast_move", "continuous_forward", "always_fly_fast",
 	"aux1_descends", "noclip", "autojump"
 };
 
 void PlayerSettings::readGlobalSettings()
 {
+	freecam = g_settings->getBool("freecam");
 	free_move = g_settings->getBool("free_move");
 	pitch_move = g_settings->getBool("pitch_move");
 	fast_move = g_settings->getBool("fast_move");
@@ -232,6 +233,10 @@ void LocalPlayer::move(f32 dtime, Environment *env,
 		m_added_velocity = v3f(0.0f); // ignored
 		return;
 	}
+
+	// In freecam, skip collision/physics for the legit player
+	if (m_freecam)
+		return;
 
 	PlayerSettings &player_settings = getPlayerSettings();
 
@@ -549,6 +554,15 @@ void LocalPlayer::move(f32 dtime, Environment *env)
 	move(dtime, env, nullptr);
 }
 
+void LocalPlayer::moveFreecam(f32 dtime, Environment *env,
+		std::vector<CollisionInfo> *collision_info)
+{
+	v3f position = getPosition();
+	position += getSpeed() * dtime;
+	setPosition(position);
+	return;
+}
+
 void LocalPlayer::applyControl(float dtime, Environment *env)
 {
 	// Clear stuff
@@ -563,6 +577,10 @@ void LocalPlayer::applyControl(float dtime, Environment *env)
 		setSpeed(v3f(0.0f));
 		return;
 	}
+
+	// In freecam, legit player should not move — applyFreecamControl handles movement
+	if (m_freecam)
+		return;
 
 	PlayerSettings &player_settings = getPlayerSettings();
 
@@ -840,6 +858,103 @@ void LocalPlayer::accelerate(const v3f &target_speed, const f32 max_increase_H,
 	d.rotateXZBy(yaw);
 
 	m_speed += d;
+}
+
+// 3D acceleration for freecam
+void LocalPlayer::accelerateFreecam(const v3f &target_speed, const f32 max_increase_H,
+	const f32 max_increase_V, const bool use_pitch)
+{
+	const f32 yaw = getYaw();
+	const f32 pitch = getPitch();
+	v3f flat_speed = m_speed;
+	flat_speed.rotateXZBy(-yaw);
+	if (use_pitch)
+		flat_speed.rotateYZBy(-pitch);
+
+	v3f d_wanted = target_speed - flat_speed;
+	v3f d;
+
+	if (max_increase_H > 0.0f) {
+		v3f d_wanted_H = d_wanted * v3f(1.0f, 0.0f, 1.0f);
+		if (d_wanted_H.getLength() > max_increase_H)
+			d += d_wanted_H.normalize() * max_increase_H;
+		else
+			d += d_wanted_H;
+	}
+
+	if (max_increase_V > 0.0f) {
+		f32 d_wanted_V = d_wanted.Y;
+		if (d_wanted_V > max_increase_V)
+			d.Y += max_increase_V;
+		else if (d_wanted_V < -max_increase_V)
+			d.Y -= max_increase_V;
+		else
+			d.Y += d_wanted_V;
+	}
+
+	if (use_pitch)
+		d.rotateYZBy(pitch);
+	d.rotateXZBy(yaw);
+
+	m_speed += d;
+}
+
+// Freecam movement control
+void LocalPlayer::applyFreecamControl(float dtime, Environment *env)
+{
+	// Clear stuff
+	swimming_vertical = false;
+	swimming_pitch = false;
+
+	setPitch(control.pitch);
+	setYaw(control.yaw);
+
+	if (getParent()) {
+		setSpeed(v3f(0.0f));
+		return;
+	}
+
+	PlayerSettings &player_settings = getPlayerSettings();
+
+	v3f speedH, speedV;
+
+	bool fast_allowed = m_client->checkLocalPrivilege("fast");
+	bool fast_move = fast_allowed && player_settings.fast_move;
+
+	bool superspeed = false;
+	if (fast_move && control.aux1)
+		superspeed = true;
+
+	const f32 speed_walk = movement_speed_walk * physics_override.speed_walk;
+	const f32 new_speed_fast = movement_speed_fast * physics_override.speed_fast;
+
+	if (control.jump)
+		speedV.Y = superspeed ? new_speed_fast : speed_walk;
+	else if (control.sneak)
+		speedV.Y = superspeed ? -new_speed_fast : -speed_walk;
+
+	speedH = v3f(std::sin(control.movement_direction), 0.0f,
+			std::cos(control.movement_direction));
+
+	if (superspeed)
+		speedH = speedH.normalize() * new_speed_fast;
+	else
+		speedH = speedH.normalize() * speed_walk;
+
+	speedH *= control.movement_speed;
+
+	f32 incH = 0.0f;
+	f32 incV = 0.0f;
+	if (superspeed) {
+		incH = movement_acceleration_fast * physics_override.acceleration_fast * BS * dtime;
+		incV = incH;
+	} else {
+		incH = movement_acceleration_default * physics_override.acceleration_default * BS * dtime;
+		incV = incH;
+	}
+
+	accelerateFreecam((speedH + speedV) * physics_override.speed,
+		incH * physics_override.speed, incV * physics_override.speed, true);
 }
 
 // Temporary option for old move code

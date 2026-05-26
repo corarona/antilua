@@ -71,6 +71,7 @@ private:
 	int m_entry_height = 40;
 	int m_entry_width = 200;
 	int m_gap = 3;
+	int m_y_offset = 5;
 
 	video::SColor m_bg_color = video::SColor(192, 255, 145, 88);
 	video::SColor m_active_bg_color = video::SColor(192, 255, 87, 53);

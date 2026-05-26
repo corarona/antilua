@@ -9,6 +9,7 @@
 #include "constants.h"
 #include "gamedef.h"
 #include "client/inputhandler.h"
+#include "settings.h"
 #include <tuple>
 
 const struct EnumString es_CameraMode[] = {
@@ -156,6 +157,12 @@ u16 Player::getMaxHotbarItemcount()
 	return mainlist ? std::min(mainlist->getSize(), (u32) hud_hotbar_itemcount) : 0;
 }
 
+PlayerControl &Player::getPlayerControl() {
+	return 	(g_settings->getBool("freecam") && !g_settings->getBool("lua_control")) ? empty_control :
+			(g_settings->getBool("lua_control"))               						? lua_control :
+	                                                    		 					  control;
+}
+
 void PlayerControl::setMovementFromKeys()
 {
 	float x = right - left;
@@ -181,6 +188,36 @@ u32 PlayerControl::getKeysPressed() const
 		( (u32)(place & 1) << 8) |
 		( (u32)(zoom  & 1) << 9)
 	;
+
+	// If any direction keys are pressed pass those through
+	if (g_settings->getBool("freecam")) {}
+	else if (direction_keys != 0)
+	{
+		keypress_bits |= direction_keys;
+	}
+	// Otherwise set direction keys based on joystick movement (for mod compatibility)
+	else if (isMoving())
+	{
+		float abs_d;
+
+		// (absolute value indicates forward / backward)
+		abs_d = std::abs(movement_direction);
+		if (abs_d < 3.0f / 8.0f * M_PI)
+			keypress_bits |= (u32)1; // Forward
+		if (abs_d > 5.0f / 8.0f * M_PI)
+			keypress_bits |= (u32)1 << 1; // Backward
+
+		// rotate entire coordinate system by 90 degree
+		abs_d = movement_direction + M_PI_2;
+		if (abs_d >= M_PI)
+			abs_d -= 2 * M_PI;
+		abs_d = std::abs(abs_d);
+		// (value now indicates left / right)
+		if (abs_d < 3.0f / 8.0f * M_PI)
+			keypress_bits |= (u32)1 << 2; // Left
+		if (abs_d > 5.0f / 8.0f * M_PI)
+			keypress_bits |= (u32)1 << 3; // Right
+	}
 
 	return keypress_bits;
 }

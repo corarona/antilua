@@ -95,6 +95,7 @@ struct PlayerControl
 	float yaw = 0.0f;
 	float movement_speed = 0.0f;
 	float movement_direction = 0.0f;
+	u8 direction_keys = 0;
 };
 
 struct PlayerPhysicsOverride
@@ -215,7 +216,9 @@ public:
 	std::string formspec_prepend;
 
 	PlayerControl control;
-	const PlayerControl& getPlayerControl() { return control; }
+	PlayerControl lua_control;
+	PlayerControl empty_control;
+	PlayerControl& getPlayerControl();
 
 	PlayerPhysicsOverride physics_override;
 
