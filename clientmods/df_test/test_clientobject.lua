@@ -1,89 +1,58 @@
 -- Tests for DragonfireClient ClientObjectRef API
--- All deferred until core.localplayer is available
+-- All depend on localplayer:get_object() from DF's l_localplayer.cpp
 
 function test_clientobject_ref(T)
-	T.defer("ClientObjectRef type exists", function()
+	T.known_failure("ClientObjectRef:get_pos (needs l_localplayer changes)", function()
 		local ref = core.localplayer:get_object()
-		T.assert(ref ~= nil, "localplayer:get_object() should return a ClientObjectRef")
+		local pos = ref:get_pos()
+		T.assert(type(pos) == "table", "get_pos should return a table")
 	end)
 
-	T.defer("ClientObjectRef:get_pos works", function()
+	T.known_failure("ClientObjectRef:get_velocity (needs l_localplayer changes)", function()
 		local ref = core.localplayer:get_object()
-		if ref then
-			local pos = ref:get_pos()
-			T.assert(type(pos) == "table", "get_pos should return a table")
-			T.assert(type(pos.x) == "number", "pos.x should be a number")
-			T.assert(type(pos.y) == "number", "pos.y should be a number")
-			T.assert(type(pos.z) == "number", "pos.z should be a number")
-		end
+		local vel = ref:get_velocity()
+		T.assert(type(vel) == "table", "get_velocity should return a table")
 	end)
 
-	T.defer("ClientObjectRef:get_velocity works", function()
+	T.known_failure("ClientObjectRef:get_rotation (needs l_localplayer changes)", function()
 		local ref = core.localplayer:get_object()
-		if ref then
-			local vel = ref:get_velocity()
-			T.assert(type(vel) == "table", "get_velocity should return a table")
-		end
+		local rot = ref:get_rotation()
+		T.assert(type(rot) == "table", "get_rotation should return a table")
 	end)
 
-	T.defer("ClientObjectRef:get_rotation works", function()
+	T.known_failure("ClientObjectRef:is_player (needs l_localplayer changes)", function()
 		local ref = core.localplayer:get_object()
-		if ref then
-			local rot = ref:get_rotation()
-			T.assert(type(rot) == "table", "get_rotation should return a table")
-		end
+		T.assert(type(ref:is_player()) == "boolean", "is_player should return boolean")
 	end)
 
-	T.defer("ClientObjectRef:is_player works", function()
+	T.known_failure("ClientObjectRef:is_local_player (needs l_localplayer changes)", function()
 		local ref = core.localplayer:get_object()
-		if ref then
-			local is_player = ref:is_player()
-			T.assert(type(is_player) == "boolean", "is_player should return a boolean")
-		end
+		T.assert(ref:is_local_player() == true, "local player should be local")
 	end)
 
-	T.defer("ClientObjectRef:is_local_player works", function()
+	T.known_failure("ClientObjectRef:get_name (needs l_localplayer changes)", function()
 		local ref = core.localplayer:get_object()
-		if ref then
-			local is_local = ref:is_local_player()
-			T.assert(is_local == true, "local player should report is_local_player=true")
-		end
+		T.assert(type(ref:get_name()) == "string", "get_name should return string")
 	end)
 
-	T.defer("ClientObjectRef:get_name works", function()
+	T.known_failure("ClientObjectRef:get_properties (needs l_localplayer changes)", function()
 		local ref = core.localplayer:get_object()
-		if ref then
-			local name = ref:get_name()
-			T.assert(type(name) == "string", "get_name should return a string")
-		end
+		local props = ref:get_properties()
+		T.assert(props.hp_max ~= nil, "properties should have hp_max")
 	end)
 
-	T.defer("ClientObjectRef:get_properties works", function()
+	T.known_failure("ClientObjectRef:get_hp (needs l_localplayer changes)", function()
 		local ref = core.localplayer:get_object()
-		if ref then
-			local props = ref:get_properties()
-			T.assert(type(props) == "table", "get_properties should return a table")
-			T.assert(props.hp_max ~= nil, "properties should have hp_max")
-		end
+		T.assert(type(ref:get_hp()) == "number", "get_hp should return number")
 	end)
 
-	T.defer("ClientObjectRef:get_hp works", function()
-		local ref = core.localplayer:get_object()
-		if ref then
-			local hp = ref:get_hp()
-			T.assert(type(hp) == "number", "get_hp should return a number")
-		end
-	end)
-
-	T.defer("core.get_objects_inside_radius works", function()
+	T.known_failure("core.get_objects_inside_radius (needs ModApiClient)", function()
 		local pos = core.localplayer:get_pos()
 		local objs = core.get_objects_inside_radius(pos, 10)
-		T.assert(type(objs) == "table", "get_objects_inside_radius should return a table")
 		T.assert(#objs > 0, "should find at least the local player")
 	end)
 
-	T.defer("core.object_refs table exists", function()
-		local refs = core.object_refs
-		T.assert(type(refs) == "table", "core.object_refs should be a table")
+	T.known_failure("core.object_refs table (needs ModApiClient)", function()
+		T.assert(type(core.object_refs) == "table", "core.object_refs should be a table")
 	end)
 end

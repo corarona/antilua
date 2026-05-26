@@ -180,6 +180,6 @@ core.register_chatcommand("setpitch", {
 	end
 })
 
--- FIXME: core.register_list_command is a DF addition not yet ported
+-- FIXME: DF feature not yet ported
 -- core.register_list_command("xray", "Configure X-Ray", "xray_nodes")
 -- core.register_list_command("search", "Configure NodeESP", "node_esp_nodes")
