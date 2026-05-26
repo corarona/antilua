@@ -48,6 +48,13 @@ Features not yet ported from DF are marked `SKIP (not ported)` — see
 Tests that depend on `core.localplayer` (ClientObjectRef, inventory location)
 are deferred until the player joins the world, so results appear in two batches.
 
+Always run the integration test after any C++ or Lua change to verify
+nothing is broken:
+```sh
+./util/ci/run_df_tests.sh
+```
+Requires `xvfb-run` (from the `xvfb` package) for headless display.
+
 ## Code conventions
 
 - **C++17** standard, GCC >= 7.5 or Clang >= 7.0.1
