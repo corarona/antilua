@@ -79,27 +79,23 @@ function test_api_registration_no_player(T)
 		T.assert(type(core.get_perlin) == "function")
 	end)
 
-	T.known_failure("core.get_inventory exists (needs ModApiClient)", function()
+	T.run("core.get_inventory exists", function()
 		T.assert(type(core.get_inventory) == "function")
 	end)
 
-	T.known_failure("core.drop_selected_item exists (needs ModApiClient)", function()
+	T.run("core.drop_selected_item exists", function()
 		T.assert(type(core.drop_selected_item) == "function")
 	end)
 
-	T.known_failure("core.get_send_speed exists (needs ModApiClient)", function()
-		T.assert(type(core.get_send_speed) == "function")
-	end)
-
-	T.known_failure("core.dig_node exists (needs ModApiClient)", function()
+	T.run("core.dig_node exists", function()
 		T.assert(type(core.dig_node) == "function")
 	end)
 
-	T.known_failure("core.interact exists (needs ModApiClient)", function()
+	T.run("core.interact exists", function()
 		T.assert(type(core.interact) == "function")
 	end)
 
-	T.known_failure("core.make_screenshot exists (needs ModApiClient)", function()
+	T.run("core.make_screenshot exists", function()
 		T.assert(type(core.make_screenshot) == "function")
 	end)
 

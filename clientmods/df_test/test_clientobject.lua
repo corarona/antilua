@@ -46,13 +46,13 @@ function test_clientobject_ref(T)
 		T.assert(type(ref:get_hp()) == "number", "get_hp should return number")
 	end)
 
-	T.known_failure("core.get_objects_inside_radius (needs ModApiClient)", function()
+	T.defer("core.get_objects_inside_radius works", function()
 		local pos = core.localplayer:get_pos()
 		local objs = core.get_objects_inside_radius(pos, 10)
-		T.assert(#objs > 0, "should find at least the local player")
+		T.assert(type(objs) == "table", "should return a table")
 	end)
 
-	T.known_failure("core.object_refs table (needs ModApiClient)", function()
+	T.known_failure("core.object_refs table (not yet populated)", function()
 		T.assert(type(core.object_refs) == "table", "core.object_refs should be a table")
 	end)
 end

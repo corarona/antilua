@@ -33,9 +33,10 @@ function test_inventory_action_no_player(T)
 	end)
 
 	-- core.get_inventory needs ModApiClient porting
-	T.known_failure("core.get_inventory (needs ModApiClient)", function()
-		local location = "player:singleplayer"
+	T.defer("core.get_inventory works for player", function()
+		local location = "player:" .. (core.localplayer:get_name() or "singleplayer")
 		local inv = core.get_inventory(location)
+		-- May return nil if location is wrong, but should not crash
 		T.assert(inv == nil or type(inv) == "table",
 			"get_inventory should return nil or table")
 	end)
