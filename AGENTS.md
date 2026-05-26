@@ -13,6 +13,13 @@ The project is currently being rebased onto `luanti/master` on the `df-rebased`
 branch, splitting the old single-branch DF history (~199 commits) into clean
 feature commits.
 
+## Current work: Modpack restructuring
+
+See `PLAN.md` for the full plan. All old-clientmods are being consolidated into
+the `DRAGONFIRE` modpack. The `wasplib` mod is being split into subfiles, and
+useful features from `emicor` are being extracted into focused mods. Integration
+tests are being written for each new mod.
+
 ## Build
 
 ```sh
@@ -90,5 +97,9 @@ Requires `xvfb-run` (from the `xvfb` package) for headless display.
   (`ScriptApiClient`, `ScriptApiCheats`, `ScriptApiSecurity`, etc.)
 - `g_game` (global `Game*`) is accessible from scripting via `setGame()` on
   `ScriptApiBase`
+- Entity/Player ESP and Tracers live in `DrawTracersAndESP` pipeline step
+  (`src/client/render/plain.cpp`). Uses `getCameraNode()->getAbsolutePosition()`
+  for the tracer origin (NOT `camera->getPosition()`, which is world space).
+  A small forward offset (`look_dir * 0.2 * BS`) avoids near-plane clipping.
 - `.clang-tidy` checks are configured as warnings-as-errors for performance items
 - The `vcpkg.json` exists but is not the primary dependency manager on Linux

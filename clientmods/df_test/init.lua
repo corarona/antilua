@@ -89,6 +89,7 @@ dofile(modpath .. "/test_cheats.lua")
 dofile(modpath .. "/test_clientobject.lua")
 dofile(modpath .. "/test_inventory.lua")
 dofile(modpath .. "/test_callbacks.lua")
+dofile(modpath .. "/test_dragonfire_mods.lua")
 
 -- Run API/registration tests at mod load time
 core.register_on_mods_loaded(function()
@@ -101,6 +102,15 @@ core.register_on_mods_loaded(function()
 	test_inventory_action_no_player(df_test)
 	test_clientobject_ref(df_test)
 	test_inventory_action(df_test)
+
+	test_dragonfire_wasplib(df_test)
+	test_dragonfire_lockview(df_test)
+	test_dragonfire_headsaver(df_test)
+	test_dragonfire_invsaver(df_test)
+	test_dragonfire_antitower(df_test)
+	test_dragonfire_walls(df_test)
+	test_dragonfire_autoevade(df_test)
+	test_dragonfire_extracted_features(df_test)
 
 	-- Defer localplayer-dependent tests (poll until localplayer is ready)
 	if #deferred_tests > 0 then

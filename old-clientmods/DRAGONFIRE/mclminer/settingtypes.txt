@@ -1,0 +1,2 @@
+mclminer (Mcl miner active) bool false
+dighead (Dig node at player's head position) bool false

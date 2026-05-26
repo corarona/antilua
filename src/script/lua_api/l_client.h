@@ -69,6 +69,9 @@ private:
 	// get_node(pos)
 	static int l_get_node_or_nil(lua_State *L);
 
+	// find_nodes_near(pos, radius, nodenames, search_center)
+	static int l_find_nodes_near(lua_State *L);
+
 	// get_language()
 	static int l_get_language(lua_State *L);
 

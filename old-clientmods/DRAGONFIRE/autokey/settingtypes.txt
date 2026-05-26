@@ -1,0 +1,2 @@
+autosneak (AutoSneak) bool false
+autosprint (AutoSprint) bool false

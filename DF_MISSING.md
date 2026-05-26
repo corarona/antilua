@@ -26,26 +26,22 @@ notes why the port is non-trivial.
 
 ---
 
-## ESP & Tracers Rendering (`src/client/render/core.cpp`, `src/client/render/core.h`)
+## Entity/Player ESP & Tracers (`src/client/render/plain.cpp`)
 
-**DF diff**: New `drawTracersAndESP()` method; render pipeline restructured.
+**✅ Ported** — `DrawTracersAndESP` pipeline step.
 
-**What changed in DF:**
-- `RenderingCore::drawTracersAndESP()` renders entity/player ESP boxes,
-  entity/player tracers, node ESP, and node tracers
-- Draws coloured bounding boxes around objects with `enable_*_esp` settings
-- Draws lines from camera to objects with `enable_*_tracers` settings
-- Configurable colours via `entity_esp_color`, `player_esp_color`, etc.
-- DF removed the modular `RenderPipeline`/`PipelineStep` architecture that
-  luanti master uses
+Entity/player ESP boxes and tracer lines are drawn in a dedicated pipeline step
+(`DrawTracersAndESP` in `plain.cpp`) that runs after `Draw3D`.
 
-**Why it's hard:**
-- Luanti master has a pipeline-based renderer (`RenderPipeline`, `PipelineStep`,
-  `secondstage.cpp`). DF replaced this with a simpler direct-render approach.
-- The DF rendering code accesses internal Irrlicht state (`IVideoDriver`,
-  `ISceneManager`, `ICameraSceneNode`) in ways that differ from luanti's
-  current pipeline architecture.
-- Needs the camera to provide camera position/orientation in the right format.
+**Coordinate space notes:**
+- `camera->getPosition()` returns world space — NOT suitable as `draw3DLine`
+  origin directly. After view transform it maps to the quantized camera offset,
+  appearing as a fixed point.
+- `camera->getPosition() - offset_f` maps to (0,0,0) in view space, which is
+  behind or at the near plane — the line is clipped.
+- Use `getCameraNode()->getAbsolutePosition()` for the actual root/scene-relative
+  camera position, with a small forward offset (`look_dir * 0.2 * BS`) to keep
+  the origin past the near plane.
 
 ---
 
