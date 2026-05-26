@@ -243,6 +243,7 @@ protected:
 
 	static void settingChangedCallback(const std::string &setting_name, void *data);
 	static void freecamChangedCallback(const std::string &setting_name, void *data);
+	static void updateAllMapBlocksCallback(const std::string &setting_name, void *data);
 	void readSettings();
 
 	inline float getAxisValue(GameKeyType k)

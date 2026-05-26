@@ -42,7 +42,7 @@ them unless `priv_bypass` is active.
 | Feature | Setting | Status |
 |---------|---------|--------|
 | Xray | `xray` | ❌ |
-| Fullbright | `fullbright` | ❌ |
+| Fullbright | `fullbright` | ✅ |
 | HUDBypass | `hud_flags_bypass` | ❌ |
 | NoHurtCam | `no_hurt_cam` | ❌ |
 | BrightNight | `no_night` | ❌ |

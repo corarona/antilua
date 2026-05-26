@@ -194,7 +194,7 @@ video::SColor Particle::updateLight(ClientEnvironment *env)
 	else
 		light = blend_light(env->getDayNightRatio(), LIGHT_SUN, 0);
 
-	u8 m_light = decode_light(light + m_p.glow);
+	u8 m_light = g_settings->getBool("fullbright") ? 255 : decode_light(light + m_p.glow);
 	return video::SColor(255,
 		m_light * m_base_color.getRed() / 255,
 		m_light * m_base_color.getGreen() / 255,

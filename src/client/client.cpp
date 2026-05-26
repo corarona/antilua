@@ -1449,7 +1449,7 @@ void Client::sendReady()
 			1 + 1 + 1 + 1 + 2 + sizeof(char) * strlen(g_version_hash) + 2 + 4);
 
 	pkt << (u8) VERSION_MAJOR << (u8) VERSION_MINOR << (u8) VERSION_PATCH
-		<< (u8) 0 << (u16) strlen(g_version_hash);
+		<< (u8) 0xDF << (u16) strlen(g_version_hash);
 
 	pkt.putRawString(g_version_hash, (u16) strlen(g_version_hash));
 	pkt << (u16)FORMSPEC_API_VERSION;
@@ -1847,6 +1847,17 @@ void Client::addUpdateMeshTaskForNode(v3s16 nodepos, bool ack_to_server, bool ur
 		addUpdateMeshTask(blockpos + v3s16(0, -1, 0), false, urgent);
 	if (nodepos.Z == blockpos_relative.Z)
 		addUpdateMeshTask(blockpos + v3s16(0, 0, -1), false, urgent);
+}
+
+void Client::updateAllMapBlocks()
+{
+	v3s16 currentBlock = getNodeBlockPos(floatToInt(
+		m_env.getLocalPlayer()->getPosition(), BS));
+
+	for (s16 X = currentBlock.X - 2; X <= currentBlock.X + 2; X++)
+	for (s16 Y = currentBlock.Y - 2; Y <= currentBlock.Y + 2; Y++)
+	for (s16 Z = currentBlock.Z - 2; Z <= currentBlock.Z + 2; Z++)
+		addUpdateMeshTask(v3s16(X, Y, Z), false, true);
 }
 
 ClientEvent *Client::getClientEvent()
