@@ -3,7 +3,7 @@ local modpath = core.get_modpath(modname)
 
 -- Test framework
 local df_test = {}
-local results = { passed = 0, failed = 0, errors = {} }
+local results = { passed = 0, failed = 0, skipped = 0, errors = {} }
 
 function df_test.assert(cond, msg)
 	if not cond then
@@ -14,13 +14,6 @@ end
 function df_test.assert_eq(a, b, msg)
 	if a ~= b then
 		error(string.format("%s: expected %s, got %s", msg or "assert_eq", dump(b), dump(a)), 2)
-	end
-end
-
-function df_test.assert_near(a, b, epsilon, msg)
-	epsilon = epsilon or 0.001
-	if math.abs(a - b) > epsilon then
-		error(string.format("%s: expected %g, got %g", msg or "assert_near", b, a), 2)
 	end
 end
 
@@ -36,10 +29,22 @@ function df_test.run(name, fn)
 	end
 end
 
+-- Mark a test as known failure (unported DF feature)
+function df_test.known_failure(name, fn)
+	local ok, err = pcall(fn, df_test)
+	if ok then
+		results.passed = results.passed + 1
+		core.log("info", "[DF_TEST] PASS (unexpected): " .. name)
+	else
+		results.skipped = results.skipped + 1
+		core.log("info", "[DF_TEST] SKIP (not ported): " .. name .. " — " .. tostring(err))
+	end
+end
+
 function df_test.report()
 	core.log("action", "============================================")
 	core.log("action", "[DF_TEST] Results: " .. results.passed .. " passed, "
-		.. results.failed .. " failed")
+		.. results.failed .. " failed, " .. results.skipped .. " skipped (not ported)")
 	for _, e in ipairs(results.errors) do
 		core.log("action", "[DF_TEST]   FAIL " .. e.name .. ": " .. tostring(e.err))
 	end
@@ -49,7 +54,6 @@ end
 -- Mod channel for server communication
 local mod_channel
 
--- Register handler for incoming mod channel messages
 core.register_on_modchannel_message(function(channel_name, sender, message)
 	if channel_name ~= "df_test" then
 		return
@@ -72,19 +76,11 @@ function df_test.send_to_server(msg)
 	end
 end
 
--- Wait helper: yields until a condition is met or timeout
-function df_test.wait_until(cond_fn, timeout, interval)
-	timeout = timeout or 5.0
-	interval = interval or 0.1
-	local elapsed = 0
-	while elapsed < timeout do
-		if cond_fn() then
-			return true
-		end
-		core.get_internal_time() -- advance time
-		elapsed = elapsed + interval
-	end
-	return cond_fn()
+-- Deferred tests (run after localplayer is available)
+local deferred_tests = {}
+
+function df_test.defer(name, fn)
+	table.insert(deferred_tests, { name = name, fn = fn })
 end
 
 -- Load test modules
@@ -94,27 +90,37 @@ dofile(modpath .. "/test_clientobject.lua")
 dofile(modpath .. "/test_inventory.lua")
 dofile(modpath .. "/test_callbacks.lua")
 
--- Run tests when mods are loaded
+-- Run API/registration tests at mod load time
 core.register_on_mods_loaded(function()
 	local t0 = core.get_us_time()
 	core.log("action", "[DF_TEST] Starting DragonfireClient integration tests")
 
-	-- API registration tests
-	test_api_registration(df_test)
-
-	-- Cheat tests
 	test_cheat_settings(df_test)
-
-	-- ClientObjectRef tests
+	test_callback_registration(df_test)
+	test_api_registration_no_player(df_test)
+	test_inventory_action_no_player(df_test)
 	test_clientobject_ref(df_test)
-
-	-- InventoryAction tests
 	test_inventory_action(df_test)
 
-	-- Callback registration tests
-	test_callback_registration(df_test)
+	-- Defer localplayer-dependent tests (poll until localplayer is ready)
+	if #deferred_tests > 0 then
+		core.log("action", "[DF_TEST] " .. #deferred_tests .. " tests deferred until localplayer is ready")
+
+		local function check_and_run()
+			if core.localplayer then
+				for _, t in ipairs(deferred_tests) do
+					df_test.run(t.name, t.fn)
+				end
+				core.log("action", "[DF_TEST] Deferred tests complete")
+				df_test.report()
+			else
+				core.after(0.5, check_and_run)
+			end
+		end
+		core.after(1, check_and_run)
+	end
 
 	local elapsed = (core.get_us_time() - t0) / 1000000
-	core.log("action", "[DF_TEST] Tests completed in " .. string.format("%.2f", elapsed) .. "s")
+	core.log("action", "[DF_TEST] Immediate tests completed in " .. string.format("%.2f", elapsed) .. "s")
 	df_test.report()
 end)

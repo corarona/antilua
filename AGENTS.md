@@ -31,10 +31,22 @@ Prefer `-j3` on 4-core machines (keep one core free).
 # C++ unit tests (requires -DBUILD_UNITTESTS=TRUE, which is the default)
 ./bin/luanti --run-unittests
 
-# Lua tests (see .github/workflows/lua.yml)
+# Integration tests (DragonfireClient client-side features)
+# Requires xvfb-run or Xvfb for headless display.
+# Lua-only changes don't need a rebuild — just re-run.
+./util/ci/run_df_tests.sh
+
+# Lua lint (see .github/workflows/lua.yml)
 ```
 
-Integration tests require Postgres (`MINETEST_POSTGRESQL_CONNECT_STRING` env).
+The integration test mod lives at `clientmods/df_test/` and runs automatically
+on the devtest game. A server coordinator mod is at
+`games/devtest/mods/df_test_server/`. Tests report `[DF_TEST] PASS/FAIL/SKIP`.
+Features not yet ported from DF are marked `SKIP (not ported)` — see
+`DF_MISSING.md` for details.
+
+Tests that depend on `core.localplayer` (ClientObjectRef, inventory location)
+are deferred until the player joins the world, so results appear in two batches.
 
 ## Code conventions
 

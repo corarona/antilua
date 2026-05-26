@@ -1,7 +1,7 @@
 -- Tests for DragonfireClient InventoryAction API
 
-function test_inventory_action(T)
-	-- Verify InventoryAction type exists
+function test_inventory_action_no_player(T)
+	-- Verify InventoryAction type exists (constructor only)
 	T.run("InventoryAction constructor works", function()
 		local ok, action = pcall(InventoryAction, "move")
 		T.assert(ok and action ~= nil, "InventoryAction('move') should succeed")
@@ -32,17 +32,19 @@ function test_inventory_action(T)
 		local ok2 = pcall(action.set_count, action, 1)
 		T.assert(ok2, "action:set_count(1) should not crash")
 	end)
+end
 
-	-- Test core.get_inventory
-	T.run("core.get_inventory works for player", function()
+function test_inventory_action(T)
+	-- Deferred tests (need localplayer)
+	T.defer("core.get_inventory works for player", function()
 		local location = "player:" .. (core.localplayer:get_name() or "singleplayer")
 		local inv = core.get_inventory(location)
-		-- May return nil if location is wrong, but should not crash
+		-- May return nil, but shouldn't crash
 		T.assert(inv == nil or type(inv) == "table",
 			"get_inventory should return nil or table")
 	end)
 
-	T.run("core.get_inventory works for main list", function()
+	T.defer("core.get_inventory has main list", function()
 		local location = "player:" .. (core.localplayer:get_name() or "singleplayer")
 		local inv = core.get_inventory(location)
 		if type(inv) == "table" then
