@@ -132,3 +132,16 @@ void ScriptApiCheats::toggle_cheat(ScriptApiCheatsCheat *cheat)
 
 	cheat->toggle(L, error_handler);
 }
+
+void ScriptApiCheats::show_cheat_settings(const std::string &setting)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "show_cheat_settings_form");
+	if (lua_isfunction(L, -1)) {
+		lua_pushstring(L, setting.c_str());
+		lua_pcall(L, 1, 0, 0);
+	}
+	lua_pop(L, 2);
+}

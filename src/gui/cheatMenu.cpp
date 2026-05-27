@@ -262,8 +262,13 @@ void CheatMenu::selectDown()
 
 void CheatMenu::selectRight()
 {
-	if (m_cheat_layer)
+	if (m_cheat_layer) {
+		CHEAT_MENU_GET_SCRIPTPTR
+		ScriptApiCheatsCheat *cheat = script->m_cheat_categories[m_selected_category]
+				->m_cheats[m_selected_cheat];
+		script->show_cheat_settings(cheat->m_setting);
 		return;
+	}
 	m_cheat_layer = true;
 	m_selected_cheat = 0;
 }

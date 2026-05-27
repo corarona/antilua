@@ -29,11 +29,11 @@ public:
 	ScriptApiCheatsCheat(const std::string &name, const std::string &setting);
 	ScriptApiCheatsCheat(const std::string &name, const int &function);
 	std::string m_name;
+	std::string m_setting;
 	bool is_enabled();
 	void toggle(lua_State *L, int error_handler);
 
 private:
-	std::string m_setting;
 	int m_function_ref;
 };
 
@@ -53,6 +53,7 @@ public:
 	virtual ~ScriptApiCheats();
 	void init_cheats();
 	void toggle_cheat(ScriptApiCheatsCheat *cheat);
+	void show_cheat_settings(const std::string &setting);
 	bool m_cheats_loaded = false;
 	std::vector<ScriptApiCheatsCategory *> m_cheat_categories;
 };
