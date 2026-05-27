@@ -299,9 +299,11 @@ corresponding setting.
 | | BrightNight | `no_night` | Always daytime |
 | | Coords | `coords` | Position HUD |
 | | CheatHUD | `cheat_hud` | Active cheats overlay |
-| | EntityESP | `enable_entity_esp` | Entity bounding boxes |
+| | EntityHitboxes | `enable_entity_esp` | Entity wireframe hitboxes |
+| | EntityWallhack | `enable_entity_wallhack` | Through-walls entity ESP with occlusion tinting |
 | | EntityTracers | `enable_entity_tracers` | Entity tracer lines |
-| | PlayerESP | `enable_player_esp` | Player bounding boxes |
+| | PlayerHitboxes | `enable_player_esp` | Player wireframe hitboxes |
+| | PlayerWallhack | `enable_player_wallhack` | Through-walls player ESP with occlusion tinting |
 | | PlayerTracers | `enable_player_tracers` | Player tracer lines |
 | | NodeESP | `enable_node_esp` | *planned* |
 | | NodeTracers | `enable_node_tracers` | *planned* |
@@ -377,10 +379,12 @@ These settings exist only in DragonfireClient. Set via `core.settings:set()`,
 | `prevent_natural_damage` | `true` | No environmental damage |
 | `reach` | `true` | Extended reach |
 | `enable_node_esp` | `false` | Node ESP |
-| `enable_entity_esp` | `false` | Entity bounding boxes |
+| `enable_entity_esp` | `false` | Entity wireframe hitboxes |
 | `enable_entity_tracers` | `false` | Entity tracer lines |
-| `enable_player_esp` | `false` | Player bounding boxes |
+| `enable_entity_wallhack` | `false` | Through-walls entity ESP |
+| `enable_player_esp` | `false` | Player wireframe hitboxes |
 | `enable_player_tracers` | `false` | Player tracer lines |
+| `enable_player_wallhack` | `false` | Through-walls player ESP |
 | `node_esp_nodes` | `""` | Node ESP filter list |
 | `entity_esp_color` | `(255,255,255)` | ESP line color |
 | `player_esp_color` | `(255,255,255)` | Player ESP color |
@@ -430,11 +434,15 @@ pipeline step in `DrawTracersAndESP`.
 
 ### Settings
 
-- `enable_entity_esp` — Draws bounding boxes around all entities
+- `enable_entity_esp` — Draws wireframe hitboxes around all entities
 - `enable_entity_tracers` — Draws lines from camera to each entity
-- `enable_player_esp` — Draws bounding boxes around other players
+- `enable_entity_wallhack` — Through-walls entity boxes: visible entities in green, occluded in red
+- `enable_player_esp` — Draws wireframe hitboxes around other players
 - `enable_player_tracers` — Draws lines from camera to each player
+- `enable_player_wallhack` — Through-walls player boxes: visible in green, occluded in red
 - `entity_esp_color` / `player_esp_color` — RGB triple for line color
+- `entity_wallhack_visible_color` / `entity_wallhack_occluded_color` — RGB for wallhack tint states
+- `player_wallhack_visible_color` / `player_wallhack_occluded_color` — RGB for wallhack tint states
 
 ### Implementation Notes
 

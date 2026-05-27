@@ -659,6 +659,8 @@ void set_default_settings()
 	settings->setDefault("enable_entity_tracers", "false");
 	settings->setDefault("enable_player_esp", "false");
 	settings->setDefault("enable_player_tracers", "false");
+	settings->setDefault("enable_entity_wallhack", "false");
+	settings->setDefault("enable_player_wallhack", "false");
 	settings->setDefault("entity_esp_color", "(255, 255, 255)");
 	settings->setDefault("player_esp_color", "(255, 255, 255)");
 	settings->setDefault("scaffold", "false");

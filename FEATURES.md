@@ -48,9 +48,11 @@ them unless `priv_bypass` is active.
 | BrightNight | `no_night` | 🔄 |
 | Coords | `coords` | 🔄 |
 | CheatHUD | `cheat_hud` | ✅ |
-| EntityESP | `enable_entity_esp` | ✅ |
+| EntityHitboxes | `enable_entity_esp` | ✅ |
+| EntityWallhack | `enable_entity_wallhack` | ✅ |
 | EntityTracers | `enable_entity_tracers` | ✅ |
-| PlayerESP | `enable_player_esp` | ✅ |
+| PlayerHitboxes | `enable_player_esp` | ✅ |
+| PlayerWallhack | `enable_player_wallhack` | ✅ |
 | PlayerTracers | `enable_player_tracers` | ✅ |
 | NodeESP | `enable_node_esp` | 🔄 |
 | NodeTracers | `enable_node_tracers` | 🔄 |

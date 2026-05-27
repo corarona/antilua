@@ -7,6 +7,9 @@
 #include "core.h"
 #include "pipeline.h"
 
+class ClientEnvironment;
+class GenericCAO;
+
 /**
  * Implements a pipeline step that renders the 3D scene
  */
@@ -71,6 +74,9 @@ public:
 
 private:
 	video::SColor parseColor(const std::string &setting, u8 alpha = 255);
+	bool isOccluded(ClientEnvironment &env, v3f from, v3f to);
+	void drawWallhackBox(PipelineContext &context, GenericCAO *cao, const v3f &entity_pos,
+			const v3f &camera_pos, bool is_player);
 	void drawEntityESP(PipelineContext &context, const v3f &camera_pos);
 	void drawPlayerESP(PipelineContext &context, const v3f &camera_pos);
 };

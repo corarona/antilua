@@ -17,6 +17,9 @@
 #include "util/numeric.h"
 #include <ICameraSceneNode.h>
 #include <IGUIEnvironment.h>
+#include "map.h"
+#include "nodedef.h"
+#include <vector>
 
 /// Draw3D pipeline step
 void Draw3D::run(PipelineContext &context)
@@ -45,10 +48,10 @@ void DrawTracersAndESP::run(PipelineContext &context)
 
 	v3f camera_pos = context.client->getCamera()->getPosition();
 
-	if (g_settings->getBool("enable_entity_esp") || g_settings->getBool("enable_entity_tracers"))
+	if (g_settings->getBool("enable_entity_esp") || g_settings->getBool("enable_entity_tracers") || g_settings->getBool("enable_entity_wallhack"))
 		drawEntityESP(context, camera_pos);
 
-	if (g_settings->getBool("enable_player_esp") || g_settings->getBool("enable_player_tracers"))
+	if (g_settings->getBool("enable_player_esp") || g_settings->getBool("enable_player_tracers") || g_settings->getBool("enable_player_wallhack"))
 		drawPlayerESP(context, camera_pos);
 }
 
@@ -61,6 +64,66 @@ video::SColor DrawTracersAndESP::parseColor(const std::string &setting, u8 alpha
 			rangelim((int)color->Y, 0, 255),
 			rangelim((int)color->Z, 0, 255));
 	return video::SColor(alpha, 255, 255, 255);
+}
+
+bool DrawTracersAndESP::isOccluded(ClientEnvironment &env, v3f from, v3f to)
+{
+	Map &map = env.getMap();
+	v3f dir = to - from;
+	float dist = dir.getLength();
+	if (dist < 1.0f)
+		return false;
+	dir /= dist;
+	int steps = (int)(dist / BS);
+	for (int i = 1; i < steps; i++) {
+		v3f check = from + dir * (float)i * BS;
+		v3s16 p = floatToInt(check, BS);
+		bool pos_ok;
+		MapNode n = map.getNode(p, &pos_ok);
+		if (pos_ok) {
+			const NodeDefManager *ndef = env.getGameDef()->ndef();
+			if (ndef && ndef->get(n).walkable && ndef->get(n).name != "ignore" &&
+					ndef->get(n).name != "air")
+				return true;
+		}
+	}
+	return false;
+}
+
+void DrawTracersAndESP::drawWallhackBox(PipelineContext &context, GenericCAO *cao, const v3f &entity_pos,
+		const v3f &camera_pos, bool is_player)
+{
+	ClientEnvironment &env = context.client->getEnv();
+
+	v3s16 offset_s16 = env.getCameraOffset();
+	v3f offset_f = intToFloat(offset_s16, BS);
+	v3f world_entity_pos = entity_pos + offset_f;
+	v3f world_camera_pos = camera_pos + offset_f;
+
+	bool occluded = isOccluded(env, world_camera_pos, world_entity_pos);
+
+	video::IVideoDriver *driver = context.device->getVideoDriver();
+
+	// For occluded entities: render through walls by calling the scene node's
+	// own render() with temporarily overridden depth settings.
+	// This preserves animations, bone transforms, and hardware skinning.
+	if (occluded) {
+		scene::ISceneNode *node = cao->getSceneNode();
+		if (node) {
+			u32 mat_count = node->getMaterialCount();
+			std::vector<video::SMaterial> saved_mats(mat_count);
+			for (u32 i = 0; i < mat_count; i++) {
+				saved_mats[i] = node->getMaterial(i);
+				video::SMaterial &mat = node->getMaterial(i);
+				mat.ZBuffer = video::ECFN_ALWAYS;
+				mat.ZWriteEnable = video::EZW_OFF;
+			}
+			node->render();
+			for (u32 i = 0; i < mat_count; i++)
+				node->getMaterial(i) = saved_mats[i];
+		}
+	}
+
 }
 
 void DrawTracersAndESP::drawEntityESP(PipelineContext &context, const v3f &camera_pos)
@@ -79,6 +142,7 @@ void DrawTracersAndESP::drawEntityESP(PipelineContext &context, const v3f &camer
 	video::SColor tracer_color = parseColor("entity_esp_color", 200);
 	bool show_esp = g_settings->getBool("enable_entity_esp");
 	bool show_tracers = g_settings->getBool("enable_entity_tracers");
+	bool show_wallhack = g_settings->getBool("enable_entity_wallhack");
 
 	v3f scene_camera_pos = context.client->getCamera()->getCameraNode()->getAbsolutePosition();
 	v3f look_dir = context.client->getCamera()->getDirection();
@@ -90,12 +154,18 @@ void DrawTracersAndESP::drawEntityESP(PipelineContext &context, const v3f &camer
 			continue;
 
 		v3f pos = cao->getPosition() - offset_f;
-		aabb3f box(v3f(0,0,0), v3f(0,0,0));
-		if (show_esp && cao->getSelectionBox(&box)) {
-			box.MinEdge += pos;
-			box.MaxEdge += pos;
-			driver->draw3DBox(box, esp_color);
+
+		if (show_wallhack) {
+			drawWallhackBox(context, cao, pos, camera_pos, false);
+		} else if (show_esp) {
+			aabb3f box(v3f(0,0,0), v3f(0,0,0));
+			if (cao->getSelectionBox(&box)) {
+				box.MinEdge += pos;
+				box.MaxEdge += pos;
+				driver->draw3DBox(box, esp_color);
+			}
 		}
+
 		if (show_tracers)
 			driver->draw3DLine(tracer_origin, pos, tracer_color);
 	}
@@ -117,6 +187,7 @@ void DrawTracersAndESP::drawPlayerESP(PipelineContext &context, const v3f &camer
 	video::SColor tracer_color = parseColor("player_esp_color", 200);
 	bool show_esp = g_settings->getBool("enable_player_esp");
 	bool show_tracers = g_settings->getBool("enable_player_tracers");
+	bool show_wallhack = g_settings->getBool("enable_player_wallhack");
 
 	v3f scene_camera_pos = context.client->getCamera()->getCameraNode()->getAbsolutePosition();
 	v3f look_dir = context.client->getCamera()->getDirection();
@@ -128,12 +199,18 @@ void DrawTracersAndESP::drawPlayerESP(PipelineContext &context, const v3f &camer
 			continue;
 
 		v3f pos = cao->getPosition() - offset_f;
-		aabb3f box(v3f(0,0,0), v3f(0,0,0));
-		if (show_esp && cao->getSelectionBox(&box)) {
-			box.MinEdge += pos;
-			box.MaxEdge += pos;
-			driver->draw3DBox(box, esp_color);
+
+		if (show_wallhack) {
+			drawWallhackBox(context, cao, pos, camera_pos, true);
+		} else if (show_esp) {
+			aabb3f box(v3f(0,0,0), v3f(0,0,0));
+			if (cao->getSelectionBox(&box)) {
+				box.MinEdge += pos;
+				box.MaxEdge += pos;
+				driver->draw3DBox(box, esp_color);
+			}
 		}
+
 		if (show_tracers)
 			driver->draw3DLine(tracer_origin, pos, tracer_color);
 	}
