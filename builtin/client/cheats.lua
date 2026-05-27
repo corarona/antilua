@@ -55,7 +55,29 @@ core.cheats = {
 	},
 }
 
-function core.register_cheat(cheatname, category, func)
-	core.cheats[category] = core.cheats[category] or {}
-	core.cheats[category][cheatname] = func
+function core.register_cheat(name, ...)
+	local def
+	if type(name) == "table" then
+		def = name
+	elseif type(select(1, ...)) == "table" then
+		def = select(1, ...)
+		def.name = name
+	else
+		local category, setting_or_func = ...
+		def = { name = name, category = category }
+		if type(setting_or_func) == "string" then
+			def.setting = setting_or_func
+		else
+			def.func = setting_or_func
+		end
+	end
+
+	if def.setting and core.settings:get(def.setting) == nil then
+		core.settings:set(def.setting, "false")
+	end
+
+	core.cheats[def.category] = core.cheats[def.category] or {}
+	core.cheats[def.category][def.name] = def.setting or def.func
+
+	return def
 end

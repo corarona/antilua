@@ -10,10 +10,6 @@ ws.hotbar_slot = 8
 local nextact = {}
 local ghwason = {}
 
-if not core.register_cheat then
-	function core.register_cheat() end
-end
-
 if not core.register_list_command then
 	function core.register_list_command() end
 end
@@ -69,12 +65,10 @@ function ws.register_globalhacktemplate(name, ...)
 	if type(name) == "string" and type(select(1, ...)) == "table" then
 		-- New style: ws.rg("name", def_table)
 		def = select(1, ...)
-		if minetest.settings:get(def.setting) == nil then
-			minetest.settings:set(def.setting, "false")
-		end
+		def.name = name
 		setmetatable(def, { __index = cheat_defaults })
 		ws.register_globalhack(ws.globalhacktemplate(def))
-		minetest.register_cheat(name, def.category, def.setting)
+		core.register_cheat(def.name, def)
 	elseif type(name) == "string" then
 		-- Old style: ws.rg("name", "Category", "setting", func, funcstart, funcstop, daughters, delay)
 		local category, setting, func, funcstart, funcstop, daughters, delay = ...
