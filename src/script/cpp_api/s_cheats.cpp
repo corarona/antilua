@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cpp_api/s_base.h"
 #include "cpp_api/s_internal.h"
 #include "settings.h"
+#include <algorithm>
 
 ScriptApiCheatsCheat::ScriptApiCheatsCheat(
 		const std::string &name, const std::string &setting) :
@@ -103,11 +104,21 @@ void ScriptApiCheats::init_cheats()
 			ScriptApiCheatsCategory *category =
 					new ScriptApiCheatsCategory(lua_tostring(L, -2));
 			category->read_cheats(L);
+			std::sort(category->m_cheats.begin(), category->m_cheats.end(),
+					[](const ScriptApiCheatsCheat *a, const ScriptApiCheatsCheat *b) {
+						return a->m_name < b->m_name;
+					});
 			m_cheat_categories.push_back(category);
 		}
 		lua_pop(L, 1);
 	}
 	lua_pop(L, 2);
+
+	std::sort(m_cheat_categories.begin(), m_cheat_categories.end(),
+			[](const ScriptApiCheatsCategory *a, const ScriptApiCheatsCategory *b) {
+				return a->m_name < b->m_name;
+			});
+
 	m_cheats_loaded = true;
 }
 

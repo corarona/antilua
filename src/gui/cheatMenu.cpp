@@ -121,27 +121,35 @@ void CheatMenu::draw(video::IVideoDriver *driver, bool show_debug)
 {
 	CHEAT_MENU_GET_SCRIPTPTR
 
-	// Place the cheat menu below the recent chat area
-	u32 recent_chat_lines = g_settings->getU16("recent_chat_messages");
-	u32 font_height = g_fontengine->getTextHeight(FM_Unspecified);
-	m_y_offset = 5 + font_height * (recent_chat_lines + 15);
+	// Calculate total height needed
+	u32 total_height = m_gap + m_head_height; // header
+	for (auto &category : script->m_cheat_categories) {
+		total_height += m_entry_height + m_gap;
+	}
+	if (m_cheat_layer) {
+		size_t cheat_count = script->m_cheat_categories[m_selected_category]->m_cheats.size();
+		if (cheat_count > 0)
+			total_height += (m_entry_height + m_gap) * cheat_count;
+	}
+
+	// Position from bottom-left
+	core::dimension2d<u32> screensize = driver->getScreenSize();
+	m_y_offset = screensize.Height - total_height - m_gap;
 
 	if (!show_debug)
 		drawEntry(driver, "Dragonfireclient", 0, false, false,
 				CHEAT_MENU_ENTRY_TYPE_HEAD);
 	int category_count = 0;
-	for (auto category = script->m_cheat_categories.begin();
-			category != script->m_cheat_categories.end(); category++) {
+	for (auto &category : script->m_cheat_categories) {
 		bool is_selected = category_count == m_selected_category;
-		drawEntry(driver, (*category)->m_name, category_count, is_selected, false,
+		drawEntry(driver, category->m_name, category_count, is_selected, false,
 				CHEAT_MENU_ENTRY_TYPE_CATEGORY);
 		if (is_selected && m_cheat_layer) {
 			int cheat_count = 0;
-			for (auto cheat = (*category)->m_cheats.begin();
-					cheat != (*category)->m_cheats.end(); cheat++) {
-				drawEntry(driver, (*cheat)->m_name, cheat_count,
+			for (auto &cheat : category->m_cheats) {
+				drawEntry(driver, cheat->m_name, cheat_count,
 						cheat_count == m_selected_cheat,
-						(*cheat)->is_enabled());
+						cheat->is_enabled());
 				cheat_count++;
 			}
 		}
