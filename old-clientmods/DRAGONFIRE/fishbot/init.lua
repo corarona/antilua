@@ -1,9 +1,10 @@
 local fb_state=0
 local fb_obpos=vector.new(0,0,0)
 
-local function find_closest_water_source()
+local function find_closest_water_source(self)
 	local lp=ws.dircoord(0,0,0)
-	local nds=minetest.find_nodes_near(lp,10,{"mcl_core:water_source"})
+	local range = tonumber(core.settings:get(self.setting .. ".water_range")) or 10
+	local nds=minetest.find_nodes_near(lp, range, {"mcl_core:water_source"})
 	local odst=100
 	local rt=vector.new()
 	for k,v in ipairs(nds) do
@@ -13,8 +14,9 @@ local function find_closest_water_source()
 	return rt
 end
 
-local function get_bobber_pos()
-	local obs=minetest.get_objects_inside_radius(ws.dircoord(0,0,0),10)
+local function get_bobber_pos(self)
+	local range = tonumber(core.settings:get(self.setting .. ".bobber_range")) or 10
+	local obs=minetest.get_objects_inside_radius(ws.dircoord(0,0,0), range)
 	for k,v in ipairs(obs) do
 		local txt = (v.get_properties and v:get_properties().textures[1]) or (v.get_item_textures and v:get_item_textures())  or ""
 		if txt:find("bobber") then
@@ -24,40 +26,51 @@ local function get_bobber_pos()
 	return false
 end
 
-ws.rg('FishBot','Bots','fishbot',function()
-	if not ws.switch_to_item('mcl_fishing:fishing_rod_enchanted') then
-		ws.switch_to_item('mcl_fishing:fishing_rod')
-	end
-	local bpos=get_bobber_pos()
-	if not bpos then fb_state=0 end
-	if fb_state == 0 then --init
-		minetest.interact("activate",{type="nothing"})
-		fb_state=1
-	elseif fb_state == 1 then --waiting for bobber to settle
-		if vector.distance(bpos,fb_obpos) == 0 then
-			fb_state=2
+ws.rg('FishBot', {
+	category = 'Bots',
+	setting = 'fishbot',
+	on_step = function(self, dtime)
+		if not ws.switch_to_item('mcl_fishing:fishing_rod_enchanted') then
+			ws.switch_to_item('mcl_fishing:fishing_rod')
 		end
-	elseif fb_state == 2 then --waiting for bobber to move
-		local nd=minetest.get_node_or_nil(vector.add(bpos,vector.new(0,-0.5,0)))
-		if vector.distance(bpos,fb_obpos) > 0 then
-			minetest.after('0.1',function()
-				minetest.interact("activate",{type="nothing"})
-			end)
-			fb_state=3
+		local bpos=get_bobber_pos(self)
+		if not bpos then fb_state=0 end
+		if fb_state == 0 then
+			minetest.interact("activate",{type="nothing"})
+			fb_state=1
+		elseif fb_state == 1 then
+			if vector.distance(bpos,fb_obpos) == 0 then
+				fb_state=2
+			end
+		elseif fb_state == 2 then
+			local nd=minetest.get_node_or_nil(vector.add(bpos,vector.new(0,-0.5,0)))
+			if vector.distance(bpos,fb_obpos) > 0 then
+				minetest.after('0.1',function()
+					minetest.interact("activate",{type="nothing"})
+				end)
+				fb_state=3
+			end
+			if nd.name ~= "mcl_core:water_source" then
+				fb_state=0
+			end
+		elseif fb_state == 3 then
+			if not get_bobber_pos(self) then fb_state=0 end
 		end
-		if nd.name ~= "mcl_core:water_source" then
-			fb_state=0
+		if bpos then fb_obpos=bpos end
+	end,
+	on_start = function(self)
+		if ws.game ~= "mineclone" then ws.dcm("Fishbot only works on mineclone/ia") end
+		if not ws.switch_to_item('mcl_fishing:fishing_rod_enchanted') and not ws.switch_to_item('mcl_fishing:fishing_rod') then
+			ws.dcm("Put a fishing rod in the hotbar")
+			return true
 		end
-	elseif fb_state == 3 then --waiting til bobber is gone
-		if not get_bobber_pos() then fb_state=0 end
-	end
-	if bpos then fb_obpos=bpos end
-end,function()
-	if ws.game ~= "mineclone" then ws.dcm("Fishbot only works on mineclone/ia") end
-	if not ws.switch_to_item('mcl_fishing:fishing_rod_enchanted') and not ws.switch_to_item('mcl_fishing:fishing_rod') then
-		ws.dcm("Put a fishing rod in the hotbar")
-		return true
-	end
-end, function()
-	fb_state=0
-end,{'autodump','autoeject','lockview'})
+	end,
+	on_stop = function(self)
+		fb_state=0
+	end,
+	daughters = {'autodump','autoeject','lockview'},
+	cheat_settings = {
+		water_range = { type = "number", default = 10, min = 1, max = 50 },
+		bobber_range = { type = "number", default = 10, min = 1, max = 50 },
+	},
+})
