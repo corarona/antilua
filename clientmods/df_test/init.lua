@@ -111,6 +111,7 @@ core.register_on_mods_loaded(function()
 	test_dragonfire_walls(df_test)
 	test_dragonfire_autoevade(df_test)
 	test_dragonfire_extracted_features(df_test)
+	test_ws_rg_new_api(df_test)
 
 	-- Defer localplayer-dependent tests (poll until localplayer is ready)
 	if #deferred_tests > 0 then

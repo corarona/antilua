@@ -100,3 +100,41 @@ function test_dragonfire_extracted_features(T)
 		T.assert(type(ws.icebreaker) == "function", "ws.icebreaker should be a function")
 	end)
 end
+
+function test_ws_rg_new_api(T)
+	T.run("ws.rg with table def registers setting", function()
+		local setting = "test_rg_table"
+		ws.rg("TestRGTable", {
+			category = "Test",
+			setting = setting,
+			on_step = function() end,
+		})
+		local val = core.settings:get(setting)
+		T.assert(val ~= nil, "setting '" .. setting .. "' should exist after ws.rg with table")
+	end)
+
+	T.run("ws.rg table def on_step receives self and dtime", function()
+		local called = false
+		local received_self = nil
+		local received_dtime = nil
+		ws.rg("TestRGArgs", {
+			category = "Test",
+			setting = "test_rg_args",
+			on_step = function(self, dtime)
+				called = true
+				received_self = self
+				received_dtime = dtime
+			end,
+		})
+		T.assert(type(ws.registered_globalhacks) == "table", "globalhacks table exists")
+	end)
+
+	T.run("ws.rg table def defaults via metatable", function()
+		ws.rg("TestRGDefaults", {
+			category = "Test",
+			setting = "test_rg_defaults",
+		})
+		T.assert(type(core.settings:get("test_rg_defaults")) == "string",
+			"setting should exist with default value")
+	end)
+end

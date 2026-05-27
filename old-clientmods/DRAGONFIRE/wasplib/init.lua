@@ -26,30 +26,36 @@ dofile(minetest.get_modpath("wasplib") .. "/world.lua")
 dofile(minetest.get_modpath("wasplib") .. "/combat.lua")
 dofile(minetest.get_modpath("wasplib") .. "/waypoints.lua")
 
-function ws.globalhacktemplate(setting, func, funcstart, funcstop, daughters, delay)
-	funcstart = funcstart or function() end
-	funcstop = funcstop or function() end
-	delay = delay or 0.2
+local cheat_defaults = {
+	on_step   = function() end,
+	on_start  = function() end,
+	on_stop   = function() end,
+	daughters = {},
+	delay     = 0.2,
+}
+
+function ws.globalhacktemplate(def)
+	local setting = def.setting
 	return function(dtime)
 		if not minetest.localplayer then return end
 		if minetest.settings:get_bool(setting) then
 			if tps_client and tps_client.ping and tps_client.ping > 1000 then return end
 			if nextact[setting] and nextact[setting] > os.clock() then return end
-			nextact[setting] = os.clock() + delay
+			nextact[setting] = os.clock() + (def.delay or 0.2)
 			if not ghwason[setting] then
-				if not funcstart() then
-					ws.set_bool_bulk(daughters, true)
+				if not def.on_start(def) then
+					ws.set_bool_bulk(def.daughters, true)
 					ghwason[setting] = true
 				else
 					minetest.settings:set_bool(setting, false)
 				end
 			else
-				func(dtime)
+				def.on_step(def, dtime)
 			end
 		elseif ghwason[setting] then
 			ghwason[setting] = false
-			ws.set_bool_bulk(daughters, false)
-			funcstop()
+			ws.set_bool_bulk(def.daughters, false)
+			def.on_stop(def)
 		end
 	end
 end
@@ -58,12 +64,31 @@ function ws.register_globalhack(func)
 	table.insert(ws.registered_globalhacks, func)
 end
 
-function ws.register_globalhacktemplate(name, category, setting, func, funcstart, funcstop, daughters, delay)
-	ws.register_globalhack(ws.globalhacktemplate(setting, func, funcstart, funcstop, daughters, delay))
-	if minetest.settings:get(setting) == nil then
-		minetest.settings:set(setting, "false")
+function ws.register_globalhacktemplate(name, ...)
+	local def
+	if type(name) == "string" and type(select(1, ...)) == "table" then
+		-- New style: ws.rg("name", def_table)
+		def = select(1, ...)
+		if minetest.settings:get(def.setting) == nil then
+			minetest.settings:set(def.setting, "false")
+		end
+		setmetatable(def, { __index = cheat_defaults })
+		ws.register_globalhack(ws.globalhacktemplate(def))
+		minetest.register_cheat(name, def.category, def.setting)
+	elseif type(name) == "string" then
+		-- Old style: ws.rg("name", "Category", "setting", func, funcstart, funcstop, daughters, delay)
+		local category, setting, func, funcstart, funcstop, daughters, delay = ...
+		def = {
+			category  = category,
+			setting   = setting,
+			on_step   = func,
+			on_start  = funcstart,
+			on_stop   = funcstop,
+			daughters = daughters,
+			delay     = delay,
+		}
+		ws.register_globalhacktemplate(name, def)
 	end
-	minetest.register_cheat(name, category, setting)
 end
 
 ws.rg = ws.register_globalhacktemplate
