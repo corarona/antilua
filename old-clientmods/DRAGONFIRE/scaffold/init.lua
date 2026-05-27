@@ -29,8 +29,8 @@ function scaffold.template(setting, func, offset, funcstop )
 
 	return function()
 		if minetest.localplayer and minetest.settings:get_bool(setting) then
+			local tgt = vector.add(minetest.localplayer:get_pos(), offset)
 			if scaffold.constrain1 and not inside_constraints(tgt) then return end
-			local tgt=vector.add(minetest.localplayer:get_pos(),offset)
 			func(tgt)
 		end
 	end
@@ -40,34 +40,7 @@ function scaffold.register_template_scaffold(name, setting, func, offset, funcst
 	ws.rg(name,'Scaffold',setting,scaffold.template(setting, func, offset),funcstop )
 end
 
-local function between(x, y, z) return y <= x and x <= z end -- x is between y and z (inclusive)
-
-function scaffold.in_cube(tpos,wpos1,wpos2)
-	local xmax=wpos2.x
-	local xmin=wpos1.x
-
-	local ymax=wpos2.y
-	local ymin=wpos1.y
-
-	local zmax=wpos2.z
-	local zmin=wpos1.z
-	if wpos1.x > wpos2.x then
-		xmax=wpos1.x
-		xmin=wpos2.x
-	end
-	if wpos1.y > wpos2.y then
-		ymax=wpos1.y
-		ymin=wpos2.y
-	end
-	if wpos1.z > wpos2.z then
-		zmax=wpos1.z
-		zmin=wpos2.z
-	end
-	if between(tpos.x,xmin,xmax) and between(tpos.y,ymin,ymax) and between(tpos.z,zmin,zmax) then
-		return true
-	end
-	return false
-end
+scaffold.in_cube = ws.in_cube
 
 local function set_hwp(name, pos)
 	hwps[#hwps + 1] = ws.display_wp(pos, name)
@@ -121,49 +94,14 @@ minetest.register_chatcommand("sc_reset", { func = scaffold.reset })
 
 
 
-function scaffold.can_place_at(pos)
-	local node = minetest.get_node_or_nil(pos)
-	return (node and (node.name == "air" or node.name=="mcl_core:water_source" or node.name=="mcl_core:water_flowing" or node.name=="mcl_core:lava_source" or node.name=="mcl_core:lava_flowing" or minetest.get_node_def(node.name).buildable_to))
-end
-
--- should check if wield is placeable
--- minetest.get_node(wielded:get_name()) ~= nil should probably work
--- otherwise it equips armor and eats food
-function scaffold.can_place_wielded_at(pos)
-	local wield_empty = minetest.localplayer:get_wielded_item():is_empty()
-	return not wield_empty and scaffold.can_place_at(pos)
-end
-
-
-function scaffold.find_any_swap(items)
-	local ts=8
-	for i, v in ipairs(items) do
-		local n = minetest.find_item(v)
-		if n then
-			ws.switch_to_item(v)
-			return true
-		end
-	end
-	return false
-end
-
-function scaffold.in_list(val, list)
-	if type(list) ~= "table" then return false end
-	for i, v in ipairs(list) do
-		if v == val then
-			return true
-		end
-	end
-	return false
-end
+scaffold.can_place_at = ws.can_place_at
+scaffold.can_place_wielded_at = ws.can_place_wielded_at
+scaffold.find_any_swap = ws.find_any_swap
+scaffold.in_list = ws.in_list
 
 -- swaps to any of the items and places if need be
 -- returns true if placed and in inventory or already there, false otherwise
 
-local lastact=0
-local lastplc=0
-local lastdig=0
-local actint=10
 function scaffold.place_if_needed(items, pos, place)
 	if not inside_constraints(pos) then return end
 	if not pos then return end
@@ -198,24 +136,9 @@ function scaffold.place_if_able(pos)
 	end
 end
 
-local function is_diggable(pos)
-	if not pos then return false end
-	local nd=minetest.get_node_or_nil(pos)
-	if not nd then return false end
-	local n = minetest.get_node_def(nd.name)
-	if n and n.diggable then return true end
-	return false
-end
-
 function scaffold.dig(pos)
-	if not inside_constraints(pos) then return end
-	if is_diggable(pos) then
-		local nd=minetest.get_node_or_nil(pos)
-		minetest.select_best_tool(nd.name)
-		minetest.dig_node(pos)
-
-	end
-	return false
+	if not inside_constraints(pos) then return false end
+	return ws.dig(pos)
 end
 
 
@@ -236,12 +159,6 @@ dofile(mpath .. "/greenup.lua")
 ws.rg('DigHead','Player','dighead',function() ws.dig(ws.dircoord(0,1,0)) end)
 
 
-
-local function checknode(pos)
-	local node = minetest.get_node_or_nil(pos)
-	if node then return true end
-	return false
-end
 
 minetest.register_chatcommand('scaffw', {
 	func = function(param) multiscaff_width=tonumber(param) end
@@ -586,27 +503,6 @@ ws.rg("Nuke","World","nuke",function()
 	end
 end,setnpt)
 
-local function get_center(p)
-	return vector.new(math.floor(p.x) + 0.5, math.floor(p.y) + 0.5, math.floor(p.z) + 0.5)
-end
-local cb_center=vector.new(0,0,0)
-
-
-local function is_lantern(pos)
-   local dir=ws.getdir()
-   pos=vector.round(pos)
-   if dir == "north" or dir == "south" then
-		if pos.z % 8 == 0 then
-			return true
-		end
-   else
-		if pos.x % 8 == 0 then
-			return true
-		end
-   end
-   return false
-end
-
 local lightblock=nil
 ws.rg("LanternTBM","Scaffold", "scaffold_ltbm", function()
    local dir=ws.getdir()
@@ -627,59 +523,4 @@ end,function()
 end,function()
 	ws.dcm("LTBM stopped")
 end)
-
-local build_to = {
-	"air",
-	"mcl_core:water_source",
-	"mcl_core:water_flowing",
-	"mcl_core:lava_source",
-	"mcl_core:lava_flowing",
-	"mcl_nether:nether_lava_source",
-	"mcl_nether:nether_lava_flowing",
-}
-
-local function find_nodes_near_buildable_to(pos,dst,nodes,dir)
-	local nn = minetest.find_nodes_near(pos, dst, nodes, false)
-	local r = {}
-	for k,v in pairs(nn) do
-		local n = minetest.get_node_or_nil(vector.offset(v,0,dir,0))
-		if n and n.name then
-			local def = minetest.registered_nodes[n.name]
-			if (def and def.buildable_to) or table.indexof(build_to, n.name) ~= -1 then
-				table.insert(r,v)
-			end
-		end
-	end
-	return r
-end
-
-local tower_range = 5
-
-ws.rg('AntiTower','Scaffold','anti_tower',function()
-	local it=minetest.localplayer:get_wielded_item():get_name()
-	local lp=ws.dircoord(0,0,0)
-	local nds= find_nodes_near_buildable_to(lp, tower_range, {it},-1)
-	for k,v in ipairs(nds) do
-		ws.place(vector.add(v,vector.new(0,-1,0)),it)
-	end
-end,function() end,function() end, {'autorefill'})
-
-core.register_chatcommand("tower_range", {
-	func = function(pr)
-		tower_range = tonumber(pr) or 5
-	end,
-})
-
-
-
-ws.rg('ATower','Scaffold','atower',function()
-	local it=minetest.localplayer:get_wielded_item():get_name()
-	local lp=ws.dircoord(0,0,0)
-	local nds=find_nodes_near_buildable_to(lp,4,{it},1)
-	--minetest.find_nodes_near_under_air(lp,4,{it},false)
-	for k,v in ipairs(nds) do
-		ws.place(vector.add(v,vector.new(0,1,0)),it)
-	end
-end,function() end,function() end, {'autorefill'})
-
 
