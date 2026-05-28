@@ -190,6 +190,11 @@ ws.rg('NlEdMode', { category = 'nList', setting = 'nlist_edmode',
 
 		local entries_str = #entries > 0 and esc_list(entries) or " "
 
+		local sel_idx = 1
+		for i, name in ipairs(lists) do
+			if name == sl then sel_idx = i break end
+		end
+
 		local fs = "size[8,9.5]"
 		fs = fs .. "bgcolor[#000000;true]"
 		fs = fs .. "label[0,0;List: " .. core.formspec_escape(sl) .. "]"
@@ -197,10 +202,11 @@ ws.rg('NlEdMode', { category = 'nList', setting = 'nlist_edmode',
 		fs = fs .. "button[0,5.7;0.6,0.7;btn_addentry;+]"
 		fs = fs .. "button[0.7,5.7;0.6,0.7;btn_rmentry;-]"
 		fs = fs .. "button[1.5,5.7;1.2,0.7;btn_clear;Clear]"
-		fs = fs .. "dropdown[5.5,0.5;2.5;list_select;" .. esc_list(lists) .. ";" .. (core.formspec_escape(sl)) .. "]"
+		fs = fs .. "dropdown[5.5,0.5;2.5;list_select;" .. esc_list(lists) .. ";" .. sel_idx .. "]"
 		fs = fs .. "label[5.5,1.7;Lists]"
 		fs = fs .. "button[5.5,2.2;1.2,0.8;btn_addlist;+ List]"
 		fs = fs .. "button[6.8,2.2;1.2,0.8;btn_rmlist;- List]"
+		fs = fs .. "label[0.3,6.7;Type a name below, then press + or -]"
 		fs = fs .. "field[0.3,7;7.2,0.8;item_input;;]"
 		fs = fs .. "button_exit[6.8,8.5;1.2,0.8;btn_done;Done]"
 		return fs
@@ -227,8 +233,16 @@ core.register_on_formspec_input(function(formname, fields)
 		end
 	elseif fields.btn_addentry and fields.item_input and fields.item_input ~= "" then
 		nlist.add(sl, fields.item_input)
-	elseif fields.btn_rmentry and fields.item_input and fields.item_input ~= "" then
-		nlist.remove(sl, fields.item_input)
+	elseif fields.btn_rmentry then
+		if fields.item_input and fields.item_input ~= "" then
+			nlist.remove(sl, fields.item_input)
+		elseif fields.entries and fields.entries ~= "" then
+			local entries = nlist.get(sl)
+			local idx = tonumber(fields.entries)
+			if idx and idx > 0 and idx <= #entries then
+				nlist.remove(sl, entries[idx])
+			end
+		end
 	elseif fields.btn_clear then
 		nlist.clear(sl)
 	end
