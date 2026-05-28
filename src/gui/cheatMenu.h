@@ -52,16 +52,15 @@ struct CheatSettingWidget {
 
 struct CheatPanel {
 	std::string id;
-	// Category/cheat list panel
 	int selected_category = 0;
 	int selected_cheat = 0;
-	bool cheat_layer = false;
-	// Settings panel
+	int selected_setting = 0;
 	std::vector<CheatSettingWidget> settings;
 	s32 x = 0, y = 0, w = 220, h = 0;
 	s32 title_h = 30;
 	bool pinned = false;
 	bool keyboard_focus = false;
+	bool hover_close = false;
 	bool hover_title = false;
 	bool hover_pin = false;
 	bool hover_focus = false;
@@ -75,7 +74,6 @@ public:
 
 	ClientScripting *getScript() { return m_client->getScript(); }
 
-	void draw(video::IVideoDriver *driver, bool show_debug); // legacy
 	void drawPanels(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug);
 	void drawPinned(video::IVideoDriver *driver, v2s32 mouse_pos);
 	void drawHUD(video::IVideoDriver *driver, double dtime);
@@ -91,14 +89,10 @@ public:
 
 private:
 	void drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 mouse_pos);
-	void buildCategoryPanel(CheatPanel &panel);
-	void buildSettingsPanel(CheatPanel &panel, ScriptApiCheatsCheat *cheat);
 	void savePanelPositions();
-	void loadPanelPositions();
 
 	FontMode fontStringToEnum(std::string str);
 
-	bool m_cheat_layer = false;
 	int m_selected_cheat = 0;
 	int m_selected_category = 0;
 
