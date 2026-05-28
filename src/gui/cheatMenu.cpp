@@ -300,7 +300,7 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			if (!isMainPanel(panel)) {
 				s32 cx = x + w - 18;
 				if (point_in_rect(pos.X, pos.Y, cx, y, 16, panel.title_h)) {
-					g_settings->set("cheat_panel_closed_" + panel.id, "1");
+					g_settings->set("cheat_panel_" + panel.id, "");
 					m_panels.erase(m_panels.begin() + (s32)pi);
 					return;
 				}
