@@ -3809,6 +3809,8 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
 			this->input->getMousePos(),
 			this->m_game_ui->m_flags.show_minimal_debug);
 	}
+	if (this->m_cheat_menu)
+		this->m_cheat_menu->drawPinned(this->driver, this->input->getMousePos());
 	if (g_settings->getBool("cheat_hud"))
 		this->m_cheat_menu->drawHUD(this->driver, this->runData.time_from_last_punch);
 
