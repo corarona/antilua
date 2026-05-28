@@ -7,6 +7,10 @@ scaffold.constrain1 = false
 scaffold.constrain2 = false
 local hwps = {}
 
+function scaffold.setting(key)
+	return tonumber(core.settings:get("scaffold." .. key))
+end
+
 
 function scaffold.template(setting, func, offset, funcstop )
 	offset = offset or {x = 0, y = -1, z = 0}
