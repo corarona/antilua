@@ -1398,7 +1398,8 @@ void Game::processUserInput(f32 dtime)
 	}
 
 	// Reset input if window not active or some menu is active
-	if (!device->isWindowActive() || isMenuActive() || guienv->hasFocus(gui_chat_console.get())) {
+	// (skip when cheat layer is active — it needs keyboard input)
+	if (!device->isWindowActive() || (isMenuActive() && !m_cheat_layer_active) || guienv->hasFocus(gui_chat_console.get())) {
 		if (m_game_focused) {
 			m_game_focused = false;
 			infostream << "Game lost focus" << std::endl;
@@ -1523,7 +1524,7 @@ void Game::processKeyInput()
 	} else if (wasKeyPressed(KeyType::TOGGLE_FOG)) {
 		toggleFog();
 	} else if (wasKeyDown(KeyType::TOGGLE_CHEAT_MENU)) {
-		m_game_ui->toggleCheatMenu();
+		toggleCheatLayer();
 	} else if (wasKeyDown(KeyType::KILLAURA)) {
 		toggleKillaura();
 	} else if (wasKeyDown(KeyType::FREECAM)) {
@@ -1829,6 +1830,17 @@ void Game::toggleFreecam()
 		m_game_ui->showTranslatedStatusText("Freecam disabled");
 }
 
+void Game::toggleCheatLayer()
+{
+	m_game_ui->toggleCheatMenu();
+	m_cheat_layer_active = m_game_ui->m_flags.show_cheat_menu;
+	auto *cur = device->getCursorControl();
+	if (cur)
+		cur->setVisible(m_cheat_layer_active);
+	if (!m_cheat_layer_active && m_cheat_menu)
+		m_cheat_menu->onLayerClosed();
+}
+
 void Game::updateAllMapBlocksCallback(const std::string &, void *data)
 {
 	((Game *)data)->client->updateAllMapBlocks();
@@ -2035,11 +2047,12 @@ void Game::updateCameraDirection(CameraOrientation *cam, float dtime)
 	Since we have our own code to synthesize mouse events from touch events,
 	this results in duplicated input. To avoid that, we don't enable relative
 	mouse mode if we're in touchscreen mode. */
+	bool layer = m_cheat_layer_active;
 	if (cur_control)
-		cur_control->setRelativeMode(!g_touchcontrols && !isMenuActive());
+		cur_control->setRelativeMode(!g_touchcontrols && !isMenuActive() && !layer);
 
 	if ((device->isWindowActive() && device->isWindowFocused()
-			&& !isMenuActive()) || input->isRandom()) {
+			&& !isMenuActive() && !layer) || input->isRandom()) {
 
 		if (cur_control && !input->isRandom()) {
 			// Mac OSX gets upset if this is set every frame
@@ -3776,15 +3789,26 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
 	if (isTouchShootlineUsed())
 		draw_crosshair = false;
 
+	// Forward mouse event to cheat menu for panel interaction
+	if (m_cheat_layer_active && m_cheat_menu) {
+		m_cheat_menu->handleMouse(input->getMousePos(),
+			input->isKeyDown(KeyType::DIG));
+	}
+
 	this->m_rendering_engine->draw_scene(sky_color, this->m_game_ui->m_flags.show_hud,
 			draw_wield_tool, draw_crosshair);
 
 	/*
 		Cheat menu
 	*/
-	if (this->m_game_ui->m_flags.show_cheat_menu)
-		this->m_cheat_menu->draw(this->driver,
-				this->m_game_ui->m_flags.show_minimal_debug);
+	if (this->m_cheat_layer_active) {
+		v2u32 ss = this->driver->getScreenSize();
+		this->driver->draw2DRectangle(video::SColor(140, 0, 0, 0),
+			core::rect<s32>(0, 0, ss.X, ss.Y));
+		this->m_cheat_menu->drawPanels(this->driver,
+			this->input->getMousePos(),
+			this->m_game_ui->m_flags.show_minimal_debug);
+	}
 	if (g_settings->getBool("cheat_hud"))
 		this->m_cheat_menu->drawHUD(this->driver, this->runData.time_from_last_punch);
 

@@ -397,6 +397,9 @@ public:
 	bool m_camera_offset_changed = false;
 	bool m_game_focused = false;
 
+	bool m_cheat_layer_active = false;
+	void toggleCheatLayer();
+
 	bool m_does_lost_focus_pause_game = false;
 
 	// if true, (almost) the whole game is paused

@@ -32,6 +32,7 @@ public:
 	void on_client_ready(LocalPlayer *localplayer);
 	void on_camera_ready(Camera *camera);
 	void on_minimap_ready(Minimap *minimap);
+	lua_State *getLuaState() { return getStack(); }
 
 protected:
 	// from ScriptApiSecurity:
