@@ -127,20 +127,17 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 		drawText(m_font, "\u2715", cx + 3, y + 4, video::SColor(255, 255, 255, 255));
 	}
 
-	// Pin button (right of close) — main menu doesn't get a pin button
-	s32 pin_x = x + w;
-	if (!isMainPanel(panel)) {
-		pin_x = x + w - 56;
-		panel.hover_pin = point_in_rect(mouse_pos.X, mouse_pos.Y, pin_x, y, 16, panel.title_h);
-		driver->draw2DRectangle(panel.hover_pin ? video::SColor(200, 100, 100, 100) : video::SColor(180, 60, 60, 80),
-			core::rect<s32>(pin_x, y, pin_x + 16, y + panel.title_h));
-		drawText(m_font, panel.pinned ? "P" : "p", pin_x + 3, y + 4,
-			panel.pinned ? video::SColor(255, 255, 200, 50) : m_font_color);
-	}
+	// Pin button
+	s32 pin_x = x + w - 56;
+	panel.hover_pin = point_in_rect(mouse_pos.X, mouse_pos.Y, pin_x, y, 16, panel.title_h);
+	driver->draw2DRectangle(panel.hover_pin ? video::SColor(200, 100, 100, 100) : video::SColor(180, 60, 60, 80),
+		core::rect<s32>(pin_x, y, pin_x + 16, y + panel.title_h));
+	drawText(m_font, panel.pinned ? "P" : "p", pin_x + 3, y + 4,
+		panel.pinned ? video::SColor(255, 255, 200, 50) : m_font_color);
 
 	// Focus button
 	s32 fw = 16;
-	s32 fx = isMainPanel(panel) ? (x + w - fw) : (pin_x - fw);
+	s32 fx = pin_x - fw;
 	panel.hover_focus = point_in_rect(mouse_pos.X, mouse_pos.Y, fx, y, fw, panel.title_h);
 	driver->draw2DRectangle(panel.hover_focus ? video::SColor(200, 100, 100, 100) : video::SColor(180, 60, 60, 80),
 		core::rect<s32>(fx, y, fx + fw, y + panel.title_h));
@@ -259,7 +256,7 @@ void CheatMenu::drawPanels(video::IVideoDriver *driver, v2s32 mouse_pos, bool sh
 void CheatMenu::drawPinned(video::IVideoDriver *driver, v2s32 mouse_pos)
 {
 	for (auto &panel : m_panels) {
-		if (panel.pinned && !isMainPanel(panel))
+		if (panel.pinned)
 			drawPanel(driver, panel, mouse_pos);
 	}
 }
@@ -306,18 +303,15 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 					return;
 				}
 			}
-			// Pin button — main menu not pinnable
-			s32 pin_x = x + w;
-			if (!isMainPanel(panel)) {
-				pin_x = x + w - 56;
-				if (point_in_rect(pos.X, pos.Y, pin_x, y, 16, panel.title_h)) {
-					panel.pinned = !panel.pinned;
-					savePanelPositions();
-					return;
-				}
+			// Pin button
+			s32 pin_x = x + w - 56;
+			if (point_in_rect(pos.X, pos.Y, pin_x, y, 16, panel.title_h)) {
+				panel.pinned = !panel.pinned;
+				savePanelPositions();
+				return;
 			}
 			// Focus button
-			s32 fx = isMainPanel(panel) ? (x + w - 16) : (pin_x - 16);
+			s32 fx = pin_x - 16;
 			if (point_in_rect(pos.X, pos.Y, fx, y, 16, panel.title_h)) {
 				for (auto &p : m_panels) p.keyboard_focus = false;
 				panel.keyboard_focus = true;
