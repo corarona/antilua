@@ -191,16 +191,18 @@ ws.rg('NlEdMode', { category = 'nList', setting = 'nlist_edmode',
 		local entries_str = #entries > 0 and esc_list(entries) or " "
 
 		local fs = "size[8,9]"
+		fs = fs .. "bgcolor[#000000;true]"
 		fs = fs .. "label[0,0;List: " .. core.formspec_escape(sl) .. "]"
 		fs = fs .. "textlist[0,0.5;5,6;entries;" .. entries_str .. ";1]"
+		fs = fs .. "button[4.6,0.5;0.4,0.6;btn_addentry;+]"
+		fs = fs .. "button[4.6,1.3;0.4,0.6;btn_rmentry;-]"
 		fs = fs .. "dropdown[5.5,0.5;2.5;list_select;" .. esc_list(lists) .. ";" .. (core.formspec_escape(sl)) .. "]"
-		fs = fs .. "button[5.5,3;1.2,0.8;btn_addlist;+]"
-		fs = fs .. "button[6.8,3;1.2,0.8;btn_rmlist;-]"
-		fs = fs .. "field[0,7.3;2.5,0.8;item_input;;]"
-		fs = fs .. "button[2.6,7.3;1.2,0.8;btn_add;Add]"
-		fs = fs .. "button[3.9,7.3;1.2,0.8;btn_remove;Remove]"
-		fs = fs .. "button[5.2,7.3;1.2,0.8;btn_clear;Clear]"
-		fs = fs .. "button_exit[6.5,7.3;1.5,0.8;btn_done;Done]"
+		fs = fs .. "label[5.5,1.7;Lists]"
+		fs = fs .. "button[5.5,2.2;1.2,0.8;btn_addlist;+ List]"
+		fs = fs .. "button[6.8,2.2;1.2,0.8;btn_rmlist;- List]"
+		fs = fs .. "field[0,7.3;7.8,0.8;item_input;;]"
+		fs = fs .. "button[0,8.3;1.2,0.8;btn_clear;Clear]"
+		fs = fs .. "button_exit[6.8,8.3;1.2,0.8;btn_done;Done]"
 		return fs
 	end,
 })
@@ -223,14 +225,10 @@ core.register_on_formspec_input(function(formname, fields)
 		if sl == name then
 			nlist.select("default")
 		end
-	elseif fields.btn_add and fields.item_input and fields.item_input ~= "" then
+	elseif fields.btn_addentry and fields.item_input and fields.item_input ~= "" then
 		nlist.add(sl, fields.item_input)
-	elseif fields.btn_remove then
-		local entries = nlist.get(sl)
-		local idx = tonumber(fields.entries)
-		if idx and idx > 0 and idx <= #entries then
-			nlist.remove(sl, entries[idx])
-		end
+	elseif fields.btn_rmentry and fields.item_input and fields.item_input ~= "" then
+		nlist.remove(sl, fields.item_input)
 	elseif fields.btn_clear then
 		nlist.clear(sl)
 	end

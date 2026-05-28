@@ -119,6 +119,7 @@ function core.show_cheat_settings_form(setting, use_auto)
 	table.sort(keys)
 
 	local fs = "size[5," .. (2 + #keys + 0.5) .. ",true]"
+	fs = fs .. "bgcolor[#000000;true]"
 	fs = fs .. "label[0,0;" .. core.formspec_escape(def.name) .. " Settings]"
 	local y = 1
 	for _, key in ipairs(keys) do
