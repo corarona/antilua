@@ -116,8 +116,8 @@ local function printptdnodedmeta()
 	ws.dcm(dump(m:to_table()))
 end
 
-minetest.register_cheat('ItemMeta', 'Test', printwieldedmeta)
-minetest.register_cheat('PtdNodeMeta', 'Test', printptdnodedmeta)
+core.register_cheat('ItemMeta', { category = 'Test', func = printwieldedmeta })
+core.register_cheat('PtdNodeMeta', { category = 'Test', func = printptdnodedmeta })
 
 minetest.register_chatcommand('giveme', {
 	func = function(param)

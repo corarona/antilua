@@ -132,10 +132,8 @@ local function show_craft_fs()
 end
 
 -- Register cheat menu entry in dragonfire
-if minetest.register_cheat then
-	minetest.register_cheat("OpenInvLists", "Inventory", show_formspec)
-	minetest.register_cheat("OpenCraftGrid", "Inventory", show_craft_fs)
-end
+core.register_cheat("OpenInvLists", { category = "Inventory", func = show_formspec})
+core.register_cheat("OpenCraftGrid", { category = "Inventory", func = show_craft_fs})
 
 minetest.register_chatcommand("openlist", {func=function(param)
 	return show_formspec(param)

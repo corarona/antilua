@@ -78,7 +78,7 @@ end
 
 -- Register cheat menu entry in dragonfire
 if minetest.register_cheat then
-	minetest.register_cheat("PunchInv", "Inventory", "punchinv")
+	core.register_cheat("PunchInv", { category = "Inventory", setting = "punchinv" })
 end
 minetest.register_on_punchnode(function(pos, node)
 	if not core.settings:get_bool("punchinv", false) then return end

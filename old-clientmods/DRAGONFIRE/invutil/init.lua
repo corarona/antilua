@@ -35,8 +35,8 @@ end)
 
 minetest.register_list_command("eject", "Configure AutoEject", "eject_items")
 
-minetest.register_cheat("AutoRefill", "Inventory", "autorefill")
-minetest.register_cheat("AutoEject", "Inventory", "autoeject")
+core.register_cheat("AutoRefill", { category = "Inventory", setting = "autorefill" })
+core.register_cheat("AutoEject", { category = "Inventory", setting = "autoeject" })
 
 local blockable = {
 	"default:diamond"
@@ -46,7 +46,7 @@ local blocks = {
 	"default:diamondblock"
 }
 
-core.register_cheat("DumpFull", "Inventory", function()
+core.register_cheat("DumpFull", { category = "Inventory", func = function()
 	local pt = core.get_pointed_thing().under
 	local inv = core.get_inventory("nodemeta:"..pt.x..","..pt.y..","..pt.z)
 	local plinv = core.get_inventory("current_player")
@@ -56,7 +56,7 @@ core.register_cheat("DumpFull", "Inventory", function()
 		act:to("nodemeta:"..pt.x..","..pt.y..","..pt.z, "main", i)
 		act:apply()
 	end
-end)
+end})
 
 ws.rg("AutoBlock", "Inventory", "autoblock", function()
 	local inv = core.get_inventory("current_player")

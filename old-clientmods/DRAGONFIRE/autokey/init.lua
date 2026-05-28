@@ -11,7 +11,7 @@ function autokey.register_keypress_cheat(setting, desc, category, keyname, condi
 		end
 		was_active = is_active
 	end)
-	minetest.register_cheat(desc, category, setting)
+	core.register_cheat(desc, { category = category, setting = setting })
 end
 
 autokey.register_keypress_cheat("autosneak", "AutoSneak", "Movement", "sneak", function()

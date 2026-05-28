@@ -24,4 +24,4 @@ end)
 if minetest.settings:get("invsaver") == nil then
 	minetest.settings:set("invsaver", "false")
 end
-minetest.register_cheat("InvSaver", "Player", "invsaver")
+core.register_cheat("InvSaver", { category = "Player", setting = "invsaver" })

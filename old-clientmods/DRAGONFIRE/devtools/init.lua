@@ -37,16 +37,16 @@ ws.on_connect(function()
 	end
 end)
 
-minetest.register_cheat("ItemMeta","DevTools",function()
+core.register_cheat("ItemMeta", { category = "DevTools", func = function()
 	local it = minetest.localplayer:get_wielded_item()
 	local meta = it:get_meta()
 	dump_to_chat(it:get_name())
 	dump_to_chat(meta:to_table())
-end)
+end})
 
-minetest.register_cheat("PointedMeta","DevTools",function()	dumpmetaat(minetest.get_pointed_thing().under) end)
-minetest.register_cheat("PosMeta","DevTools",function()	dumpmetaat(minetest.localplayer:get_pos()) end)
-minetest.register_cheat("PointedDef","DevTools",function()	dumpdefat(minetest.get_pointed_thing().under) end)
+core.register_cheat("PointedMeta", { category = "DevTools", func = function() dumpmetaat(minetest.get_pointed_thing().under) end})
+core.register_cheat("PosMeta", { category = "DevTools", func = function() dumpmetaat(minetest.localplayer:get_pos()) end})
+core.register_cheat("PointedDef", { category = "DevTools", func = function() dumpdefat(minetest.get_pointed_thing().under) end})
 --if params.texture:find("weather_pack") then return true end
 --ws.dcm(dump(params))
 --ws.dcm("particlespawner: "..params.texture.." "..minetest.pos_to_string(params.minpos))
@@ -100,10 +100,10 @@ local function do_tp_up()
 	end
 end
 
-minetest.register_cheat("MclProgFood","World",function()
+core.register_cheat("MclProgFood", { category = "World", func = function()
 	startpos = minetest.localplayer:get_pos()
 	do_tp_up()
-end)
+end})
 
 local function find_inv_with_stack(pos, name)
 	local nn = minetest.find_nodes_with_meta(vector.offset(pos, -4.5, -4.5, -4.5), vector.offset(pos, 4.5, 4.5, 4.5))

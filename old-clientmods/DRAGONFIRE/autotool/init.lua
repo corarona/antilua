@@ -68,4 +68,4 @@ minetest.register_globalstep(function()
 	new_index, old_index, pointed_pos, best_time = nil
 end)
 
-minetest.register_cheat("AutoTool", "Inventory", "autotool")
+core.register_cheat("AutoTool", { category = "Inventory", setting = "autotool" })

@@ -287,7 +287,7 @@ function ws.make_blocks()
 	dmv_act:apply()
 end
 
-minetest.register_cheat("MakeBlocks", "Inventory", ws.make_blocks)
+core.register_cheat("MakeBlocks", { category = "Inventory", func = ws.make_blocks })
 
 -- Inventory dump via quint (extracted from emicor)
 function ws.invdump(src, dst)
@@ -324,7 +324,7 @@ function ws.loot()
 	end
 end
 
-minetest.register_cheat('Loot', 'Inventory', ws.dumpto)
+core.register_cheat('Loot', { category = 'Inventory', func = ws.dumpto })
 minetest.register_chatcommand("dumpto", {
 	description = "Dump main inv (not hotbar) to pointed storage block.",
 	func = ws.dumpto
@@ -342,7 +342,7 @@ function ws.icebreaker()
 	minetest.localplayer:set_wield_index(owx)
 end
 
-minetest.register_cheat('IceBreaker', 'World', 'icebreaker')
+core.register_cheat('IceBreaker', { category = 'World', setting = 'icebreaker' })
 
 -- Inventory to/from ender chest (extracted from emicor)
 function ws.invtoec()

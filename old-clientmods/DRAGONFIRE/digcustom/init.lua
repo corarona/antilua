@@ -16,4 +16,4 @@ end)()
 
 minetest.register_list_command("digcustom", "Configue custom autodig nodes", "digcustom_nodes")
 
-minetest.register_cheat("DigCustom", "World", "digcustom")
+core.register_cheat("DigCustom", { category = "World", setting = "digcustom" })

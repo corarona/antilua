@@ -74,4 +74,4 @@ end
 
 minetest.after(3, find_hud)
 
-minetest.register_cheat("AutoEat", "Player", "autoeat")
+core.register_cheat("AutoEat", { category = "Player", setting = "autoeat" })

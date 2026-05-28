@@ -124,12 +124,12 @@ minetest.register_on_death(function()
 	end
 end)
 
-minetest.register_cheat("ClearHuds", "poi_clearhuds", function()
+core.register_cheat("ClearHuds", { category = "poi_clearhuds", func = function()
 	for k,v in pairs(shown_huds) do
 		core.hud_remove(v)
 		shown_huds[k] = nil
 	end
-end)
+end})
 
 ws.rg("DeathTP","Player","death_tp",function()end,function()end,function()end,{"autorespawn"})
 
@@ -471,5 +471,5 @@ minetest.register_chatcommand("dump_pois",{
 	end
 })
 
-minetest.register_cheat("ShowNames", "Render", "poi_shownames")
-minetest.register_cheat("POIs", "World", poi.display_formspec)
+core.register_cheat("ShowNames", { category = "Render", setting = "poi_shownames" })
+core.register_cheat("POIs", { category = "World", func = poi.display_formspec })
