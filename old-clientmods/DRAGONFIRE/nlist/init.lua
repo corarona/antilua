@@ -201,7 +201,7 @@ ws.rg('NlEdMode', { category = 'nList', setting = 'nlist_edmode',
 		fs = fs .. "label[5.5,1.7;Lists]"
 		fs = fs .. "button[5.5,2.2;1.2,0.8;btn_addlist;+ List]"
 		fs = fs .. "button[6.8,2.2;1.2,0.8;btn_rmlist;- List]"
-		fs = fs .. "field[0,7;7.8,0.8;item_input;;]"
+		fs = fs .. "field[0.3,7;7.2,0.8;item_input;;]"
 		fs = fs .. "button_exit[6.8,8.5;1.2,0.8;btn_done;Done]"
 		return fs
 	end,
