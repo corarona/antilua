@@ -283,7 +283,7 @@ void set_default_settings()
 	settings->setDefault("soft_clouds", "false");
 	settings->setDefault("cloud_radius", "12");
 	settings->setDefault("menu_clouds", "true");
-	settings->setDefault("menu_theme", "light");
+	settings->setDefault("menu_theme", "dark");
 	settings->setDefault("translucent_liquids", "true");
 	settings->setDefault("console_height", "0.6");
 	settings->setDefault("console_color", "(0,0,0)");
@@ -392,7 +392,7 @@ void set_default_settings()
 	settings->setDefault("serverlist_file", "favoriteservers.json");
 
 	// General font settings
-	settings->setDefault("font_path", porting::getDataPath("fonts" DIR_DELIM "Arimo-Regular.ttf"));
+	settings->setDefault("font_path", porting::getDataPath("fonts" DIR_DELIM "unifont.ttf"));
 	settings->setDefault("font_path_italic", porting::getDataPath("fonts" DIR_DELIM "Arimo-Italic.ttf"));
 	settings->setDefault("font_path_bold", porting::getDataPath("fonts" DIR_DELIM "Arimo-Bold.ttf"));
 	settings->setDefault("font_path_bold_italic", porting::getDataPath("fonts" DIR_DELIM "Arimo-BoldItalic.ttf"));
@@ -610,11 +610,11 @@ void set_default_settings()
 
 	// Cheat menu
 	settings->setDefault("cheat_menu_font", "FM_Standard");
-	settings->setDefault("cheat_menu_bg_color", "(45, 45, 68)");
+	settings->setDefault("cheat_menu_bg_color", "(4, 4, 8)");
 	settings->setDefault("cheat_menu_bg_color_alpha", "173");
 	settings->setDefault("cheat_menu_active_bg_color", "(0, 0, 0)");
 	settings->setDefault("cheat_menu_active_bg_color_alpha", "210");
-	settings->setDefault("cheat_menu_font_color", "(255, 255, 255)");
+	settings->setDefault("cheat_menu_font_color", "(0, 255, 0)");
 	settings->setDefault("cheat_menu_font_color_alpha", "195");
 	settings->setDefault("cheat_menu_selected_font_color", "(255, 255, 255)");
 	settings->setDefault("cheat_menu_selected_font_color_alpha", "235");
