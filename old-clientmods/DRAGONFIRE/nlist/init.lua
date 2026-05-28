@@ -183,7 +183,14 @@ ws.rg('NlEdMode', { category = 'nList', setting = 'nlist_edmode',
 		end
 		table.sort(lists)
 
-		local function esc_list(t)
+		local function textlist_idx(val)
+		if val == "INV" then return 0 end
+		local colon = val:find(":")
+		if colon then return tonumber(val:sub(colon + 1)) or 0 end
+		return tonumber(val) or 0
+	end
+
+	local function esc_list(t)
 			local out = {}
 			for _, v in ipairs(t) do
 				table.insert(out, core.formspec_escape(v))
@@ -241,8 +248,8 @@ core.register_on_formspec_input(function(formname, fields)
 			nlist.remove(sl, fields.item_input)
 		elseif fields.entries and fields.entries ~= "" then
 			local entries = nlist.get(sl)
-			local idx = tonumber(fields.entries)
-			if idx and idx > 0 and idx <= #entries then
+			local idx = textlist_idx(fields.entries)
+			if idx > 0 and idx <= #entries then
 				nlist.remove(sl, entries[idx])
 			end
 		end
