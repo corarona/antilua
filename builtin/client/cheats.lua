@@ -95,9 +95,21 @@ function core.register_cheat(name, ...)
 	return def
 end
 
-function core.show_cheat_settings_form(setting)
+function core.show_cheat_settings_form(setting, use_auto)
 	local def = core.cheat_defs[setting]
-	if not def or not def.cheat_settings then return end
+	if not def then return end
+
+	-- Custom formspec via get_formspec field
+	if def.get_formspec and not use_auto then
+		local fs = def.get_formspec(setting)
+		if fs then
+			core.show_formspec("cheat_settings:" .. setting .. ":custom", fs)
+			return
+		end
+	end
+
+	-- Auto-generated formspec from cheat_settings
+	if not def.cheat_settings then return end
 	if not next(def.cheat_settings) then return end
 
 	local keys = {}
@@ -131,7 +143,23 @@ end
 
 core.register_on_formspec_input(function(formname, fields)
 	if formname:find("cheat_settings:") ~= 1 then return end
+
+	-- Detect the __cheat_settings__ button from a custom formspec
+	if fields.__cheat_settings__ then
+		local setting
+		if formname:find(":custom$") then
+			setting = formname:sub(16, -8)
+		else
+			setting = formname:sub(16)
+		end
+		core.show_cheat_settings_form(setting, true)
+		return
+	end
+
 	local setting = formname:sub(16)
+	if formname:find(":custom$") then
+		setting = formname:sub(16, -8)
+	end
 	local def = core.cheat_defs[setting]
 	if not def or not def.cheat_settings then return end
 	for key, spec in pairs(def.cheat_settings) do
