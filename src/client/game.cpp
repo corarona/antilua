@@ -3814,6 +3814,19 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
 	if (g_settings->getBool("cheat_hud"))
 		this->m_cheat_menu->drawHUD(this->driver, this->runData.time_from_last_punch);
 
+	// Flight HUD (shows when fly or free_move is active)
+	if (this->m_cheat_menu && g_settings->getBool("flight_hud")) {
+		auto *player = this->client->getEnv().getLocalPlayer();
+		if (player && (g_settings->getBool("free_move") || g_settings->getBool("pitch_move") ||
+				player->getPlayerSettings().free_move)) {
+			v3f ppos = player->getPosition() / BS;
+			v3f pvel = player->getSpeed();
+			f32 ppitch = player->getPitch();
+			f32 pyaw = player->getYaw();
+			this->m_cheat_menu->drawFlightHUD(this->driver, ppos, pvel, ppitch, pyaw);
+		}
+	}
+
 	/*
 		Profiler graph
 	*/
