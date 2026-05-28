@@ -135,6 +135,13 @@ function nlist.show_list(list,hlp)
 	nlist.set_nled_hud(txt)
 end
 
+local function textlist_idx(val)
+	if val == "INV" then return 0 end
+	local colon = val:find(":")
+	if colon then return tonumber(val:sub(colon + 1)) or 0 end
+	return tonumber(val) or 0
+end
+
 function nlist.hide()
 	if nled_hud then minetest.localplayer:hud_remove(nled_hud) nled_hud=nil end
 end
@@ -183,14 +190,7 @@ ws.rg('NlEdMode', { category = 'nList', setting = 'nlist_edmode',
 		end
 		table.sort(lists)
 
-		local function textlist_idx(val)
-		if val == "INV" then return 0 end
-		local colon = val:find(":")
-		if colon then return tonumber(val:sub(colon + 1)) or 0 end
-		return tonumber(val) or 0
-	end
-
-	local function esc_list(t)
+		local function esc_list(t)
 			local out = {}
 			for _, v in ipairs(t) do
 				table.insert(out, core.formspec_escape(v))
