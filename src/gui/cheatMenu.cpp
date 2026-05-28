@@ -447,33 +447,18 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			for (auto &cat : script->m_cheat_categories) {
 				if (point_in_rect(pos.X, pos.Y, x, iy, w, m_entry_height)) {
 					std::string cid = "_cat_" + std::to_string(ci);
-					if (m_panel_detached) {
-						// Detached mode: open new panel without closing existing ones
-						bool exists = false;
-						for (auto &ep : m_panels)
-							if (ep.id == cid) { exists = true; break; }
-						if (exists) return;
-						CheatPanel cp;
-						cp.id = cid;
-						cp.selected_category = ci;
-						cp.x = panel.x + panel.w + 10;
-						cp.y = panel.y;
-						loadPanelPosition(cp);
-						m_panels.push_back(cp);
-					} else {
-						// Replace mode: close existing child, open new one
-						for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--) {
-							if (isCatPanel(m_panels[ei]) || isSetPanel(m_panels[ei]))
-								m_panels.erase(m_panels.begin() + ei);
-						}
-						CheatPanel cp;
-						cp.id = cid;
-						cp.selected_category = ci;
-						cp.x = panel.x + panel.w + 10;
-						cp.y = panel.y;
-						loadPanelPosition(cp);
-						m_panels.push_back(cp);
+					// Mouse click always replaces existing child panels (non-detached behavior)
+					for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--) {
+						if (isCatPanel(m_panels[ei]) || isSetPanel(m_panels[ei]))
+							m_panels.erase(m_panels.begin() + ei);
 					}
+					CheatPanel cp;
+					cp.id = cid;
+					cp.selected_category = ci;
+					cp.x = panel.x + panel.w + 10;
+					cp.y = panel.y;
+					loadPanelPosition(cp);
+					m_panels.push_back(cp);
 					return;
 				}
 				iy += m_entry_height + m_gap;
