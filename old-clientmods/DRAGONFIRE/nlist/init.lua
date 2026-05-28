@@ -235,15 +235,18 @@ core.register_on_formspec_input(function(formname, fields)
 	if fields.btn_addlist and fields.item_input and fields.item_input ~= "" then
 		nlist.set(fields.item_input, {})
 		nlist.select(fields.item_input)
-	elseif fields.btn_rmlist then
+	end
+	if fields.btn_rmlist then
 		local name = fields.list_select or sl
 		nlist.delete(name)
 		if sl == name then
 			nlist.select("default")
 		end
-	elseif fields.btn_addentry and fields.item_input and fields.item_input ~= "" then
+	end
+	if fields.btn_addentry and fields.item_input and fields.item_input ~= "" then
 		nlist.add(sl, fields.item_input)
-	elseif fields.btn_rmentry then
+	end
+	if fields.btn_rmentry then
 		if fields.item_input and fields.item_input ~= "" then
 			nlist.remove(sl, fields.item_input)
 		elseif fields.entries and fields.entries ~= "" then
@@ -253,7 +256,8 @@ core.register_on_formspec_input(function(formname, fields)
 				nlist.remove(sl, entries[idx])
 			end
 		end
-	elseif fields.btn_clear then
+	end
+	if fields.btn_clear then
 		nlist.clear(sl)
 	end
 
