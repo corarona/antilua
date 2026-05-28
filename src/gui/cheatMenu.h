@@ -65,6 +65,7 @@ struct CheatPanel {
 	bool hover_pin = false;
 	bool hover_focus = false;
 	int hover_item = -1;
+	int hover_setting = -1;
 };
 
 class CheatMenu
@@ -89,6 +90,7 @@ public:
 
 private:
 	void drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 mouse_pos);
+	void openCheatSettings(ScriptApiCheatsCheat *cheat, CheatPanel *parent);
 	void savePanelPositions();
 
 	FontMode fontStringToEnum(std::string str);

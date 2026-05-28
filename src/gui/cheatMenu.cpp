@@ -169,11 +169,12 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 		}
 	} else if (isCatPanel(panel)) {
 		panel.hover_item = -1;
+		panel.hover_setting = -1;
 		int chi = 0;
 		if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 			for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
 				bool enabled = cheat->is_enabled();
-				// Check if this cheat has settings (right-arrow indicator)
+				// Check if this cheat has settings
 				bool has_set = false;
 				lua_State *L = m_client->getScript()->getLuaState();
 				lua_getglobal(L, "core");
@@ -193,10 +194,21 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 
 				std::string txt = enabled ? "[x] " : "[ ] ";
 				txt += cheat->m_name;
-				if (has_set) txt += " >";
 
 				drawText(m_font, txt, x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,
 					(chi == panel.selected_cheat) ? m_selected_font_color : m_font_color);
+
+				// Settings button for cheats that have settings
+				if (has_set) {
+					s32 sbx = x + w - 18;
+					bool hov = point_in_rect(mouse_pos.X, mouse_pos.Y, sbx, iy, 16, m_entry_height);
+					if (hov) panel.hover_setting = chi;
+					driver->draw2DRectangle(hov ? video::SColor(200, 100, 120, 80) : video::SColor(180, 60, 60, 70),
+						core::rect<s32>(sbx, iy, sbx + 16, iy + m_entry_height));
+					drawText(m_font, "\u2699", sbx + 3, iy + (m_entry_height - m_fontsize.Y) / 2,
+						video::SColor(255, 200, 200, 100));
+				}
+
 				iy += m_entry_height + m_gap;
 				chi++;
 			}
@@ -359,9 +371,15 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 				for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
 					if (point_in_rect(pos.X, pos.Y, x, iy, w, m_entry_height)) {
-						panel.selected_cheat = chi;
-						// Toggle cheat on click
-						script->toggle_cheat(cheat);
+						// Check if click is on the settings button (right 16px)
+						s32 sbx = x + w - 18;
+						if (point_in_rect(pos.X, pos.Y, sbx, iy, 16, m_entry_height)) {
+							// Open settings panel for this cheat
+							openCheatSettings(cheat, &panel);
+						} else {
+							panel.selected_cheat = chi;
+							script->toggle_cheat(cheat);
+						}
 						return;
 					}
 					iy += m_entry_height + m_gap;
@@ -384,6 +402,58 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			}
 		}
 	}
+}
+
+void CheatMenu::openCheatSettings(ScriptApiCheatsCheat *cheat, CheatPanel *parent)
+{
+	std::string sid = "_set_" + cheat->m_name;
+	for (auto &p : m_panels)
+		if (p.id == sid) return;
+
+	lua_State *L = m_client->getScript()->getLuaState();
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "cheat_defs");
+	lua_getfield(L, -1, cheat->m_setting.c_str());
+	bool has_settings = false;
+	if (lua_istable(L, -1)) {
+		lua_getfield(L, -1, "cheat_settings");
+		has_settings = lua_istable(L, -1) || lua_isfunction(L, -1);
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 3);
+
+	if (!has_settings) return;
+
+	CheatPanel sp;
+	sp.id = sid;
+	sp.x = parent->x + parent->w + 10;
+	sp.y = parent->y;
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "cheat_defs");
+	lua_getfield(L, -1, cheat->m_setting.c_str());
+	if (lua_istable(L, -1)) {
+		lua_getfield(L, -1, "cheat_settings");
+		if (lua_istable(L, -1)) {
+			lua_pushnil(L);
+			while (lua_next(L, -2)) {
+				std::string key = lua_tostring(L, -2);
+				if (lua_istable(L, -1)) {
+					CheatSettingWidget w;
+					w.key = key;
+					w.full_setting = cheat->m_setting + "." + key;
+					lua_getfield(L, -1, "type");
+					if (lua_isstring(L, -1)) w.type = lua_tostring(L, -1);
+					lua_pop(L, 1);
+					sp.settings.push_back(w);
+				}
+				lua_pop(L, 1);
+			}
+		}
+		lua_pop(L, 1);
+	}
+	lua_pop(L, 3);
+	m_panels.push_back(sp);
 }
 
 void CheatMenu::onLayerClosed()
@@ -487,62 +557,12 @@ void CheatMenu::selectRight()
 	if (!panel) return;
 
 	if (isCatPanel(*panel)) {
-		// Open settings panel for selected cheat
 		if (panel->selected_category < 0 || (size_t)panel->selected_category >= script->m_cheat_categories.size())
 			return;
 		auto &cat = script->m_cheat_categories[panel->selected_category];
 		if (panel->selected_cheat < 0 || (size_t)panel->selected_cheat >= cat->m_cheats.size())
 			return;
-		auto *cheat = cat->m_cheats[panel->selected_cheat];
-
-		lua_State *L = m_client->getScript()->getLuaState();
-		lua_getglobal(L, "core");
-		lua_getfield(L, -1, "cheat_defs");
-		lua_getfield(L, -1, cheat->m_setting.c_str());
-		bool has_settings = false;
-		if (lua_istable(L, -1)) {
-			lua_getfield(L, -1, "cheat_settings");
-			has_settings = lua_istable(L, -1) || lua_isfunction(L, -1);
-			lua_pop(L, 1);
-		}
-		lua_pop(L, 3);
-
-		if (has_settings) {
-			std::string sid = "_set_" + cheat->m_name;
-			for (auto &p : m_panels)
-				if (p.id == sid) return;
-			CheatPanel sp;
-			sp.id = sid;
-			sp.x = panel->x + panel->w + 10;
-			sp.y = panel->y;
-			// Populate settings
-			lua_State *L2 = m_client->getScript()->getLuaState();
-			lua_getglobal(L2, "core");
-			lua_getfield(L2, -1, "cheat_defs");
-			lua_getfield(L2, -1, cheat->m_setting.c_str());
-			if (lua_istable(L2, -1)) {
-				lua_getfield(L2, -1, "cheat_settings");
-				if (lua_istable(L2, -1)) {
-					lua_pushnil(L2);
-					while (lua_next(L2, -2)) {
-						std::string key = lua_tostring(L2, -2);
-						if (lua_istable(L2, -1)) {
-							CheatSettingWidget w;
-							w.key = key;
-							w.full_setting = cheat->m_setting + "." + key;
-							lua_getfield(L2, -1, "type");
-							if (lua_isstring(L2, -1)) w.type = lua_tostring(L2, -1);
-							lua_pop(L2, 1);
-							sp.settings.push_back(w);
-						}
-						lua_pop(L2, 1);
-					}
-				}
-				lua_pop(L2, 1);
-			}
-			lua_pop(L2, 3);
-			m_panels.push_back(sp);
-		}
+		openCheatSettings(cat->m_cheats[panel->selected_cheat], panel);
 	}
 }
 
