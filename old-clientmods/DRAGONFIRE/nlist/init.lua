@@ -178,7 +178,10 @@ ws.rg('NlEdMode', { category = 'nList', setting = 'nlist_edmode',
 	get_formspec = function(setting)
 		local entries = nlist.get(sl)
 		local lists = nlist.get_lists()
-		if #lists == 0 then lists = {"default"} end
+		if not table.indexof(lists, sl) then
+			table.insert(lists, sl)
+		end
+		table.sort(lists)
 
 		local function esc_list(t)
 			local out = {}
