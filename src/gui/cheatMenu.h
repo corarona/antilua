@@ -121,4 +121,5 @@ private:
 	bool m_mouse_left_prev = false;
 	int m_drag_panel = -1;
 	s32 m_drag_off_x = 0, m_drag_off_y = 0;
+	bool m_panel_detached = false;
 };
