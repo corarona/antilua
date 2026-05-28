@@ -670,7 +670,7 @@ void set_default_settings()
 	settings->setDefault("autojump", "false");
 
 	// Cheat key bindings
-	settings->setDefault("keymap_toggle_cheat_menu", "KEY_F8");
+	settings->setDefault("keymap_toggle_cheat_menu", "SYSTEM_SCANCODE_43");
 	settings->setDefault("keymap_toggle_killaura", "KEY_KEY_X");
 	settings->setDefault("keymap_toggle_freecam", "KEY_KEY_G");
 	settings->setDefault("keymap_toggle_scaffold", "KEY_KEY_Y");
