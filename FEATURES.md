@@ -14,7 +14,7 @@ the `df-rebased` branch and what is still in progress.
 
 ## Client Cheats
 
-All cheats are toggled via the Cheat Menu (default key: `F8`) or by direct key
+All cheats are toggled via the Cheat Menu (default key: `TAB`) or by direct key
 bindings. Cheats that require server privileges (fly, noclip, fast) still check
 them unless `priv_bypass` is active.
 
@@ -88,7 +88,7 @@ them unless `priv_bypass` is active.
 
 | Key | Action | Status |
 |-----|--------|--------|
-| F8 | Cheat Menu | ✅ |
+| TAB | Cheat Menu | ✅ |
 | G | Toggle Freecam | ✅ |
 | X | Toggle Killaura | ✅ |
 | Y | Toggle Scaffold | ✅ |
@@ -101,7 +101,7 @@ them unless `priv_bypass` is active.
 | `priv_bypass` | Bypasses all privilege checks (fly, noclip, fast, etc.) | ✅ |
 | ModApiClient additions | Extended Lua API for client-side modding | ✅ |
 | Client-side mod loading | Loads mods from `clientmods/` and `mods/` | ✅ |
-| CheatMenu GUI | In-game cheat toggle menu (F8) | ✅ |
+| CheatMenu GUI | In-game cheat toggle menu (TAB) | ✅ |
 | Freecam | Detached camera mode — fly through world while player stays | ✅ |
 | Xray | Mesh-level hiding of non-xray nodes | ✅ |
 | Fullbright | Maximum light level at all times | ✅ |

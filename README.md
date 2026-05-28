@@ -41,7 +41,7 @@ See `doc/compiling/` for platform-specific guides (Linux, Windows, macOS).
 ## What's different from Luanti
 
 DragonfireClient adds features directly in the C++ engine layer — no mods or
-games required. All are toggleable via the **Cheat Menu** (default key: `F8`)
+games required. All are toggleable via the **Cheat Menu** (default key: `TAB`)
 or by setting their corresponding settings.
 
 ### Movement Cheats
@@ -115,7 +115,7 @@ or by setting their corresponding settings.
 
 | Key | Action |
 |-----|--------|
-| F8 | Cheat Menu |
+| TAB | Cheat Menu |
 | G | Toggle Freecam |
 | X | Toggle Killaura |
 | Y | Toggle Scaffold |

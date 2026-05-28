@@ -323,7 +323,7 @@ corresponding setting.
 | | ThroughWalls | `dont_point_nodes` | Don't auto-point nodes |
 | **Exploit** | EntitySpeed | `entity_speed` | Entities at player speed |
 
-Cheats can be toggled via the cheat menu (default `F8`) or by setting the
+Cheats can be toggled via the cheat menu (default `TAB`) or by setting the
 corresponding setting to `"true"` / `"false"`.
 
 ---
@@ -413,7 +413,7 @@ These settings exist only in DragonfireClient. Set via `core.settings:set()`,
 
 | Key | Default | Action |
 |-----|---------|--------|
-| `keymap_toggle_cheat_menu` | `F8` | Open/close cheat menu |
+| `keymap_toggle_cheat_menu` | `TAB` | Open/close cheat menu |
 | `keymap_toggle_killaura` | `X` | Toggle killaura |
 | `keymap_toggle_freecam` | `G` | Toggle freecam |
 | `keymap_toggle_scaffold` | `Y` | Toggle scaffold assist |
