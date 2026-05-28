@@ -568,7 +568,25 @@ void CheatMenu::selectRight()
 	if (!panel && !m_panels.empty()) panel = &m_panels[0];
 	if (!panel) return;
 
-	if (isCatPanel(*panel)) {
+	if (isMainPanel(*panel)) {
+		// Open a child panel for the selected category
+		std::string cid = "_cat_" + std::to_string(panel->selected_category);
+		if (m_panel_detached) {
+			for (auto &p : m_panels)
+				if (p.id == cid) return;
+		} else {
+			for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
+				if (isCatPanel(m_panels[ei]) || isSetPanel(m_panels[ei]))
+					m_panels.erase(m_panels.begin() + ei);
+		}
+		CheatPanel cp;
+		cp.id = cid;
+		cp.selected_category = panel->selected_category;
+		cp.x = panel->x + panel->w + 10;
+		cp.y = panel->y;
+		loadPanelPosition(cp);
+		m_panels.push_back(cp);
+	} else if (isCatPanel(*panel)) {
 		if (panel->selected_category < 0 || (size_t)panel->selected_category >= script->m_cheat_categories.size())
 			return;
 		auto &cat = script->m_cheat_categories[panel->selected_category];
