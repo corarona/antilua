@@ -1,13 +1,19 @@
-ws.rg("AutoCombatLog","Bots","autoclog",function()
-	local ln = minetest.localplayer:get_name()
-	for _,pl in pairs(minetest.get_nearby_objects(270)) do
-		if pl:is_player() and not pl:is_local_player() then
-			--if table.indexof(nlist.get("friends"),pl:get_name() or pl:get_properties().nametag) == -1 then
+ws.rg("AutoCombatLog", { category = "Bots", setting = "autoclog",
+	on_step = function(self)
+		local range = tonumber(core.settings:get(self.setting .. ".detect_range")) or 270
+		for _, pl in pairs(minetest.get_nearby_objects(range)) do
+			if pl:is_player() and not pl:is_local_player() then
 				local pos = minetest.localplayer:get_pos()
-				minetest.localplayer:set_pos(vector.new(pos.x+math.random(-2,2),pos.y+math.random(-4,35),pos.z+math.random(-2,2)))
-				minetest.log("CLOGGED:"..pl:get_name() or pl:get_properties().nametag)
+				minetest.localplayer:set_pos(vector.new(
+					pos.x + math.random(-2, 2),
+					pos.y + math.random(-4, 35),
+					pos.z + math.random(-2, 2)))
+				minetest.log("CLOGGED:" .. pl:get_name())
 				minetest.disconnect()
-			--end
+			end
 		end
-	end
-end)
+	end,
+	cheat_settings = {
+		detect_range = { type = "number", default = 270, min = 10, max = 500 },
+	},
+})

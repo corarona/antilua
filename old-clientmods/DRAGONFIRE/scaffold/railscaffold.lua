@@ -331,7 +331,8 @@ local function is_solid(pos)
 	return n and n.name and core.get_node_def(n.name).drawtype == "normal"
 end
 
-ws.rg("RailBot","Bots", "railbot", function()
+ws.rg("RailBot", { category = "Bots", setting = "railbot",
+	on_step = function(self)
 
 	minetest.localplayer:set_pitch(12)
 	ws.setdir(rail_dir)
@@ -474,7 +475,9 @@ function()--startfunc
 end,function() --stopfunc
 	minetest.settings:set_bool('continuous_forward',false)
 	ws.dcm("railbot stopped.")
-end,{'autorefill'})
+end,
+	daughters = {'autorefill'},
+})
 
 local wtp_i = 1
 local wtp_active = false
@@ -498,13 +501,12 @@ local function wtp_step()
 	end
 end
 
-ws.rg("WorldTP","Exploit", "worldtp",
-	function() end,
-	function()
+ws.rg("WorldTP", { category = "Exploit", setting = "worldtp",
+	on_start = function(self)
 		wtp_active = true
 		wtp_step()
 	end,
-	function()
+	on_stop = function(self)
 		wtp_active = false
 	end,
-{})
+})

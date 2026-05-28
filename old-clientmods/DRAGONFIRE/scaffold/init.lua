@@ -130,15 +130,9 @@ end
 local mpath = minetest.get_modpath(minetest.get_current_modname())
 --dofile(mpath .. "/sapscaffold.lua")
 --dofile(mpath .. "/slowscaffold.lua")
-dofile(mpath .. "/autofarm.lua")
 dofile(mpath .. "/railscaffold.lua")
---dofile(mpath .. "/wallbot.lua")
---dofile(mpath .. "/ow2bot.lua")
---dofile(mpath .. "/canalbot.lua")
 dofile(mpath .. "/bot_tools.lua")
 dofile(mpath .. "/spongebot.lua")
-dofile(mpath .. "/sbots.lua")
---dofile(mpath .. "/squarry.lua")
 dofile(mpath .. "/greenup.lua")
 
 ws.rg('DigHead', { category = 'Player', setting = 'dighead',
