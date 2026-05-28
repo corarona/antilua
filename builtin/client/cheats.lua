@@ -1,8 +1,4 @@
 core.cheats = {
-	["Combat"] = {
-		["AntiKnockback"] = "antiknockback",
-		["AttachmentFloat"] = "float_above_parent",
-	},
 	["Movement"] = {
 		["Freecam"] = "freecam",
 		["AutoForward"] = "continuous_forward",
@@ -14,6 +10,12 @@ core.cheats = {
 		["AntiSlip"] = "antislip",
 		["AirJump"] = "airjump",
 		["Spider"] = "spider",
+		["EntitySpeed"] = "entity_speed",
+	},
+	["Combat"] = {
+		["AntiKnockback"] = "antiknockback",
+		["AttachmentFloat"] = "float_above_parent",
+		["AutoHit"] = "autohit",
 	},
 	["Render"] = {
 		["Xray"] = "xray",
@@ -32,19 +34,13 @@ core.cheats = {
 		["NodeESP"] = "enable_node_esp",
 		["NodeTracers"] = "enable_node_tracers",
 	},
-	["Interact"] = {
+	["Player"] = {
 		["FastDig"] = "fastdig",
 		["FastPlace"] = "fastplace",
 		["AutoDig"] = "autodig",
 		["AutoPlace"] = "autoplace",
 		["InstantBreak"] = "instant_break",
 		["FastHit"] = "spamclick",
-		["AutoHit"] = "autohit",
-	},
-	["Exploit"] = {
-		["EntitySpeed"] = "entity_speed",
-	},
-	["Player"] = {
 		["NoFallDamage"] = "prevent_natural_damage",
 		["NoForceRotate"] = "no_force_rotate",
 		["Reach"] = "reach",

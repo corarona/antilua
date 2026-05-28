@@ -93,7 +93,7 @@ ws.rg("SpongeBot", { category = "Bots", setting = "spongebot",
 	},
 })
 
-ws.rg("Autosponge", { category = "Scaffold", setting = "autosponge",
+ws.rg("Autosponge", { category = "World", setting = "autosponge",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 10
 		local water = minetest.find_node_near(minetest.localplayer:get_pos(), range, "mcl_core:water_source")

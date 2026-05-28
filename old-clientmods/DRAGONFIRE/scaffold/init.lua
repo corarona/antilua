@@ -369,7 +369,7 @@ local function is_lantern(pos)
    return false
 end
 
-ws.rg("Highway", { category = "Scaffold", setting = "highwaymaker",
+ws.rg("Highway", { category = "World", setting = "highwaymaker",
 	on_step = function(self)
 		for i = -2, 2 do
 			mscaffold(i)
@@ -544,7 +544,7 @@ ws.rg("Nuke", { category = "World", setting = "nuke",
 })
 
 local lightblock = nil
-ws.rg("LanternTBM", { category = "Scaffold", setting = "scaffold_ltbm",
+ws.rg("LanternTBM", { category = "World", setting = "scaffold_ltbm",
 	on_step = function(self)
 		local dir = ws.getdir()
 		local lp = vector.round(ws.dircoord(0, 0, 0))
