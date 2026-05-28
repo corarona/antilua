@@ -111,17 +111,32 @@ or by setting their corresponding settings.
 | Point Liquids | `point_liquids` | Target/select liquid nodes |
 | Through Walls | `dont_point_nodes` | Don't auto-select any node |
 
+### Cheat Layer Panel System
+
+Pressing **TAB** opens the cheat layer — a dark overlay with mouse-accessible
+panels. The main panel lists all cheat categories. Click a category to open a
+detachable child panel with individual cheat toggles. Panels can be:
+
+- **Dragged** by their title bar
+- **Pinned** (toggle via the `[P]` button) — stays visible even after closing the layer
+- **Focused for keyboard** (toggle via the `[K]` button) — arrow keys control that panel
+- **Closed** via the `[X]` button (child/settings panels only)
+- **Reset** to default position via the `[R]` button
+
+Cheats show `[x] Name` when enabled, `[ ] Name` when disabled. Click to toggle.
+A `>` suffix indicates the cheat has additional settings (right-arrow or click to open).
+
 ### Key Bindings
 
 | Key | Action |
 |-----|--------|
-| TAB | Cheat Menu |
+| TAB | Cheat Layer (dark overlay with panels) |
 | G | Toggle Freecam |
 | X | Toggle Killaura |
 | Y | Toggle Scaffold |
 | H | Open Ender Chest |
-| Arrow keys | Cheat menu navigation |
-| F | Confirm cheat toggle |
+| Arrow keys | Navigate keyboard-focused panel |
+| F | Confirm/toggle selected cheat |
 
 ### Lua API (client-side modding)
 

@@ -101,5 +101,11 @@ Requires `xvfb-run` (from the `xvfb` package) for headless display.
   (`src/client/render/plain.cpp`). Uses `getCameraNode()->getAbsolutePosition()`
   for the tracer origin (NOT `camera->getPosition()`, which is world space).
   A small forward offset (`look_dir * 0.2 * BS`) avoids near-plane clipping.
+- The cheat menu uses a **panel system** (`src/gui/cheatMenu.cpp`). Pressing
+  TAB opens a dark overlay layer with mouse cursor. Panels are movable,
+  pinnable, and keyboard-focusable. Each panel renders as a 2D rectangle with
+  title bar, close/pin/focus/reset buttons, and clickable item list. Settings
+  panels build widgets from `cheat_settings` (Lua table). The `get_formspec`
+  field on cheat defs can provide custom formspec-based settings pages.
 - `.clang-tidy` checks are configured as warnings-as-errors for performance items
 - The `vcpkg.json` exists but is not the primary dependency manager on Linux
