@@ -2764,6 +2764,21 @@ cheat_menu_entry_height (Cheat menu entry height) int 35 10 200
 #    Width of the cheat menu in pixels.
 cheat_menu_entry_width (Cheat menu entry width) int 200 50 500
 
+#    Panel background color (R,G,B) for the cheat layer panels.
+cheat_menu_panel_bg (Panel background) string (30,30,45)
+
+#    Title bar background color (R,G,B).
+cheat_menu_title_bg (Title bar background) string (50,50,75)
+
+#    Panel border highlight color (R,G,B).
+cheat_menu_border (Panel border) string (70,70,100)
+
+#    Even-row item background (R,G,B).
+cheat_menu_item_bg (Item background) string (55,55,75)
+
+#    Odd-row item background (R,G,B).
+cheat_menu_item_bg_alt (Item background alt) string (45,45,65)
+
 #    ---- Node ESP ----
 
 #    Comma-separated list of node names to highlight with Node ESP.

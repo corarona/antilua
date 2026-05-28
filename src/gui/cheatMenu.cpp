@@ -49,11 +49,20 @@ CheatMenu::CheatMenu(Client *client) : m_client(client)
 	auto abg = g_settings->getV3F("cheat_menu_active_bg_color").value_or(v3f());
 	auto fc = g_settings->getV3F("cheat_menu_font_color").value_or(v3f());
 	auto sfc = g_settings->getV3F("cheat_menu_selected_font_color").value_or(v3f());
+	auto pbg = g_settings->getV3F("cheat_menu_panel_bg").value_or(v3f(30, 30, 45));
+	auto tbg = g_settings->getV3F("cheat_menu_title_bg").value_or(v3f(50, 50, 75));
+	auto bdr = g_settings->getV3F("cheat_menu_border").value_or(v3f(70, 70, 100));
+	auto ibg = g_settings->getV3F("cheat_menu_item_bg").value_or(v3f(55, 55, 75));
 
 	m_bg_color = video::SColor(g_settings->getU32("cheat_menu_bg_color_alpha"), bg.X, bg.Y, bg.Z);
 	m_active_bg_color = video::SColor(g_settings->getU32("cheat_menu_active_bg_color_alpha"), abg.X, abg.Y, abg.Z);
 	m_font_color = video::SColor(g_settings->getU32("cheat_menu_font_color_alpha"), fc.X, fc.Y, fc.Z);
 	m_selected_font_color = video::SColor(g_settings->getU32("cheat_menu_selected_font_color_alpha"), sfc.X, sfc.Y, sfc.Z);
+
+	m_panel_bg = video::SColor(230, pbg.X, pbg.Y, pbg.Z);
+	m_title_bg = video::SColor(230, tbg.X, tbg.Y, tbg.Z);
+	m_border_color = video::SColor(230, bdr.X, bdr.Y, bdr.Z);
+	m_item_bg = video::SColor(200, ibg.X, ibg.Y, ibg.Z);
 
 	m_head_height = g_settings->getU32("cheat_menu_head_height");
 	m_entry_height = g_settings->getU32("cheat_menu_entry_height");
@@ -106,11 +115,17 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 	if (x < 0) x = 0;
 	if (y < 0) y = 0;
 
-	// Background
-	driver->draw2DRectangle(video::SColor(230, 25, 25, 35), core::rect<s32>(x, y, x + w, y + h));
+	// Panel background
+	driver->draw2DRectangle(m_panel_bg, core::rect<s32>(x, y, x + w, y + h));
+
+	// Border
+	driver->draw2DRectangle(m_border_color, core::rect<s32>(x, y, x + w, y + 1));
+	driver->draw2DRectangle(m_border_color, core::rect<s32>(x, y + h - 1, x + w, y + h));
+	driver->draw2DRectangle(m_border_color, core::rect<s32>(x, y, x + 1, y + h));
+	driver->draw2DRectangle(m_border_color, core::rect<s32>(x + w - 1, y, x + w, y + h));
 
 	// Title bar
-	driver->draw2DRectangle(video::SColor(230, 45, 45, 65), core::rect<s32>(x, y, x + w, y + panel.title_h));
+	driver->draw2DRectangle(m_title_bg, core::rect<s32>(x + 1, y + 1, x + w - 1, y + panel.title_h));
 
 	// Title text
 	std::string title;
@@ -159,8 +174,8 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 		int ci = 0;
 		for (auto &cat : script->m_cheat_categories) {
 			bool sel = (ci == panel.selected_category);
-			video::SColor bg = sel ? m_active_bg_color : m_bg_color;
-			driver->draw2DRectangle(bg, core::rect<s32>(x, iy, x + w, iy + m_entry_height));
+			video::SColor bg = sel ? m_active_bg_color : ((ci % 2 == 0) ? m_item_bg : m_bg_color);
+			driver->draw2DRectangle(bg, core::rect<s32>(x + 1, iy, x + w - 1, iy + m_entry_height));
 			if (point_in_rect(mouse_pos.X, mouse_pos.Y, x, iy, w, m_entry_height))
 				panel.hover_item = ci;
 			drawText(m_font, "> " + cat->m_name, x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,

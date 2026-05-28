@@ -621,6 +621,11 @@ void set_default_settings()
 	settings->setDefault("cheat_menu_head_height", "50");
 	settings->setDefault("cheat_menu_entry_height", "35");
 	settings->setDefault("cheat_menu_entry_width", "200");
+	settings->setDefault("cheat_menu_panel_bg", "(30, 30, 45)");
+	settings->setDefault("cheat_menu_title_bg", "(50, 50, 75)");
+	settings->setDefault("cheat_menu_border", "(70, 70, 100)");
+	settings->setDefault("cheat_menu_item_bg", "(55, 55, 75)");
+	settings->setDefault("cheat_menu_item_bg_alt", "(45, 45, 65)");
 
 	// Cheat features
 	settings->setDefault("xray", "false");
