@@ -66,6 +66,8 @@ struct CheatPanel {
 	bool hover_focus = false;
 	int hover_item = -1;
 	int hover_setting = -1;
+	int show_settings_for = -1; // cheat index with expanded settings, -1 = none
+	std::vector<CheatSettingWidget> expanded_settings; // settings for the expanded cheat
 };
 
 class CheatMenu

@@ -78,6 +78,45 @@ CheatMenu::CheatMenu(Client *client) : m_client(client)
 	m_fontsize.Y = MYMAX(m_fontsize.Y, 1);
 }
 
+static void drawRoundedRect(video::IVideoDriver *driver, s32 x, s32 y, s32 w, s32 h,
+		video::SColor fill, video::SColor bg, s32 r = 4)
+{
+	// Body with corners cut
+	s32 r2 = r * 2;
+	driver->draw2DRectangle(fill, core::rect<s32>(x + r, y, x + w - r, y + h));
+	driver->draw2DRectangle(fill, core::rect<s32>(x, y + r, x + r, y + h - r));
+	driver->draw2DRectangle(fill, core::rect<s32>(x + w - r, y + r, x + w, y + h - r));
+	// Corner masking
+	for (s32 i = 0; i < r; i++) {
+		for (s32 j = 0; j < r; j++) {
+			if ((i + 1) * (i + 1) + (j + 1) * (j + 1) > r * r) {
+				s32 px = 1, py = 1;
+				// TL
+				driver->draw2DRectangle(bg, core::rect<s32>(x + i, y + j, x + i + px, y + j + py));
+				// TR
+				driver->draw2DRectangle(bg, core::rect<s32>(x + w - i - px, y + j, x + w - i, y + j + py));
+				// BL
+				driver->draw2DRectangle(bg, core::rect<s32>(x + i, y + h - j - py, x + i + px, y + h - j));
+				// BR
+				driver->draw2DRectangle(bg, core::rect<s32>(x + w - i - px, y + h - j - py, x + w - i, y + h - j));
+			}
+		}
+	}
+}
+
+static void drawRoundedBorder(video::IVideoDriver *driver, s32 x, s32 y, s32 w, s32 h,
+		video::SColor color, s32 r = 4)
+{
+	// Top
+	driver->draw2DRectangle(color, core::rect<s32>(x + r, y, x + w - r, y + 1));
+	// Bottom
+	driver->draw2DRectangle(color, core::rect<s32>(x + r, y + h - 1, x + w - r, y + h));
+	// Left
+	driver->draw2DRectangle(color, core::rect<s32>(x, y + r, x + 1, y + h - r));
+	// Right
+	driver->draw2DRectangle(color, core::rect<s32>(x + w - 1, y + r, x + w, y + h - r));
+}
+
 static void drawText(gui::IGUIFont *font, const std::string &text, s32 x, s32 y, const video::SColor &color)
 {
 	s32 fw = font->getDimension(utf8_to_wide(text).c_str()).Width;
@@ -104,6 +143,8 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 		h += (s32)script->m_cheat_categories.size() * (m_entry_height + m_gap);
 	} else if (isCatPanel(panel)) {
 		h += (s32)script->m_cheat_categories[panel.selected_category]->m_cheats.size() * (m_entry_height + m_gap);
+		if (panel.show_settings_for >= 0)
+			h += (s32)panel.expanded_settings.size() * (m_entry_height + m_gap);
 	} else if (isSetPanel(panel)) {
 		h += (s32)panel.settings.size() * (m_entry_height + m_gap);
 	}
@@ -116,16 +157,11 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 	if (y < 0) y = 0;
 
 	// Panel background
-	driver->draw2DRectangle(m_panel_bg, core::rect<s32>(x, y, x + w, y + h));
-
-	// Border
-	driver->draw2DRectangle(m_border_color, core::rect<s32>(x, y, x + w, y + 1));
-	driver->draw2DRectangle(m_border_color, core::rect<s32>(x, y + h - 1, x + w, y + h));
-	driver->draw2DRectangle(m_border_color, core::rect<s32>(x, y, x + 1, y + h));
-	driver->draw2DRectangle(m_border_color, core::rect<s32>(x + w - 1, y, x + w, y + h));
-
-	// Title bar
-	driver->draw2DRectangle(m_title_bg, core::rect<s32>(x + 1, y + 1, x + w - 1, y + panel.title_h));
+	drawRoundedRect(driver, x, y, w, h, m_panel_bg, driver->getScreenSize().Width > 0 ? video::SColor(0, 0, 0, 0) : m_panel_bg);
+	// Rounded border on top
+	drawRoundedBorder(driver, x, y, w, h, m_border_color);
+	// Title bar (stays within rounded top)
+	driver->draw2DRectangle(m_title_bg, core::rect<s32>(x + 4, y + 1, x + w - 4, y + panel.title_h));
 
 	// Title text
 	std::string title;
@@ -190,7 +226,6 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 		if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 			for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
 				bool enabled = cheat->is_enabled();
-				// Check if this cheat has settings
 				bool has_set = false;
 				lua_State *L = m_client->getScript()->getLuaState();
 				lua_getglobal(L, "core");
@@ -204,7 +239,7 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 				lua_pop(L, 3);
 
 				video::SColor cbg = enabled ? video::SColor(200, 40, 60, 40) : video::SColor(180, 50, 50, 55);
-				driver->draw2DRectangle(cbg, core::rect<s32>(x, iy, x + w, iy + m_entry_height));
+				driver->draw2DRectangle(cbg, core::rect<s32>(x + 1, iy, x + w - 1, iy + m_entry_height));
 				if (point_in_rect(mouse_pos.X, mouse_pos.Y, x, iy, w, m_entry_height))
 					panel.hover_item = chi;
 
@@ -214,18 +249,71 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 				drawText(m_font, txt, x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,
 					(chi == panel.selected_cheat) ? m_selected_font_color : m_font_color);
 
-				// Settings button for cheats that have settings
+				// Settings button
 				if (has_set) {
 					s32 sbx = x + w - 18;
 					bool hov = point_in_rect(mouse_pos.X, mouse_pos.Y, sbx, iy, 16, m_entry_height);
 					if (hov) panel.hover_setting = chi;
-					driver->draw2DRectangle(hov ? video::SColor(200, 100, 120, 80) : video::SColor(180, 60, 60, 70),
-						core::rect<s32>(sbx, iy, sbx + 16, iy + m_entry_height));
+					video::SColor sbtn = (chi == panel.show_settings_for) ? video::SColor(200, 80, 120, 120) :
+						(hov ? video::SColor(200, 100, 120, 80) : video::SColor(180, 60, 60, 70));
+					driver->draw2DRectangle(sbtn, core::rect<s32>(sbx, iy, sbx + 16, iy + m_entry_height));
 					drawText(m_font, "\u2699", sbx + 3, iy + (m_entry_height - m_fontsize.Y) / 2,
 						video::SColor(255, 200, 200, 100));
 				}
 
 				iy += m_entry_height + m_gap;
+
+				// Expand settings inline when show_settings_for matches
+				if (chi == panel.show_settings_for && has_set) {
+					// Load settings data if not already loaded
+					if (panel.expanded_settings.empty()) {
+						lua_State *L2 = m_client->getScript()->getLuaState();
+						lua_getglobal(L2, "core");
+						lua_getfield(L2, -1, "cheat_defs");
+						lua_getfield(L2, -1, cheat->m_setting.c_str());
+						if (lua_istable(L2, -1)) {
+							lua_getfield(L2, -1, "cheat_settings");
+							if (lua_istable(L2, -1)) {
+								lua_pushnil(L2);
+								while (lua_next(L2, -2)) {
+									std::string sk = lua_tostring(L2, -2);
+									if (lua_istable(L2, -1)) {
+										CheatSettingWidget sw;
+										sw.key = sk;
+										sw.full_setting = cheat->m_setting + "." + sk;
+										lua_getfield(L2, -1, "type");
+										if (lua_isstring(L2, -1)) sw.type = lua_tostring(L2, -1);
+										lua_pop(L2, 1);
+										panel.expanded_settings.push_back(sw);
+									}
+									lua_pop(L2, 1);
+								}
+							}
+							lua_pop(L2, 1);
+						}
+						lua_pop(L2, 3);
+					}
+					// Draw settings
+					s32 si = 0;
+					for (auto &sw : panel.expanded_settings) {
+						s32 sx = x + 15;
+						video::SColor s_bg = (si == panel.selected_setting) ? m_active_bg_color : video::SColor(180, 50, 50, 65);
+						driver->draw2DRectangle(s_bg, core::rect<s32>(sx, iy, x + w - 1, iy + m_entry_height));
+						if (point_in_rect(mouse_pos.X, mouse_pos.Y, sx, iy, w - 15, m_entry_height))
+							panel.hover_setting = -(chi * 100 + si + 1);
+						if (sw.type == "bool") {
+							bool val = g_settings->getBool(sw.full_setting);
+							std::string stxt = std::string("  ") + (val ? "[x]" : "[ ]") + " " + sw.key;
+							drawText(m_font, stxt, sx + 5, iy + (m_entry_height - m_fontsize.Y) / 2, m_font_color);
+						} else {
+							std::string val = g_settings->get(sw.full_setting);
+							drawText(m_font, "  " + sw.key + ": " + val, sx + 5, iy + (m_entry_height - m_fontsize.Y) / 2, m_font_color);
+						}
+						iy += m_entry_height + m_gap;
+						si++;
+					}
+				}
+
 				chi++;
 			}
 		}
@@ -396,12 +484,34 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			int chi = 0;
 			if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 				for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
+					// Check expanded settings area first (appears below the cheat row)
+					if (chi == panel.show_settings_for) {
+						int si = 0;
+						for (auto &sw : panel.expanded_settings) {
+							s32 sx = x + 15;
+							if (point_in_rect(pos.X, pos.Y, sx, iy, w - 15, m_entry_height)) {
+								panel.selected_setting = si;
+								if (sw.type == "bool") {
+									bool val = g_settings->getBool(sw.full_setting);
+									g_settings->setBool(sw.full_setting, !val);
+								}
+								return;
+							}
+							iy += m_entry_height + m_gap;
+							si++;
+						}
+					}
+					// Check cheat row click
 					if (point_in_rect(pos.X, pos.Y, x, iy, w, m_entry_height)) {
-						// Check if click is on the settings button (right 16px)
 						s32 sbx = x + w - 18;
 						if (point_in_rect(pos.X, pos.Y, sbx, iy, 16, m_entry_height)) {
-							// Open settings panel for this cheat
-							openCheatSettings(cheat, &panel);
+							if (panel.show_settings_for == chi) {
+								panel.show_settings_for = -1;
+								panel.expanded_settings.clear();
+							} else {
+								panel.show_settings_for = chi;
+								panel.expanded_settings.clear();
+							}
 						} else {
 							panel.selected_cheat = chi;
 							script->toggle_cheat(cheat);
@@ -602,12 +712,13 @@ void CheatMenu::selectRight()
 		loadPanelPosition(cp);
 		m_panels.push_back(cp);
 	} else if (isCatPanel(*panel)) {
-		if (panel->selected_category < 0 || (size_t)panel->selected_category >= script->m_cheat_categories.size())
-			return;
-		auto &cat = script->m_cheat_categories[panel->selected_category];
-		if (panel->selected_cheat < 0 || (size_t)panel->selected_cheat >= cat->m_cheats.size())
-			return;
-		openCheatSettings(cat->m_cheats[panel->selected_cheat], panel);
+		if (panel->selected_cheat == panel->show_settings_for) {
+			panel->show_settings_for = -1;
+			panel->expanded_settings.clear();
+		} else {
+			panel->show_settings_for = panel->selected_cheat;
+			panel->expanded_settings.clear();
+		}
 	}
 }
 
