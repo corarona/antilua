@@ -190,19 +190,19 @@ ws.rg('NlEdMode', { category = 'nList', setting = 'nlist_edmode',
 
 		local entries_str = #entries > 0 and esc_list(entries) or " "
 
-		local fs = "size[8,9]"
+		local fs = "size[8,9.5]"
 		fs = fs .. "bgcolor[#000000;true]"
 		fs = fs .. "label[0,0;List: " .. core.formspec_escape(sl) .. "]"
-		fs = fs .. "textlist[0,0.5;5,6;entries;" .. entries_str .. ";1]"
-		fs = fs .. "button[4.6,0.5;0.4,0.6;btn_addentry;+]"
-		fs = fs .. "button[4.6,1.3;0.4,0.6;btn_rmentry;-]"
+		fs = fs .. "textlist[0,0.5;5,5;entries;" .. entries_str .. ";1]"
+		fs = fs .. "button[0,5.7;0.6,0.7;btn_addentry;+]"
+		fs = fs .. "button[0.7,5.7;0.6,0.7;btn_rmentry;-]"
+		fs = fs .. "button[1.5,5.7;1.2,0.7;btn_clear;Clear]"
 		fs = fs .. "dropdown[5.5,0.5;2.5;list_select;" .. esc_list(lists) .. ";" .. (core.formspec_escape(sl)) .. "]"
 		fs = fs .. "label[5.5,1.7;Lists]"
 		fs = fs .. "button[5.5,2.2;1.2,0.8;btn_addlist;+ List]"
 		fs = fs .. "button[6.8,2.2;1.2,0.8;btn_rmlist;- List]"
-		fs = fs .. "field[0,7.3;7.8,0.8;item_input;;]"
-		fs = fs .. "button[0,8.3;1.2,0.8;btn_clear;Clear]"
-		fs = fs .. "button_exit[6.8,8.3;1.2,0.8;btn_done;Done]"
+		fs = fs .. "field[0,7;7.8,0.8;item_input;;]"
+		fs = fs .. "button_exit[6.8,8.5;1.2,0.8;btn_done;Done]"
 		return fs
 	end,
 })
