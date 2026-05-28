@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "settings.h"
 #include <cstddef>
 #include <algorithm>
+#include <cstdlib>
 
 static bool point_in_rect(s32 px, s32 py, s32 x, s32 y, s32 w, s32 h)
 {
@@ -246,6 +247,7 @@ void CheatMenu::drawPanels(video::IVideoDriver *driver, v2s32 mouse_pos, bool sh
 		CheatPanel cp;
 		cp.id = "_categories";
 		cp.x = 10; cp.y = 60;
+		loadPanelPosition(cp);
 		m_panels.push_back(cp);
 	}
 
@@ -353,10 +355,7 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 						cp.selected_category = ci;
 						cp.x = panel.x + panel.w + 10;
 						cp.y = panel.y;
-						int off = 0;
-						for (auto &ep : m_panels)
-							if (isCatPanel(ep)) off += 25;
-						cp.x += off; cp.y += off;
+						loadPanelPosition(cp);
 						m_panels.push_back(cp);
 					} else {
 						// Replace mode: close existing child, open new one
@@ -369,6 +368,7 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 						cp.selected_category = ci;
 						cp.x = panel.x + panel.w + 10;
 						cp.y = panel.y;
+						loadPanelPosition(cp);
 						m_panels.push_back(cp);
 					}
 					return;
@@ -439,6 +439,7 @@ void CheatMenu::openCheatSettings(ScriptApiCheatsCheat *cheat, CheatPanel *paren
 	sp.id = sid;
 	sp.x = parent->x + parent->w + 10;
 	sp.y = parent->y;
+	loadPanelPosition(sp);
 
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "cheat_defs");
@@ -606,6 +607,25 @@ void CheatMenu::selectConfirm()
 				script->toggle_cheat(cheat);
 			}
 		}
+	}
+}
+
+void CheatMenu::loadPanelPosition(CheatPanel &panel)
+{
+	std::string key = "cheat_panel_" + panel.id;
+	std::string val = g_settings->get(key);
+	if (val.empty())
+		return;
+	auto comma = val.find(',');
+	if (comma == std::string::npos) return;
+	panel.x = atoi(val.substr(0, comma).c_str());
+	auto comma2 = val.find(',', comma + 1);
+	if (comma2 == std::string::npos) {
+		panel.y = atoi(val.substr(comma + 1).c_str());
+	} else {
+		panel.y = atoi(val.substr(comma + 1, comma2 - comma - 1).c_str());
+		if (val.substr(comma2 + 1) == "pinned")
+			panel.pinned = true;
 	}
 }
 

@@ -91,6 +91,7 @@ public:
 private:
 	void drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 mouse_pos);
 	void openCheatSettings(ScriptApiCheatsCheat *cheat, CheatPanel *parent);
+	void loadPanelPosition(CheatPanel &panel);
 	void savePanelPositions();
 
 	FontMode fontStringToEnum(std::string str);
