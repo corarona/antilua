@@ -71,13 +71,17 @@ function ws.register_globalhacktemplate(name, ...)
 		core.register_cheat(def.name, def)
 	elseif type(name) == "string" then
 		-- Old style: ws.rg("name", "Category", "setting", func, funcstart, funcstop, daughters, delay)
+		-- Wrap old-style functions: they expect (dtime) not (self, dtime)
 		local category, setting, func, funcstart, funcstop, daughters, delay = ...
+		local f = func
+		local fs = funcstart
+		local fe = funcstop
 		def = {
 			category  = category,
 			setting   = setting,
-			on_step   = func,
-			on_start  = funcstart,
-			on_stop   = funcstop,
+			on_step   = function(_, dtime) if f then f(dtime) end end,
+			on_start  = function(_) if fs then return fs() end end,
+			on_stop   = function(_) if fe then fe() end end,
 			daughters = daughters,
 			delay     = delay,
 		}
