@@ -104,21 +104,6 @@ function ws.on_connect(func)
 	if func then func() end
 end
 
--- Debug
-local function printwieldedmeta()
-	local wi = minetest.localplayer:get_wielded_item()
-	ws.dcm(wi:get_name())
-	ws.dcm(dump(wi:get_meta():to_table()))
-end
-
-local function printptdnodedmeta()
-	local m = minetest.get_meta(minetest.get_pointed_thing_position(minetest.get_pointed_thing()))
-	ws.dcm(dump(m:to_table()))
-end
-
-core.register_cheat('ItemMeta', { category = 'Test', func = printwieldedmeta })
-core.register_cheat('PtdNodeMeta', { category = 'Test', func = printptdnodedmeta })
-
 minetest.register_chatcommand('giveme', {
 	func = function(param)
 		for k, v in ipairs(nlist.get(nlist.selected)) do

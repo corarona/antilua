@@ -290,7 +290,7 @@ local function excavate(condition)
 	end
 end
 
-ws.rg('Excavator', { category = 'Diggers', setting = 'excavator',
+ws.rg('Excavator', { category = 'Dig', setting = 'excavator',
 	on_step = function(self)
 		minetest.settings:set_bool('continuous_forward', true)
 		excavate(function(p)
@@ -301,7 +301,7 @@ ws.rg('Excavator', { category = 'Diggers', setting = 'excavator',
 	delay = 0.2,
 })
 
-ws.rg('TBM', { category = 'Diggers', setting = 'excavator',
+ws.rg('TBM', { category = 'Dig', setting = 'excavator',
 	on_step = function(self)
 		minetest.settings:set_bool('continuous_forward', true)
 		excavate(function(p)
@@ -319,7 +319,7 @@ ws.rg('TBM', { category = 'Diggers', setting = 'excavator',
 	delay = 0.2,
 })
 
-ws.rg('TExcavator', { category = 'Diggers', setting = 'texcavator',
+ws.rg('TExcavator', { category = 'Dig', setting = 'texcavator',
 	on_step = function(self)
 		minetest.settings:set_bool('continuous_forward', true)
 		excavate()
@@ -328,7 +328,7 @@ ws.rg('TExcavator', { category = 'Diggers', setting = 'texcavator',
 	delay = 0.2,
 })
 
-ws.rg('WallExcavator', { category = 'Diggers', setting = 'wallexcavator',
+ws.rg('WallExcavator', { category = 'Dig', setting = 'wallexcavator',
 	on_step = function(self)
 		minetest.settings:set_bool('continuous_forward', true)
 		local lp = ws.dircoord(0, 0, 0)

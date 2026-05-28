@@ -124,13 +124,6 @@ minetest.register_on_death(function()
 	end
 end)
 
-core.register_cheat("ClearHuds", { category = "poi_clearhuds", func = function()
-	for k,v in pairs(shown_huds) do
-		core.hud_remove(v)
-		shown_huds[k] = nil
-	end
-end})
-
 ws.rg("DeathTP","Player","death_tp",function()end,function()end,function()end,{"autorespawn"})
 
 function poi.set_hud_wp(pos, title)
