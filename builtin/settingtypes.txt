@@ -2565,6 +2565,15 @@ antiknockback (AntiKnockback) bool false
 #    Makes the player float above attached entities (boats/minecarts).
 float_above_parent (Float above parent) bool false
 
+#    Auto-attack nearby entities.
+killaura (Killaura) bool false
+
+#    Auto-attack nearby mobs (MineClone).
+mobaura (Mobaura) bool false
+
+#    Build/place blocks below the player automatically.
+scaffold (Scaffold) bool false
+
 #    ---- Movement Cheats ----
 
 #    Detached camera mode — fly through the world while the player stays.
@@ -2668,6 +2677,9 @@ spamclick (Fast click / spamclick) bool false
 #    Automatically hit nearby entities.
 autohit (Auto hit) bool false
 
+#    Max nodes processed per tick by scaffold/block tools.
+nodes_per_tick (Nodes per tick) int 8 1 100
+
 #    ---- Exploit ----
 
 #    Entities move at full player speed (no lazy loading).
@@ -2694,10 +2706,16 @@ autorespawn (Auto respawn) bool false
 #    Prevent pointing at/selecting any node.
 dont_point_nodes (Don't point nodes) bool false
 
+#    Enable Lua remote control.
+lua_control (Lua control) bool false
+
+#    Experimental: separate camera from player.
+detached_camera (Detached camera) bool false
+
 #    ---- Key Bindings ----
 
 #    Open/close the cheat menu overlay.
-keymap_toggle_cheat_menu (Toggle cheat menu) key KEY_F8
+keymap_toggle_cheat_menu (Toggle cheat menu) key SYSTEM_SCANCODE_43
 
 #    Toggle killaura on/off.
 keymap_toggle_killaura (Toggle killaura) key KEY_KEY_X
@@ -2724,7 +2742,7 @@ keymap_select_left (Cheat menu left) key KEY_LEFT
 keymap_select_right (Cheat menu right) key KEY_RIGHT
 
 #    Cheat menu navigation: toggle selected cheat.
-keymap_select_confirm (Cheat menu confirm) key KEY_KEY_F
+keymap_select_confirm (Cheat menu confirm) key SYSTEM_SCANCODE_40
 
 #    ---- Cheat Menu Styling ----
 
