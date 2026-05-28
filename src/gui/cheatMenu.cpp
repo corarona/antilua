@@ -613,8 +613,8 @@ void CheatMenu::selectConfirm()
 void CheatMenu::loadPanelPosition(CheatPanel &panel)
 {
 	std::string key = "cheat_panel_" + panel.id;
-	std::string val = g_settings->get(key);
-	if (val.empty())
+	std::string val;
+	if (!g_settings->getNoEx(key, val) || val.empty())
 		return;
 	auto comma = val.find(',');
 	if (comma == std::string::npos) return;
