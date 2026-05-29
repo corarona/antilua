@@ -1445,13 +1445,16 @@ void Client::sendRespawnLegacy()
 
 void Client::sendReady()
 {
+	std::string version = g_version_hash;
+	version += "-Dragonfire";
+
 	NetworkPacket pkt(TOSERVER_CLIENT_READY,
-			1 + 1 + 1 + 1 + 2 + sizeof(char) * strlen(g_version_hash) + 2 + 4);
+			1 + 1 + 1 + 1 + 2 + sizeof(char) * version.size() + 2 + 4);
 
 	pkt << (u8) VERSION_MAJOR << (u8) VERSION_MINOR << (u8) VERSION_PATCH
-		<< (u8) 0xDF << (u16) strlen(g_version_hash);
+		<< (u8) 0xDF << (u16) version.size();
 
-	pkt.putRawString(g_version_hash, (u16) strlen(g_version_hash));
+	pkt.putRawString(version.c_str(), (u16) version.size());
 	pkt << (u16)FORMSPEC_API_VERSION;
 	pkt << (u32) 0x44463030;
 	Send(&pkt);
