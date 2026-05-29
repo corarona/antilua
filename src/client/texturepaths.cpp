@@ -99,6 +99,12 @@ std::vector<std::string> getTextureDirs()
 	std::vector<std::string> ret = g_texturedirs_cache.get();
 	if (ret.empty()) {
 		ret = fs::GetRecursiveDirs(g_settings->get("texture_path"));
+		// also search client mod directories for textures
+		std::string clientmods_dir = porting::path_share + DIR_DELIM "clientmods";
+		if (fs::IsDir(clientmods_dir)) {
+			auto clientmod_textures = fs::GetRecursiveDirs(clientmods_dir);
+			ret.insert(ret.end(), clientmod_textures.begin(), clientmod_textures.end());
+		}
 		g_texturedirs_cache.set(ret);
 	}
 	return ret;

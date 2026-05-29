@@ -43,44 +43,45 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 	on_start = function(self)
 		if not minetest.localplayer then return true end
 
-		-- Horizon background (centered at bottom-right)
+		-- Horizon background
 		self._hud_bg = minetest.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
-			offset = {x = -15, y = -15},
-			scale = {x = S, y = S},
-			text = "horizon.png"
+			offset = {x = -262, y = -309},
+			scale = {x = 2, y = 2},
+			text = "df_horizon.png"
 		})
 
 		-- Indicator line centered on the horizon image
 		self._hud_line = minetest.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
-			alignment = {x = 1, y = 0},
-			offset = {x = -62, y = -175},
+			alignment = {x = 1, y = 1},
+			offset = {x = -247, y = -294},
 			scale = {x = S, y = S},
 			text = "horizon_indicator.png"
 		})
 		self._last_roll_tex = nil
 
-		-- Pitch/Roll numeric text
+		-- Pitch/Roll numeric text (centered above horizon image)
 		self._hud_pitch = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = 1},
-			offset = {x = -160, y = -370},
+			alignment = {x = 0.5, y = 1},
+			offset = {x = -174, y = -340},
 			number = 0xFF66AAFF, text = ""
 		})
 
-		-- Altitude readout (left of the horizon, top area)
-		self._hud_alt = minetest.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = 1},
-			offset = {x = -200, y = -370},
+		-- Altitude bar (left side)
+		self._hud_alt_bar = minetest.localplayer:hud_add({
+			hud_elem_type = "text", position = {x = 0, y = 1},
+			alignment = {x = 0, y = 1},
+			offset = {x = 25, y = -250},
 			number = 0xFF88FF88, text = ""
 		})
-		self._hud_alt_bar = minetest.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = 1},
-			offset = {x = -200, y = -350},
+		-- Y: value right under the bar
+		self._hud_alt = minetest.localplayer:hud_add({
+			hud_elem_type = "text", position = {x = 0, y = 1},
+			alignment = {x = 0, y = 1},
+			offset = {x = 25, y = -25},
 			number = 0xFF88FF88, text = ""
 		})
 
@@ -107,9 +108,9 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 
 		-- Indicator line: pitch down (positive) → moves UP
 		-- Indicator: move up/down with pitch, centered on horizon
-		local ind_y = -175 + math.floor(pitch * 1.5)
-		ind_y = math.max(-280, math.min(-70, ind_y))
-		set(self._hud_line, "offset", {x = -62, y = ind_y})
+		local ind_y = -294 + math.floor(pitch * 1.5)
+		ind_y = math.max(-399, math.min(-189, ind_y))
+		set(self._hud_line, "offset", {x = -247, y = ind_y})
 
 		-- Swap indicator texture based on roll (round to nearest 10°)
 		local ri = math.floor((roll + 5) / 10) * 10
