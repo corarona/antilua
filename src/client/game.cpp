@@ -2167,8 +2167,8 @@ void Game::updatePlayerControl(const CameraOrientation &cam)
 		getTogglableKeyState(KeyType::AUX1,  m_cache_toggle_aux1_key, player->control.aux1),
 		getTogglableKeyState(KeyType::SNEAK, allow_sneak_toggle,      player->control.sneak),
 		isKeyDown(KeyType::ZOOM),
-		isKeyDown(KeyType::DIG),
-		isKeyDown(KeyType::PLACE),
+		isKeyDown(KeyType::DIG) && !m_cheat_layer_active,
+		isKeyDown(KeyType::PLACE) && !m_cheat_layer_active,
 		cam.camera_pitch,
 		cam.camera_yaw
 	);
@@ -2837,6 +2837,29 @@ void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 
 	if (pointed != runData.pointed_old)
 		infostream << "Pointing at " << pointed.dump() << std::endl;
+
+	// Suppress dig/place when cheat menu is active — clicks go to menu panels
+	if (m_cheat_layer_active) {
+		if (runData.digging) {
+			runData.digging = false;
+			client->interact(INTERACT_STOP_DIGGING, runData.pointed_old);
+			client->setCrack(-1, v3s16(0, 0, 0));
+			runData.dig_time = 0.0;
+		}
+		player->control.dig = false;
+		player->control.place = false;
+		runData.pointed_old = pointed;
+		input->clearWasKeyPressed();
+		input->clearWasKeyReleased();
+		wasKeyDown(KeyType::DIG);
+		wasKeyDown(KeyType::PLACE);
+		input->joystick.clearWasKeyPressed(KeyType::DIG);
+		input->joystick.clearWasKeyPressed(KeyType::PLACE);
+		input->joystick.clearWasKeyReleased(KeyType::DIG);
+		input->joystick.clearWasKeyReleased(KeyType::PLACE);
+		hud->updateSelectionMesh(camera_offset);
+		return;
+	}
 
 	if (g_touchcontrols) {
 		auto mode = selected_def.touch_interaction.getMode(selected_def, pointed.type);
