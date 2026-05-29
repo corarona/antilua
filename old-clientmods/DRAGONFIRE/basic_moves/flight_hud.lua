@@ -52,7 +52,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 			text = "horizon.png"
 		})
 
-		-- Pitch indicator line (moves up/down, centered in the circle)
+		-- Pitch indicator line (texture swapped by roll angle)
 		self._hud_line = minetest.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 0},
@@ -60,6 +60,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 			scale = {x = S, y = S},
 			text = "horizon_indicator.png"
 		})
+		self._last_roll_tex = nil
 
 		-- Pitch/Roll numeric text
 		self._hud_pitch = minetest.localplayer:hud_add({
@@ -105,12 +106,26 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		local roll = tonumber(minetest.settings:get("flight_hud_roll")) or 0
 
 		-- Indicator line: pitch down (positive) → moves UP
-		-- Indicator moves up (pitch down = more positive pitch)
-		-- Center of circle is at about y = 90px above bottom-right
+		-- Indicator: move up/down with pitch, rotate texture with roll
 		local base_line_y = -90
 		local line_y = base_line_y + math.floor(pitch * 1.5)
 		line_y = math.max(-160, math.min(-20, line_y))
 		set(self._hud_line, "offset", {x = -110, y = line_y})
+
+		-- Swap indicator texture based on roll (round to nearest 10°)
+		local ri = math.floor((roll + 5) / 10) * 10
+		ri = math.max(-90, math.min(90, ri))
+		local tex
+		if ri == 0 then
+			tex = "horizon_indicator.png"
+		else
+			local sign = ri > 0 and "" or "-"
+			tex = string.format("hl_%s%d.png", sign, math.abs(ri))
+		end
+		if tex ~= self._last_roll_tex then
+			set(self._hud_line, "text", tex)
+			self._last_roll_tex = tex
+		end
 		set(self._hud_pitch, "text", string.format("Pitch: %.0f  Roll: %.0f", pitch, roll))
 
 		-- Altitude: Y position with vertical bar to the right
