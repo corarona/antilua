@@ -43,20 +43,20 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 	on_start = function(self)
 		if not minetest.localplayer then return true end
 
-		-- Horizon background (user-provided horizon.png, 128x128)
+		-- Horizon background (centered at bottom-right)
 		self._hud_bg = minetest.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1},
-			offset = {x = -170, y = -190},
+			alignment = {x = 1, y = 1},
+			offset = {x = -15, y = -15},
 			scale = {x = S, y = S},
 			text = "horizon.png"
 		})
 
-		-- Pitch indicator line (thin bar that moves up/down)
+		-- Pitch indicator line (moves up/down, centered in the circle)
 		self._hud_line = minetest.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 0},
-			offset = {x = -112, y = -95},
+			offset = {x = -110, y = -90},
 			scale = {x = S, y = S},
 			text = "horizon_indicator.png"
 		})
@@ -64,36 +64,36 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		-- Pitch/Roll numeric text
 		self._hud_pitch = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1},
-			offset = {x = -140, y = -240},
+			alignment = {x = 1, y = 1},
+			offset = {x = -160, y = -370},
 			number = 0xFF66AAFF, text = ""
 		})
 
-		-- Altitude readout (vertical bar on the right of the horizon)
+		-- Altitude readout (vertical bar, 10px from right)
 		self._hud_alt = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1},
-			offset = {x = -60, y = -220},
+			alignment = {x = 1, y = 1},
+			offset = {x = -15, y = -370},
 			number = 0xFF88FF88, text = ""
 		})
 		self._hud_alt_bar = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = 0},
-			offset = {x = -60, y = -95},
+			alignment = {x = 1, y = 1},
+			offset = {x = -15, y = -250},
 			number = 0xFF88FF88, text = ""
 		})
 
 		-- Speed bar (below altitude)
 		self._hud_speed = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1},
-			offset = {x = -60, y = -25},
+			alignment = {x = 1, y = 1},
+			offset = {x = -15, y = -50},
 			number = 0xFFFFCC66, text = ""
 		})
 		self._hud_speed_bar = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1},
-			offset = {x = -60, y = -12},
+			alignment = {x = 1, y = 1},
+			offset = {x = -15, y = -38},
 			number = 0xFFAAAAAA, text = ""
 		})
 	end,
@@ -105,13 +105,12 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		local roll = tonumber(minetest.settings:get("flight_hud_roll")) or 0
 
 		-- Indicator line: pitch down (positive) → moves UP
-		local line_y = -95 - math.floor(pitch * 1.5)
-		line_y = math.max(-170, math.min(5, line_y))
-
-		-- Indicator tilting: image rotation not possible via Lua HUD API,
-		-- so roll is shown numerically alongside pitch.
-		-- The line stays horizontal but shifts position for pitch.
-		set(self._hud_line, "offset", {x = -112, y = line_y})
+		-- Indicator moves up (pitch down = more positive pitch)
+		-- Center of circle is at about y = 90px above bottom-right
+		local base_line_y = -90
+		local line_y = base_line_y + math.floor(pitch * 1.5)
+		line_y = math.max(-160, math.min(-20, line_y))
+		set(self._hud_line, "offset", {x = -110, y = line_y})
 		set(self._hud_pitch, "text", string.format("Pitch: %.0f  Roll: %.0f", pitch, roll))
 
 		-- Altitude: Y position with vertical bar to the right
@@ -129,7 +128,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 
 		-- Speed: numeric + horizontal bar below altitude
 		local vel = lp:get_velocity()
-		local speed = vel and vector.length(vel) / 10 or 0
+		local speed = vel and vector.length(vel) or 0
 		set(self._hud_speed, "text", string.format("%.1f n/s", speed))
 		set(self._hud_speed_bar, "text", speed_bar(math.min(speed / 5, 1)))
 		set(self._hud_speed_bar, "number", speed > 3 and 0xFFFF6666 or 0xFFAAAAAA)
