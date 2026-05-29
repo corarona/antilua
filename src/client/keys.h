@@ -60,16 +60,6 @@ public:
 		DECREASE_VIEWING_RANGE,
 		RANGESELECT,
 		ZOOM,
-		ENDERCHEST,
-		TOGGLE_CHEAT_MENU,
-		KILLAURA,
-		FREECAM,
-		SCAFFOLD,
-		SELECT_UP,
-		SELECT_DOWN,
-		SELECT_LEFT,
-		SELECT_RIGHT,
-		SELECT_CONFIRM,
 
 		QUICKTUNE_NEXT,
 		QUICKTUNE_PREV,
@@ -109,6 +99,18 @@ public:
 		SLOT_30,
 		SLOT_31,
 		SLOT_32,
+
+		// DragonfireClient-specific keys (appended to avoid enum value shifts)
+		ENDERCHEST,
+		TOGGLE_CHEAT_MENU,
+		KILLAURA,
+		FREECAM,
+		SCAFFOLD,
+		SELECT_UP,
+		SELECT_DOWN,
+		SELECT_LEFT,
+		SELECT_RIGHT,
+		SELECT_CONFIRM,
 
 		// Fake keycode for array size and internal checks
 		INTERNAL_ENUM_COUNT

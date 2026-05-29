@@ -469,6 +469,16 @@ function settingtypes.parse_config_file(read_all, parse_mods)
 		file:close()
 	end
 
+	-- Load Dragonfire-specific setting type definitions
+	do
+		local df_path = core.get_builtin_path() .. "settingtypes_df.txt"
+		local file = io.open(df_path, "r")
+		if file then
+			parse_single_file(file, df_path, read_all, settings, 0, true)
+			file:close()
+		end
+	end
+
 	-- TODO: Support game/mod settings in the pause menu too
 	-- Note that this will need to work different from how it's done in the
 	-- mainmenu:
