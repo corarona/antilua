@@ -100,7 +100,7 @@ function core.show_cheat_settings_form(setting, use_auto)
 	if def.get_formspec and not use_auto then
 		local fs = def.get_formspec(setting)
 		if fs then
-			core.show_formspec("cheat_settings:" .. setting .. ":custom", fs)
+			core.show_formspec("cheat_settings:" .. setting .. ":custom", "no_prepend[]" .. fs)
 			return
 		end
 	end
@@ -115,7 +115,7 @@ function core.show_cheat_settings_form(setting, use_auto)
 	end
 	table.sort(keys)
 
-	local fs = "size[5," .. (2 + #keys + 0.5) .. ",true]"
+	local fs = "no_prepend[]size[5," .. (2 + #keys + 0.5) .. ",true]"
 	fs = fs .. "bgcolor[#000000;true]"
 	fs = fs .. "label[0,0;" .. core.formspec_escape(def.name) .. " Settings]"
 	local y = 1
