@@ -3836,8 +3836,11 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
 	*/
 	if (this->m_cheat_layer_active) {
 		v2u32 ss = this->driver->getScreenSize();
-		this->driver->draw2DRectangle(video::SColor(140, 0, 0, 0),
-			core::rect<s32>(0, 0, ss.X, ss.Y));
+		// Skip darkening when a formspec is active (formspec drawn by GUI
+		// layer before this point; its own bgcolor handles the background)
+		if (!isMenuActive())
+			this->driver->draw2DRectangle(video::SColor(140, 0, 0, 0),
+				core::rect<s32>(0, 0, ss.X, ss.Y));
 		this->m_cheat_menu->drawPanels(this->driver,
 			this->input->getMousePos(),
 			this->m_game_ui->m_flags.show_minimal_debug);
