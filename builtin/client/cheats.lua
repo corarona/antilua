@@ -118,7 +118,7 @@ function core.show_cheat_settings_form(setting, use_auto)
 
 	local fs = "formspec_version[10]size[5," .. (2 + #keys + 0.5) .. ",true]"
 	fs = fs .. "padding[0.5,0.5]no_prepend[]bgcolor[#000000;true]"
-	fs = fs .. "label[0,0;" .. core.formspec_escape(def.name) .. " Settings]"
+	fs = fs .. "label[0,0.3;" .. core.formspec_escape(def.name) .. " Settings]"
 	local y = 1
 	for _, key in ipairs(keys) do
 		local spec = def.cheat_settings[key]
