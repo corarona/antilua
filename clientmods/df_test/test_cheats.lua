@@ -79,6 +79,7 @@ function test_cheat_settings(T)
 	-- Verify show_cheat_settings_form works
 	T.run("show_cheat_settings_form known setting", function()
 		core.show_cheat_settings_form("scaffold")
+		core.close_formspec("cheat_settings:scaffold")
 		T.assert(true, "show_cheat_settings_form on scaffold completed without error")
 	end)
 
