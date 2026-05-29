@@ -23,6 +23,9 @@ scaffold (Scaffold) bool false
 #    Detached camera mode — fly through the world while the player stays.
 freecam (Freecam) bool false
 
+#    Look around with mouse without changing movement direction.
+freelook (Freelook) bool false
+
 #    Move continuously forward in the look direction.
 #    Also togglable via the cheat menu.
 continuous_forward (Continuous forward) bool false

@@ -7,7 +7,7 @@ function test_cheat_settings(T)
 		"entity_speed", "antiknockback", "autodig", "fastdig",
 		"jesus", "fastplace", "autoplace", "instant_break",
 		"no_night", "coords", "point_liquids", "spamclick",
-		"no_force_rotate", "freecam", "xray", "fullbright",
+		"no_force_rotate", "freecam", "freelook", "xray", "fullbright",
 		"priv_bypass", "prevent_natural_damage", "no_hurt_cam",
 		"reach", "hud_flags_bypass", "float_above_parent",
 		"killaura", "scaffold", "autohit",

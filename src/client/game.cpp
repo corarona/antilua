@@ -2192,6 +2192,16 @@ void Game::updatePlayerControl(const CameraOrientation &cam)
 		control.aux1 = control.aux1 ^ true;
 	}
 
+	// In freelook, save the live camera direction for rendering but use the
+	// frozen m_yaw/m_pitch for movement.
+	if (player->getPlayerSettings().freelook) {
+		player->setFreelookYaw(control.yaw);
+		player->setFreelookPitch(control.pitch);
+		control.yaw = player->getYaw();
+		control.pitch = player->getPitch();
+		control.setMovementFromKeys();
+	}
+
 	client->setPlayerControl(control);
 
 	//tt.stop();

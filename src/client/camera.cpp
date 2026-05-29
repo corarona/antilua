@@ -316,8 +316,9 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio)
 	v3f old_player_position = m_playernode->getPosition();
 	v3f player_position = player->getPosition();
 
-	f32 yaw = player->getYaw();
-	f32 pitch = player->getPitch();
+	bool freelook = g_settings->getBool("freelook");
+	f32 yaw = freelook ? player->getFreelookYaw() : player->getYaw();
+	f32 pitch = freelook ? player->getFreelookPitch() : player->getPitch();
 
 	// This is worse than `LocalPlayer::getPosition()` but
 	// mods expect the player head to be at the parent's position

@@ -21,6 +21,7 @@ struct CollisionMoveResult;
 struct PlayerSettings
 {
 	bool freecam = false;
+	bool freelook = false;
 	bool free_move = false;
 	bool pitch_move = false;
 	bool fast_move = false;
@@ -145,6 +146,12 @@ public:
 		m_pitch = pitch;
 	}
 
+	// Freelook: camera view yaw/pitch (updated by mouse, separate from movement yaw/pitch)
+	void setFreelookYaw(f32 yaw) { m_freelook_yaw = yaw; }
+	f32 getFreelookYaw() const { return m_freelook_yaw; }
+	void setFreelookPitch(f32 pitch) { m_freelook_pitch = pitch; }
+	f32 getFreelookPitch() const { return m_freelook_pitch; }
+
 	inline void setPosition(const v3f &position)
 	{
 		m_position = position;
@@ -237,6 +244,8 @@ private:
 	v3f m_legit_speed;
 	f32 m_legit_yaw = 0.0f;
 	f32 m_legit_pitch = 0.0f;
+	f32 m_freelook_yaw = 0.0f;
+	f32 m_freelook_pitch = 0.0f;
 
 	v3f m_position;
 	v3s16 m_standing_node;

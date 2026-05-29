@@ -19,13 +19,14 @@
 */
 
 const static std::string PlayerSettings_names[] = {
-	"freecam", "free_move", "pitch_move", "fast_move", "continuous_forward", "always_fly_fast",
+	"freecam", "freelook", "free_move", "pitch_move", "fast_move", "continuous_forward", "always_fly_fast",
 	"aux1_descends", "noclip", "autojump"
 };
 
 void PlayerSettings::readGlobalSettings()
 {
 	freecam = g_settings->getBool("freecam");
+	freelook = g_settings->getBool("freelook");
 	free_move = g_settings->getBool("free_move");
 	pitch_move = g_settings->getBool("pitch_move");
 	fast_move = g_settings->getBool("fast_move");

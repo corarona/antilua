@@ -1,6 +1,7 @@
 core.cheats = {
 	["Movement"] = {
 		["Freecam"] = "freecam",
+		["Freelook"] = "freelook",
 		["AutoForward"] = "continuous_forward",
 		["PitchMove"] = "pitch_move",
 		["AutoJump"] = "autojump",

@@ -98,6 +98,7 @@ static void set_df_default_settings()
 	settings->setDefault("xray_nodes", "default:stone,mcl_core:stone");
 	settings->setDefault("fullbright", "false");
 	settings->setDefault("freecam", "false");
+	settings->setDefault("freelook", "false");
 	settings->setDefault("lua_control", "false");
 	settings->setDefault("detached_camera", "false");
 	settings->setDefault("priv_bypass", "true");
