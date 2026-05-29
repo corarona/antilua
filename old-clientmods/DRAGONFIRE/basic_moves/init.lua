@@ -1,6 +1,7 @@
 local modname = minetest.get_current_modname()
 local modpath = minetest.get_modpath(modname)
 dofile(modpath .. "/autofly.lua")
+dofile(modpath .. "/flight_hud.lua")
 --dofile(modpath .. "/incremental_tp.lua")
 
 local nether_rings = {

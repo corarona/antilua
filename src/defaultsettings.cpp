@@ -673,7 +673,6 @@ void set_default_settings()
 	settings->setDefault("airjump", "false");
 	settings->setDefault("spider", "false");
 	settings->setDefault("autojump", "false");
-	settings->setDefault("flight_hud", "true");
 
 	// Cheat key bindings
 	settings->setDefault("keymap_toggle_cheat_menu", "SYSTEM_SCANCODE_43");

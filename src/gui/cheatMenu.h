@@ -80,7 +80,6 @@ public:
 	void drawPanels(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug);
 	void drawPinned(video::IVideoDriver *driver, v2s32 mouse_pos);
 	void drawHUD(video::IVideoDriver *driver, double dtime);
-	void drawFlightHUD(video::IVideoDriver *driver, const v3f &pos, const v3f &vel, f32 pitch, f32 yaw);
 
 	void handleMouse(v2s32 pos, bool left_down);
 	void onLayerClosed();

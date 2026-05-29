@@ -33,7 +33,6 @@ core.cheats = {
 		["PlayerTracers"] = "enable_player_tracers",
 		["NodeESP"] = "enable_node_esp",
 		["NodeTracers"] = "enable_node_tracers",
-		["FlightHUD"] = "flight_hud",
 	},
 	["Player"] = {
 		["FastDig"] = "fastdig",

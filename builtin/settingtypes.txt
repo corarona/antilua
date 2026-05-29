@@ -2648,9 +2648,6 @@ enable_player_tracers (Player tracers) bool false
 #    Player meshes rendered through walls (occluded players only).
 enable_player_wallhack (Player wallhack) bool false
 
-#    Show flight instruments (altimeter, horizon, speed) when flying.
-flight_hud (Flight HUD) bool true
-
 #    Color for entity ESP/tracer lines (R,G,B).
 entity_esp_color (Entity ESP color) string (255,255,255)
 
