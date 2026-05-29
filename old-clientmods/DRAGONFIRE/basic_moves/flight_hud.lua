@@ -1,5 +1,3 @@
-local modpath = minetest.get_modpath(minetest.get_current_modname())
-
 local function make_bar(value, max_val, width)
 	value = math.max(0, math.min(value, max_val))
 	local filled = math.floor(value / max_val * width)
@@ -16,52 +14,55 @@ local function set(id, stat, data)
 	end
 end
 
+-- Scale factor for all HUD image elements
+local S = 2.5
+
 ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 	on_start = function(self)
-		if not minetest.localplayer or not modpath then return true end
+		if not minetest.localplayer then return true end
 
-		-- Horizon background circle (dark blue top, dark green bottom)
+		-- Horizon background (128x128 image, fixed position)
 		self._hud_bg = minetest.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1}, offset = {x = -145, y = -155},
-			scale = {x = 2, y = 2}, text = modpath .. "/textures/horizon_bg.png"
+			alignment = {x = 1, y = -1}, offset = {x = -170, y = -190},
+			scale = {x = S, y = S}, text = "horizon.png"
 		})
 
-		-- Horizon indicator line (moves up/down with pitch)
-		self._hud_line = minetest.localplayer:hud_add({
+		-- Pitch indicator (small chevron that moves up/down)
+		self._hud_indicator = minetest.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
-			alignment = {x = 1, y = 0}, offset = {x = -95, y = -85},
-			scale = {x = 2, y = 2}, text = modpath .. "/textures/horizon_line.png"
+			alignment = {x = 1, y = 0}, offset = {x = -105, y = -95},
+			scale = {x = S, y = S}, text = "horizon_indicator.png"
 		})
 
-		-- Pitch text
+		-- Pitch / Roll text
 		self._hud_pitch = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1}, offset = {x = -120, y = -205},
+			alignment = {x = 1, y = -1}, offset = {x = -120, y = -240},
 			number = 0xFF66AAFF, text = ""
 		})
 
 		-- Altitude
 		self._hud_alt = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1}, offset = {x = -120, y = -130},
+			alignment = {x = 1, y = -1}, offset = {x = -120, y = -140},
 			number = 0xFF88FF88, text = ""
 		})
 		self._hud_alt_bar = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1}, offset = {x = -120, y = -118},
+			alignment = {x = 1, y = -1}, offset = {x = -120, y = -128},
 			number = 0xFF88FF88, text = ""
 		})
 
 		-- Speed
 		self._hud_speed = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1}, offset = {x = -120, y = -100},
+			alignment = {x = 1, y = -1}, offset = {x = -120, y = -110},
 			number = 0xFFFFCC66, text = ""
 		})
 		self._hud_speed_bar = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
-			alignment = {x = 1, y = -1}, offset = {x = -120, y = -88},
+			alignment = {x = 1, y = -1}, offset = {x = -120, y = -98},
 			number = 0xFFAAAAAA, text = ""
 		})
 	end,
@@ -72,13 +73,14 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		local pitch = -lp:get_pitch()
 		local roll = tonumber(minetest.settings:get("flight_hud_roll")) or 0
 
-		set(self._hud_pitch, "text", string.format("Pitch: %.0f | Roll: %.0f", pitch, roll))
+		-- Move indicator: pitch down (positive) → indicator moves UP
+		-- 1 pixel of indicator movement per degree of pitch
+		-- Base Y at circle center = -95
+		local indicator_y = -95 - math.floor(pitch * 1.5)
+		indicator_y = math.max(-180, math.min(0, indicator_y))
+		set(self._hud_indicator, "offset", {x = -105, y = indicator_y})
 
-		-- Move horizon line: pitch down = line moves up (offset.y decreases)
-		-- 1 pixel = ~0.7 degrees, center at offset.y = -85
-		local line_y = -85 - math.floor(pitch * 1.2)
-		line_y = math.max(-200, math.min(30, line_y))
-		set(self._hud_line, "offset", {x = -95, y = line_y})
+		set(self._hud_pitch, "text", string.format("Pitch: %.0f  Roll: %.0f", pitch, roll))
 
 		local pos = lp:get_pos()
 		local alt_color = 0xFF88FF88
@@ -94,16 +96,14 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		local vel = lp:get_velocity()
 		local speed = vel and vector.length(vel) / 10 or 0
 		set(self._hud_speed, "text", string.format("%.1f n/s", speed))
-
-		local spd_norm = math.min(speed / 5, 1)
-		set(self._hud_speed_bar, "text", make_bar(spd_norm * 12, 12, 12))
+		set(self._hud_speed_bar, "text", make_bar(math.min(speed / 5, 1) * 12, 12, 12))
 		set(self._hud_speed_bar, "number", speed > 3 and 0xFFFF6666 or 0xFFAAAAAA)
 	end,
 	on_stop = function(self)
 		if not minetest.localplayer then return end
 		for _, id in ipairs{
-			self._hud_bg, self._hud_line,
-			self._hud_pitch, self._hud_alt, self._hud_alt_bar,
+			self._hud_bg, self._hud_indicator, self._hud_pitch,
+			self._hud_alt, self._hud_alt_bar,
 			self._hud_speed, self._hud_speed_bar,
 		} do
 			if id then minetest.localplayer:hud_remove(id) end
