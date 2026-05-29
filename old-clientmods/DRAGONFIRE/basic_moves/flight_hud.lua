@@ -52,11 +52,11 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 			text = "horizon.png"
 		})
 
-		-- Pitch indicator line (texture swapped by roll angle)
+		-- Indicator line centered on the horizon image
 		self._hud_line = minetest.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 0},
-			offset = {x = -110, y = -90},
+			offset = {x = -62, y = -175},
 			scale = {x = S, y = S},
 			text = "horizon_indicator.png"
 		})
@@ -70,31 +70,31 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 			number = 0xFF66AAFF, text = ""
 		})
 
-		-- Altitude readout (vertical bar, 10px from right)
+		-- Altitude readout (left of the horizon, top area)
 		self._hud_alt = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
-			offset = {x = -15, y = -370},
+			offset = {x = -200, y = -370},
 			number = 0xFF88FF88, text = ""
 		})
 		self._hud_alt_bar = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
-			offset = {x = -15, y = -250},
+			offset = {x = -200, y = -350},
 			number = 0xFF88FF88, text = ""
 		})
 
-		-- Speed bar (below altitude)
+		-- Speed bar (below altitude, same x)
 		self._hud_speed = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
-			offset = {x = -15, y = -50},
+			offset = {x = -200, y = -50},
 			number = 0xFFFFCC66, text = ""
 		})
 		self._hud_speed_bar = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
-			offset = {x = -15, y = -38},
+			offset = {x = -200, y = -38},
 			number = 0xFFAAAAAA, text = ""
 		})
 	end,
@@ -106,11 +106,10 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		local roll = tonumber(minetest.settings:get("flight_hud_roll")) or 0
 
 		-- Indicator line: pitch down (positive) → moves UP
-		-- Indicator: move up/down with pitch, rotate texture with roll
-		local base_line_y = -90
-		local line_y = base_line_y + math.floor(pitch * 1.5)
-		line_y = math.max(-160, math.min(-20, line_y))
-		set(self._hud_line, "offset", {x = -110, y = line_y})
+		-- Indicator: move up/down with pitch, centered on horizon
+		local ind_y = -175 + math.floor(pitch * 1.5)
+		ind_y = math.max(-280, math.min(-70, ind_y))
+		set(self._hud_line, "offset", {x = -62, y = ind_y})
 
 		-- Swap indicator texture based on roll (round to nearest 10°)
 		local ri = math.floor((roll + 5) / 10) * 10
