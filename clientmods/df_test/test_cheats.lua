@@ -75,4 +75,15 @@ function test_cheat_settings(T)
 			core.settings:set("airjump", orig)
 		end
 	end)
+
+	-- Verify show_cheat_settings_form works
+	T.run("show_cheat_settings_form known setting", function()
+		core.show_cheat_settings_form("scaffold")
+		T.assert(true, "show_cheat_settings_form on scaffold completed without error")
+	end)
+
+	T.run("show_cheat_settings_form unknown setting", function()
+		core.show_cheat_settings_form("nonexistent_setting_xyz")
+		T.assert(true, "show_cheat_settings_form on unknown setting completed without error")
+	end)
 end

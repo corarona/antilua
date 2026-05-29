@@ -43,19 +43,10 @@ enum CheatMenuEntryType
 	CHEAT_MENU_ENTRY_TYPE_ENTRY,
 };
 
-struct CheatSettingWidget {
-	std::string key;
-	std::string type; // "bool", "number", "string"
-	std::string value;
-	std::string full_setting;
-};
-
 struct CheatPanel {
 	std::string id;
 	int selected_category = 0;
 	int selected_cheat = 0;
-	int selected_setting = 0;
-	std::vector<CheatSettingWidget> settings;
 	s32 x = 0, y = 0, w = 220, h = 0;
 	s32 title_h = 30;
 	bool pinned = false;
@@ -65,9 +56,6 @@ struct CheatPanel {
 	bool hover_pin = false;
 	bool hover_focus = false;
 	int hover_item = -1;
-	int hover_setting = -1;
-	int show_settings_for = -1; // cheat index with expanded settings, -1 = none
-	std::vector<CheatSettingWidget> expanded_settings; // settings for the expanded cheat
 };
 
 class CheatMenu
@@ -92,7 +80,6 @@ public:
 
 private:
 	void drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 mouse_pos);
-	void openCheatSettings(ScriptApiCheatsCheat *cheat, CheatPanel *parent);
 	void loadPanelPosition(CheatPanel &panel);
 	void savePanelPositions();
 

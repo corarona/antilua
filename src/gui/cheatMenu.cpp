@@ -126,8 +126,6 @@ static void drawText(gui::IGUIFont *font, const std::string &text, s32 x, s32 y,
 
 static bool isMainPanel(const CheatPanel &p) { return p.id == "_categories"; }
 static bool isCatPanel(const CheatPanel &p) { return p.id.find("_cat_") == 0; }
-static bool isSetPanel(const CheatPanel &p) { return p.id.find("_set_") == 0; }
-
 void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 mouse_pos)
 {
 	CHEAT_MENU_GET_SCRIPTPTR
@@ -142,10 +140,6 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 		h += (s32)script->m_cheat_categories.size() * (m_entry_height + m_gap);
 	} else if (isCatPanel(panel)) {
 		h += (s32)script->m_cheat_categories[panel.selected_category]->m_cheats.size() * (m_entry_height + m_gap);
-		if (panel.show_settings_for >= 0)
-			h += (s32)panel.expanded_settings.size() * (m_entry_height + m_gap);
-	} else if (isSetPanel(panel)) {
-		h += (s32)panel.settings.size() * (m_entry_height + m_gap);
 	}
 	panel.h = h;
 
@@ -166,7 +160,6 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 	std::string title;
 	if (isMainPanel(panel)) title = "Cheat Menu";
 	else if (isCatPanel(panel)) title = script->m_cheat_categories[panel.selected_category]->m_name;
-	else if (isSetPanel(panel)) title = panel.id.substr(5) + " Settings";
 	drawText(m_font, title, x + 5, y + (panel.title_h - m_fontsize.Y) / 2, m_font_color);
 
 	// Close button (X) — only for non-main panels
@@ -220,7 +213,6 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 		}
 	} else if (isCatPanel(panel)) {
 		panel.hover_item = -1;
-		panel.hover_setting = -1;
 		int chi = 0;
 		if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 			for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
@@ -252,90 +244,15 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 				if (has_set) {
 					s32 sbx = x + w - 18;
 					bool hov = point_in_rect(mouse_pos.X, mouse_pos.Y, sbx, iy, 16, m_entry_height);
-					if (hov) panel.hover_setting = chi;
-					video::SColor sbtn = (chi == panel.show_settings_for) ? video::SColor(200, 80, 120, 120) :
-						(hov ? video::SColor(200, 100, 120, 80) : video::SColor(180, 60, 60, 70));
+					video::SColor sbtn = hov ? video::SColor(200, 100, 120, 80) : video::SColor(180, 60, 60, 70);
 					driver->draw2DRectangle(sbtn, core::rect<s32>(sbx, iy, sbx + 16, iy + m_entry_height));
 					drawText(m_font, "\u2699", sbx + 3, iy + (m_entry_height - m_fontsize.Y) / 2,
 						video::SColor(255, 200, 200, 100));
 				}
 
 				iy += m_entry_height + m_gap;
-
-				// Expand settings inline when show_settings_for matches
-				if (chi == panel.show_settings_for && has_set) {
-					// Load settings data if not already loaded
-					if (panel.expanded_settings.empty()) {
-						lua_State *L2 = m_client->getScript()->getLuaState();
-						lua_getglobal(L2, "core");
-						lua_getfield(L2, -1, "cheat_defs");
-						lua_getfield(L2, -1, cheat->m_setting.c_str());
-						if (lua_istable(L2, -1)) {
-							lua_getfield(L2, -1, "cheat_settings");
-							if (lua_istable(L2, -1)) {
-								lua_pushnil(L2);
-								while (lua_next(L2, -2)) {
-									std::string sk = lua_tostring(L2, -2);
-									if (lua_istable(L2, -1)) {
-										CheatSettingWidget sw;
-										sw.key = sk;
-										sw.full_setting = cheat->m_setting + "." + sk;
-										lua_getfield(L2, -1, "type");
-										if (lua_isstring(L2, -1)) sw.type = lua_tostring(L2, -1);
-										lua_pop(L2, 1);
-										panel.expanded_settings.push_back(sw);
-									}
-									lua_pop(L2, 1);
-								}
-							}
-							lua_pop(L2, 1);
-						}
-						lua_pop(L2, 3);
-					}
-					// Draw settings
-					s32 si = 0;
-					for (auto &sw : panel.expanded_settings) {
-						s32 sx = x + 15;
-						video::SColor s_bg = (si == panel.selected_setting) ? m_active_bg_color : video::SColor(180, 50, 50, 65);
-						driver->draw2DRectangle(s_bg, core::rect<s32>(sx, iy, x + w - 1, iy + m_entry_height));
-						if (point_in_rect(mouse_pos.X, mouse_pos.Y, sx, iy, w - 15, m_entry_height))
-							panel.hover_setting = -(chi * 100 + si + 1);
-						if (sw.type == "bool") {
-							bool val = g_settings->getBool(sw.full_setting);
-							std::string stxt = std::string("  ") + (val ? "[x]" : "[ ]") + " " + sw.key;
-							drawText(m_font, stxt, sx + 5, iy + (m_entry_height - m_fontsize.Y) / 2, m_font_color);
-						} else {
-							std::string val = g_settings->get(sw.full_setting);
-							drawText(m_font, "  " + sw.key + ": " + val, sx + 5, iy + (m_entry_height - m_fontsize.Y) / 2, m_font_color);
-						}
-						iy += m_entry_height + m_gap;
-						si++;
-					}
-				}
-
 				chi++;
 			}
-		}
-	} else if (isSetPanel(panel)) {
-		panel.hover_item = -1;
-		int si = 0;
-		for (auto &s : panel.settings) {
-			video::SColor sbg = (si == panel.selected_setting) ? m_active_bg_color : m_bg_color;
-			driver->draw2DRectangle(sbg, core::rect<s32>(x, iy, x + w, iy + m_entry_height));
-			if (point_in_rect(mouse_pos.X, mouse_pos.Y, x, iy, w, m_entry_height))
-				panel.hover_item = si;
-
-			if (s.type == "bool") {
-				bool val = g_settings->getBool(s.full_setting);
-				std::string txt = std::string("[") + (val ? "x" : " ") + "] " + s.key;
-				panel.hover_item = si; // first clickable element
-				drawText(m_font, txt, x + 5, iy + (m_entry_height - m_fontsize.Y) / 2, m_font_color);
-			} else {
-				std::string val = g_settings->get(s.full_setting);
-				drawText(m_font, s.key + ": " + val, x + 5, iy + (m_entry_height - m_fontsize.Y) / 2, m_font_color);
-			}
-			iy += m_entry_height + m_gap;
-			si++;
 		}
 	}
 }
@@ -448,7 +365,7 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 					std::string cid = "_cat_" + std::to_string(ci);
 					// Mouse click always replaces existing child panels (non-detached behavior)
 					for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--) {
-						if (isCatPanel(m_panels[ei]) || isSetPanel(m_panels[ei]))
+						if (isCatPanel(m_panels[ei]))
 							m_panels.erase(m_panels.begin() + ei);
 					}
 					CheatPanel cp;
@@ -468,34 +385,11 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			int chi = 0;
 			if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 				for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
-					// Check expanded settings area first (appears below the cheat row)
-					if (chi == panel.show_settings_for) {
-						int si = 0;
-						for (auto &sw : panel.expanded_settings) {
-							s32 sx = x + 15;
-							if (point_in_rect(pos.X, pos.Y, sx, iy, w - 15, m_entry_height)) {
-								panel.selected_setting = si;
-								if (sw.type == "bool") {
-									bool val = g_settings->getBool(sw.full_setting);
-									g_settings->setBool(sw.full_setting, !val);
-								}
-								return;
-							}
-							iy += m_entry_height + m_gap;
-							si++;
-						}
-					}
 					// Check cheat row click
 					if (point_in_rect(pos.X, pos.Y, x, iy, w, m_entry_height)) {
 						s32 sbx = x + w - 18;
 						if (point_in_rect(pos.X, pos.Y, sbx, iy, 16, m_entry_height)) {
-							if (panel.show_settings_for == chi) {
-								panel.show_settings_for = -1;
-								panel.expanded_settings.clear();
-							} else {
-								panel.show_settings_for = chi;
-								panel.expanded_settings.clear();
-							}
+							script->show_cheat_settings(cheat->m_setting);
 						} else {
 							panel.selected_cheat = chi;
 							script->toggle_cheat(cheat);
@@ -506,75 +400,8 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 					chi++;
 				}
 			}
-		} else if (isSetPanel(panel)) {
-			int si = 0;
-			for (auto &s : panel.settings) {
-				if (point_in_rect(pos.X, pos.Y, x, iy, w, m_entry_height)) {
-					panel.selected_setting = si;
-					if (s.type == "bool") {
-						bool val = g_settings->getBool(s.full_setting);
-						g_settings->setBool(s.full_setting, !val);
-					}
-					return;
-				}
-				iy += m_entry_height + m_gap;
-				si++;
-			}
 		}
 	}
-}
-
-void CheatMenu::openCheatSettings(ScriptApiCheatsCheat *cheat, CheatPanel *parent)
-{
-	std::string sid = "_set_" + cheat->m_name;
-	for (auto &p : m_panels)
-		if (p.id == sid) return;
-
-	lua_State *L = m_client->getScript()->getLuaState();
-	lua_getglobal(L, "core");
-	lua_getfield(L, -1, "cheat_defs");
-	lua_getfield(L, -1, cheat->m_setting.c_str());
-	bool has_settings = false;
-	if (lua_istable(L, -1)) {
-		lua_getfield(L, -1, "cheat_settings");
-		has_settings = lua_istable(L, -1) || lua_isfunction(L, -1);
-		lua_pop(L, 1);
-	}
-	lua_pop(L, 3);
-
-	if (!has_settings) return;
-
-	CheatPanel sp;
-	sp.id = sid;
-	sp.x = parent->x + parent->w + 10;
-	sp.y = parent->y;
-	loadPanelPosition(sp);
-
-	lua_getglobal(L, "core");
-	lua_getfield(L, -1, "cheat_defs");
-	lua_getfield(L, -1, cheat->m_setting.c_str());
-	if (lua_istable(L, -1)) {
-		lua_getfield(L, -1, "cheat_settings");
-		if (lua_istable(L, -1)) {
-			lua_pushnil(L);
-			while (lua_next(L, -2)) {
-				std::string key = lua_tostring(L, -2);
-				if (lua_istable(L, -1)) {
-					CheatSettingWidget w;
-					w.key = key;
-					w.full_setting = cheat->m_setting + "." + key;
-					lua_getfield(L, -1, "type");
-					if (lua_isstring(L, -1)) w.type = lua_tostring(L, -1);
-					lua_pop(L, 1);
-					sp.settings.push_back(w);
-				}
-				lua_pop(L, 1);
-			}
-		}
-		lua_pop(L, 1);
-	}
-	lua_pop(L, 3);
-	m_panels.push_back(sp);
 }
 
 void CheatMenu::onLayerClosed()
@@ -635,10 +462,6 @@ void CheatMenu::selectUp()
 		int max = (int)script->m_cheat_categories[panel->selected_category]->m_cheats.size() - 1;
 		panel->selected_cheat--;
 		if (panel->selected_cheat < 0) panel->selected_cheat = max;
-	} else if (isSetPanel(*panel)) {
-		int max = (int)panel->settings.size() - 1;
-		panel->selected_setting--;
-		if (panel->selected_setting < 0) panel->selected_setting = max;
 	} else if (isMainPanel(*panel)) {
 		int max = (int)script->m_cheat_categories.size() - 1;
 		panel->selected_category--;
@@ -658,10 +481,6 @@ void CheatMenu::selectDown()
 		int max = (int)script->m_cheat_categories[panel->selected_category]->m_cheats.size() - 1;
 		panel->selected_cheat++;
 		if (panel->selected_cheat > max) panel->selected_cheat = 0;
-	} else if (isSetPanel(*panel)) {
-		int max = (int)panel->settings.size() - 1;
-		panel->selected_setting++;
-		if (panel->selected_setting > max) panel->selected_setting = 0;
 	} else if (isMainPanel(*panel)) {
 		int max = (int)script->m_cheat_categories.size() - 1;
 		panel->selected_category++;
@@ -685,7 +504,7 @@ void CheatMenu::selectRight()
 				if (p.id == cid) return;
 		} else {
 			for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
-				if (isCatPanel(m_panels[ei]) || isSetPanel(m_panels[ei]))
+				if (isCatPanel(m_panels[ei]))
 					m_panels.erase(m_panels.begin() + ei);
 		}
 		CheatPanel cp;
@@ -695,14 +514,6 @@ void CheatMenu::selectRight()
 		cp.y = panel->y;
 		loadPanelPosition(cp);
 		m_panels.push_back(cp);
-	} else if (isCatPanel(*panel)) {
-		if (panel->selected_cheat == panel->show_settings_for) {
-			panel->show_settings_for = -1;
-			panel->expanded_settings.clear();
-		} else {
-			panel->show_settings_for = panel->selected_cheat;
-			panel->expanded_settings.clear();
-		}
 	}
 }
 
@@ -711,7 +522,7 @@ void CheatMenu::selectLeft()
 	for (size_t i = 0; i < m_panels.size(); i++) {
 		auto &p = m_panels[i];
 		if (p.keyboard_focus || (i == 0 && m_panels.size() > 1)) {
-			if (isSetPanel(p) || isCatPanel(p)) {
+			if (isCatPanel(p)) {
 				m_panels.erase(m_panels.begin() + (s32)i);
 				return;
 			}
