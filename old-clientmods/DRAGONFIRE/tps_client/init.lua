@@ -2,7 +2,12 @@ tps_client = {
 	ping_tolerance = 0.5,
 	tps_tolerance = 10
 }
-minetest.mod_channel_join("tps")
+local ch = minetest.mod_channel_join("tps")
+minetest.after(5, function()
+	if ch and ch:is_writeable() then
+		ch:send_all("init")
+	end
+end)
 
 local hud, ping_hud
 
