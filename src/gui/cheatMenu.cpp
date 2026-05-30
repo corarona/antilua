@@ -363,10 +363,13 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			for (size_t cii = 0; cii < script->m_cheat_categories.size(); cii++) {
 				if (point_in_rect(pos.X, pos.Y, x, iy, w, m_entry_height)) {
 					std::string cid = "_cat_" + std::to_string(ci);
-					// Mouse click always replaces existing child panels (non-detached behavior)
-					for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--) {
-						if (isCatPanel(m_panels[ei]))
-							m_panels.erase(m_panels.begin() + ei);
+					if (m_panel_detached) {
+						for (auto &p : m_panels)
+							if (p.id == cid) return;
+					} else {
+						for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
+							if (isCatPanel(m_panels[ei]))
+								m_panels.erase(m_panels.begin() + ei);
 					}
 					CheatPanel cp;
 					cp.id = cid;
