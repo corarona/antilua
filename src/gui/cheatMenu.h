@@ -55,7 +55,6 @@ struct CheatPanel {
 	bool hover_title = false;
 	bool hover_pin = false;
 	bool hover_focus = false;
-	int hover_item = -1;
 };
 
 class CheatMenu

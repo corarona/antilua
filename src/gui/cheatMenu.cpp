@@ -198,24 +198,25 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 	int iy = y + panel.title_h + m_gap;
 
 	if (isMainPanel(panel)) {
-		panel.hover_item = -1;
 		int ci = 0;
 		for (auto &cat : script->m_cheat_categories) {
+			if (point_in_rect(mouse_pos.X, mouse_pos.Y, x, iy, w, m_entry_height))
+				panel.selected_category = ci;
 			bool sel = (ci == panel.selected_category);
 			video::SColor bg = sel ? m_active_bg_color : ((ci % 2 == 0) ? m_item_bg : m_bg_color);
 			driver->draw2DRectangle(bg, core::rect<s32>(x + 1, iy, x + w - 1, iy + m_entry_height));
-			if (point_in_rect(mouse_pos.X, mouse_pos.Y, x, iy, w, m_entry_height))
-				panel.hover_item = ci;
 			drawText(m_font, "> " + cat->m_name, x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,
 				sel ? m_selected_font_color : m_font_color);
 			iy += m_entry_height + m_gap;
 			ci++;
 		}
 	} else if (isCatPanel(panel)) {
-		panel.hover_item = -1;
 		int chi = 0;
 		if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 			for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
+				if (point_in_rect(mouse_pos.X, mouse_pos.Y, x, iy, w, m_entry_height))
+					panel.selected_cheat = chi;
+
 				bool enabled = cheat->is_enabled();
 				bool has_set = false;
 				lua_State *L = m_client->getScript()->getLuaState();
@@ -231,8 +232,6 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 
 				video::SColor cbg = enabled ? video::SColor(200, 40, 60, 40) : video::SColor(180, 50, 50, 55);
 				driver->draw2DRectangle(cbg, core::rect<s32>(x + 1, iy, x + w - 1, iy + m_entry_height));
-				if (point_in_rect(mouse_pos.X, mouse_pos.Y, x, iy, w, m_entry_height))
-					panel.hover_item = chi;
 
 				std::string txt = enabled ? "[x] " : "[ ] ";
 				txt += cheat->m_name;
@@ -362,7 +361,8 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			int ci = 0;
 			for (size_t cii = 0; cii < script->m_cheat_categories.size(); cii++) {
 				if (point_in_rect(pos.X, pos.Y, x, iy, w, m_entry_height)) {
-					std::string cid = "_cat_" + std::to_string(ci);
+					panel.selected_category = ci;
+					std::string cid = "_cat_" + std::to_string(panel.selected_category);
 					if (m_panel_detached) {
 						for (auto &p : m_panels)
 							if (p.id == cid) return;
@@ -541,7 +541,25 @@ void CheatMenu::selectConfirm()
 	if (!panel && !m_panels.empty()) panel = &m_panels[0];
 	if (!panel) return;
 
-	if (isCatPanel(*panel)) {
+	if (isMainPanel(*panel)) {
+		// Open a child panel for the selected category
+		std::string cid = "_cat_" + std::to_string(panel->selected_category);
+		if (m_panel_detached) {
+			for (auto &p : m_panels)
+				if (p.id == cid) return;
+		} else {
+			for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
+				if (isCatPanel(m_panels[ei]))
+					m_panels.erase(m_panels.begin() + ei);
+		}
+		CheatPanel cp;
+		cp.id = cid;
+		cp.selected_category = panel->selected_category;
+		cp.x = panel->x + panel->w + 10;
+		cp.y = panel->y;
+		loadPanelPosition(cp);
+		m_panels.push_back(cp);
+	} else if (isCatPanel(*panel)) {
 		if (panel->selected_category >= 0 && (size_t)panel->selected_category < script->m_cheat_categories.size()) {
 			auto &cat = script->m_cheat_categories[panel->selected_category];
 			if (panel->selected_cheat >= 0 && (size_t)panel->selected_cheat < cat->m_cheats.size()) {
