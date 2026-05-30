@@ -50,6 +50,7 @@ struct CheatPanel {
 	s32 x = 0, y = 0, w = 220, h = 0;
 	s32 title_h = 30;
 	bool pinned = false;
+	bool detached = false;
 	bool keyboard_focus = false;
 	bool hover_close = false;
 	bool hover_title = false;

@@ -345,7 +345,8 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 				savePanelPositions();
 				return;
 			}
-			// Start drag
+			// Start drag — mark panel as detached
+			panel.detached = true;
 			m_drag_panel = (s32)pi;
 			m_drag_off_x = pos.X - panel.x;
 			m_drag_off_y = pos.Y - panel.y;
@@ -367,7 +368,7 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 						if (p.id == cid) return;
 					// Close non-pinned child panels, keep pinned
 					for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
-						if (isCatPanel(m_panels[ei]) && !m_panels[ei].pinned)
+						if (isCatPanel(m_panels[ei]) && !m_panels[ei].detached)
 							m_panels.erase(m_panels.begin() + ei);
 					CheatPanel cp;
 					cp.id = cid;
@@ -502,7 +503,7 @@ void CheatMenu::selectRight()
 		for (auto &p : m_panels)
 			if (p.id == cid) return;
 		for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
-			if (isCatPanel(m_panels[ei]) && !m_panels[ei].pinned)
+			if (isCatPanel(m_panels[ei]) && !m_panels[ei].detached)
 				m_panels.erase(m_panels.begin() + ei);
 		CheatPanel cp;
 		cp.id = cid;
@@ -540,7 +541,7 @@ void CheatMenu::selectConfirm()
 		for (auto &p : m_panels)
 			if (p.id == cid) return;
 		for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
-			if (isCatPanel(m_panels[ei]) && !m_panels[ei].pinned)
+			if (isCatPanel(m_panels[ei]) && !m_panels[ei].detached)
 				m_panels.erase(m_panels.begin() + ei);
 		CheatPanel cp;
 		cp.id = cid;

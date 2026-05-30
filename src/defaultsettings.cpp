@@ -77,7 +77,7 @@ static void set_df_default_settings()
 	// Cheat menu
 	settings->setDefault("cheat_menu_font", "FM_Standard");
 	settings->setDefault("cheat_menu_bg_color", "(4, 4, 8)");
-	settings->setDefault("cheat_menu_bg_color_alpha", "173");
+	settings->setDefault("cheat_menu_bg_color_alpha", "190");
 	settings->setDefault("cheat_menu_active_bg_color", "(0, 0, 0)");
 	settings->setDefault("cheat_menu_active_bg_color_alpha", "210");
 	settings->setDefault("cheat_menu_font_color", "(0, 255, 0)");
@@ -89,8 +89,8 @@ static void set_df_default_settings()
 	settings->setDefault("cheat_menu_entry_width", "200");
 	settings->setDefault("cheat_menu_panel_bg", "(30, 30, 45)");
 	settings->setDefault("cheat_menu_title_bg", "(50, 50, 75)");
-	settings->setDefault("cheat_menu_border", "(70, 70, 100)");
-	settings->setDefault("cheat_menu_item_bg", "(55, 55, 75)");
+	settings->setDefault("cheat_menu_border", "(10,10, 10)");
+	settings->setDefault("cheat_menu_item_bg", "(45, 45, 55)");
 	settings->setDefault("cheat_menu_item_bg_alt", "(45, 45, 65)");
 
 	// Cheat features
