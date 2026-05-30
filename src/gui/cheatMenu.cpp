@@ -296,6 +296,10 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			m_drag_panel = -1;
 			savePanelPositions();
 		} else if (left_down) {
+			s32 dx = pos.X - m_prev_mouse_x;
+			s32 dy = pos.Y - m_prev_mouse_y;
+			if (dx || dy)
+				m_panel_detached = true;
 			m_panels[m_drag_panel].x = pos.X - m_drag_off_x;
 			m_panels[m_drag_panel].y = pos.Y - m_drag_off_y;
 		}
@@ -320,6 +324,12 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 				if (point_in_rect(pos.X, pos.Y, cx, y, 16, panel.title_h)) {
 					g_settings->set("cheat_panel_" + panel.id, "");
 					m_panels.erase(m_panels.begin() + (s32)pi);
+					// Reset detached when no child panels remain
+					bool has_child = false;
+					for (auto &p : m_panels)
+						if (isCatPanel(p)) { has_child = true; break; }
+					if (!has_child)
+						m_panel_detached = false;
 					return;
 				}
 			}
@@ -410,6 +420,7 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 void CheatMenu::onLayerClosed()
 {
 	m_drag_panel = -1;
+	m_panel_detached = false;
 }
 
 void CheatMenu::drawHUD(video::IVideoDriver *driver, double dtime)
