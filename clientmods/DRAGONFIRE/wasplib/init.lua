@@ -21,6 +21,7 @@ dofile(minetest.get_modpath("wasplib") .. "/tools.lua")
 dofile(minetest.get_modpath("wasplib") .. "/world.lua")
 dofile(minetest.get_modpath("wasplib") .. "/combat.lua")
 dofile(minetest.get_modpath("wasplib") .. "/waypoints.lua")
+dofile(minetest.get_modpath("wasplib") .. "/compat.lua")
 
 local cheat_defaults = {
 	on_step   = function() end,

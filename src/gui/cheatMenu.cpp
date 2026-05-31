@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "script/scripting_client.h"
 #include "client/client.h"
 #include "client/fontengine.h"
+#include "porting.h"
 #include "cheatMenu.h"
 #include "settings.h"
 #include <cstddef>
@@ -219,6 +220,7 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 
 				bool enabled = cheat->is_enabled();
 				bool has_set = false;
+				std::string tooltip_desc;
 				lua_State *L = m_client->getScript()->getLuaState();
 				lua_getglobal(L, "core");
 				lua_getfield(L, -1, "cheat_defs");
@@ -227,8 +229,22 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 					lua_getfield(L, -1, "cheat_settings");
 					has_set = lua_istable(L, -1) || lua_isfunction(L, -1);
 					lua_pop(L, 1);
+					// Read description for tooltip
+					lua_getfield(L, -1, "description");
+					if (lua_isstring(L, -1))
+						tooltip_desc = lua_tostring(L, -1);
+					lua_pop(L, 1);
 				}
 				lua_pop(L, 3);
+
+				// Track hover for tooltip
+				if (point_in_rect(mouse_pos.X, mouse_pos.Y, x, iy, w, m_entry_height) && !tooltip_desc.empty()) {
+					m_tooltip_text = tooltip_desc;
+					m_tooltip_x = mouse_pos.X;
+					m_tooltip_y = mouse_pos.Y;
+					if (m_hover_start == 0)
+						m_hover_start = porting::getTimeMs();
+				}
 
 				video::SColor cbg = enabled ? video::SColor(200, 40, 60, 40) : video::SColor(180, 50, 50, 55);
 				driver->draw2DRectangle(cbg, core::rect<s32>(x + 1, iy, x + w - 1, iy + m_entry_height));
@@ -252,6 +268,59 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 				iy += m_entry_height + m_gap;
 				chi++;
 			}
+		}
+	}
+
+	// Reset hover timer if not hovering any cheat entry
+	if (m_hover_start > 0.0) {
+		// Check if mouse is over any cheat row in any category panel
+		bool hovering = false;
+		for (auto &p : m_panels) {
+			if (!isCatPanel(p)) continue;
+			if (p.selected_category < 0 || (size_t)p.selected_category >= script->m_cheat_categories.size())
+				continue;
+			int iy2 = p.y + p.title_h + m_gap;
+			for (auto &ch : script->m_cheat_categories[p.selected_category]->m_cheats) {
+				if (point_in_rect(mouse_pos.X, mouse_pos.Y, p.x, iy2, p.w, m_entry_height)) {
+					hovering = true;
+					break;
+				}
+				iy2 += m_entry_height + m_gap;
+			}
+			if (hovering) break;
+		}
+		if (!hovering) {
+			m_hover_start = 0.0;
+			m_tooltip_text.clear();
+		}
+	}
+
+	// Render tooltip after 500ms hover
+	if (m_hover_start > 0 && !m_tooltip_text.empty()) {
+		u64 elapsed = porting::getTimeMs() - m_hover_start;
+		if (elapsed > 500) {
+			s32 tw = 280;
+			auto lines = m_tooltip_text;
+			// Word-wrap at ~40 chars
+			std::string wrapped;
+			while (lines.size() > 40) {
+				size_t brk = lines.find_last_of(' ', 40);
+				if (brk == std::string::npos) brk = 40;
+				wrapped += lines.substr(0, brk) + "\n";
+				lines = lines.substr(brk + 1);
+			}
+			wrapped += lines;
+
+			s32 tx = m_tooltip_x + 12;
+			s32 ty = m_tooltip_y - 10;
+			s32 th = 10 + (s32)std::count(wrapped.begin(), wrapped.end(), '\n') * (m_fontsize.Y + 2) + 10;
+			if (tx + tw > (s32)driver->getScreenSize().Width) tx = m_tooltip_x - tw - 10;
+			if (ty + th > (s32)driver->getScreenSize().Height) ty = m_tooltip_y - th - 10;
+			if (ty < 0) ty = m_tooltip_y + 10;
+
+			driver->draw2DRectangle(video::SColor(230, 40, 40, 50),
+				core::rect<s32>(tx, ty, tx + tw, ty + th));
+			drawText(m_font, wrapped, tx + 8, ty + 8, video::SColor(255, 220, 220, 220));
 		}
 	}
 }

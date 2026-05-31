@@ -115,4 +115,9 @@ private:
 	bool m_mouse_left_prev = false;
 	int m_drag_panel = -1;
 	s32 m_drag_off_x = 0, m_drag_off_y = 0;
+
+	// Tooltip state
+	std::string m_tooltip_text;
+	s32 m_tooltip_x = 0, m_tooltip_y = 0;
+	u64 m_hover_start = 0;
 };
