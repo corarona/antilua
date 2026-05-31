@@ -62,7 +62,7 @@ function ws.can_place_at(pos)
 		or node.name == "mcl_core:water_flowing"
 		or node.name == "mcl_core:lava_source"
 		or node.name == "mcl_core:lava_flowing"
-		or minetest.get_node_def(node.name).buildable_to))
+		or (minetest.get_node_def(node.name) or {}).buildable_to))
 end
 
 function ws.can_place_wielded_at(pos)

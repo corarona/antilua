@@ -90,6 +90,7 @@ dofile(modpath .. "/test_clientobject.lua")
 dofile(modpath .. "/test_inventory.lua")
 dofile(modpath .. "/test_callbacks.lua")
 dofile(modpath .. "/test_dragonfire_mods.lua")
+dofile(modpath .. "/test_df_mods.lua")
 
 -- Run API/registration tests at mod load time
 core.register_on_mods_loaded(function()
@@ -112,6 +113,21 @@ core.register_on_mods_loaded(function()
 	test_dragonfire_autoevade(df_test)
 	test_dragonfire_extracted_features(df_test)
 	test_ws_rg_new_api(df_test)
+
+	test_wasplib_constraint(df_test)
+	test_wasplib_helpers(df_test)
+	test_wasplib_merged(df_test)
+	test_dig_mod(df_test)
+	test_place_mod(df_test)
+	test_inv_open_mod(df_test)
+	test_autocraft_mod(df_test)
+	test_category_assignments(df_test)
+
+	-- Integration tests (deferred — register but don't run yet)
+	test_ws_rg_lifecycle(df_test)
+	test_inventory_structure(df_test)
+	test_inventory_action_integration(df_test)
+	test_world_interaction(df_test)
 
 	-- Defer localplayer-dependent tests (poll until localplayer is ready)
 	if #deferred_tests > 0 then
