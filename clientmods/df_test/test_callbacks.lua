@@ -81,8 +81,7 @@ function test_callback_registration(T)
 	T.run("send_chat_message exists", function()
 		T.assert(type(core.send_chat_message) == "function",
 			"core.send_chat_message should be a function")
-		local ok = pcall(core.send_chat_message, "[DF_TEST] Test message from client")
-		T.assert(ok, "sending a chat message should not crash")
+		-- Don't actually call it — it would broadcast publicly on servers
 	end)
 
 	T.run("register_on_death multiple callbacks", function()
