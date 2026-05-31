@@ -67,3 +67,9 @@ Scripts and files are persisted in mod storage using key prefixes:
 
 The `3rdparty/Highlighter/` directory contains a syntax highlighter bundled
 with the mod (used by the formspec editor).
+
+## Cheats
+
+| Cheat | Setting | Description |
+|-------|---------|-------------|
+| Run DTE | (func) | Run the currently loaded script in the editor |

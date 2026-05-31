@@ -23,3 +23,7 @@ No chat commands or cheats.
   - `single_task(func, callback)` — Run a function once (no queue).
 - `async.yield()` — Yield the current coroutine, resuming next globalstep.
 - `async.sleep(ms)` — Suspend the current coroutine for `ms` milliseconds.
+
+## Cheats
+
+None. Library mod — no cheats registered.

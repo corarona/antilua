@@ -107,3 +107,7 @@ is already active and `allow_cobot` is false, activation is rejected.
 
 Registered if `nlist` is available. Finds the closest node from nlist's
 selected list within 60m, flies to it, and digs all matching nodes within 1m.
+
+## Cheats
+
+None directly. Bot framework — bots are registered by other mods via sbots.register_bot().

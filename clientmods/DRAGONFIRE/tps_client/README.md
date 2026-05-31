@@ -15,3 +15,7 @@ Displays server TPS and client ping in a HUD overlay. Communicates with the serv
   - `ping` — current ping in seconds (accumulated in globalstep)
   - `ping_tolerance` — tolerance threshold for ping (default 0.5)
   - `tps_tolerance` — tolerance threshold for TPS (default 10)
+
+## Cheats
+
+None. HUD utility — no cheats registered.

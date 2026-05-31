@@ -19,3 +19,9 @@ Schematic preview and placement tool. Loads WorldEdit-format schematics as color
 ## API
 
 None.
+
+## Cheats
+
+| Cheat | Setting | Description |
+|-------|---------|-------------|
+| PlaceLiteM | `placelitem` | Place loaded schematic nodes within a 4-block radius around the player |

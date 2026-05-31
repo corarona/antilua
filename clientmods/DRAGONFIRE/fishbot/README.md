@@ -35,3 +35,9 @@ FishBot enables `autodump`, `autoeject`, and `lockview` when active.
 ## API
 
 None.
+
+## Cheats
+
+| Cheat | Setting | Description |
+|-------|---------|-------------|
+| FishBot | `fishbot` | Automated fishing — casts rod, waits for bobber movement, reels in |
