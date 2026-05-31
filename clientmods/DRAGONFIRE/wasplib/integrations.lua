@@ -35,7 +35,6 @@ function ws.reset_constraints()
 		end
 		hwps[k] = nil
 	end
-	ws.dcm("constraints reset")
 end
 
 function ws.inside_constraints(pos)
