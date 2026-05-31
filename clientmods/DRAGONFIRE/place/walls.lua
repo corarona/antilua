@@ -18,7 +18,7 @@ local function get_wall(width, depth, height)
 	return rt
 end
 
-ws.rg("WallIn", { category = "World", setting = "place_wallin",
+ws.rg("WallIn", { category = "Place", setting = "place_wallin",
 	on_step = function(self)
 		local width = tonumber(core.settings:get(self.setting .. ".width")) or 8
 		local depth = tonumber(core.settings:get(self.setting .. ".depth")) or 8
@@ -39,7 +39,7 @@ ws.rg("WallIn", { category = "World", setting = "place_wallin",
 local skypltfrm_nd
 local skypltfrm_glassmode
 
-ws.rg("SkyPltfrm", { category = "World", setting = "place_skypltfrm",
+ws.rg("SkyPltfrm", { category = "Place", setting = "place_skypltfrm",
 	on_step = function(self)
 		local width = tonumber(core.settings:get(self.setting .. ".width")) or 5
 		local n = math.floor(width / 2)
@@ -80,7 +80,7 @@ local function get_nodes_over_air(pos, range, nodes)
 	return rt
 end
 
-ws.rg("PCeiling", { category = "World", setting = "pceiling",
+ws.rg("PCeiling", { category = "Place", setting = "pceiling",
 	on_step = function(self)
 		if not multiscaff_node then return end
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 4

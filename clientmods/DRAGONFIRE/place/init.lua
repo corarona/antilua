@@ -213,7 +213,7 @@ local function is_lantern(pos)
    return false
 end
 
-ws.rg("Highway", { category = "World", setting = "highwaymaker",
+ws.rg("Highway", { category = "Place", setting = "highwaymaker",
 	on_step = function(self)
 		for i = -2, 2 do
 			mscaffold(i)
@@ -240,7 +240,7 @@ ws.rg("Highway", { category = "World", setting = "highwaymaker",
 	delay = 0.05,
 })
 
-ws.rg("HighwayZ", { category = "World", setting = "highwayz",
+ws.rg("HighwayZ", { category = "Place", setting = "highwayz",
 	on_step = function(self)
 		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
 		local positions = {
@@ -260,7 +260,7 @@ ws.rg("HighwayZ", { category = "World", setting = "highwayz",
 	on_start = function(self) end,
 })
 
-ws.rg("BlockWater", { category = "World", setting = "block_water",
+ws.rg("BlockWater", { category = "Place", setting = "block_water",
 	on_step = function(self)
 		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
 		local lp = ws.dircoord(0, 0, 0)
@@ -275,7 +275,7 @@ ws.rg("BlockWater", { category = "World", setting = "block_water",
 	end,
 })
 
-ws.rg("BlockLava", { category = "World", setting = "block_lava",
+ws.rg("BlockLava", { category = "Place", setting = "block_lava",
 	on_step = function(self)
 		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
 		local lp = ws.dircoord(0, 0, 0)
@@ -290,7 +290,7 @@ ws.rg("BlockLava", { category = "World", setting = "block_lava",
 	end,
 })
 
-ws.rg("BlockSources", { category = "World", setting = "block_sources",
+ws.rg("BlockSources", { category = "Place", setting = "block_sources",
 	on_step = function(self)
 		if not multiscaff_node then
 			multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
@@ -314,7 +314,7 @@ ws.rg("BlockSources", { category = "World", setting = "block_sources",
 	end,
 })
 
-ws.rg("BlockLavaSources", { category = "World", setting = "block_lava_sources",
+ws.rg("BlockLavaSources", { category = "Place", setting = "block_lava_sources",
 	on_step = function(self)
 		if not multiscaff_node then return false end
 		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
@@ -335,7 +335,7 @@ ws.rg("BlockLavaSources", { category = "World", setting = "block_lava_sources",
 	end,
 })
 
-ws.rg("PlaceOnTop", { category = "World", setting = "place_on_top",
+ws.rg("PlaceOnTop", { category = "Place", setting = "place_on_top",
 	on_step = function(self)
 		if not multiscaff_node then return end
 		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
@@ -361,7 +361,7 @@ ws.rg("PlaceOnTop", { category = "World", setting = "place_on_top",
 
 
 local lightblock = nil
-ws.rg("LanternTBM", { category = "World", setting = "place_ltbm",
+ws.rg("LanternTBM", { category = "Place", setting = "place_ltbm",
 	on_step = function(self)
 		local dir = ws.getdir()
 		local lp = vector.round(ws.dircoord(0, 0, 0))
@@ -393,7 +393,7 @@ local mossable = {
 }
 
 ws.rg("AutoMoss", {
-	category = "World",
+	category = "Place",
 	setting = "automoss",
 	on_step = function()
 		local p = core.localplayer:get_pos()

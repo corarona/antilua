@@ -15,4 +15,4 @@ coroutine.wrap(function()
 end)()
 
 minetest.register_list_command("digcustom", "Configure custom auto-dig nodes", "digcustom_nodes")
-core.register_cheat("DigCustom", { category = "World", setting = "digcustom" })
+core.register_cheat("DigCustom", { category = "Dig", setting = "digcustom" })

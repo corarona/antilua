@@ -342,7 +342,7 @@ function ws.icebreaker()
 	minetest.localplayer:set_wield_index(owx)
 end
 
-core.register_cheat('IceBreaker', { category = 'World', setting = 'icebreaker' })
+core.register_cheat('IceBreaker', { category = 'Dig', setting = 'icebreaker' })
 
 -- Inventory to/from ender chest (extracted from emicor)
 function ws.invtoec()

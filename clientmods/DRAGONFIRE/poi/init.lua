@@ -465,4 +465,4 @@ minetest.register_chatcommand("dump_pois",{
 })
 
 core.register_cheat("ShowNames", { category = "Render", setting = "poi_shownames" })
-core.register_cheat("POIs", { category = "World", func = poi.display_formspec })
+core.register_cheat("POIs", { category = "Misc", func = poi.display_formspec })

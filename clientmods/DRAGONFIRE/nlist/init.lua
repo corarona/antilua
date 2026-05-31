@@ -178,7 +178,7 @@ minetest.register_on_punchnode(function(p, n)
 	end
 end)
 
-ws.rg('NlEdMode', { category = 'nList', setting = 'nlist_edmode',
+ws.rg('NlEdMode', { category = 'Misc', setting = 'nlist_edmode',
 	on_step = function(self) nlist.show_list(sl, true) end,
 	on_start = function(self) end,
 	on_stop = function(self) nlist.hide() end,
