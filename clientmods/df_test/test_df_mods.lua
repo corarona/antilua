@@ -255,7 +255,7 @@ end
 ------------------------------------------------------------------------------
 function test_ws_rg_lifecycle(T)
 	T.defer("ws.rg lifecycle: on_start fires on toggle on", function()
-		local fired = { start = false, step = false, stop = false }
+		local fired = { start = false, step = false, stop = false, done = false }
 		local test_setting = "df_test_rg_lifecycle"
 		core.settings:set(test_setting, "false")
 		ws.rg("DFTestLifecycle", {
@@ -265,18 +265,22 @@ function test_ws_rg_lifecycle(T)
 			on_step = function() fired.step = true end,
 			on_stop = function() fired.stop = true end,
 		})
-		-- Toggle on
 		core.settings:set_bool(test_setting, true)
-		core.after(0.3, function()
-			T.assert(fired.start == true, "on_start should fire when setting toggled on")
-			T.assert(fired.step == true, "on_step should fire while setting is on")
-			-- Toggle off
+		core.after(0.5, function()
+			local ok1 = fired.start
+			local ok2 = fired.step
 			core.settings:set_bool(test_setting, false)
-			core.after(0.3, function()
-				T.assert(fired.stop == true, "on_stop should fire when setting toggled off")
-				-- Clean up: reset to false
-				core.settings:set_bool(test_setting, false)
+			core.after(0.5, function()
+				local ok3 = fired.stop
+				if ok1 and ok2 and ok3 then
+					fired.done = true
+				end
 			end)
+		end)
+		-- Poll for completion
+		core.after(1.5, function()
+			T.assert(fired.done, "ws.rg lifecycle: start=" .. tostring(fired.start) .. " step=" .. tostring(fired.step) .. " stop=" .. tostring(fired.stop))
+			core.settings:set_bool(test_setting, false)
 		end)
 	end)
 end
