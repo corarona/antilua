@@ -1,59 +1,69 @@
-# CSM DTE
-## Client Side Mod Designing & Testing Environment
-An advanced, ingame lua and formspec editor for minetest.
+# dte
 
-This can be used for creating, testing and using CSMs without reloading the game, and without the game crashing.
-This is also the easiest way to create advanced formspecs.
-It was tested with multiple CSMs from the minetest forums, and they all worked. (actually in the current version, a few things might not work, but they will be fixed in the future)
+Client-Side Mod Development & Testing Environment. An in-game Lua and formspec
+editor. Write, save, and run Lua scripts without reloading the game. Scripts
+run in a sandboxed environment where errors are caught and displayed in the UI
+instead of crashing the game.
 
-CSMs can be created, or pasted in, and they should work the same as they would normaly, except errors won't crash the game!
+## Player usage
 
-functions that are registered with minetest can be put in a function `safe(func)` to output errors to the UI when minetest calls them
+### Chat commands
 
-scripts can be put in startup to run them automatically when the game loads. errors are also put in the UI
+| Command | Description |
+|---------|-------------|
+| `/dte` | Open the Lua IDE formspec |
 
-screenshots:
-![lua editor](preview_1.png)
-![formspec editor](preview_2.png)
+### Cheats
 
-## FEATURES:
-lua editor:
-- print function
-- coloured error output
-- multiple files
-- file creation and deletion
-- safe function execution
-- automatically run files at startup
+| Cheat | Category | Description |
+|-------|----------|-------------|
+| Run DTE | DevTools | Run the currently loaded script in the editor |
 
-formspec editor:
-- every widget is available
-- widgets are easy to edit
-- formspec preview, shows what it will look like
-- export as a function with parameters
-- export as a string
-- and a whole bunch of fancy stuff
+### UI Tabs
 
-## To Use:
-- use the command `.dte` to open the editor
-- select the `lua editor` tab to run and edit CSMs
-- select the `formspec editor` tab to create a formspec
-- select the `files` tab to open, create, and delete files
-- select the `startup` tab to select lua files to run when the game loads
+- **LUA EDITOR** — code editor with Run, Clear, Save buttons. Output is
+  displayed in a colored textlist below. Multiple named files can be switched
+  via dropdown.
+- **LUA CONSOLE** — placeholder (coming soon).
+- **FILES** — manage Lua files: create, delete, open by double-click.
+- **STARTUP** — choose files to run automatically when joining a world.
+- **FUNCTIONS** — placeholder (coming soon).
+- **HELP** — placeholder (coming soon).
 
-## How to install
-- make sure you have client modding enabled (search for `client modding` in advanced settings, and set it to true)
-- download and extract the zip file into `clientmods\csm_dte` or paste the `init.lua` file into it.
-- add `load_mod_csm_dte = true` to the `clientmods\mods.conf` file
-- join a game or server, and it should work!
+## API
 
-## Editing the files
-### - if you do not wan't to edit the program, the `development` folder can be deleted!
-when editing the program, it is easier to edit the smaller files found inside the `development` folder.
-these can be run as seperate CSMs for testing (I recomend disabling `csm_dte`)
-to join the together, copy the lua editor into `csm_dte/init.lua` and copy the formspec editor (from EDITOR START to EDITOR END) into the "PASTE FORMSPEC EDITOR HERE" section
+### Global
 
-### TODO:
-- make all functions work after the game has been loaded
-- add a UI to unregister functions which were registered from a program
-- add a lua console
-- import ui strings into the editor (?)
+`dte` — namespace table.
+
+`dte.modstorage` — mod storage object for persisting files and scripts.
+
+`dte.modpath` — absolute path to the dte mod directory.
+
+### Functions
+
+`print(...)` — overrides the global `print`. Output is captured to the UI
+output buffer instead of the console. Supports multi-line strings and multiple
+arguments.
+
+`safe(func)` — wraps a function in `pcall`. Errors are displayed in the UI
+output buffer and logged. Returns the wrapped function. Use this when
+registering minetest callbacks within an editor script to prevent crashes.
+
+### Storage
+
+Scripts and files are persisted in mod storage using key prefixes:
+
+| Key | Description |
+|-----|-------------|
+| `_lua_temp` | Current unsalted file content |
+| `_lua_file_<name>` | Named file content |
+| `_lua_saved` | Currently selected file name |
+| `_lua_startup` | Comma-separated startup file list |
+| `_lua_files_list` | Comma-separated file name list |
+| `_UI_files_list` | UI file list (formspec editor) |
+
+### 3rd-party
+
+The `3rdparty/Highlighter/` directory contains a syntax highlighter bundled
+with the mod (used by the formspec editor).

@@ -1,44 +1,83 @@
-## nlist
-More convenient tools to edit the dragonfire lists and to store additional custom lists.
+# nlist
 
-### NlEdMode
-Activating this will show you a hud with the currently selected (.nls) list on the right. Punching a node will add (or remove) the itemstring to/from that list.
+Named, persistent node/item list manager. Provides a UI and chat commands to
+create, edit, select, and persist named lists of itemstrings. Integrates with
+other mods: lists can be imported into chat commands that expose a
+`list_setting` field.
 
-### Dragonfire listcommand extension
-Running a dragonfire listcommand with the nls argument will push the currently selected list to the dragonfire list of that command:
+## Player usage
 
-e.g. .xray nls
+### Chat commands
 
-### Commands
+| Command | Description |
+|---------|-------------|
+| `/nls <list>` | Select a list by name |
+| `/nlshow` | Show current list content as HUD |
+| `/nlhide` | Hide the list HUD |
+| `/nla [item]` | Add item to selected list (or switch to add mode) |
+| `/nlr [item]` | Remove item from selected list (or switch to remove mode) |
+| `/nlc` | Clear all items from selected list |
+| `/nlawi` | Add wielded itemstring to selected list |
+| `/nlrwi` | Remove wielded itemstring from selected list |
+| `/nlapn` | Add pointed node's itemstring to selected list |
+| `/nlrpn` | Remove pointed node's itemstring from selected list |
 
-#### .nls listname
-Select a list
+### Cheats
 
-#### .nla [ item ]
-Add an Item to the currently selected list.
-Without arguments this switches to "add" mode (default).
+| Cheat | Setting | Description |
+|-------|---------|-------------|
+| NlEdMode | `nlist_edmode` | Shows list HUD; punching a node adds/removes it from the selected list |
 
-#### .nlr [ item ]
-Remove an Item from the currently selected list.
-Without arguments this switches to "remove" mode.
+NlEdMode provides a custom settings formspec with a textlist showing all
+entries, dropdown to select lists, and buttons to create/delete lists or
+add/remove entries.
 
-#### .nlc
-Clear all items from the currently selected list.
+### Integration with other mods
 
-#### .nlawi
-Add the itemstring of the currently wielded item to the selected list.
+Chat commands that define `list_setting` on their registration are extended
+with an `nls` argument. Running `.<command> nls` copies the currently selected
+nlist into that command's setting. For example:
 
-#### .nlrwi
-Remove the itemstring of the currently wielded item from the selected list.
+```
+/xray nls   -- imports current nlist entries into xray's node list
+```
 
-#### .nlapn
-Add the itemstring of the currently pointed at node to the selected list.
+## API
 
-#### .nlrpn
-Remove the itemstring of the currently pointed at node from the selected list.
+### Global
 
-#### .nlshow listname
-Show (without selecting) the list suppiled as argument.
+`nlist` — main namespace table.
 
-#### .nlhide
-Hide the currently shown hud
+`nlist.selected` — string, name of the currently selected list.
+
+### Functions
+
+`nlist.add(list, node)` — insert `node` into the named list (if not already present).
+
+`nlist.remove(list, node)` — remove `node` from the named list.
+
+`nlist.set(list, tb)` — replace list contents with `tb` (array of strings). If the list
+name matches a `list_setting` on a registered chat command, the value is stored
+as a minetest setting; otherwise it uses mod storage.
+
+`nlist.get(list)` — return array of itemstrings for the named list, or `{}`.
+
+`nlist.clear(list)` — empty the named list.
+
+`nlist.delete(list)` — empty the named list (same as clear).
+
+`nlist.select(list)` — set `nlist.selected` (and internal cursor).
+
+`nlist.get_lists()` — return sorted array of all stored list names (from mod storage only).
+
+`nlist.rename(oldname, newname)` — rename a list; returns `true` on success.
+
+`nlist.copy(oldname, newname)` — copy list contents; backs up target if non-empty.
+
+`nlist.random(list)` — return a random item from the list.
+
+`nlist.show_list(list, hlp)` — display list content as HUD text (with optional help header).
+
+`nlist.hide()` — remove the list HUD element.
+
+`nlist.set_nled_hud(ttext)` — create or update the HUD text element displaying list info; returns `true`.
