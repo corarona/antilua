@@ -39,6 +39,9 @@ private:
 	// display_chat_message(message)
 	static int l_display_chat_message(lua_State *L);
 
+	// show_toast(text, type)
+	static int l_show_toast(lua_State *L);
+
 	// send_chat_message(message)
 	static int l_send_chat_message(lua_State *L);
 

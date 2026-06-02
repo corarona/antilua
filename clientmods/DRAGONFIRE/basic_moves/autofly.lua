@@ -21,8 +21,7 @@ ws.rg('Fly3d', {
 	end,
 	on_start = function()
 		if not poi.last_pos or not poi.last_name then
-			ws.dcm('Select a poi first.')
-			return true
+			return false, 'Select a poi first.'
 		end
 		autofly.tpos=table.copy(poi.last_pos)
 		poi.set_hud_info("Fly3D")
@@ -49,8 +48,7 @@ ws.rg('Mv3d', {
 	end,
 	on_start = function()
 		if not poi.last_pos or not poi.last_name then
-			ws.dcm('Select a poi first.')
-			return true
+			return false, 'Select a poi first.'
 		end
 		autofly.tpos=table.copy(poi.last_pos)
 		poi.set_hud_info("Fly3D")
@@ -84,8 +82,7 @@ ws.rg('Fly2d', {
 	end,
 	on_start = function()
 		if not poi.last_pos or not poi.last_name then
-			ws.dcm('Select a poi first.')
-			return true
+			return false, 'Select a poi first.'
 		end
 		poi.set_hud_info("Fly2d")
 		local lp=ws.dircoord(0,0,0)
@@ -124,8 +121,7 @@ ws.rg('FlyNRoof', {
 	end,
 	on_start = function()
 		if not poi.last_pos or not poi.last_name then
-			ws.dcm('Select a poi first.')
-			return true
+			return false, 'Select a poi first.'
 		end
 		local lp = ws.dircoord(0,0,0)
 		poi.set_hud_info("FlyNether")

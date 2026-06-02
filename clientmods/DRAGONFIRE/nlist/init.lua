@@ -23,7 +23,7 @@ function nlist.add(list,node)
 	if table.indexof(tb,node) ~= -1 then return end
 	table.insert(tb,node)
 	nlist.set(list,tb)
-	ws.dcm(node..' added to '..list)
+	ws.notify(node .. " added to " .. list, ws.NOTIFY_INFO, {toast=false})
 end
 
 function nlist.remove(list,node)
@@ -33,7 +33,7 @@ function nlist.remove(list,node)
 	if ix == -1 then return end
 	table.remove(tb,ix)
 	nlist.set(list,tb)
-	ws.dcm(node..' removed from '..list)
+	ws.notify(node .. " removed from " .. list, ws.NOTIFY_INFO, {toast=false})
 end
 
 function nlist.set(list,tb)

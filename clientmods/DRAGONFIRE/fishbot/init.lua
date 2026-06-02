@@ -59,9 +59,9 @@ ws.rg('FishBot', {
 		if bpos then fb_obpos=bpos end
 	end,
 	on_start = function(self)
-		if ws.game ~= "mineclone" then ws.dcm("Fishbot only works on mineclone/ia") end
+		if ws.game ~= "mineclone" then ws.notify("Fishbot only works on mineclone/ia", ws.NOTIFY_ERROR) end
 		if not ws.switch_to_item('mcl_fishing:fishing_rod_enchanted') and not ws.switch_to_item('mcl_fishing:fishing_rod') then
-			ws.dcm("Put a fishing rod in the hotbar")
+			ws.notify("Put a fishing rod in the hotbar", ws.NOTIFY_WARNING)
 			return true
 		end
 	end,

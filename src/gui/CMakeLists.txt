@@ -3,6 +3,7 @@ file(GLOB gui_HDRS "*.h")
 set(gui_SRCS
 	${gui_HDRS}
 	${CMAKE_CURRENT_SOURCE_DIR}/cheatMenu.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/toastManager.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/guiKeyChangeMenu.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/guiAnimatedImage.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/guiBackgroundImage.cpp

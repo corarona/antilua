@@ -37,6 +37,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "l_clientobject.h"
 #include "lua_api/l_nodemeta.h"
 #include "gui/mainmenumanager.h"
+#include "gui/toastManager.h"
 #include "map.h"
 #include "util/string.h"
 #include "nodedef.h"
@@ -685,12 +686,26 @@ int ModApiClient::l_send_nodemeta_fields(lua_State *L)
 	return 0;
 }
 
+// show_toast(text, type)
+int ModApiClient::l_show_toast(lua_State *L)
+{
+	std::string text = luaL_checkstring(L, 1);
+	std::string type = luaL_optstring(L, 2, "info");
+
+	auto *tm = getClient(L)->getToastManager();
+	if (tm) {
+		tm->addToast(utf8_to_wide(text), ToastManager::stringToType(type));
+	}
+	return 0;
+}
+
 void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
 	API_FCT(get_modpath);
 	API_FCT(print);
 	API_FCT(display_chat_message);
+	API_FCT(show_toast);
 	API_FCT(send_chat_message);
 	API_FCT(clear_out_chat_queue);
 	API_FCT(get_player_names);

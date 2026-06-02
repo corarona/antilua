@@ -1,6 +1,7 @@
 local function checkprojectile(self)
 	local range = tonumber(core.settings:get(self.setting .. ".scan_range")) or 4
-	for k, v in ipairs(minetest.localplayer:get_nearby_objects(range)) do
+	local pos = minetest.localplayer:get_pos()
+	for k, v in ipairs(minetest.get_objects_inside_radius(pos, range)) do
 		local tex = v:get_item_textures()
 		if tex and (tex:sub(-9) == "arrow_box" or tex:sub(-7) == "_splash" or tex:sub(-17) == "shulkerbullet.png") then
 			local vel = v:get_velocity()

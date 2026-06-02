@@ -100,12 +100,12 @@ ws.rg("Sow", { category = "Place", setting = "farmtool_sow",
 		local s = minetest.localplayer:get_wielded_item():get_name()
 		for _, v in pairs(seeds) do
 			if v == s then
-				ws.dcm("Sowing started with " .. s)
+				ws.notify("Sowing started with " .. s, ws.NOTIFY_INFO, {toast=false})
 				sseed = s
 				return
 			end
 		end
-		ws.dcm("No seed wielded.")
+		ws.notify("No seed wielded.", ws.NOTIFY_WARNING)
 		return true
 	end,
 	cheat_settings = {

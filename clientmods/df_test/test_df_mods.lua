@@ -378,3 +378,127 @@ function test_category_assignments(T)
 		check_category("NlEdMode", "Misc")
 	end)
 end
+
+----------------------------------------------------------------------------------
+-- Notification API
+----------------------------------------------------------------------------------
+function test_notification_api(T)
+	-- Must guard: ws.notify may not exist if wasplib failed to load
+	if not ws.notify then return end
+
+	T.run("ws.notify() calls handler with defaults", function()
+		local called = false
+		ws.set_notify_handler(function(text, ntype, opts)
+			called = true
+		end)
+		ws.notify("test message")
+		ws.set_notify_handler(nil)
+		T.assert(called, "ws.notify() should call the handler")
+	end)
+
+	T.run("ws.notify() with explicit type", function()
+		local result_type = nil
+		ws.set_notify_handler(function(text, ntype, opts)
+			result_type = ntype
+		end)
+		ws.notify("error test", ws.NOTIFY_ERROR)
+		ws.set_notify_handler(nil)
+		T.assert_eq(result_type, ws.NOTIFY_ERROR)
+	end)
+
+	T.run("ws.notify() with {toast=false}", function()
+		local opts_received = nil
+		ws.set_notify_handler(function(text, ntype, opts)
+			opts_received = opts
+		end)
+		ws.notify("chat only", ws.NOTIFY_INFO, {toast = false})
+		ws.set_notify_handler(nil)
+		T.assert_eq(opts_received.toast, false)
+	end)
+
+	T.run("ws.notify_cheat(true) uses success type", function()
+		local result_type = nil
+		ws.set_notify_handler(function(text, ntype, opts)
+			result_type = ntype
+		end)
+		ws.notify_cheat("TestCheat", true)
+		ws.set_notify_handler(nil)
+		T.assert_eq(result_type, ws.NOTIFY_SUCCESS)
+	end)
+
+	T.run("ws.notify_cheat(false) uses info type", function()
+		local result_type = nil
+		ws.set_notify_handler(function(text, ntype, opts)
+			result_type = ntype
+		end)
+		ws.notify_cheat("TestCheat", false)
+		ws.set_notify_handler(nil)
+		T.assert_eq(result_type, ws.NOTIFY_INFO)
+	end)
+
+	T.run("ws.set_notify_handler(nil) restores default", function()
+		local custom_called = false
+		ws.set_notify_handler(function() custom_called = true end)
+		ws.set_notify_handler(nil)
+		-- After restoring default, our custom handler should NOT be called
+		custom_called = false
+		ws.notify("test")
+		T.assert(not custom_called, "custom handler should not be called after restore")
+	end)
+
+	T.defer("lifecycle: on_start success triggers notify_cheat true", function()
+		local test_setting = "df_test_notify_lifecycle_success"
+		core.settings:set(test_setting, "false")
+		local notified_name = nil
+		local notified_enabled = nil
+		ws.set_notify_handler(function(text, ntype, opts) end) -- suppress output
+		local orig_notify_cheat = ws.notify_cheat
+		ws.notify_cheat = function(name, enabled)
+			notified_name = name
+			notified_enabled = enabled
+			orig_notify_cheat(name, enabled)
+		end
+		ws.rg("DFTestNotifySuccess", {
+			category = "DevTools",
+			setting = test_setting,
+			on_start = function() end,
+		})
+		core.settings:set_bool(test_setting, true)
+		core.after(0.5, function()
+			T.assert_eq(notified_name, "DFTestNotifySuccess",
+				"should notify with cheat name on enable")
+			T.assert_eq(notified_enabled, true,
+				"should notify enabled=true on successful on_start")
+			ws.notify_cheat = orig_notify_cheat
+			ws.set_notify_handler(nil)
+			core.settings:set_bool(test_setting, false)
+		end)
+	end)
+
+	T.defer("lifecycle: on_start failure triggers error notification", function()
+		local test_setting = "df_test_notify_lifecycle_fail"
+		core.settings:set(test_setting, "false")
+		local notified_text = nil
+		local notified_type = nil
+		ws.set_notify_handler(function(text, ntype, opts)
+			notified_text = text
+			notified_type = ntype
+		end)
+		ws.rg("DFTestNotifyFail", {
+			category = "DevTools",
+			setting = test_setting,
+			on_start = function()
+				return false, "custom failure reason"
+			end,
+		})
+		core.settings:set_bool(test_setting, true)
+		core.after(0.5, function()
+			T.assert_eq(notified_text, "custom failure reason",
+				"should use the message from return false, 'msg'")
+			T.assert_eq(notified_type, ws.NOTIFY_ERROR,
+				"failure should use error notification type")
+			ws.set_notify_handler(nil)
+			core.settings:set_bool(test_setting, false)
+		end)
+	end)
+end

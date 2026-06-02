@@ -11,7 +11,7 @@ minetest.register_on_damage_taken(function()
 	if not minetest.settings:get_bool("invsaver") then return end
 	local hp = minetest.localplayer:get_hp()
 	if hp < 6 then
-		ws.dcm("almost dead - saving shit to ec")
+		ws.notify("Almost dead - saving to ender chest", ws.NOTIFY_WARNING)
 		ws.invtoec()
 	end
 end)

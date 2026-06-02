@@ -336,14 +336,14 @@ minetest.register_on_formspec_input(function(formname, fields)
 		for k,v in pairs(poi.registered_transports) do
 			if fields[v.name] then
 				if v.func(poi.get_waypoint(name),name) then
-					ws.dcm('Error with '..v.name)
+					ws.notify('Error with '..v.name, ws.NOTIFY_ERROR)
 					return
 				end
 			end
 		end
 		if fields.display then
 			if not poi.display_waypoint(name) then
-				ws.dcm('Error displaying waypoint!')
+				ws.notify('Error displaying waypoint!', ws.NOTIFY_ERROR)
 				return
 			end
 		elseif fields.rename then
@@ -358,11 +358,11 @@ minetest.register_on_formspec_input(function(formname, fields)
 				if poi.rename_waypoint(name, fields.new_name) then
 					selected_name = fields.new_name
 				else
-					ws.dcm('Error renaming poi!')
+					ws.notify('Error renaming poi!', ws.NOTIFY_ERROR)
 				end
 				poi.display_formspec()
 			else
-				ws.dcm("new name")
+				ws.notify("New name required", ws.NOTIFY_ERROR)
 			end
 		elseif fields.delete then
 			minetest.show_formspec('poi-csm', 'size[6,2]' ..
@@ -380,7 +380,7 @@ minetest.register_on_formspec_input(function(formname, fields)
 			poi.display_formspec()
 		end
 	elseif fields.display or fields.delete then
-		ws.dcm('Please select a poi.')
+		ws.notify('Please select a poi.', ws.NOTIFY_ERROR)
 	end
 	return true
 end)

@@ -93,7 +93,7 @@ ws.rg("PCeiling", { category = "Place", setting = "pceiling",
 	end,
 	on_start = function(self)
 		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
-		ws.dcm("Ceilingscaff started. Selected node: " .. multiscaff_node)
+		-- started notification handled by lifecycle hook
 	end,
 	cheat_settings = {
 		range = { type = "number", default = 4, min = 1, max = 20 },

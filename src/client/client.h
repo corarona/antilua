@@ -45,6 +45,7 @@ class NetworkPacket;
 class NodeDefManager;
 class ParticleManager;
 class RenderingEngine;
+class ToastManager;
 class SingleMediaDownloader;
 class ClientScripting;
 class SSCSMController;
@@ -430,6 +431,8 @@ public:
 		return m_csm_restriction_flags & flag;
 	}
 
+	ToastManager *getToastManager();
+
 	bool joinModChannel(const std::string &channel) override;
 	bool leaveModChannel(const std::string &channel) override;
 	bool sendModChannelMessage(const std::string &channel,
@@ -608,6 +611,9 @@ private:
 	u32 m_csm_restriction_noderange = 8;
 
 	std::unique_ptr<ModChannelMgr> m_modchannel_mgr;
+
+	// DragonfireClient: toast notifications
+	std::unique_ptr<ToastManager> m_toast_manager;
 
 	// The number of blocks the client will combine for mesh generation.
 	MeshGrid m_mesh_grid;

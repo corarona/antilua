@@ -28,7 +28,7 @@ local function do_tp(tpos, tpstep)
 			minetest.localplayer:set_pos(vector.offset(lp, 0, 25, 0))
 			mclminer_tgt = nil
 			tpactive = false
-			ws.dcm("LAVAAA")
+			ws.notify("LAVAAA", ws.NOTIFY_WARNING)
 			minetest.settings:set_bool("mclminer", false)
 			return
 		end

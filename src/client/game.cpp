@@ -3699,6 +3699,10 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 		runData.damage_flash -= 384.0f * dtime;
 	}
 
+	// Toast timer update (drawn in drawScene)
+	if (client->getToastManager())
+		client->getToastManager()->update(dtime);
+
 	g_profiler->avg("Game::updateFrame(): update frame [ms]", tt_update.stop(true));
 }
 
@@ -3870,6 +3874,12 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
 					core::rect<s32>(0, 0, screensize.X, screensize.Y),
 					NULL);
 	}
+
+	/*
+		Toast notifications
+	*/
+	if (this->client->getToastManager() && this->client->getToastManager()->hasToasts())
+		this->client->getToastManager()->draw(this->driver);
 
 	this->driver->endScene();
 

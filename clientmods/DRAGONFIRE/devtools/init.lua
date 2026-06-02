@@ -6,7 +6,7 @@ ws.rg("FindVoidAir","DevTools","fvair",function()
 	p2.y = -128
 	local nds = minetest.find_nodes_in_area(p1, p2, {"air"})
 	if nds and #nds > 0 then
-		ws.dcm("Airpocket found at "..minetest.pos_to_string(nds[1]))
+		ws.notify("Airpocket found at " .. minetest.pos_to_string(nds[1]), ws.NOTIFY_INFO, {toast=false})
 		ws.display_wp(nds[1], "airpocket")
 	end
 end)

@@ -29,10 +29,10 @@ minetest.register_chatcommand("digcyl", {
 		local pos = minetest.string_to_pos(p)
 		if pos then
 			digcyl_mid = pos
-			ws.dcm("digcyl center set to " .. p)
+			ws.notify("Digcyl center set to " .. p, ws.NOTIFY_INFO, {toast=false})
 		else
 			digcyl_mid = ws.dircoord(0, 0, 0)
-			ws.dcm("digcyl center set to player pos")
+			ws.notify("Digcyl center set to player pos", ws.NOTIFY_INFO, {toast=false})
 		end
 	end,
 })
@@ -44,7 +44,7 @@ minetest.register_chatcommand("digcyl_rad", {
 		local n = tonumber(p)
 		if n then
 			digcyl_rad = n
-			ws.dcm("digcyl radius set to " .. n)
+			ws.notify("Digcyl radius set to " .. n, ws.NOTIFY_INFO, {toast=false})
 		end
 	end,
 })

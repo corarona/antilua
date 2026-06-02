@@ -70,7 +70,7 @@ function sbots.register_bot(name, def)
 			if not bot then return end
 			for n, _ in pairs(registered_bots) do
 				if n ~= tn and core.settings:get_bool(n) and not bot.allow_cobot then
-					ws.dcm("Another bot is active. Disable it first, or enable allow_cobot on this bot.")
+					ws.notify("Another bot is active.", ws.NOTIFY_WARNING)
 					return true
 				end
 			end

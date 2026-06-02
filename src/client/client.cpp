@@ -22,6 +22,7 @@
 #include "game.h"
 #include "gettext.h"
 #include "gettime.h"
+#include "gui/toastManager.h"
 #include "guiscalingfilter.h"
 #include "item_visuals_manager.h"
 #include "itemdef.h"
@@ -359,6 +360,13 @@ const std::string &Client::getClientModsLuaPath()
 {
 	static const std::string clientmods_dir = porting::path_share + DIR_DELIM + "clientmods";
 	return clientmods_dir;
+}
+
+ToastManager *Client::getToastManager()
+{
+	if (!m_toast_manager)
+		m_toast_manager = std::make_unique<ToastManager>();
+	return m_toast_manager.get();
 }
 
 const std::vector<ModSpec>& Client::getMods() const

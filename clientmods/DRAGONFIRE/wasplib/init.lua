@@ -22,6 +22,7 @@ dofile(minetest.get_modpath("wasplib") .. "/world.lua")
 dofile(minetest.get_modpath("wasplib") .. "/combat.lua")
 dofile(minetest.get_modpath("wasplib") .. "/waypoints.lua")
 dofile(minetest.get_modpath("wasplib") .. "/compat.lua")
+dofile(minetest.get_modpath("wasplib") .. "/notification.lua")
 
 local cheat_defaults = {
 	on_step   = function() end,
@@ -40,10 +41,17 @@ function ws.globalhacktemplate(def)
 			if nextact[setting] and nextact[setting] > os.clock() then return end
 			nextact[setting] = os.clock() + (def.delay or 0.2)
 			if not ghwason[setting] then
-				if not def.on_start(def) then
+				local ok, msg = def.on_start(def)
+				if ok ~= false then
+					if startup_done then
+						ws.notify_cheat(def.name, true)
+					end
 					ws.set_bool_bulk(def.daughters, true)
 					ghwason[setting] = true
 				else
+					if startup_done then
+						ws.notify(msg or (def.name .. " failed to activate"), ws.NOTIFY_ERROR)
+					end
 					minetest.settings:set_bool(setting, false)
 				end
 			else
@@ -52,6 +60,9 @@ function ws.globalhacktemplate(def)
 		elseif ghwason[setting] then
 			ghwason[setting] = false
 			ws.set_bool_bulk(def.daughters, false)
+			if startup_done then
+				ws.notify_cheat(def.name, false)
+			end
 			def.on_stop(def)
 		end
 	end
@@ -94,10 +105,13 @@ ws.rg = ws.register_globalhacktemplate
 
 dofile(minetest.get_modpath("wasplib") .. "/integrations.lua")
 
+local startup_done = false
+
 function ws.step_globalhacks(dtime)
 	for i, v in ipairs(ws.registered_globalhacks) do
 		v(dtime)
 	end
+	startup_done = true
 end
 
 minetest.register_globalstep(function(dtime) ws.step_globalhacks(dtime) end)

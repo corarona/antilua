@@ -109,10 +109,8 @@ ws.rg('PlaceOn', { category = 'Place', setting = 'scaffold_placeon',
 	end,
 	on_start = function(self)
 		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
-		ws.dcm("PlaceOn started. Selected node: " .. multiscaff_node)
 	end,
 	on_stop = function(self)
-		ws.dcm("PlaceOn stopped")
 	end,
 })
 
@@ -123,10 +121,8 @@ ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold',
 	end,
 	on_start = function(self)
 		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
-		ws.dcm("Multiscaff started. Width: " .. (scaffold.setting("width") or 5) .. ", depth:" .. (scaffold.setting("depth") or 1) .. " Selected node: " .. multiscaff_node)
 	end,
 	on_stop = function(self)
-		ws.dcm("Multiscaff stopped")
 	end,
 	cheat_settings = {
 		width = { type = "number", default = 5, min = 1, max = 50 },
@@ -161,10 +157,8 @@ ws.rg('MScaffModulo', { category = 'Place', setting = 'multiscaffm',
 	end,
 	on_start = function(self)
 		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
-		ws.dcm("ModuloScaff started. Width: " .. (scaffold.setting("width") or 5) .. ", depth:" .. (scaffold.setting("depth") or 1) .. " Selected node: " .. multiscaff_node)
 	end,
 	on_stop = function(self)
-		ws.dcm("Moduloscaff stopped")
 	end,
 })
 
@@ -378,10 +372,8 @@ ws.rg("LanternTBM", { category = "Place", setting = "place_ltbm",
 	end,
 	on_start = function(self)
 		lightblock = minetest.localplayer:get_wielded_item():get_name()
-		ws.dcm("LTBM started. Selected node: " .. lightblock)
 	end,
 	on_stop = function(self)
-		ws.dcm("LTBM stopped")
 	end,
 })
 

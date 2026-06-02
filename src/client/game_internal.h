@@ -22,6 +22,7 @@
 #include "log_internal.h"
 #include "sky.h"
 #include "gui/cheatMenu.h"
+#include "gui/toastManager.h"
 #include "util/pointedthing.h"
 
 /* DO NOT INCLUDE THIS FROM OUTSIDE GAME.CPP */
