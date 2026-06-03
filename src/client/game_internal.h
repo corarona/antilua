@@ -399,6 +399,7 @@ public:
 	bool m_game_focused = false;
 
 	bool m_cheat_layer_active = false;
+	CameraMode m_freecam_prev_camera_mode = static_cast<CameraMode>(0);
 	void toggleCheatLayer();
 
 	bool m_does_lost_focus_pause_game = false;
