@@ -3,6 +3,7 @@ autokey = {}
 function autokey.register_keypress_cheat(setting, desc, category, keyname, condition)
 	local was_active = false
 	minetest.register_globalstep(function()
+		if not core.localplayer then return end
 		local is_active = minetest.settings:get_bool(setting) and (not condition or condition())
 		if is_active then
 			minetest.set_keypress(keyname, true)
