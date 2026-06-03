@@ -1121,8 +1121,8 @@ void Client::Send(NetworkPacket* pkt)
 // Will fill up 12 + 12 + 4 + 4 + 4 + 1 + 1 + 1 + 4 + 4 bytes
 void writePlayerPos(LocalPlayer *myplayer, ClientMap *clientMap, NetworkPacket *pkt, bool camera_inverted)
 {
-	v3s32 position   = v3s32::from(myplayer->getPosition() * 100);
-	v3s32 speed      = v3s32::from(myplayer->getSpeed() * 100);
+	v3s32 position   = v3s32::from(myplayer->getLegitPosition() * 100);
+	v3s32 speed      = v3s32::from(myplayer->getLegitSpeed() * 100);
 	s32 pitch        = myplayer->getPitch() * 100;
 	s32 yaw          = myplayer->getYaw() * 100;
 	u32 keyPressed   = myplayer->control.getKeysPressed();
@@ -1491,8 +1491,8 @@ void Client::sendPlayerPos()
 	f32 movement_dir = player->control.movement_direction;
 
 	bool identical = (
-			player->last_position        == player->getPosition() &&
-			player->last_speed           == player->getSpeed()    &&
+			player->last_position        == player->getLegitPosition() &&
+			player->last_speed           == player->getLegitSpeed()    &&
 			player->last_pitch           == player->getPitch()    &&
 			player->last_yaw             == player->getYaw()      &&
 			player->last_keyPressed      == keyPressed            &&
@@ -1514,8 +1514,8 @@ void Client::sendPlayerPos()
 		m_playerpos_repeat_count = 0;
 	}
 
-	player->last_position        = player->getPosition();
-	player->last_speed           = player->getSpeed();
+	player->last_position        = player->getLegitPosition();
+	player->last_speed           = player->getLegitSpeed();
 	player->last_pitch           = player->getPitch();
 	player->last_yaw             = player->getYaw();
 	player->last_keyPressed      = keyPressed;
