@@ -915,16 +915,10 @@ void LocalPlayer::applyFreecamControl(float dtime, Environment *env)
 		return;
 	}
 
-	PlayerSettings &player_settings = getPlayerSettings();
-
 	v3f speedH, speedV;
 
-	bool fast_allowed = m_client->checkLocalPrivilege("fast");
-	bool fast_move = fast_allowed && player_settings.fast_move;
-
-	bool superspeed = false;
-	if (fast_move && control.aux1)
-		superspeed = true;
+	// Freecam always moves at fast speed — no need for aux1 toggle
+	bool superspeed = true;
 
 	const f32 speed_walk = movement_speed_walk * physics_override.speed_walk;
 	const f32 new_speed_fast = movement_speed_fast * physics_override.speed_fast;
