@@ -60,7 +60,7 @@ bool ScriptApiClient::on_sending_message(const std::string &message)
 	return readParam<bool>(L, -1);
 }
 
-bool ScriptApiClient::on_receiving_message(const std::string &message)
+std::string ScriptApiClient::on_receiving_message(const std::string &message)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -73,9 +73,16 @@ bool ScriptApiClient::on_receiving_message(const std::string &message)
 		runCallbacks(1, RUN_CALLBACKS_MODE_OR_SC);
 	} catch (LuaError &e) {
 		getClient()->setFatalError(e);
-		return true;
+		return {};
 	}
-	return readParam<bool>(L, -1);
+
+	if (lua_type(L, -1) == LUA_TSTRING) {
+		std::string result = lua_tostring(L, -1);
+		return result.empty() ? message : result;
+	}
+
+	bool cancelled = lua_toboolean(L, -1);
+	return cancelled ? std::string{} : message;
 }
 
 void ScriptApiClient::on_damage_taken(int32_t damage_amount)

@@ -273,4 +273,5 @@ core.register_on_receiving_chat_message(function(msg)
 	if core.settings:get_bool("strip_chat_colors") then
 		return core.strip_colors(msg)
 	end
+	-- Return the original message (or nil) to let it through unchanged
 end)

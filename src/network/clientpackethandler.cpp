@@ -412,10 +412,19 @@ void Client::handleCommand_ChatMessage(NetworkPacket *pkt)
 	actionstream << "CHAT: " << wide_to_utf8(unescape_enriched(chatMessage->message)) << std::endl;
 
 	// @TODO send this to CSM using ChatMessage object
-	if (modsLoaded() && m_script->on_receiving_message(
-			wide_to_utf8(chatMessage->message))) {
-		// Message was consumed by CSM and should not be handled by client
-		delete chatMessage;
+	if (modsLoaded()) {
+		std::string modified = m_script->on_receiving_message(
+				wide_to_utf8(chatMessage->message));
+		if (modified.empty()) {
+			// Message was consumed by CSM and should not be handled by client
+			delete chatMessage;
+		} else if (modified != wide_to_utf8(chatMessage->message)) {
+			// Message was modified by CSM
+			chatMessage->message = utf8_to_wide(modified);
+			pushToChatQueue(chatMessage);
+		} else {
+			pushToChatQueue(chatMessage);
+		}
 	} else {
 		pushToChatQueue(chatMessage);
 	}

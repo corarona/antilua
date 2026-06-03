@@ -333,7 +333,8 @@ Call these functions only at load time!
       semi-frequent intervals as well as on server shutdown.
 * `core.register_on_receiving_chat_message(function(message))`
     * Called always when a client receive a message
-    * Return `true` to mark the message as handled, which means that it will not be shown to chat
+    * Return `true` to hide the message from chat
+    * Return a string to replace the message with a modified version
 * `core.register_on_sending_chat_message(function(message))`
     * Called always when a client sends a message from chat
     * Return `true` to mark the message as handled, which means that it will not be sent to server

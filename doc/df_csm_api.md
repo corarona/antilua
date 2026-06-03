@@ -186,7 +186,7 @@ All callbacks available to client-side mods:
 core.register_globalstep(func(dtime))
 core.register_on_mods_loaded(func())
 core.register_on_shutdown(func())
-core.register_on_receiving_chat_message(func(msg) -> bool)
+core.register_on_receiving_chat_message(func(msg) -> string|bool)
 core.register_on_sending_chat_message(func(msg) -> bool)
 core.register_on_chatcommand(func(msg))
 core.register_on_damage_taken(func(amount))
@@ -215,7 +215,8 @@ core.register_on_modchannel_signal(func(channel, signal))
 ```
 
 Return `true` from a `register_on_receiving_chat_message` handler to suppress
-the message.
+the message. Return a string to replace the message with a modified version
+(e.g., `core.strip_colors(msg)` to remove color codes).
 
 ---
 

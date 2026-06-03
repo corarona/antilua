@@ -29,7 +29,8 @@ public:
 
 	// Chat message handlers
 	bool on_sending_message(const std::string &message);
-	bool on_receiving_message(const std::string &message);
+	// Returns the message to display, or empty to cancel
+	std::string on_receiving_message(const std::string &message);
 
 	void on_damage_taken(int32_t damage_amount);
 	void on_hp_modification(int32_t newhp);
