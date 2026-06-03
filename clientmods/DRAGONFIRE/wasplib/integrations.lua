@@ -260,3 +260,17 @@ minetest.register_globalstep(function()
 end)
 
 core.register_cheat("AutoTool", { category = "Inventory", setting = "autotool" })
+
+----------------------------------------------------------------------------------
+-- StripChatColors
+----------------------------------------------------------------------------------
+core.register_cheat("StripChatColors", { category = "Render", setting = "strip_chat_colors" })
+if not core.settings:get("strip_chat_colors") then
+	core.settings:set("strip_chat_colors", "false")
+end
+
+core.register_on_receiving_chat_message(function(msg)
+	if core.settings:get_bool("strip_chat_colors") then
+		return core.strip_colors(msg)
+	end
+end)
