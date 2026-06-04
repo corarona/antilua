@@ -72,9 +72,9 @@ local multiscaff_node = nil
 local function mscaffold(f)
 	f = f or 0
 	if not multiscaff_node then return end
-	local width = scaffold.setting("width") or 5
-	local depth = scaffold.setting("depth") or 1
-	local above = scaffold.setting("above") or 0
+	local width = tonumber(core.settings:get("scaffold.width")) or 5
+	local depth = tonumber(core.settings:get("scaffold.depth")) or 1
+	local above = tonumber(core.settings:get("scaffold.above")) or 0
 	local yf = -depth
 	local yt = -1
 	if above > 0 then
@@ -117,9 +117,9 @@ ws.rg('MScaffModulo', { category = 'Place', setting = 'multiscaffm',
 	on_step = function(self)
 		if not multiscaff_node then return end
 		ws.switch_to_item(multiscaff_node)
-		local width = scaffold.setting("width") or 5
-		local depth = scaffold.setting("depth") or 1
-		local mod = scaffold.setting("mod") or 1
+		local width = tonumber(core.settings:get("multiscaffm.width")) or 5
+		local depth = tonumber(core.settings:get("multiscaffm.depth")) or 1
+		local mod = tonumber(core.settings:get("multiscaffm.mod")) or 1
 		local n = math.floor(width / 2)
 		for i = -n, n do
 			for j = (depth * -1), -1 do
@@ -217,7 +217,7 @@ ws.rg("Highway", { category = "Place", setting = "highwaymaker",
 
 ws.rg("HighwayZ", { category = "Place", setting = "highwayz",
 	on_step = function(self)
-		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
+		local npt = ws.get_nodes_per_tick()
 		local positions = {
 			ws.dircoord(0, 0, 1),
 			ws.dircoord(1, 0, 1),
@@ -242,7 +242,7 @@ ws.rg("BlockSources", {
 		local block_lava = core.settings:get_bool(self.setting .. ".block_lava", true)
 		local block_nether_lava = core.settings:get_bool(self.setting .. ".block_nether_lava", true)
 		local use_wielded = core.settings:get_bool(self.setting .. ".use_wielded", false)
-		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
+		local npt = ws.get_nodes_per_tick()
 		local lp = ws.dircoord(0, 0, 0)
 		local targets = {}
 		if block_water then
@@ -281,7 +281,7 @@ ws.rg("BlockSources", {
 ws.rg("PlaceOnTop", { category = "Place", setting = "place_on_top",
 	on_step = function(self)
 		if not multiscaff_node then return end
-		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
+		local npt = ws.get_nodes_per_tick()
 		local lp = ws.dircoord(0, 0, 0)
 		local item = minetest.localplayer:get_wielded_item():get_name()
 		if not item then return end
@@ -309,7 +309,7 @@ ws.rg("LanternTBM", { category = "Place", setting = "place_ltbm",
 		local dir = ws.getdir()
 		local lp = vector.round(ws.dircoord(0, 0, 0))
 		local pl = is_lantern(lp)
-		local ypos = scaffold.setting("depth") or 1
+		local ypos = tonumber(core.settings:get("place_ltbm.depth")) or 1
 		if lightblock and pl then
 			local lpos = ws.dircoord(0, ypos, 0)
 			local nd = minetest.get_node_or_nil(lpos)

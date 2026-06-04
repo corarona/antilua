@@ -10,8 +10,8 @@ end
 
 local function excavate(condition)
 	local lp = ws.dircoord(0, 0, 0)
-	local width = tonumber(core.settings:get("dig.width")) or 5
-	local depth = tonumber(core.settings:get("dig.depth")) or 1
+	local width = get_width()
+	local depth = get_depth()
 	local maxv = math.max(width, depth)
 	for a = -depth, depth - 1 do
 		local n = math.floor(width / 2)

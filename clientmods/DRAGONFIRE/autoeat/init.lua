@@ -5,7 +5,8 @@ local autodupe = rawget(_G, "autodupe")
 local hud_id = nil
 
 local function get_float(name, default)
-	return tonumber(minetest.settings:get("autoeat_" .. name) or "") or default
+	local v = core.settings:get("autoeat." .. name)
+	return tonumber(v) or default
 end
 
 local etime = 0
