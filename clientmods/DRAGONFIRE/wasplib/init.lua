@@ -10,10 +10,6 @@ ws.hotbar_slot = 8
 local nextact = {}
 local ghwason = {}
 
-if not core.register_list_command then
-	function core.register_list_command() end
-end
-
 dofile(minetest.get_modpath("wasplib") .. "/settings.lua")
 dofile(minetest.get_modpath("wasplib") .. "/coord.lua")
 dofile(minetest.get_modpath("wasplib") .. "/inventory.lua")
