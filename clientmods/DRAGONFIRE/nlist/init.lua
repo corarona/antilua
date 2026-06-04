@@ -18,7 +18,7 @@ local function get_dflist(list)
 end
 
 function nlist.add(list,node)
-	if node == "" then mode=1 return end
+	if node == "" then return end
 	local tb=nlist.get(list)
 	if table.indexof(tb,node) ~= -1 then return end
 	table.insert(tb,node)
@@ -27,7 +27,7 @@ function nlist.add(list,node)
 end
 
 function nlist.remove(list,node)
-	if node == "" then mode=2 return end
+	if node == "" then return end
 	local tb=nlist.get(list)
 	local ix = table.indexof(tb,node)
 	if ix == -1 then return end
@@ -44,6 +44,7 @@ function nlist.set(list,tb)
 	else
 		storage:set_string(list,str)
 	end
+	return true
 end
 
 function nlist.get(list)
@@ -64,15 +65,16 @@ function nlist.clear(list)
 	else
 		storage:set_string(list,"")
 	end
+	return true
 end
 
 function nlist.delete(list)
-	local df = get_dflist(list)
-	if df then
-		minetest.settings:set(df, "")
-	else
-		storage:set_string(list, "")
+	nlist.clear(list)
+	-- Also remove the storage key for lists not backed by a chat command setting
+	if not get_dflist(list) then
+		storage:set_string(list, nil)
 	end
+	return true
 end
 
 function nlist.select(list)
@@ -97,10 +99,9 @@ end
 function nlist.rename(oldname, newname)
 	oldname, newname = tostring(oldname), tostring(newname)
 	local list = nlist.get(oldname)
-	if not list or not nlist.set(newname,list) then return end
-	if oldname ~= newname then
-		 nlist.clear(oldname)
-	end
+	if not list or #list == 0 then return false end
+	nlist.set(newname, list)
+	nlist.clear(oldname)
 	return true
 end
 
@@ -116,13 +117,9 @@ function nlist.copy(oldname, newname)
 end
 
 function nlist.random(list)
-	local str=storage:get(list)
-	local tb=str:split(',')
-	local kk = {}
-	for k in pairs(tb) do
-		table.insert(kk, k)
-	end
-	return tb[kk[math.random(#kk)]]
+	local tb = nlist.get(list)
+	if #tb == 0 then return end
+	return tb[math.random(#tb)]
 end
 
 function nlist.show_list(list,hlp)
@@ -143,6 +140,7 @@ local function textlist_idx(val)
 end
 
 function nlist.hide()
+	if not minetest.localplayer then return end
 	if nled_hud then minetest.localplayer:hud_remove(nled_hud) nled_hud=nil end
 end
 
@@ -284,12 +282,18 @@ minetest.register_chatcommand('nlhide',{
 minetest.register_chatcommand('nla',{
 	description = "Add an item to the selected list or switch to 'add' mode if run without parameters",
 	params = "[<item>]",
-	func=function(el) nlist.add(sl,el)  end
+	func=function(el)
+		if el == "" then mode=1; ws.notify("nlist mode: add", ws.NOTIFY_INFO, {toast=false}); return end
+		nlist.add(sl,el)
+	end
 })
 minetest.register_chatcommand('nlr',{
 	description = "Remove an item from the selected list or switch to 'remove' mode if run without parameters",
 	params = "[<item>]",
-	func=function(el) nlist.remove(sl,el) end
+	func=function(el)
+		if el == "" then mode=2; ws.notify("nlist mode: remove", ws.NOTIFY_INFO, {toast=false}); return end
+		nlist.remove(sl,el)
+	end
 })
 minetest.register_chatcommand('nlc',{
 	description = "Clear the selected list",
@@ -300,19 +304,20 @@ minetest.register_chatcommand('nlc',{
 minetest.register_chatcommand('nlawi',{
 	description = "Add wielded itemstring to the selected list",
 	params = "",
-	func=function() nlist.add(sl,minetest.localplayer:get_wielded_item():get_name())  end
+	func=function() if not minetest.localplayer then return end nlist.add(sl,minetest.localplayer:get_wielded_item():get_name())  end
 })
 
 minetest.register_chatcommand('nlrwi',{
 	description = "Remove wielded itemstring from the selected list",
 	params = "",
-	func=function() nlist.remove(sl,minetest.localplayer:get_wielded_item():get_name())  end
+	func=function() if not minetest.localplayer then return end nlist.remove(sl,minetest.localplayer:get_wielded_item():get_name())  end
 })
 
 minetest.register_chatcommand('nlapn',{
 	description = "Add pointed node's itemstring to the selected list",
 	params = "",
 	func=function()
+		if not minetest.localplayer then return end
 		local ptd = minetest.get_pointed_thing()
 		if ptd then
 			local nd=minetest.get_node_or_nil(ptd.under)
@@ -323,6 +328,7 @@ minetest.register_chatcommand('nlrpn',{
 	description = "Remove pointed node's itemstring from the selected list",
 	params = "",
 	func=function()
+		if not minetest.localplayer then return end
 		local ptd = minetest.get_pointed_thing()
 		if ptd then
 			local nd=minetest.get_node_or_nil(ptd.under)
