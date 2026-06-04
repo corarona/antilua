@@ -5,10 +5,7 @@ local function dump_inv(pos)
 		local plinv = core.get_inventory("current_player")
 		for i, v in pairs(plinv.main) do
 			if i > 9 then
-				local act = InventoryAction("move")
-				act:from("current_player", "main", i)
-				act:to("nodemeta:" .. n.x .. "," .. n.y .. "," .. n.z, "main", i)
-				act:apply()
+				ws.move_stack("current_player", "main", i, "nodemeta:" .. n.x .. "," .. n.y .. "," .. n.z, "main", i)
 			end
 		end
 	end

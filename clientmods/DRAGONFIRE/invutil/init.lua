@@ -13,11 +13,7 @@ minetest.register_globalstep(function(dtime)
 		local space = item:get_free_space()
 		local i = minetest.find_item(item:get_name(), wieldindex + 1)
 		if i and space > 0 then
-			local invact = InventoryAction("move")
-			invact:to("current_player", "main", wieldindex)
-			invact:from("current_player", "main", i)
-			invact:set_count(space)
-			invact:apply()
+			ws.move_stack("current_player", "main", i, "current_player", "main", wieldindex, space)
 		end
 	end
 	if minetest.settings:get_bool("autoeject") then
@@ -51,10 +47,7 @@ core.register_cheat("DumpFull", { category = "Inventory", func = function()
 	local inv = core.get_inventory("nodemeta:"..pt.x..","..pt.y..","..pt.z)
 	local plinv = core.get_inventory("current_player")
 	for i, v in pairs(plinv.main) do
-		local act = InventoryAction("move")
-		act:from("current_player", "main", i)
-		act:to("nodemeta:"..pt.x..","..pt.y..","..pt.z, "main", i)
-		act:apply()
+		ws.move_stack("current_player", "main", i, "nodemeta:"..pt.x..","..pt.y..","..pt.z, "main", i)
 	end
 end})
 
@@ -76,11 +69,7 @@ ws.rg("AutoBlock", "Inventory", "autoblock", function()
 	if item and count >= 9 then
 		local cidx = 1
 		for idx, it in pairs(items) do
-			local mv =  InventoryAction("move")
-			mv:from("current_player", "main", idx)
-			mv:to("current_player", "craft", cidx)
-			mv:set_count(it:get_count())
-			mv:apply()
+			ws.move_stack("current_player", "main", idx, "current_player", "craft", cidx, it:get_count())
 			cidx = cidx + 1
 		end
 	end
@@ -90,10 +79,7 @@ ws.rg("AutoBlock", "Inventory", "autoblock", function()
 			core.log(dump(inv.craft[1]:get_name()))
 	if empty and inv.craftpreview[1]:get_name() == blocks[1]  then
 		for _ = 1, inv.craft[1]:get_count() do
-			local mv = InventoryAction("move")
-			mv:from("current_player", "craftpreview", 1)
-			mv:to("current_player", "main", empty)
-			mv:apply()
+			ws.move_stack("current_player", "craftpreview", 1, "current_player", "main", empty)
 		end
 	end
 end)

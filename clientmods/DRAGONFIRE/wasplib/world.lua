@@ -268,11 +268,7 @@ function ws.make_blocks()
 	local wi = minetest.get_wield_index()
 	local nn = it:get_count() / 9
 	for i = 1, 9 do
-		local move_act = InventoryAction("move")
-		move_act:from("current_player", "main", wi)
-		move_act:to("current_player", "craft", i)
-		move_act:set_count(nn)
-		move_act:apply()
+		ws.move_stack("current_player", "main", wi, "current_player", "craft", i, nn)
 	end
 
 	local craft_act = InventoryAction("craft")
@@ -281,10 +277,7 @@ function ws.make_blocks()
 
 	local tslot = ws.find_empty(minetest.get_inventory("current_player").main)
 	if not tslot then tslot = 9 end
-	local dmv_act = InventoryAction("move")
-	dmv_act:from("current_player", "craft_result", 1)
-	dmv_act:to("current_player", "main", tslot)
-	dmv_act:apply()
+	ws.move_stack("current_player", "craft_result", 1, "current_player", "main", tslot)
 end
 
 core.register_cheat("MakeBlocks", { category = "Inventory", func = ws.make_blocks })
@@ -370,25 +363,13 @@ function ws.ectoinv()
 	local plinv = minetest.get_inventory('current_player').main
 	for k, v in ipairs(plinv) do
 		if v:get_name():find("helmet") then
-			local mv = InventoryAction("move")
-			mv:from("current_player", "main", k)
-			mv:to("current_player", "armor", 2)
-			mv:apply()
+			ws.move_stack("current_player", "main", k, "current_player", "armor", 2)
 		elseif v:get_name():find("chestplate") then
-			local mv = InventoryAction("move")
-			mv:from("current_player", "main", k)
-			mv:to("current_player", "armor", 3)
-			mv:apply()
+			ws.move_stack("current_player", "main", k, "current_player", "armor", 3)
 		elseif v:get_name():find("leggings") then
-			local mv = InventoryAction("move")
-			mv:from("current_player", "main", k)
-			mv:to("current_player", "armor", 4)
-			mv:apply()
+			ws.move_stack("current_player", "main", k, "current_player", "armor", 4)
 		elseif v:get_name():find("boots") then
-			local mv = InventoryAction("move")
-			mv:from("current_player", "main", k)
-			mv:to("current_player", "armor", 5)
-			mv:apply()
+			ws.move_stack("current_player", "main", k, "current_player", "armor", 5)
 		end
 	end
 end

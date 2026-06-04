@@ -137,22 +137,14 @@ local function fill_grid(recipe)
 			return false
 		end
 
-		local move = InventoryAction("move")
-		move:from("current_player", "main", slots[1].idx)
-		move:to("current_player", "craft", i)
-		move:set_count(missing)
-		move:apply()
+		ws.move_stack("current_player", "main", slots[1].idx, "current_player", "craft", i, missing)
 		::continue::
 	end
 	return true
 end
 
 local function take_result()
-	local move = InventoryAction("move")
-	move:from("current_player", "craftresult", 1)
-	move:to("current_player", "main", 1)
-	move:set_count(0)
-	move:apply()
+	ws.move_stack("current_player", "craftresult", 1, "current_player", "main", 1, 0)
 end
 
 local function capture_recipe()

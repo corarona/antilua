@@ -158,11 +158,7 @@ if minetest.register_on_receiving_inventory_form then
 				if not stack:is_empty() then
 					local empty, space = find_slot(pinv.main, stack)
 					if empty then
-						local move_act = InventoryAction("move")
-						move_act:from("detached:"..formname, "main", sidx)
-						move_act:to("current_player", "main", empty)
-						move_act:set_count(space)
-						move_act:apply()
+						ws.move_stack("detached:"..formname, "main", sidx, "current_player", "main", empty, space)
 					end
 				end
 			end
