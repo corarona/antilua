@@ -1,30 +1,8 @@
---[[local function get_setting_bool(name, default) -- Copied from Climate API
-	local value = minetest.settings:get_bool(name)
-	if type(value) == "nil" then value = default end
-	return minetest.is_yes(value)
-end]]
 --LOTS OF CODE IS COPIED FROM WORLDEDIT MOD
 
 local modpath = minetest.get_modpath(minetest.get_current_modname())
 
-
 local litematica = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
-local node_names = minetest.parse_json(minetest.settings:get("litematica_node_names") or "[]")
-if next(node_names) == nil then
-	node_names = {"mcl_amethyst:calcite","mcl_amethyst:amethyst_block","mcl_amethyst:large_amethyst_bud","mcl_amethyst:medium_amethyst_bud","mcl_amethyst:small_amethyst_bud"}
-end
---minetest.log(string.format("[litematica] %d nodes", #node_names))
---minetest.log(string.format("[litematica] %s", dump(node_names)))
-
-local texture_names = minetest.parse_json(minetest.settings:get("litematica_texture_names") or "[]")
-if next(texture_names) == nil then
-	texture_names = {"mcl_amethyst_calcite_block.png","mcl_amethyst_amethyst_block.png","mcl_amethyst_amethyst_bud_large.png","mcl_amethyst_amethyst_bud_medium.png","mcl_amethyst_amethyst_bud_small.png"}
-end
---minetest.log(string.format("[litematica] %d textures", #texture_names))
---minetest.log(string.format("[litematica] %s", dump(texture_names)))
-
-local litefile = minetest.settings:get("litematica_file")
-local modstorage = minetest.get_mod_storage("litematica")
 
 local function deserialize_workaround(content)
 	local nodes, err
@@ -186,6 +164,7 @@ local function load_schematic(value)
 		end
 	elseif version == 4 or version == 5 then -- Nested table format
 		nodes = deserialize_workaround(content)
+		return nodes
 	else
 		return nil
 	end
@@ -211,18 +190,26 @@ local function litematica_deserialize(origin_pos, value)
 	return #nodes
 end
 
-ws.rg("PlaceLiteM", "Place", "placelitem", function()
-	if #place_nodes == 0 then return end
-	local pp = minetest.localplayer:get_pos()
-	for x = -4, 4 do for y = -4, 4 do for z = -4, 4 do
-		local p = vector.add(pp, vector.new(x, y, z))
-		for i, entry in pairs(place_nodes) do
-			if vector.equals(p, vector.new(entry.x, entry.y, entry.z)) then
-				ws.place(p, entry.node)
+ws.rg("PlaceLiteM", {
+	category = "Place",
+	setting = "placelitem",
+	on_step = function(self, dtime)
+		if #place_nodes == 0 then return end
+		local pp = vector.round(minetest.localplayer:get_pos())
+		for i = #place_nodes, 1, -1 do
+			local entry = place_nodes[i]
+			if math.abs(entry.x - pp.x) <= 4
+			and math.abs(entry.y - pp.y) <= 4
+			and math.abs(entry.z - pp.z) <= 4 then
+				local pos = vector.new(entry.x, entry.y, entry.z)
+				if ws.can_place_at(pos) then
+					ws.place(pos, entry.name)
+					table.remove(place_nodes, i)
+				end
 			end
 		end
-	end	end end
-end)
+	end,
+})
 
 minetest.register_chatcommand("liteload", {
 	description = "Load nodes as particles from WorldEdit schematic arguments in position of the player as the origin\nDoes not support loading external files\nUse $ as the parameter to load from the litematica_output setting.",

@@ -3,21 +3,6 @@ local modpath = minetest.get_modpath(modname)
 dofile(modpath .. "/autofly.lua")
 dofile(modpath .. "/flight_hud.lua")
 
-
-local nether_rings = {
-	166,
-	420,
-	1337,
-	2666,
-	3860,
-}
-
-local function nearest_portal(pos)
-	if pos.y > 27000 then
-
-	end
-end
-
 poi.register_transport('CTP',function(pos,name)
 	minetest.localplayer:set_pos(pos)
 end)

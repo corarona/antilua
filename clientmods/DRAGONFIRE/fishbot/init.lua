@@ -34,7 +34,7 @@ ws.rg('FishBot', {
 			ws.switch_to_item('mcl_fishing:fishing_rod')
 		end
 		local bpos=get_bobber_pos(self)
-		if not bpos then fb_state=0 end
+		if not bpos then fb_state=0; return end
 		if fb_state == 0 then
 			minetest.interact("activate",{type="nothing"})
 			fb_state=1

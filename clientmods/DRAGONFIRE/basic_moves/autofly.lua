@@ -3,8 +3,6 @@ autofly.landing_distance=15
 autofly.tpos=nil
 autofly.atpos=nil
 
-local max_speed = vector.new(4,26,4)
-
 ws.rg('Fly3d', {
 	category = 'Movement',
 	setting = 'afly3d',
@@ -43,7 +41,7 @@ ws.rg('Mv3d', {
 		if dst > autofly.landing_distance and minetest.settings:get_bool("continuous_forward", false) then
 			--ws.aim(autofly.tpos)
 		else
-			minetest.settings:set_bool('afly3d',false)
+			minetest.settings:set_bool('aflymv3d',false)
 		end
 	end,
 	on_start = function()
@@ -116,7 +114,7 @@ ws.rg('FlyNRoof', {
 			autofly.set_info(dst)
 		else
 			minetest.settings:set_bool('continuous_forward',false)
-			minetest.settings:set_bool('alfynroof',false)
+			minetest.settings:set_bool('aflynroof',false)
 		end
 	end,
 	on_start = function()

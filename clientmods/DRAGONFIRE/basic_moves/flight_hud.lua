@@ -5,8 +5,6 @@ local function set(id, stat, data)
 end
 
 -- Vertical bar using block characters: 16 steps
-local bar_up   = "\u{2581}" -- ▁
-local bar_down = "\u{2587}" -- ▇
 local bar_full = "\u{2588}" -- █
 local bar_mid  = "\u{2584}" -- ▄
 

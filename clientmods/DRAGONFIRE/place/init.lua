@@ -99,21 +99,6 @@ local function mscaffold(f)
 	end
 end
 
-ws.rg('PlaceOn', { category = 'Place', setting = 'scaffold_placeon',
-	on_step = function(self)
-		local nds = minetest.find_nodes_near(ws.dircoord(0,0,0), ws.range, nlist.selected)
-		for k, v in ipairs(nds) do
-			ws.switch_to_item(multiscaff_node)
-			minetest.place(vector.add(v, vector.new(0, 1, 0)))
-		end
-	end,
-	on_start = function(self)
-		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
-	end,
-	on_stop = function(self)
-	end,
-})
-
 ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold',
 	on_step = function(self, dtime)
 		if tps_client and tonumber(tps_client.ping) and tps_client.ping > (tps_client and tps_client.ping_tolerance or 0.5) then return end

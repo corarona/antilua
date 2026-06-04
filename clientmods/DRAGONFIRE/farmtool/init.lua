@@ -57,7 +57,7 @@ ws.rg("Reap", { category = "Place", setting = "farmtool_reap",
 		end
 		local knds = minetest.find_nodes_near(ws.dircoord(0, 0, 0), range, keepbottom, true)
 		for k, v in ipairs(knds) do
-			local bt = minetest.get_node_or_nil(vector.new(0, -1, 0), v)
+			local bt = minetest.get_node_or_nil(vector.offset(v, 0, -1, 0))
 			local nd = minetest.get_node_or_nil(v)
 			if bt and bt.name == nd.name then
 				ws.dig(v)
@@ -121,7 +121,8 @@ ws.rg("FarmRepair", { category = "Place", setting = "farmrepair",
 		local nds = core.find_nodes_near(p, range, water, true)
 		for _, v in pairs(nds) do
 			for __, vv in pairs(waterbowl) do
-				ws.place(v:add(vv), dirt)
+				local tp = vector.add(v, vv)
+				ws.place(tp, dirt)
 			end
 			local airs = core.find_nodes_in_area(v:offset(-channel, 0, -channel), v:offset(channel, 0, channel), {"air", "mcl_core:water_flowing"})
 			for _, vv in pairs(airs) do
