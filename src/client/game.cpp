@@ -498,10 +498,15 @@ void Game::run()
 
 	ProfilerGraph graph;
 	RunStats stats = {};
-	CameraOrientation cam_view_target = {};
-	CameraOrientation cam_view = {};
 	FpsControl draw_times;
 	f32 dtime; // in seconds
+
+	// Seed camera orientation from player's current yaw/pitch
+	if (auto *p = client->getEnv().getLocalPlayer()) {
+		m_cam_view_target.camera_yaw = p->getYaw();
+		m_cam_view_target.camera_pitch = p->getPitch();
+	}
+	m_cam_view = m_cam_view_target;
 
 	// Clear the profiler
 	{
@@ -580,24 +585,24 @@ void Game::run()
 
 		processUserInput(dtime);
 		// Update camera before player movement to avoid camera lag of one frame
-		updateCameraDirection(&cam_view_target, dtime);
+		updateCameraDirection(&m_cam_view_target, dtime);
 		if (m_cache_cam_smoothing <= 0.0f) {
-			cam_view.camera_yaw = cam_view_target.camera_yaw;
-			cam_view.camera_pitch = cam_view_target.camera_pitch;
+			m_cam_view.camera_yaw = m_cam_view_target.camera_yaw;
+			m_cam_view.camera_pitch = m_cam_view_target.camera_pitch;
 		} else {
 			f32 cam_damp_lambda = 1.0f / m_cache_cam_smoothing * dtime;
-			cam_view.camera_yaw = damp(
-					cam_view.camera_yaw,
-					cam_view_target.camera_yaw,
+			m_cam_view.camera_yaw = damp(
+					m_cam_view.camera_yaw,
+					m_cam_view_target.camera_yaw,
 					cam_damp_lambda
 			);
-			cam_view.camera_pitch = damp(
-					cam_view.camera_pitch,
-					cam_view_target.camera_pitch,
+			m_cam_view.camera_pitch = damp(
+					m_cam_view.camera_pitch,
+					m_cam_view_target.camera_pitch,
 					cam_damp_lambda
 			);
 		}
-		updatePlayerControl(cam_view);
+		updatePlayerControl(m_cam_view);
 
 		updatePauseState();
 		if (m_is_paused)
@@ -605,13 +610,13 @@ void Game::run()
 
 		step(dtime);
 
-		processClientEvents(&cam_view_target);
+		processClientEvents(&m_cam_view_target);
 		updateDebugState();
 		// Update camera here so it is in-sync with CAO position
 		updateCamera(dtime);
 		updateSound(dtime);
 		processPlayerInteraction(dtime, m_game_ui->m_flags.show_hud);
-		updateFrame(&graph, &stats, dtime, cam_view);
+		updateFrame(&graph, &stats, dtime, m_cam_view);
 		updateProfilerGraphs(&graph);
 
 		if (m_does_lost_focus_pause_game && !device->isWindowFocused() && !isMenuActive()) {
@@ -1864,6 +1869,18 @@ void Game::updateAllMapBlocksCallback(const std::string &, void *data)
 	((Game *)data)->client->updateAllMapBlocks();
 }
 
+void Game::setCameraYaw(f32 yaw)
+{
+	m_cam_view_target.camera_yaw = yaw;
+	m_cam_view.camera_yaw = yaw;
+}
+
+void Game::setCameraPitch(f32 pitch)
+{
+	m_cam_view_target.camera_pitch = pitch;
+	m_cam_view.camera_pitch = pitch;
+}
+
 void Game::freecamChangedCallback(const std::string &, void *data)
 {
 	Game *game = (Game *)data;
@@ -2137,8 +2154,13 @@ void Game::updateCameraOrientation(CameraOrientation *cam, float dtime)
 		cam->camera_yaw   -= dist.X * m_cache_mouse_sensitivity * sens_scale;
 		cam->camera_pitch += dist.Y * m_cache_mouse_sensitivity * sens_scale;
 
-		if (dist.X != 0 || dist.Y != 0)
+		if (dist.X != 0 || dist.Y != 0) {
 			input->setMousePos(center.X, center.Y);
+			if (auto *player = client->getEnv().getLocalPlayer()) {
+				player->unlockYaw();
+				player->unlockPitch();
+			}
+		}
 	}
 
 	// Keyboard look
@@ -2873,10 +2895,6 @@ void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 		input->clearWasKeyReleased();
 		wasKeyDown(KeyType::DIG);
 		wasKeyDown(KeyType::PLACE);
-		input->joystick.clearWasKeyPressed(KeyType::DIG);
-		input->joystick.clearWasKeyPressed(KeyType::PLACE);
-		input->joystick.clearWasKeyReleased(KeyType::DIG);
-		input->joystick.clearWasKeyReleased(KeyType::PLACE);
 		hud->updateSelectionMesh(camera_offset);
 		return;
 	}

@@ -314,6 +314,9 @@ public:
 
 	f32 getSensitivityScaleFactor() const;
 
+	void setCameraYaw(f32 yaw);
+	void setCameraPitch(f32 pitch);
+
 	InputHandler *input = nullptr;
 
 	Client *client = nullptr;
@@ -400,6 +403,8 @@ public:
 
 	bool m_cheat_layer_active = false;
 	CameraMode m_freecam_prev_camera_mode = static_cast<CameraMode>(0);
+	CameraOrientation m_cam_view = {};
+	CameraOrientation m_cam_view_target = {};
 	void toggleCheatLayer();
 
 	bool m_does_lost_focus_pause_game = false;

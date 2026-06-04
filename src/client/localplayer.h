@@ -131,7 +131,9 @@ public:
 		if (m_freecam || g_settings->getBool("detached_camera"))
 			m_legit_yaw = yaw;
 		m_yaw = yaw;
+		m_yaw_locked = true;
 	}
+	void unlockYaw() { m_yaw_locked = false; }
 
 	void setPitch(f32 pitch) {
 		m_pitch = pitch;
@@ -144,7 +146,9 @@ public:
 		if (m_freecam || g_settings->getBool("detached_camera"))
 			m_legit_pitch = pitch;
 		m_pitch = pitch;
+		m_pitch_locked = true;
 	}
+	void unlockPitch() { m_pitch_locked = false; }
 
 	// Freelook: camera view yaw/pitch (updated by mouse, separate from movement yaw/pitch)
 	void setFreelookYaw(f32 yaw) { m_freelook_yaw = yaw; }
@@ -246,6 +250,8 @@ private:
 	f32 m_legit_pitch = 0.0f;
 	f32 m_freelook_yaw = 0.0f;
 	f32 m_freelook_pitch = 0.0f;
+	bool m_yaw_locked = false;
+	bool m_pitch_locked = false;
 
 	v3f m_position;
 	v3s16 m_standing_node;

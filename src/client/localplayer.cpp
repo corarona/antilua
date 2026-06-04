@@ -570,8 +570,12 @@ void LocalPlayer::applyControl(float dtime, Environment *env)
 	swimming_vertical = false;
 	swimming_pitch = false;
 
-	setPitch(control.pitch);
-	setYaw(control.yaw);
+	if (!m_pitch_locked) {
+		setPitch(control.pitch);
+	}
+	if (!m_yaw_locked) {
+		setYaw(control.yaw);
+	}
 
 	// Nullify speed and don't run positioning code if the player is attached
 	if (getParent()) {
