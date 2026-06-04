@@ -1523,8 +1523,6 @@ void Game::processKeyInput()
 		m_game_ui->toggleChat(client);
 	} else if (wasKeyPressed(KeyType::TOGGLE_FOG)) {
 		toggleFog();
-	} else if (wasKeyDown(KeyType::TOGGLE_CHEAT_MENU)) {
-		toggleCheatLayer();
 	} else if (wasKeyDown(KeyType::KILLAURA)) {
 		toggleKillaura();
 	} else if (wasKeyDown(KeyType::FREECAM)) {
@@ -1575,6 +1573,26 @@ void Game::processKeyInput()
 
 	if (quicktune->hasMessage()) {
 		m_game_ui->showStatusText(utf8_to_wide(quicktune->getMessage()));
+	}
+
+	// Cheat layer: show while TAB is held, hide on release
+	{
+		static bool cheat_key_was_down = false;
+		bool cheat_key_down = input->isKeyDown(KeyType::TOGGLE_CHEAT_MENU);
+		if (cheat_key_down && !cheat_key_was_down) {
+			m_cheat_layer_active = true;
+			m_game_ui->m_flags.show_cheat_menu = true;
+			if (auto *cur = device->getCursorControl())
+				cur->setVisible(true);
+		} else if (!cheat_key_down && cheat_key_was_down) {
+			m_cheat_layer_active = false;
+			m_game_ui->m_flags.show_cheat_menu = false;
+			if (auto *cur = device->getCursorControl())
+				cur->setVisible(false);
+			if (m_cheat_menu)
+				m_cheat_menu->onLayerClosed();
+		}
+		cheat_key_was_down = cheat_key_down;
 	}
 }
 
