@@ -129,6 +129,14 @@ function core.show_cheat_settings_form(setting, use_auto)
 		elseif spec.type == "number" then
 			fs = fs .. "field[0.3," .. y .. ";4.4,0.8;" .. full .. ";" .. key .. ";"
 				.. (core.settings:get(full) or tostring(spec.default)) .. "]"
+		elseif spec.type == "string" and spec.options then
+			local current = core.settings:get(full) or tostring(spec.default)
+			local selected = 1
+			for i, opt in ipairs(spec.options) do
+				if opt == current then selected = i; break end
+			end
+			fs = fs .. "dropdown[0.3," .. y .. ";4.4,0.8;" .. full .. ";"
+				.. table.concat(spec.options, ",") .. ";" .. selected .. "]"
 		else
 			fs = fs .. "field[0.3," .. y .. ";4.4,0.8;" .. full .. ";"
 				.. key .. ";" .. (core.settings:get(full) or tostring(spec.default)) .. "]"

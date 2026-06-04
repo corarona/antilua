@@ -1,133 +1,95 @@
 autofly={}
-autofly.landing_distance=15
 autofly.tpos=nil
 autofly.atpos=nil
 
-ws.rg('Fly3d', {
-	category = 'Movement',
-	setting = 'afly3d',
-	on_step = function()
+ws.rg("Autopilot", {
+	category = "Movement",
+	setting = "autopilot",
+	on_step = function(self)
 		if not poi.last_pos then return end
-		local lp=ws.dircoord(0,0,0)
-		local dst=vector.distance(lp,poi.last_pos)
-		poi.set_hud_info("Fly3d")
-		if dst > autofly.landing_distance and minetest.settings:get_bool("continuous_forward", false) then
-			ws.aim(autofly.tpos)
+		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
+		local landing = tonumber(core.settings:get(self.setting .. ".landing_distance")) or 15
+		local lp = ws.dircoord(0, 0, 0)
+		local dst
+
+		if mode == "2d_aim" then
+			autofly.tpos = vector.new(poi.last_pos.x, lp.y, poi.last_pos.z)
+			dst = vector.distance(lp, autofly.tpos)
+		elseif mode == "nether" then
+			autofly.tpos = vector.new(poi.last_pos.x / 8, lp.y, poi.last_pos.z / 8)
+			dst = vector.distance(lp, autofly.tpos)
 		else
-			minetest.settings:set_bool('afly3d',false)
+			autofly.tpos = poi.last_pos
+			dst = vector.distance(lp, autofly.tpos)
 		end
-	end,
-	on_start = function()
-		if not poi.last_pos or not poi.last_name then
-			return false, 'Select a poi first.'
-		end
-		autofly.tpos=table.copy(poi.last_pos)
-		poi.set_hud_info("Fly3D")
-		poi.display(autofly.tpos,poi.last_name )
-	end,
-	daughters = {'continuous_forward',"pitch_move"},
-})
 
-ws.rg('Mv3d', {
-	category = 'Movement',
-	setting = 'aflymv3d',
-	on_step = function()
-		if not poi.last_pos then return end
-		local lp=ws.dircoord(0,0,0)
-		local dir = vector.direction(lp,poi.last_pos)
-		minetest.localplayer:set_velocity(vector.multiply(dir, ( minetest.localplayer:get_movement_speed().walk / 10 )))
-		local dst=vector.distance(lp,poi.last_pos)
-		poi.set_hud_info("Mv3d")
-		if dst > autofly.landing_distance and minetest.settings:get_bool("continuous_forward", false) then
-			--ws.aim(autofly.tpos)
+		if mode == "3d_velocity" then
+			if dst > landing and minetest.settings:get_bool("continuous_forward", false) then
+				local dir = vector.direction(lp, poi.last_pos)
+				minetest.localplayer:set_velocity(vector.multiply(dir,
+					minetest.localplayer:get_movement_speed().walk / 10))
+			else
+				minetest.settings:set_bool(self.setting, false)
+			end
 		else
-			minetest.settings:set_bool('aflymv3d',false)
+			if dst > landing and minetest.settings:get_bool("continuous_forward", false) then
+				ws.aim(autofly.tpos)
+				if mode == "nether" then
+					if autofly.set_info then autofly.set_info(dst) end
+				end
+			else
+				minetest.settings:set_bool("continuous_forward", false)
+				if mode ~= "2d_aim" then
+					minetest.settings:set_bool(self.setting, false)
+				end
+			end
 		end
 	end,
-	on_start = function()
+	on_start = function(self)
 		if not poi.last_pos or not poi.last_name then
-			return false, 'Select a poi first.'
+			return false, "Select a poi first."
 		end
-		autofly.tpos=table.copy(poi.last_pos)
-		poi.set_hud_info("Fly3D")
-		poi.display(autofly.tpos,poi.last_name )
-		minetest.localplayer:set_physics_override({
-			gravity = 0,
-		})
-	end,
-	on_stop = function()
-		minetest.localplayer:set_physics_override({
-			gravity = 1,
-		})
-	end,
-})
+		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
+		local lp = ws.dircoord(0, 0, 0)
+		autofly.tpos = table.copy(poi.last_pos)
 
+		if mode == "2d_aim" then
+			autofly.atpos = table.copy(poi.last_pos)
+			autofly.tpos = vector.new(poi.last_pos.x, lp.y, poi.last_pos.z)
+			local tdst = vector.distance(autofly.tpos, poi.last_pos)
+			local label = "Target " .. math.floor(tdst) .. "m " ..
+				(autofly.tpos.y < poi.last_pos.y and "below" or "above") ..
+				" actual target '" .. poi.last_name .. "'"
+			poi.display(autofly.tpos, label)
+			minetest.settings:set_bool("continuous_forward", true)
+		elseif mode == "nether" then
+			autofly.tpos = vector.new(poi.last_pos.x / 8, lp.y, poi.last_pos.z / 8)
+			if autofly.set_info then autofly.set_info(dst or 0) end
+			minetest.settings:set_bool("continuous_forward", true)
+			minetest.settings:set_bool("pitch_move", true)
+		elseif mode == "3d_velocity" then
+			minetest.localplayer:set_physics_override({ gravity = 0 })
+		end
 
-ws.rg('Fly2d', {
-	category = 'Movement',
-	setting = 'afly2d',
-	on_step = function()
-		if not poi.last_pos then return end
-		autofly.tpos=poi.last_pos
-		local lp=ws.dircoord(0,0,0)
-		local dst=vector.distance(lp,autofly.tpos)
-		poi.set_hud_info("Fly2D")
-		if dst > autofly.landing_distance and minetest.settings:get_bool("continuous_forward",false) then
-			ws.aim(autofly.tpos)
-		elseif dst <= autofly.landing_distance then
-			return true
+		poi.set_hud_info("Autopilot")
+		if mode ~= "2d_aim" then
+			poi.display(autofly.tpos, poi.last_name)
 		end
 	end,
-	on_start = function()
-		if not poi.last_pos or not poi.last_name then
-			return false, 'Select a poi first.'
-		end
-		poi.set_hud_info("Fly2d")
-		local lp=ws.dircoord(0,0,0)
-		autofly.tpos=vector.new(poi.last_pos.x,lp.y,poi.last_pos.z)
-		autofly.atpos=table.copy(poi.last_pos)
-		autofly.name=poi.last_name
-		minetest.settings:set_bool('continuous_forward',true)
-		local tdst=vector.distance(autofly.tpos,poi.last_pos)
-		local above_or_below = "above"
-		if autofly.tpos.y < poi.last_pos.y then
-			above_or_below = "below"
-		end
-		poi.display(autofly.tpos,"Target " .. tdst .. "m "..above_or_below .." actual target '"..poi.last_name.."'")
-	end,
-	on_stop = function()
-		poi.display(autofly.atpos,autofly.name)
-		ws.aim(autofly.atpos)
-	end,
-	daughters = {'continuous_forward'},
-})
-
-ws.rg('FlyNRoof', {
-	category = 'Movement',
-	setting = 'aflynroof',
-	on_step = function()
-		if not poi.last_pos then return end
-		local lp=ws.dircoord(0,0,0)
-		local dst=vector.distance(lp,autofly.tpos)
-		if dst > autofly.landing_distance and minetest.settings:get_bool("continuous_forward",false) then
-			ws.aim(autofly.tpos)
-			autofly.set_info(dst)
-		else
-			minetest.settings:set_bool('continuous_forward',false)
-			minetest.settings:set_bool('aflynroof',false)
+	on_stop = function(self)
+		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
+		if mode == "2d_aim" then
+			poi.display(autofly.atpos, poi.last_name)
+			ws.aim(autofly.atpos)
+		elseif mode == "3d_velocity" then
+			minetest.localplayer:set_physics_override({ gravity = 1 })
 		end
 	end,
-	on_start = function()
-		if not poi.last_pos or not poi.last_name then
-			return false, 'Select a poi first.'
-		end
-		local lp = ws.dircoord(0,0,0)
-		poi.set_hud_info("FlyNether")
-		minetest.settings:set_bool('continuous_forward',true)
-		autofly.tpos=vector.new(poi.last_pos.x / 8,lp.y,poi.last_pos.z / 8)
-		poi.display(autofly.tpos,'Target for portal.')
-	end,
-	daughters = {'continuous_forward'},
+	daughters = {"continuous_forward", "pitch_move"},
+	cheat_settings = {
+		mode = { type = "string", default = "3d_aim" },
+		landing_distance = { type = "number", default = 15, min = 1, max = 100 },
+	},
 })
 
 function autofly.warp(name)
@@ -139,13 +101,10 @@ function autofly.warp(name)
 	end
 end
 
-local function go_to(pos,name,method)
-	poi.last_pos=pos
-	poi.last_name=name
-	minetest.settings:set_bool(method,true)
+local function go_to(pos, name)
+	poi.last_pos = pos
+	poi.last_name = name
+	minetest.settings:set_bool("autopilot", true)
 end
 
-poi.register_transport('Fly3D',function(pos,name) go_to(pos,name,'afly3d') end)
-poi.register_transport('Mv3D',function(pos,name) go_to(pos,name,'aflymv3d') end)
-poi.register_transport('Fly2D',function(pos,name) go_to(pos,name,'afly2d') end)
-poi.register_transport('Nroof',function(pos,name) go_to(pos,name,'aflynroof') end)
+poi.register_transport("Autopilot", function(pos, name) go_to(pos, name) end)

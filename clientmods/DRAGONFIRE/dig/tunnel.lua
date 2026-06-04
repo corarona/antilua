@@ -10,8 +10,8 @@ end
 
 local function excavate(condition)
 	local lp = ws.dircoord(0, 0, 0)
-	local width = get_width()
-	local depth = get_depth()
+	local width = tonumber(core.settings:get("dig.width")) or 5
+	local depth = tonumber(core.settings:get("dig.depth")) or 1
 	local maxv = math.max(width, depth)
 	for a = -depth, depth - 1 do
 		local n = math.floor(width / 2)
@@ -40,53 +40,37 @@ ws.rg("DigHead", {
 ws.rg("Excavator", {
 	category = "Dig",
 	setting = "excavator",
-	on_step = function()
+	on_step = function(self)
+		local mode = core.settings:get(self.setting .. ".mode") or "normal"
 		minetest.settings:set_bool("continuous_forward", true)
-		excavate(function(p)
-			return p.y >= ws.dircoord(0, 0, 0).y
-		end)
+		-- Dig
+		if mode == "full" then
+			excavate(nil)
+		else
+			excavate(function(p) return p.y >= ws.dircoord(0, 0, 0).y end)
+		end
+		-- Place walls (TBM mode)
+		if mode == "walls" then
+			local width = tonumber(core.settings:get("dig.width")) or 5
+			for f = -1, 1 do
+				for y = 0, 5 do
+					ws.place(ws.dircoord(f, y, -width - 1), nlist.get("TBM"))
+					ws.place(ws.dircoord(f, y, width + 1), nlist.get("TBM"))
+				end
+			end
+		end
 	end,
 	daughters = {"axissnap"},
 	delay = 0.2,
 	cheat_settings = {
 		width = { type = "number", default = 5, min = 1, max = 50 },
 		depth = { type = "number", default = 1, min = 1, max = 20 },
+		mode = { type = "string", default = "normal", options = {"normal", "walls", "full"} },
 	},
 	on_start = function()
-		core.settings:set("dig.width", tostring(get_width()))
-		core.settings:set("dig.depth", tostring(get_depth()))
+		core.settings:set("dig.width", tostring(tonumber(core.settings:get("dig.width")) or 5))
+		core.settings:set("dig.depth", tostring(tonumber(core.settings:get("dig.depth")) or 1))
 	end,
-})
-
-ws.rg("TBM", {
-	category = "Dig",
-	setting = "excavator",
-	on_step = function()
-		minetest.settings:set_bool("continuous_forward", true)
-		excavate(function(p)
-			return p.y >= ws.dircoord(0, 0, 0).y
-		end)
-		local width = get_width()
-		for f = -1, 1 do
-			for y = 0, 5 do
-				ws.place(ws.dircoord(f, y, -width - 1), nlist.get("TBM"))
-				ws.place(ws.dircoord(f, y, width + 1), nlist.get("TBM"))
-			end
-		end
-	end,
-	daughters = {"axissnap"},
-	delay = 0.2,
-})
-
-ws.rg("TExcavator", {
-	category = "Dig",
-	setting = "texcavator",
-	on_step = function()
-		minetest.settings:set_bool("continuous_forward", true)
-		excavate()
-	end,
-	daughters = {"axissnap"},
-	delay = 0.2,
 })
 
 ws.rg("WallExcavator", {

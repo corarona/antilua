@@ -239,79 +239,48 @@ ws.rg("HighwayZ", { category = "Place", setting = "highwayz",
 	on_start = function(self) end,
 })
 
-ws.rg("BlockWater", { category = "Place", setting = "block_water",
+ws.rg("BlockSources", {
+	category = "Place",
+	setting = "block_sources",
 	on_step = function(self)
+		local block_water = core.settings:get_bool(self.setting .. ".block_water", true)
+		local block_lava = core.settings:get_bool(self.setting .. ".block_lava", true)
+		local block_nether_lava = core.settings:get_bool(self.setting .. ".block_nether_lava", true)
+		local use_wielded = core.settings:get_bool(self.setting .. ".use_wielded", false)
 		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
 		local lp = ws.dircoord(0, 0, 0)
-		local positions = minetest.find_nodes_near(lp, 5, {"mcl_core:water_source", "mcl_core:water_flowing"}, true)
+		local targets = {}
+		if block_water then
+			table.insert_all(targets, {"mcl_core:water_source", "mcl_core:water_flowing"})
+		end
+		if block_lava then
+			table.insert_all(targets, {"mcl_core:lava_source", "mcl_core:lava_flowing"})
+		end
+		if block_nether_lava then
+			table.insert_all(targets, {"mcl_nether:nether_lava_source", "mcl_nether:nether_lava_flowing"})
+		end
+		if #targets == 0 then return end
+		local positions = minetest.find_nodes_near(lp, 5, targets, true)
 		for i, p in pairs(positions) do
 			if i > npt then return end
-			minetest.place_node(p)
-		end
-	end,
-	on_start = function(self)
-		-- nodes_per_tick now read directly from settings
-	end,
-})
-
-ws.rg("BlockLava", { category = "Place", setting = "block_lava",
-	on_step = function(self)
-		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
-		local lp = ws.dircoord(0, 0, 0)
-		local positions = minetest.find_nodes_near(lp, 5, {"mcl_core:lava_source", "mcl_core:lava_flowing"}, true)
-		for i, p in pairs(positions) do
-			if i > npt then return end
-			minetest.place_node(p)
-		end
-	end,
-	on_start = function(self)
-		-- nodes_per_tick now read directly from settings
-	end,
-})
-
-ws.rg("BlockSources", { category = "Place", setting = "block_sources",
-	on_step = function(self)
-		if not multiscaff_node then
-			multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
-			return
-		end
-		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
-		local lp = ws.dircoord(0, 0, 0)
-		local positions = minetest.find_nodes_near(lp, 5, {"mcl_core:lava_source","mcl_nether:nether_lava_source","mcl_core:water_source"}, true)
-		for i, p in pairs(positions) do
-			if i > npt then return end
-			if p.y < 2 then
-				if p.x > 250 and p.z > 250 then return end
+			if p.y < 2 and p.x > 250 and p.z > 250 then return end
+			if use_wielded then
+				ws.place(p, multiscaff_node)
+			else
+				minetest.place_node(p)
 			end
-			ws.place(p, multiscaff_node)
 		end
 	end,
 	on_start = function(self)
 		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
 		if not multiscaff_node then return true end
-		-- nodes_per_tick now read directly from settings
 	end,
-})
-
-ws.rg("BlockLavaSources", { category = "Place", setting = "block_lava_sources",
-	on_step = function(self)
-		if not multiscaff_node then return false end
-		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
-		local lp = ws.dircoord(0, 0, 0)
-		local positions = minetest.find_nodes_near(lp, 5, {"mcl_core:lava_source","mcl_nether:nether_lava_source"}, true)
-		for i, p in pairs(positions) do
-			if i > npt then return end
-			if p.y < 2 then
-				if p.x > 250 and p.z > 250 then return end
-			end
-			ws.place(p, multiscaff_node)
-		end
-	end,
-	on_start = function(self)
-		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
-		if not multiscaff_node then return true end
-		-- nodes_per_tick now read directly from settings
-	end,
+	cheat_settings = {
+		block_water = { type = "bool", default = true },
+		block_lava = { type = "bool", default = true },
+		block_nether_lava = { type = "bool", default = true },
+		use_wielded = { type = "bool", default = false },
+	},
 })
 
 ws.rg("PlaceOnTop", { category = "Place", setting = "place_on_top",
