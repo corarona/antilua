@@ -45,18 +45,26 @@ local function lavapanic()
 	end
 end
 
-ws.rg("Mclminer", {
-	category = "Bots",
-	setting = "mclminer",
-	on_step = function(self)
+sbots.register_bot("Mclminer", {
+	find_pos = function(self, pos)
+		local search_range = tonumber(core.settings:get("mclminer.search_range")) or 50
+		mclminer_tgt = get_miner_node(pos, search_range)
+		if mclminer_tgt then
+			return mclminer_tgt
+		end
+	end,
+	do_pos = function(self, pos)
+		return true
+	end,
+	do_step = function(self, dtime)
 		lavapanic()
 		local lp = minetest.localplayer:get_pos()
 		local hp = minetest.localplayer:get_hp()
-		local tpstep = tonumber(core.settings:get(self.setting .. ".tp_step")) or 3.8
-		local min_hp = tonumber(core.settings:get(self.setting .. ".min_hp")) or 15
-		local lava_range = tonumber(core.settings:get(self.setting .. ".lava_range")) or 10
-		local search_range = tonumber(core.settings:get(self.setting .. ".search_range")) or 50
+		local tpstep = tonumber(core.settings:get("mclminer.tp_step")) or 3.8
+		local min_hp = tonumber(core.settings:get("mclminer.min_hp")) or 15
+		local lava_range = tonumber(core.settings:get("mclminer.lava_range")) or 10
 		if hp < min_hp then return end
+
 		if mclminer_tgt then
 			local its = minetest.get_objects_inside_radius(lp, 2)
 			for _, o in pairs(its) do
@@ -66,7 +74,7 @@ ws.rg("Mclminer", {
 				end
 			end
 			local n = minetest.get_node_or_nil(mclminer_tgt)
-			if n.name == "air" then
+			if n and n.name == "air" then
 				mclminer_tgt = nil
 				return
 			end
@@ -79,15 +87,16 @@ ws.rg("Mclminer", {
 			else
 				do_tp(vector.offset(lp, 0, 25, 0), tpstep)
 			end
-		else
-			mclminer_tgt = get_miner_node(lp, search_range)
 		end
 	end,
-	on_start = function(self)
+	on_activate = function(self)
 		minetest.settings:set_bool("autoeat", true)
 		minetest.settings:set_bool("dighead", true)
 		mclminer_tgt = nil
 	end,
+	landing_distance = 0,
+	stand_waiting = false,
+	delay = 0.2,
 	cheat_settings = {
 		tp_step = { type = "number", default = 3.8, min = 1, max = 20 },
 		min_hp = { type = "number", default = 15, min = 1, max = 40 },

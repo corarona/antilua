@@ -23,6 +23,10 @@ function sbots.register_bot(name, def)
 		end
 	end
 	local tn = name
+
+	local bot_settings = def.cheat_settings or {}
+	bot_settings.allow_cobot = { type = "bool", default = false }
+
 	registered_bots[tn] = def
 
 	ws.rg(name, {
@@ -96,9 +100,7 @@ function sbots.register_bot(name, def)
 		end,
 		daughters = def.daughters,
 		delay = def.delay,
-		cheat_settings = {
-			allow_cobot = { type = "bool", default = false },
-		},
+		cheat_settings = bot_settings,
 	})
 end
 
