@@ -41,10 +41,6 @@ function scaffold.reset()
 	ws.reset_constraints()
 end
 
-minetest.register_chatcommand("sc_pos1", { description = "Set constraint pos 1 (use /cpos1)", func = function(p) ws.set_pos1(p) end })
-minetest.register_chatcommand("sc_pos2", { description = "Set constraint pos 2 (use /cpos2)", func = function(p) ws.set_pos2(p) end })
-minetest.register_chatcommand("sc_reset", { description = "Reset constraints (use /creset)", func = ws.reset_constraints })
-
 function scaffold.template(setting, func, offset, funcstop)
 	offset = offset or {x = 0, y = -1, z = 0}
 	funcstop = funcstop or function() end
@@ -223,20 +219,19 @@ ws.rg("HighwayZ", { category = "Place", setting = "highwayz",
 	on_step = function(self)
 		local npt = tonumber(core.settings:get("nodes_per_tick")) or 8
 		local positions = {
-			{x = 0, y = 0, z = z},
-			{x = 1, y = 0, z = z},
-			{x = 2, y = 1, z = z},
-			{x = -2, y = 1, z = z},
-			{x = -2, y = 0, z = z},
-			{x = -1, y = 0, z = z},
-			{x = 2, y = 0, z = z}
+			ws.dircoord(0, 0, 1),
+			ws.dircoord(1, 0, 1),
+			ws.dircoord(2, 1, 1),
+			ws.dircoord(-2, 1, 1),
+			ws.dircoord(-2, 0, 1),
+			ws.dircoord(-1, 0, 1),
+			ws.dircoord(2, 0, 1),
 		}
 		for i, p in pairs(positions) do
 			if i > npt then break end
-			minetest.place_node(p)
+			if p then minetest.place_node(p) end
 		end
 	end,
-	on_start = function(self) end,
 })
 
 ws.rg("BlockSources", {

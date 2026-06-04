@@ -176,16 +176,7 @@ function test_place_mod(T)
 	T.run("place/bot_tools: AutoCombatLog setting exists", function()
 		T.assert(core.settings:get("autoclog") ~= nil)
 	end)
-	-- old sc_pos1/2 commands still work (deprecated, delegate to ws)
-	T.run("sc_pos1 chat command exists (deprecated)", function()
-		T.assert(type(minetest.registered_chatcommands["sc_pos1"]) == "table")
-	end)
-	T.run("sc_pos2 chat command exists (deprecated)", function()
-		T.assert(type(minetest.registered_chatcommands["sc_pos2"]) == "table")
-	end)
-	T.run("sc_reset chat command exists (deprecated)", function()
-		T.assert(type(minetest.registered_chatcommands["sc_reset"]) == "table")
-	end)
+	-- deprecate scaffold aliases removed
 	local function check_category(name, expected)
 		for cat, entries in pairs(core.cheats) do
 			if entries[name] then

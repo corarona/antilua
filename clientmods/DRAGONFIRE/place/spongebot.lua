@@ -4,11 +4,11 @@ local sb_startpos
 local is_spongebot = false
 math.randomseed(os.clock())
 
-minetest.register_on_mods_loaded(function()
+local function override_prediction(enable)
 	for k, v in pairs(minetest.registered_items) do
-		minetest.override_item(k, { node_placement_prediction = "" })
+		minetest.override_item(k, { node_placement_prediction = enable and "" or nil })
 	end
-end)
+end
 
 ws.on_connect(function()
 	if minetest.settings:get_bool("autoclog") then
@@ -78,6 +78,7 @@ ws.rg("SpongeBot", { category = "Bots", setting = "spongebot",
 		sb_target = nil
 		math.randomseed(os.clock())
 		sb_startpos = minetest.localplayer:get_pos()
+		override_prediction(true)
 		minetest.settings:set_bool("pitch_move", true)
 		minetest.settings:set_bool("free_move", true)
 		minetest.settings:set_bool("autosponge", true)
@@ -85,6 +86,7 @@ ws.rg("SpongeBot", { category = "Bots", setting = "spongebot",
 		minetest.settings:set_bool("autoeat", true)
 	end,
 	on_stop = function(self)
+		override_prediction(false)
 		minetest.settings:set_bool("pitch_move", false)
 	end,
 	cheat_settings = {
