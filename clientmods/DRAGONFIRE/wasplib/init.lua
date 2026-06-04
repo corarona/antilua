@@ -10,6 +10,9 @@ ws.hotbar_slot = 8
 local nextact = {}
 local ghwason = {}
 
+-- No-op stub for legacy register_list_command calls
+function core.register_list_command() end
+
 dofile(minetest.get_modpath("wasplib") .. "/settings.lua")
 dofile(minetest.get_modpath("wasplib") .. "/coord.lua")
 dofile(minetest.get_modpath("wasplib") .. "/inventory.lua")

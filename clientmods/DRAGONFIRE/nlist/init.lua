@@ -3,12 +3,17 @@ local storage = minetest.get_mod_storage("nlist")
 local sl="default"
 local mode=1 --1:add, 2:remove
 local nled_hud
+local nlist_last_content = "" -- cache for HUD update optimization
 nlist.selected=sl
 
 -- Migrate existing xray_nodes setting to nlist
 local existing = core.settings:get("xray_nodes")
 if existing and existing ~= "" and storage:get_string("xray") == "" then
 	storage:set_string("xray", existing)
+end
+
+local function mode_name()
+	return mode == 1 and "add" or "remove"
 end
 
 function nlist.add(list,node)
@@ -94,14 +99,20 @@ function nlist.random(list)
 	return tb[math.random(#tb)]
 end
 
-function nlist.show_list(list,hlp)
+function nlist.show_list(list, hlp)
 	if not list then return end
-	local act="add"
-	if mode == 2 then act="remove" end
-	local txt=list .. "\n --\n" .. table.concat(nlist.get(list),"\n")
-	local htxt="Nodelist edit mode\n .nla/.nlr to switch\n punch node to ".. act .. "\n.nlc to clear\n"
-	if hlp then txt=htxt .. txt end
-	nlist.set_nled_hud(txt)
+	local txt = list .. " [" .. mode_name() .. "]" .. "\n --\n" .. table.concat(nlist.get(list),"\n")
+	local htxt = "Nodelist edit mode\n.nla/.nlr to switch\npunch node to " .. mode_name() .. "\n.nlc to clear\n"
+	if hlp then txt = htxt .. txt end
+	if txt ~= nlist_last_content then
+		nlist_last_content = txt
+		local dtext = "List: " .. txt
+		if nled_hud then
+			minetest.localplayer:hud_change(nled_hud, 'text', dtext)
+		else
+			nlist.set_nled_hud(txt)
+		end
+	end
 end
 
 local function textlist_idx(val)
@@ -119,21 +130,19 @@ end
 function nlist.set_nled_hud(ttext)
 	if not minetest.localplayer then return end
 	if type(ttext) ~= "string" then return end
-
-	local dtext ="List: ".. ttext
-
+	local dtext = "List: " .. ttext
 	if nled_hud then
-		minetest.localplayer:hud_change(nled_hud,'text',dtext)
+		minetest.localplayer:hud_change(nled_hud, 'text', dtext)
 	else
 		nled_hud = minetest.localplayer:hud_add({
 			hud_elem_type = 'text',
-			name		  = "Nodelist",
-			text		  = dtext,
-			number		= 0x00ff00,
-			direction   = 0,
-			position = {x=0.8,y=0.40},
-			alignment ={x=1,y=1},
-			offset = {x=0, y=0}
+			name = "Nodelist",
+			text = dtext,
+			number = 0x00ff00,
+			direction = 0,
+			position = {x = 0.8, y = 0.40},
+			alignment = {x = 1, y = 1},
+			offset = {x = 0, y = 0},
 		})
 	end
 	return true
@@ -142,9 +151,9 @@ end
 minetest.register_on_punchnode(function(p, n)
 	if not minetest.settings:get_bool('nlist_edmode') then return end
 	if mode == 1 then
-		nlist.add(nlist.selected,n.name)
-	elseif mode ==2 then
-		nlist.remove(nlist.selected,n.name)
+		nlist.add(nlist.selected, n.name)
+	elseif mode == 2 then
+		nlist.remove(nlist.selected, n.name)
 	end
 end)
 
@@ -175,27 +184,28 @@ ws.rg('NlEdMode', { category = 'Misc', setting = 'nlist_edmode',
 			if name == sl then sel_idx = i break end
 		end
 
-		local fs = "size[8,9.5]"
+		local fs = "size[10,11]"
 		fs = fs .. "bgcolor[#000000;true]"
-		fs = fs .. "label[0,0;List: " .. core.formspec_escape(sl) .. "]"
-		fs = fs .. "textlist[0,0.5;5,5;entries;" .. entries_str .. ";1]"
-		fs = fs .. "button[0,5.7;0.6,0.7;btn_addentry;+]"
-		fs = fs .. "button[0.7,5.7;0.6,0.7;btn_rmentry;-]"
-		fs = fs .. "button[1.5,5.7;1.2,0.7;btn_clear;Clear]"
-		fs = fs .. "dropdown[5.5,0.5;2.5;list_select;" .. esc_list(lists) .. ";" .. sel_idx .. "]"
-		fs = fs .. "label[5.5,1.7;Lists]"
-		fs = fs .. "button[5.5,2.2;1.2,0.8;btn_addlist;+ List]"
-		fs = fs .. "button[6.8,2.2;1.2,0.8;btn_rmlist;- List]"
-		fs = fs .. "label[0.3,6.7;Type a name below, then press + or -]"
-		fs = fs .. "field[0.3,7;7.2,0.8;item_input;;]"
-		fs = fs .. "button_exit[6.8,8.5;1.2,0.8;btn_done;Done]"
+		fs = fs .. "label[0.3,0;List: " .. core.formspec_escape(sl) .. " [" .. mode_name() .. "]]"
+		fs = fs .. "textlist[0.3,0.5;9.4,5.5;entries;" .. entries_str .. ";1]"
+		fs = fs .. "dropdown[5.5,0.5;4.2;list_select;" .. esc_list(lists) .. ";" .. sel_idx .. "]"
+		fs = fs .. "label[5.5,1.7;Select list]"
+		fs = fs .. "button[5.5,2.2;2,0.8;btn_addlist;+ New]"
+		fs = fs .. "button[7.6,2.2;2,0.8;btn_rmlist;- Delete]"
+		fs = fs .. "button[5.5,3.2;4.2,0.8;btn_rename;Rename]"
+		fs = fs .. "field[0.3,6.3;7,0.8;rename_input;;]"
+		fs = fs .. "label[0.3,7.3;Item (or select from list to remove)]"
+		fs = fs .. "field[0.3,7.8;7,0.8;item_input;;]"
+		fs = fs .. "button[7.4,7.8;1.2,0.8;btn_addentry;Add]"
+		fs = fs .. "button[8.7,7.8;1.2,0.8;btn_rmentry;Rem]"
+		fs = fs .. "button[0.3,9;2,0.8;btn_clear;Clear all]"
+		fs = fs .. "button_exit[8.5,10;1.3,0.8;btn_done;Done]"
 		return fs
 	end,
 })
 
 core.register_on_formspec_input(function(formname, fields)
 	if formname ~= "cheat_settings:nlist_edmode:custom" then return end
-
 	if fields.btn_done or not next(fields) then return end
 
 	if fields.list_select and fields.list_select ~= "" then
@@ -212,6 +222,10 @@ core.register_on_formspec_input(function(formname, fields)
 		if sl == name then
 			nlist.select("default")
 		end
+	end
+	if fields.btn_rename and fields.rename_input and fields.rename_input ~= "" then
+		nlist.rename(sl, fields.rename_input)
+		nlist.select(fields.rename_input)
 	end
 	if fields.btn_addentry and fields.item_input and fields.item_input ~= "" then
 		nlist.add(sl, fields.item_input)
@@ -230,6 +244,7 @@ core.register_on_formspec_input(function(formname, fields)
 		if fields.btn_clear then
 			nlist.clear(sl)
 		end
+
 		core.show_cheat_settings_form("nlist_edmode")
 	end)
 
