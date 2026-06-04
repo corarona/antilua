@@ -3,18 +3,12 @@ local storage = minetest.get_mod_storage("nlist")
 local sl="default"
 local mode=1 --1:add, 2:remove
 local nled_hud
-local edmode_wason=false
 nlist.selected=sl
 
-local function get_dflist(list)
-	local l
-	for k,v in pairs(minetest.registered_chatcommands) do
-		if v.list_setting and ( k == list or v.list_setting == list ) then
-			l = v.list_setting
-		end
-		if l then return l end
-	end
-	return false
+-- Migrate existing xray_nodes setting to nlist
+local existing = core.settings:get("xray_nodes")
+if existing and existing ~= "" and storage:get_string("xray") == "" then
+	storage:set_string("xray", existing)
 end
 
 function nlist.add(list,node)
@@ -38,53 +32,31 @@ end
 
 function nlist.set(list,tb)
 	local str=table.concat(tb,",")
-	local df = get_dflist(list)
-	if df then
-		minetest.settings:set(df,str)
-	else
-		storage:set_string(list,str)
+	storage:set_string(list,str)
+	if list == "xray" then
+		core.settings:set("xray_nodes", str)
 	end
 	return true
 end
 
 function nlist.get(list)
-	local str
-	local df = get_dflist(list)
-	if df then
-		str=minetest.settings:get(df)
-	else
-		str=storage:get_string(list)
-	end
-	return str and str:split(',') or {}
+	local str=storage:get_string(list)
+	return str ~= "" and str:split(',') or {}
 end
 
 function nlist.clear(list)
-	local df = get_dflist(list)
-	if df then
-		minetest.settings:set(df,"")
-	else
-		storage:set_string(list,"")
-	end
+	storage:set_string(list,"")
 	return true
 end
 
 function nlist.delete(list)
-	nlist.clear(list)
-	-- Also remove the storage key for lists not backed by a chat command setting
-	if not get_dflist(list) then
-		storage:set_string(list, nil)
-	end
+	storage:set_string(list, nil)
 	return true
 end
 
 function nlist.select(list)
 	sl = list
 	nlist.selected = list
-	local df = get_dflist(list)
-	if df then
-		sl = df
-		nlist.selected = df
-	end
 end
 
 function nlist.get_lists()
@@ -244,23 +216,22 @@ core.register_on_formspec_input(function(formname, fields)
 	if fields.btn_addentry and fields.item_input and fields.item_input ~= "" then
 		nlist.add(sl, fields.item_input)
 	end
-	if fields.btn_rmentry then
-		if fields.item_input and fields.item_input ~= "" then
-			nlist.remove(sl, fields.item_input)
-		elseif fields.entries and fields.entries ~= "" then
-			local entries = nlist.get(sl)
-			local idx = textlist_idx(fields.entries)
-			if idx > 0 and idx <= #entries then
-				nlist.remove(sl, entries[idx])
+		if fields.btn_rmentry then
+			if fields.item_input and fields.item_input ~= "" then
+				nlist.remove(sl, fields.item_input)
+			elseif fields.entries and fields.entries ~= "" then
+				local entries = nlist.get(sl)
+				local idx = textlist_idx(fields.entries)
+				if idx > 0 and idx <= #entries then
+					nlist.remove(sl, entries[idx])
+				end
 			end
 		end
-	end
-	if fields.btn_clear then
-		nlist.clear(sl)
-	end
-
-	core.show_cheat_settings_form("nlist_edmode")
-end)
+		if fields.btn_clear then
+			nlist.clear(sl)
+		end
+		core.show_cheat_settings_form("nlist_edmode")
+	end)
 
 minetest.register_chatcommand('nls',{
 	description = "Select a list",
