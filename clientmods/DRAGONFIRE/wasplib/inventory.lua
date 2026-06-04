@@ -70,10 +70,7 @@ function ws.to_hotbar(it, hslot)
 		end
 	end
 	if tpos == nil then tpos = ws.hotbar_slot end
-	local mv = InventoryAction("move")
-	mv:from("current_player", "main", it)
-	mv:to("current_player", "main", tpos)
-	mv:apply()
+	ws.move_stack("current_player", "main", it, "current_player", "main", tpos)
 	return tpos
 end
 
@@ -150,13 +147,7 @@ function ws.switch_inv_or_echest(name, max_count, hslot)
 		if not tpos then tpos = ws.hotbar_slot end
 
 		if tpos then
-			local mv = InventoryAction("move")
-			mv:from("current_player", "enderchest", epos)
-			mv:to("current_player", "main", tpos)
-			if max_count then
-				mv:set_count(max_count)
-			end
-			mv:apply()
+		ws.move_stack("current_player", "enderchest", epos, "current_player", "main", tpos, max_count)
 			minetest.localplayer:set_wield_index(tpos)
 			return true
 		end
@@ -194,4 +185,47 @@ end
 
 function ws.invpos(p)
 	return "nodemeta:" .. p.x .. "," .. p.y .. "," .. p.z
+end
+
+--- Move items between inventories. Wraps InventoryAction("move") boilerplate.
+-- If count is nil, moves the entire stack.
+function ws.move_stack(from_loc, from_list, from_idx, to_loc, to_list, to_idx, count)
+	local act = InventoryAction("move")
+	act:from(from_loc, from_list, from_idx)
+	act:to(to_loc, to_list, to_idx)
+	if count then act:set_count(count) end
+	act:apply()
+end
+
+--- Read a cheat setting number with fallback.
+-- self.setting .. "." .. key -> tonumber result or default
+function ws.cheat_setting(self, key, default)
+	local v = core.settings:get(self.setting .. "." .. key)
+	if v then
+		return tonumber(v) or default
+	end
+	return default
+end
+
+--- Register a key-hold cheat: holds a key while the setting is true.
+function ws.register_keypress_cheat(setting, desc, category, keyname, condition)
+	local was_active = false
+	minetest.register_globalstep(function()
+		if not core.localplayer then return end
+		local is_active = core.settings:get_bool(setting) and (not condition or condition())
+		if is_active then
+			core.set_keypress(keyname, true)
+		elseif was_active then
+			core.set_keypress(keyname, false)
+		end
+		was_active = is_active
+	end)
+	core.register_cheat(desc, { category = category, setting = setting })
+end
+
+--- Nil-safe HUD change wrapper.
+function ws.hud_set(id, stat, data)
+	if id and minetest.localplayer then
+		minetest.localplayer:hud_change(id, stat, data)
+	end
 end
