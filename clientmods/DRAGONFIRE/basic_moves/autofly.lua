@@ -84,7 +84,7 @@ ws.rg("Autopilot", {
 			minetest.localplayer:set_physics_override({ gravity = 1 })
 		end
 	end,
-	daughters = {"continuous_forward", "pitch_move"},
+	daughters = {"continuous_forward", "pitch_move", "flight_hud", "freelook"},
 	cheat_settings = {
 		mode = { type = "string", default = "3d_aim" },
 		landing_distance = { type = "number", default = 15, min = 1, max = 100 },
