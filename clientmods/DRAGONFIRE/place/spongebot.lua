@@ -30,7 +30,9 @@ local function find_closest(ndnames, range)
 	end
 	if not rt then
 		minetest.settings:set_bool("continuous_forward", false)
-		minetest.sound_play("mcl_bells_bell_stroke", { pitch = 1.5, gain = 1.5 })
+		if minetest.sound_play then
+			minetest.sound_play("mcl_bells_bell_stroke", { pitch = 1.5, gain = 1.5 })
+		end
 		minetest.settings:set_bool("spongebot", false)
 	end
 	return rt, odst
