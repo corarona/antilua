@@ -171,10 +171,10 @@ core.register_on_formspec_input(function(formname, fields)
 	if not def or not def.cheat_settings then return end
 	for key, spec in pairs(def.cheat_settings) do
 		local full = setting .. "." .. key
-		if fields[full] then
+		if spec.type == "bool" then
+			core.settings:set_bool(full, fields[full] == "true")
+		elseif fields[full] then
 			core.settings:set(full, fields[full])
-		elseif spec.type == "bool" then
-			core.settings:set_bool(full, false)
 		end
 	end
 end)
