@@ -1,23 +1,25 @@
 autofly={}
 autofly.tpos=nil
 autofly.atpos=nil
+autofly.follow_name = nil
 
 local function find_closest_player()
 	local lp = minetest.localplayer
 	if not lp then return end
 	local pos = lp:get_pos()
-	local closest, closest_dist
+	local closest_pos, closest_name, closest_dist
 	for _, obj in ipairs(minetest.get_objects_inside_radius(pos, 500)) do
 		if obj:is_player() and not obj:is_local_player() then
 			local op = obj:get_pos()
 			local dist = vector.distance(pos, op)
-			if not closest or dist < closest_dist then
-				closest = op
+			if not closest_pos or dist < closest_dist then
+				closest_pos = op
+				closest_name = obj:get_name()
 				closest_dist = dist
 			end
 		end
 	end
-	return closest
+	return closest_pos, closest_name
 end
 
 ws.rg("Autopilot", {
@@ -34,11 +36,15 @@ ws.rg("Autopilot", {
 		-- Determine target: POI waypoint or follow player
 		local target
 		if mode == "follow" then
-			target = find_closest_player()
-			if not target then return end
+			target, autofly.follow_name = find_closest_player()
+			if not target then
+				autofly.follow_name = nil
+				return
+			end
 		else
 			target = poi.last_pos
 			if not target then return end
+			autofly.follow_name = nil
 		end
 
 		local lp = ws.dircoord(0, 0, 0)
@@ -64,15 +70,19 @@ ws.rg("Autopilot", {
 				local up = ws.dircoord(1, 1, 0)
 				local nu = minetest.get_node_or_nil(up)
 				if nu and nu.name == "air" then
-					minetest.localplayer:set_pos(vector.add(lp, {x=0, y=1, z=0}))
+					minetest.localplayer:set_pos(up)
 				else
-					-- Try going around sideways
+					-- Try going around sideways (then forward)
 					for _, side in ipairs({-1, 1}) do
-						local aside = ws.dircoord(1, 0, side)
+						local aside = ws.dircoord(0, 0, side)
 						local na = minetest.get_node_or_nil(aside)
 						if na and na.name == "air" then
-							minetest.localplayer:set_pos(vector.add(lp, aside))
-							break
+							local beyond = ws.dircoord(1, 0, side)
+							local nb = minetest.get_node_or_nil(beyond)
+							if nb and nb.name == "air" then
+								minetest.localplayer:set_pos(beyond)
+								break
+							end
 						end
 					end
 				end
@@ -104,12 +114,14 @@ ws.rg("Autopilot", {
 				minetest.localplayer:set_velocity(vector.multiply(dir,
 					minetest.localplayer:get_movement_speed().walk / 10 * speed))
 			else
+				minetest.localplayer:set_pitch(0)
 				minetest.settings:set_bool(self.setting, false)
 			end
 		else
 			if dst > landing and minetest.settings:get_bool("continuous_forward", false) then
 				ws.aim(autofly.tpos)
 			else
+				minetest.localplayer:set_pitch(0)
 				minetest.settings:set_bool("continuous_forward", false)
 				minetest.settings:set_bool(self.setting, false)
 			end

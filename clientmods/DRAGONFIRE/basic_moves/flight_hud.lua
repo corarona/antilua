@@ -137,8 +137,13 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		-- Target info: coords + ETA from poi (shown above pitch/roll)
 		if poi.target and poi.eta then
 			local ttext = ""
-			if poi.last_name then
-				ttext = poi.last_name .. "\n"
+			if autofly.follow_name then
+				ttext = autofly.follow_name
+			elseif poi.last_name then
+				ttext = poi.last_name
+			end
+			if ttext ~= "" then
+				ttext = ttext .. "\n"
 			end
 			ttext = ttext .. ws.pos_to_string(poi.target)
 			if poi.eta > 0 then
