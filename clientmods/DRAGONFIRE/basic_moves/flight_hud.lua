@@ -72,7 +72,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		self._hud_target = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 0.5, y = 1},
-			offset = {x = -174, y = -380},
+			offset = {x = -174, y = -400},
 			number = 0xFF88FF88, text = ""
 		})
 
