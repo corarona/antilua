@@ -91,6 +91,17 @@ ws.rg("Autopilot", {
 	},
 })
 
+-- Watch continuous_forward: if turned on with a waypoint selected, enable autopilot
+local cf_was_on = false
+minetest.register_globalstep(function()
+	if not poi.last_pos then return end
+	local cf_on = minetest.settings:get_bool("continuous_forward")
+	if cf_on and not cf_was_on and not minetest.settings:get_bool("autopilot") then
+		minetest.settings:set_bool("autopilot", true)
+	end
+	cf_was_on = cf_on
+end)
+
 function autofly.warp(name)
 	local pos=autofly.get_waypoint(name)
 	if pos then
