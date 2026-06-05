@@ -71,7 +71,6 @@ ws.rg("Autopilot", {
 			minetest.localplayer:set_physics_override({ gravity = 0 })
 		end
 
-		poi.set_hud_info("Autopilot")
 		if mode ~= "2d_aim" then
 			poi.display(autofly.tpos, poi.last_name)
 		end

@@ -68,6 +68,14 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 			number = 0xFF66AAFF, text = ""
 		})
 
+		-- Target info (above pitch/roll)
+		self._hud_target = minetest.localplayer:hud_add({
+			hud_elem_type = "text", position = {x = 1, y = 1},
+			alignment = {x = 0.5, y = 1},
+			offset = {x = -174, y = -380},
+			number = 0xFF88FF88, text = ""
+		})
+
 		-- Altitude bar (left side)
 		self._hud_alt_bar = minetest.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 0, y = 1},
@@ -126,6 +134,17 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		end
 		set(self._hud_pitch, "text", string.format("Pitch: %.0f  Roll: %.0f", pitch, roll))
 
+		-- Target info: coords + ETA from poi (shown above pitch/roll)
+		if poi.target and poi.eta then
+			local ttext = ws.pos_to_string(poi.target)
+			if poi.eta > 0 then
+				ttext = ttext .. "\nETA: " .. poi.eta .. " min"
+			end
+			set(self._hud_target, "text", ttext)
+		else
+			set(self._hud_target, "text", "")
+		end
+
 		-- Altitude: Y position with vertical bar to the right
 		local pos = lp:get_pos()
 		local alt_color = 0xFF88FF88
@@ -152,6 +171,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 			self._hud_bg, self._hud_line, self._hud_pitch,
 			self._hud_alt, self._hud_alt_bar,
 			self._hud_speed, self._hud_speed_bar,
+			self._hud_target,
 		} do
 			if id then minetest.localplayer:hud_remove(id) end
 		end

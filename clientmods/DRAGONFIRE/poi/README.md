@@ -67,7 +67,7 @@ management, and supports a transport callback system for teleportation mods.
 
 `poi.set_hud_wp(pos, title)` — display a HUD waypoint element pointing to `pos` with `title`.
 
-`poi.set_hud_info(text)` — update the HUD info panel with speed, velocity, yaw, pitch, destination name, position, and ETA.
+`poi.set_hud_info(text)` — *removed, moved to FlightHUD*
 
 `poi.display(pos, name)` — show a HUD waypoint at `pos` with label `name`.
 

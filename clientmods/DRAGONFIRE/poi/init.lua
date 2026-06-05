@@ -21,7 +21,6 @@ local etime=0
 local shown_huds = {}
 
 local hud_wp
-local hud_info
 
 function poi.check_vector(v)
 	if not v then return false end
@@ -179,41 +178,6 @@ local function calculate_eta(tpos,speed)
 end
 
 
-function poi.set_hud_info(text)
-	if type(text) ~= "string" then return end
-	local lp=minetest.localplayer
-	if not lp then return end
-	local vspeed=lp:get_velocity()
-	local etatime=calculate_eta(poi.last_pos, poi.speed)
-	poi.etatime = etatime
-	local ttext=text.."\nSpeed: "..poi.speed.."n/s\n"
-	..ws.round2(vspeed.x,2) ..','
-	..ws.round2(vspeed.y,2) ..','
-	..ws.round2(vspeed.z,2) .."\n"
-	.."Yaw:"..tostring(ws.round2(lp:get_yaw(),2)).."° Pitch:" ..tostring(ws.round2(lp:get_pitch(),2)).."° " .. tostring(ws.getdir() or "")
-	if poi.last_pos and poi.last_name then
-		ttext=ttext .. "\n" .. poi.last_name .. "\n" .. ws.pos_to_string(poi.last_pos) .. "\n" .. "ETA" .. etatime .. " mins"
-	end
-	if minetest.settings:get_bool('poi_shownames') then
-		ttext=ttext.."\n"..poi.get_local_name()
-	end
-	if hud_info then
-		minetest.localplayer:hud_change(hud_info,'text',ttext)
-	else
-		hud_info = minetest.localplayer:hud_add({
-			hud_elem_type = 'text',
-			name		  = "Flight Info",
-			text		  = ttext,
-			number		= 0x00ff00,
-			direction   = 0,
-			position = {x=0,y=0.8},
-			alignment ={x=1,y=1},
-			offset = {x=0, y=0}
-		})
-	end
-	return true
-end
-
 function poi.display(pos,name)
 	if name == nil then name=ws.pos_to_string(pos) end
 	local pos=ws.string_to_pos(pos)
@@ -226,7 +190,6 @@ function poi.display_waypoint(name)
 	local pos=poi.get_waypoint(name)
 	poi.last_name = name
 	poi.last_pos = pos
-	poi.set_hud_info(name)
 	ws.aim(poi.last_pos)
 	poi.display(pos,name)
 	return true
@@ -313,6 +276,8 @@ minetest.register_globalstep(function(dtime)
 	if poi.last_pos then
 		poi.etatime = calculate_eta(poi.last_pos, poi.speed)
 	end
+	poi.target = poi.last_pos
+	poi.eta = poi.etatime
 end)
 
 
