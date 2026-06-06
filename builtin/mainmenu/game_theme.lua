@@ -66,16 +66,11 @@ function mm_game_theme.set_game(gamedetails)
 
 	core.set_topleft_text(gamedetails.name)
 
-	local have_bg = false
-	local have_overlay = mm_game_theme.set_game_single("overlay", gamedetails)
-
-	if not have_overlay then
-		have_bg = mm_game_theme.set_game_single("background", gamedetails)
-	end
+	-- Dragonfire: don't override background with game-specific one
+	core.set_clouds(false)
 
 	mm_game_theme.clear_single("header")
 	mm_game_theme.clear_single("footer")
-	core.set_clouds(false)
 
 	mm_game_theme.set_game_single("header", gamedetails)
 	mm_game_theme.set_game_single("footer", gamedetails)
@@ -86,10 +81,6 @@ function mm_game_theme.set_game(gamedetails)
 	else
 		core.set_clouds_color(c.clouds)
 		core.set_sky_color(c.sky)
-	end
-
-	if not have_bg then
-		core.set_clouds(core.settings:get_bool("menu_clouds"))
 	end
 end
 
