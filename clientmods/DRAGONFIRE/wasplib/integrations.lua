@@ -47,20 +47,22 @@ function ws.inside_constraints(pos)
 	return false
 end
 
-minetest.register_chatcommand("cpos1", {
+minetest.register_chatcommand("pos1", {
 	description = "Set constraint position 1",
 	params = "[x,y,z]",
 	func = function(param)
 		if param and param ~= "" then
 			local p = minetest.string_to_pos(param)
-			if p then ws.set_pos1(p) end
-		else
-			ws.set_pos1()
+			if p then
+				ws.set_pos1(p)
+			end
+			return
 		end
+		ws.set_pos1()
 	end,
 })
 
-minetest.register_chatcommand("cpos2", {
+minetest.register_chatcommand("pos2", {
 	description = "Set constraint position 2",
 	params = "[x,y,z]",
 	func = function(param)
@@ -160,69 +162,22 @@ ws.rg("HeadSaver", {
 ------------------------------------------------------------------------------
 -- lockview (merged)
 ------------------------------------------------------------------------------
-local lv_pitch = nil
-local lv_yaw = nil
-
 ws.rg("LockView", {
 	category = "Bots",
 	setting = "lockview",
-	on_step = function()
-		if lv_pitch and lv_yaw then
-			core.localplayer:set_yaw(lv_yaw)
-			core.localplayer:set_pitch(lv_pitch)
-		end
-	end,
-	on_start = function()
-		lv_pitch = core.localplayer:get_pitch() * -1
-		lv_yaw = core.localplayer:get_yaw()
-	end,
-	on_stop = function()
-		lv_pitch = nil
-		lv_yaw = nil
-	end,
-})
-
-------------------------------------------------------------------------------
--- lavaalarm (merged)
-------------------------------------------------------------------------------
-ws.rg("LavaAlarm", {
-	category = "Player",
-	setting = "lavaalarm",
 	on_step = function(self)
-		local lava = {
-			"mcl_core:lava_source", "mcl_core:lava_flowing",
-			"mcl_nether:nether_lava_source", "mcl_nether:nether_lava_flowing",
-		}
-		local range = tonumber(core.settings:get(self.setting .. ".detect_range")) or 3
-		if minetest.find_node_near(ws.dircoord(0, 0, 0), range, lava) then
-			minetest.sound_play("mcl_bells_bell_stroke", { pitch = 1.5, gain = 1.5 })
+		if self.pitch and self.yaw then
+			core.localplayer:set_yaw(self.yaw)
+			core.localplayer:set_pitch(self.pitch)
 		end
 	end,
-	cheat_settings = {
-		detect_range = { type = "number", default = 3, min = 1, max = 20 },
-	},
-})
-
--- mcl2-invul exploit (merged from lavaalarm)
-local mcl2_t = 0.5
-minetest.register_globalstep(function(dtime)
-	local player = minetest.localplayer
-	if not player then return end
-	if minetest.settings:get_bool("mcl2-invul") then
-		if mcl2_t <= 0 then
-			minetest.send_damage(1)
-			mcl2_t = 0.5
-		end
-		mcl2_t = mcl2_t - dtime
-	end
-end)
-
-core.register_cheat("mcl2-invul", { category = "Player", setting = "mcl2-invul" })
-
-minetest.register_chatcommand("mcl2_invul", {
-	func = function()
-		minetest.send_damage(1)
-		minetest.disconnect()
+	on_start = function(self)
+		self.pitch = core.localplayer:get_pitch() * -1
+		self.yaw = core.localplayer:get_yaw()
+	end,
+	on_stop = function(self)
+		self.pitch = nil
+		self.yaw = nil
 	end,
 })
 
