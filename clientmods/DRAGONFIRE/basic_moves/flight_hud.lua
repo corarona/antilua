@@ -76,18 +76,18 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 			number = 0xFF88FF88, text = ""
 		})
 
-		-- Altitude bar (left side)
+		-- Altitude bar
 		self._hud_alt_bar = minetest.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 0, y = 1},
-			alignment = {x = 0, y = 1},
-			offset = {x = 25, y = -250},
+			hud_elem_type = "text", position = {x = 1, y = 1},
+			alignment = {x = 0.5, y = 1},
+			offset = {x = -15, y = -290},
 			number = 0xFF88FF88, text = ""
 		})
 		-- Y: value right under the bar
 		self._hud_alt = minetest.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 0, y = 1},
-			alignment = {x = 0, y = 1},
-			offset = {x = 25, y = -25},
+			hud_elem_type = "text", position = {x = 1, y = 1},
+			alignment = {x = 0.5, y = 1},
+			offset = {x = -30, y = -50},
 			number = 0xFF88FF88, text = ""
 		})
 
@@ -157,10 +157,10 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		-- Altitude: Y position with vertical bar to the right
 		local pos = lp:get_pos()
 		local alt_color = 0xFF88FF88
-		if pos.y < -30000 then alt_color = 0xFFFF6666 end
-		if pos.y > 30000 then alt_color = 0xFFFFFF66 end
+		if pos.y < 0 then alt_color = 0xF9F9F9 end
+		if pos.y > 500 then alt_color = 0xFFFFFF end
 		set(self._hud_alt, "number", alt_color)
-		set(self._hud_alt, "text", string.format("Y: %.0f", pos.y))
+		set(self._hud_alt, "text", string.format("ALT\n %.0f", pos.y))
 
 		local y_norm = (pos.y + 32000) / 64000
 		y_norm = math.max(0, math.min(1, y_norm))
