@@ -1,0 +1,71 @@
+# dig
+
+Dig timing library (merged from diglib + digcustom) and bulk digging operations (ported from scaffold). Provides accurate dig-time calculation, node-by-node digging, and a suite of automated excavation tools.
+
+## Player usage
+
+### Cheats
+
+| Cheat | Setting | Description |
+|-------|---------|-------------|
+| DigCustom | `digcustom` | Auto-dig configurable nodes within range. Configure target nodes via `/list digcustom`. |
+| DigHead | `dighead` | Dig the node directly above the player's head. |
+| Excavator | `excavator` | Tunnel excavation — digs a width×depth area in front of the player (horizontal slice at player eye level). Enables continuous forward movement. |
+| TBM | `excavator` | Tunnel Boring Machine — same as Excavator, but also places tunnel-lining walls using the selected nodelist item (set via `/list select`). |
+| TExcavator | `texcavator` | Full tunnel excavation (digs all nodes in the width×depth area including floor and ceiling). |
+| WallExcavator | `wallexcavator` | Wall-facing excavator — digs nodes that are part of a wall structure in front of the player. |
+| Nuke | `nuke` | Radial blast dig — digs all diggable nodes within a configurable radius around the player. |
+| Digcyl | `digcyl` | Cylinder dig — digs nodes within a cylindrical volume (center set via `/digcyl`, radius via `/digcyl_rad`). Stops at configurable floor Y. |
+| DigFreeSponge | `autospongedig` | Auto-dig sponges that are no longer in contact with water sources. |
+
+### Settings
+
+- `digcustom_nodes` — comma-separated list of node names for DigCustom to target
+- `digcustom_max_time` — maximum dig time for DigCustom (skip nodes that take longer)
+- `dig.width` — excavation width (default: 5)
+- `dig.depth` — excavation depth (default: 1)
+- `nuke.radius` — blast radius for Nuke (default: 4, max: 20)
+- `digcyl.floor_y` — minimum Y level for Digcyl (default: -125)
+- `autospongedig.range` — sponge search range (default: 4)
+- `autospongedig.water_distance` — max distance to water for sponge to be considered wet (default: 6)
+
+### Chat commands
+
+| Command | Description |
+|---------|-------------|
+| `/digcyl [x,y,z]` | Set dig cylinder center (defaults to player pos if no coords given) |
+| `/digcyl_rad <radius>` | Set dig cylinder radius |
+| `/list digcustom [nodes]` | Configure custom auto-dig node list |
+
+## API
+
+```lua
+dig = {}
+```
+
+### `dig.calculate_dig_time(toolcaps, groups)`
+
+Calculate the best (lowest) dig time from a tool's capabilities against a node's group levels.
+
+**Parameters:**
+- `toolcaps` — tool capability table (from `ItemStack:get_tool_capabilities()`)
+- `groups` — node groups table (from `NodeDef.groups`)
+
+**Returns:** `number|nil` — best dig time in seconds, or `nil` if no matching cap.
+
+### `dig.get_dig_time(pos)`
+
+Get the effective dig time for the currently wielded tool against the node at `pos`.
+
+**Parameters:**
+- `pos` — `Vector` position of the node
+
+**Returns:** `number|nil` — dig time in seconds, or `nil` if node is undiggable.
+
+### `dig.dig_node(pos, max_time)`
+
+Dig a single node at `pos`, respecting dig time with async sleep. Only digs if the calculated time is under `max_time`.
+
+**Parameters:**
+- `pos` — `Vector` position of the node to dig
+- `max_time` — `number|nil` — skip digging if the node takes longer than this (optional)
