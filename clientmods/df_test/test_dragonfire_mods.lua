@@ -139,6 +139,18 @@ function test_ws_rg_new_api(T)
 	end)
 end
 
+function test_always_day(T)
+	T.run("register_on_time_of_day exists", function()
+		T.assert(type(core.register_on_time_of_day) == "function",
+			"register_on_time_of_day should be a function")
+	end)
+
+	T.run("always_day setting defaults to false", function()
+		T.assert(type(core.settings:get("always_day")) == "string",
+			"always_day setting should exist")
+	end)
+end
+
 function test_clean_hud(T)
 	T.run("register_on_hud_add exists", function()
 		T.assert(type(core.register_on_hud_add) == "function",
