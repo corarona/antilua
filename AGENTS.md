@@ -72,6 +72,57 @@ Requires `xvfb-run` (from the `xvfb` package) for headless display.
 - Lua: luacheck (see `.luacheckrc`), run via `.github/workflows/lua.yml`
 
 ## Key directories
+- **Engine**: This repo. C++ core + Irrlicht fork.
+- **Game**: Separate data (mods, textures, sounds) in `games/`. Default: `games/minetest_game`.
+- **Mods**: User mods go in `mods/`, engine-provided mods in `clientmods/`.
+
+## OpenGL / Rendering
+
+- Two drivers: EDT_OPENGL3 (shader-based, OpenGL 3.2+ compat) and EDT_OPENGL (legacy, OpenGL 1.4+ with FFP).
+- Driver selection order controlled by `src/client/renderingengine.cpp:getSupportedVideoDrivers()`.
+- When `enable_shaders=false`, the legacy EDT_OPENGL driver is preferred.
+- Shaders live in `client/shaders/`.
+- Irrlicht built-in shader files (Solid.vsh, etc.) are compiled-in paths, not on disk.
+
+## OpenGL 1.4 Compatibility
+
+Adds an `enable_shaders` toggle (`Settings → Enable shaders`) that falls back to the legacy fixed-function pipeline (FFP) via EDT_OPENGL when disabled.
+
+**Key files changed:**
+
+| File | What changed |
+|------|-------------|
+| `irr/src/CIrrDeviceSDL.cpp` | EDT_OPENGL requests GL 1.4 context (fallback to 2.1) |
+| `irr/include/IVideoDriver.h` | Added `virtual setVBOEnabled(bool)` |
+| `irr/src/COpenGLDriver.h/cpp` | `setVBOEnabled()`, `isFBOAvailable()`, VBO/FBO guards |
+| `irr/src/COpenGLMaterialRenderer.h` | Runtime `queryOpenGLFeature()` checks instead of `#ifdef`; added `GL_MODULATE` fallback; texture env reset in SOLID/REF renderers |
+| `src/client/shader.cpp` | `ShaderSource` skips GLSL compilation when disabled, returns base EMT types |
+| `src/client/renderingengine.cpp` | Prefers EDT_OPENGL when shaders disabled; calls `setVBOEnabled()` |
+| `src/client/tile.h/cpp` | Added FFP `applyMaterialOptions()` + `applyMaterialOptionsWithShaders()` rename; handles all `TILE_MATERIAL_*` types |
+| `src/client/mapblock_mesh.cpp/h` | Day/night vertex color animation, sunlight baking for FFP |
+| `src/client/content_cao.cpp/h` | Entity FFP path: `setMeshColor()` instead of `ColorParam`, `final_color_blend()` |
+| `src/client/wieldmesh.cpp/h` | FFP path: `colorizeMeshBuffer()`, `EHM_DYNAMIC` hint |
+| `src/client/clouds.cpp/h` | FFP: `EMT_TRANSPARENT_ALPHA_CHANNEL`, pre-baked vertex colors |
+| `src/client/sky.cpp/h` | FFP: `EMT_TRANSPARENT_ALPHA_CHANNEL` for stars, `setMeshBufferColor()` |
+| `src/client/hud.cpp` | FFP material for selection/block bounds |
+| `src/client/minimap.cpp/h` | FFP material fallback |
+| `src/client/render/plain.cpp` | Post-processing guarded behind `enable_shaders` |
+| `builtin/common/settings/` | `shader_warning_component.lua`, `dlg_settings.lua` updates |
+
+**FFP material type mapping** (`src/client/tile.cpp`):
+- `TILE_MATERIAL_BASIC`, `WAVING_*`, `LIQUID_OPAQUE` → `EMT_TRANSPARENT_ALPHA_CHANNEL_REF` (alpha test)
+- `TILE_MATERIAL_ALPHA`, `LIQUID_TRANSPARENT`, `PLAIN_ALPHA` → `EMT_TRANSPARENT_ALPHA_CHANNEL` (alpha blend)
+- `TILE_MATERIAL_OPAQUE`, `PLAIN` → `EMT_SOLID`
+
+**What doesn't work when shaders disabled:**
+- Post-processing (bloom, FXAA, volumetric light), dynamic shadows, waving animation
+- Day/night uses CPU vertex color updates (slower)
+- VBOs and FBOs unavailable
+
+**Testing:** `./bin/luanti --run-unittests` — all 50 modules must pass.
+
+## Key Directories
+>>>>>>> 9c2ed3d3e (docs: add OpenGL 1.4 compat section to AGENTS.md)
 
 | Path | Purpose |
 |------|---------|
@@ -109,3 +160,8 @@ Requires `xvfb-run` (from the `xvfb` package) for headless display.
   field on cheat defs can provide custom formspec-based settings pages.
 - `.clang-tidy` checks are configured as warnings-as-errors for performance items
 - The `vcpkg.json` exists but is not the primary dependency manager on Linux
+
+
+- **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
+- **EDT_OPENGL** (`irr/src/COpenGLDriver.cpp`): Legacy driver with full fixed-function pipeline (material renderers, `glTexEnv`, `GL_ALPHA_TEST`, client-side vertex arrays). Compiles only when `_IRR_COMPILE_WITH_OPENGL_` is defined (always on for Luanti).
+
