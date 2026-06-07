@@ -386,8 +386,13 @@ void Client::handleCommand_TimeOfDay(NetworkPacket* pkt)
 	// Update environment
 	m_env.setTimeOfDay(time_of_day);
 	m_env.setTimeOfDaySpeed(time_speed);
-	if (modsLoaded())
-		DfClientHooks::on_time_of_day(this, time_of_day, time_speed);
+	if (modsLoaded()) {
+		float modified = DfClientHooks::on_time_of_day(this, time_of_day, time_speed);
+		if (modified >= 0.0f) {
+			time_of_day = (u16)modified;
+			m_env.setTimeOfDay(time_of_day);
+		}
+	}
 }
 
 void Client::handleCommand_ChatMessage(NetworkPacket *pkt)
@@ -854,8 +859,13 @@ void Client::handleCommand_PlaySound(NetworkPacket* pkt)
 	// Generate a new id
 	sound_handle_t client_id = (ephemeral && object_id == 0) ? 0 : m_sound->allocateId(2);
 
-	if (modsLoaded())
-		DfClientHooks::on_play_sound(this, spec, type, pos, object_id, ephemeral, server_id);
+	if (modsLoaded() && DfClientHooks::on_play_sound(this, spec, type, pos, object_id, ephemeral, server_id)) {
+		if (client_id != 0)
+			m_sound->freeId(client_id, 2);
+		if (!ephemeral)
+			sendRemovedSounds({server_id});
+		return;
+	}
 	// Start playing
 	switch(type) {
 	case SoundLocation::Local:
@@ -955,8 +965,11 @@ void Client::handleCommand_InventoryFormSpec(NetworkPacket* pkt)
 
 	// Store formspec in LocalPlayer
 	std::string formspec = pkt->readLongString();
-	if (modsLoaded())
-		DfClientHooks::on_receiving_inventory_form(this, formspec);
+	if (modsLoaded()) {
+		std::string modified = DfClientHooks::on_receiving_inventory_form(this, formspec);
+		if (!modified.empty())
+			formspec = modified;
+	}
 	player->inventory_formspec = formspec;
 	player->inventory_formspec_override.clear();
 }
@@ -1002,8 +1015,11 @@ void Client::handleCommand_ShowFormSpec(NetworkPacket* pkt)
 
 	*pkt >> formname;
 
-	if (modsLoaded())
-		DfClientHooks::on_receiving_formspec(this, formname, formspec);
+	if (modsLoaded()) {
+		std::string modified = DfClientHooks::on_receiving_formspec(this, formname, formspec);
+		if (!modified.empty())
+			formspec = modified;
+	}
 
 	ClientEvent *event = new ClientEvent();
 	event->type = CE_SHOW_FORMSPEC;
@@ -1021,8 +1037,8 @@ void Client::handleCommand_SpawnParticle(NetworkPacket* pkt)
 	ParticleParameters p;
 	p.deSerialize(is, m_proto_ver);
 
-	if (modsLoaded())
-		DfClientHooks::on_spawn_particle(this, p);
+	if (modsLoaded() && DfClientHooks::on_spawn_particle(this, p))
+		return;
 
 	ClientEvent *event = new ClientEvent();
 	event->type           = CE_SPAWN_PARTICLE;
@@ -1177,8 +1193,8 @@ void Client::handleCommand_AddParticleSpawner(NetworkPacket* pkt)
 		p.size.end = p.size.start;
 	}
 
-	if (modsLoaded())
-		DfClientHooks::on_receive_particlespawner(this, p, server_id, attached_id);
+	if (modsLoaded() && DfClientHooks::on_receive_particlespawner(this, p, server_id, attached_id))
+		return;
 
 	auto event = new ClientEvent();
 	event->type                            = CE_ADD_PARTICLESPAWNER;
@@ -1277,8 +1293,10 @@ void Client::handleCommand_HudAdd(NetworkPacket* pkt)
 	event->hudadd->text2     = text2;
 	event->hudadd->style     = style;
 	event->hudadd->hideable  = flags % 2;
-	if (modsLoaded())
-		DfClientHooks::on_hud_add(this, server_id, type, pos, name, scale, text, number, item, dir, align, offset, world_pos, size, z_index, text2, style, flags % 2);
+	if (modsLoaded() && DfClientHooks::on_hud_add(this, server_id, type, pos, name, scale, text, number, item, dir, align, offset, world_pos, size, z_index, text2, style, flags % 2)) {
+		delete event;
+		return;
+	}
 	m_client_event_queue.push(event);
 }
 
@@ -1291,8 +1309,10 @@ void Client::handleCommand_HudRemove(NetworkPacket* pkt)
 	ClientEvent *event = new ClientEvent();
 	event->type     = CE_HUDRM;
 	event->hudrm.id = server_id;
-	if (modsLoaded())
-		DfClientHooks::on_hud_remove(this, server_id);
+	if (modsLoaded() && DfClientHooks::on_hud_remove(this, server_id)) {
+		delete event;
+		return;
+	}
 	m_client_event_queue.push(event);
 }
 
@@ -1342,8 +1362,8 @@ void Client::handleCommand_HudChange(NetworkPacket* pkt)
 			break;
 	}
 
-	if (modsLoaded())
-		DfClientHooks::on_hud_change(this, server_id, static_cast<HudElementStat>(stat), sdata, v2fdata, v3fdata, intdata);
+	if (modsLoaded() && DfClientHooks::on_hud_change(this, server_id, static_cast<HudElementStat>(stat), sdata, v2fdata, v3fdata, intdata))
+		return;
 
 	ClientEvent *event = new ClientEvent();
 	event->type                 = CE_HUDCHANGE;

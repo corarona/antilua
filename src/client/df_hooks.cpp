@@ -23,28 +23,31 @@ void on_movement(Client *client, LocalPlayer *player)
 		client->getScript()->on_recieve_physics_override(player);
 }
 
-void on_play_sound(Client *client, const SoundSpec &spec,
+bool on_play_sound(Client *client, const SoundSpec &spec,
 		SoundLocation type, v3f pos, u16 object_id,
 		bool ephemeral, s32 server_id)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_play_sound(spec, type, pos,
+		return client->getScript()->on_play_sound(spec, type, pos,
 				object_id, ephemeral, server_id);
+	return false;
 }
 
-void on_spawn_particle(Client *client, const ParticleParameters &p)
+bool on_spawn_particle(Client *client, const ParticleParameters &p)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_spawn_particle(p);
+		return client->getScript()->on_spawn_particle(p);
+	return false;
 }
 
-void on_receive_particlespawner(Client *client,
+bool on_receive_particlespawner(Client *client,
 		const ParticleSpawnerParameters &p,
 		u32 server_id, u16 attached_id)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_receive_particlespawner(
+		return client->getScript()->on_receive_particlespawner(
 				p, server_id, attached_id);
+	return false;
 }
 
 void on_sending_inventory_fields(Client *client,
@@ -70,11 +73,12 @@ void on_detached_inventory_update(Client *client,
 		client->getScript()->on_detached_inventory_update(name, keep);
 }
 
-void on_receiving_inventory_form(Client *client,
+std::string on_receiving_inventory_form(Client *client,
 		const std::string &formspec)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_receiving_inventory_form(formspec);
+		return client->getScript()->on_receiving_inventory_form(formspec);
+	return "";
 }
 
 void on_open_nodemeta_form(Client *client, v3s16 pos,
@@ -113,11 +117,12 @@ void on_hp_change(Client *client, u16 hp)
 // Phase 2: New interception callbacks
 // ---------------------------------------------------------------------------
 
-void on_receiving_formspec(Client *client,
+std::string on_receiving_formspec(Client *client,
 		const std::string &formname, const std::string &formspec)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_receiving_formspec(formname, formspec);
+		return client->getScript()->on_receiving_formspec(formname, formspec);
+	return "";
 }
 
 void on_node_add(Client *client, v3s16 pos, const MapNode &node)
@@ -132,7 +137,7 @@ void on_node_remove(Client *client, v3s16 pos)
 		client->getScript()->on_node_remove(pos);
 }
 
-void on_hud_add(Client *client, u32 server_id, u8 type,
+bool on_hud_add(Client *client, u32 server_id, u8 type,
 		const v2f &pos, const std::string &name,
 		const v2f &scale, const std::string &text,
 		u32 number, u32 item, u32 dir, const v2f &align,
@@ -141,30 +146,34 @@ void on_hud_add(Client *client, u32 server_id, u8 type,
 		u32 style, bool hideable)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_hud_add(server_id, type, pos, name,
+		return client->getScript()->on_hud_add(server_id, type, pos, name,
 				scale, text, number, item, dir, align, offset,
 				world_pos, size, z_index, text2, style, hideable);
+	return false;
 }
 
-void on_hud_remove(Client *client, u32 server_id)
+bool on_hud_remove(Client *client, u32 server_id)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_hud_remove(server_id);
+		return client->getScript()->on_hud_remove(server_id);
+	return false;
 }
 
-void on_hud_change(Client *client, u32 server_id,
+bool on_hud_change(Client *client, u32 server_id,
 		HudElementStat stat, const std::string &sdata,
 		const v2f &v2fdata, const v3f &v3fdata, u32 intdata)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_hud_change(server_id, stat,
+		return client->getScript()->on_hud_change(server_id, stat,
 				sdata, v2fdata, v3fdata, intdata);
+	return false;
 }
 
-void on_time_of_day(Client *client, u16 time, float speed)
+float on_time_of_day(Client *client, u16 time, float speed)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_time_of_day(time, speed);
+		return client->getScript()->on_time_of_day(time, speed);
+	return -1.0f;
 }
 
 // ---------------------------------------------------------------------------
