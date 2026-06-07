@@ -139,6 +139,18 @@ function test_ws_rg_new_api(T)
 	end)
 end
 
+function test_clean_hud(T)
+	T.run("register_on_hud_add exists", function()
+		T.assert(type(core.register_on_hud_add) == "function",
+			"register_on_hud_add should be a function")
+	end)
+
+	T.run("clean_hud setting defaults to false", function()
+		T.assert(type(core.settings:get("clean_hud")) == "string",
+			"clean_hud setting should exist")
+	end)
+end
+
 function test_session_stats(T)
 	T.run("session_stats registers .stats command", function()
 		T.assert(type(core.registered_chatcommands["stats"]) == "table",

@@ -122,6 +122,7 @@ core.register_on_mods_loaded(function()
 	test_inv_open_mod(df_test)
 	test_autocraft_mod(df_test)
 	test_session_stats(df_test)
+	test_clean_hud(df_test)
 	test_category_assignments(df_test)
 
 	-- Integration tests (deferred — register but don't run yet)
