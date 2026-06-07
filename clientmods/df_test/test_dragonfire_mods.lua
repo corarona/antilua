@@ -163,6 +163,45 @@ function test_clean_hud(T)
 	end)
 end
 
+function test_formspec_blocker(T)
+	T.run("register_on_receiving_formspec exists", function()
+		T.assert(type(core.register_on_receiving_formspec) == "function")
+	end)
+	T.run("formspec_blocker setting exists", function()
+		T.assert(type(core.settings:get("formspec_blocker")) == "string")
+	end)
+end
+
+function test_entity_logger(T)
+	T.run("entity_logger setting exists", function()
+		T.assert(type(core.settings:get("entity_logger")) == "string")
+	end)
+end
+
+function test_world_observer(T)
+	T.run("world_observer setting exists", function()
+		T.assert(type(core.settings:get("world_observer")) == "string")
+	end)
+end
+
+function test_movement_display(T)
+	T.run("movement_display setting exists", function()
+		T.assert(type(core.settings:get("movement_display")) == "string")
+	end)
+end
+
+function test_breath_alert(T)
+	T.run("breath_alert setting exists", function()
+		T.assert(type(core.settings:get("breath_alert")) == "string")
+	end)
+end
+
+function test_formspec_modifier(T)
+	T.run("register_on_receiving_inventory_form exists", function()
+		T.assert(type(core.register_on_receiving_inventory_form) == "function")
+	end)
+end
+
 function test_session_stats(T)
 	T.run("session_stats registers .stats command", function()
 		T.assert(type(core.registered_chatcommands["stats"]) == "table",
