@@ -967,8 +967,10 @@ void Client::handleCommand_InventoryFormSpec(NetworkPacket* pkt)
 	std::string formspec = pkt->readLongString();
 	if (modsLoaded()) {
 		std::string modified = DfClientHooks::on_receiving_inventory_form(this, formspec);
-		if (!modified.empty())
-			formspec = modified;
+		if (modified.empty())
+			return; // cancelled
+		if (modified != formspec)
+			formspec = modified; // modified
 	}
 	player->inventory_formspec = formspec;
 	player->inventory_formspec_override.clear();
@@ -1017,8 +1019,10 @@ void Client::handleCommand_ShowFormSpec(NetworkPacket* pkt)
 
 	if (modsLoaded()) {
 		std::string modified = DfClientHooks::on_receiving_formspec(this, formname, formspec);
-		if (!modified.empty())
-			formspec = modified;
+		if (modified.empty())
+			return; // cancelled
+		if (modified != formspec)
+			formspec = modified; // modified
 	}
 
 	ClientEvent *event = new ClientEvent();

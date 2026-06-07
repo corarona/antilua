@@ -205,14 +205,14 @@ std::string DfScriptApi::on_receiving_inventory_form(const std::string &formspec
 		runCallbacks(1, RUN_CALLBACKS_MODE_FIRST);
 	} catch (LuaError &e) {
 		getClient()->setFatalError(e);
-		return {};
+		return formspec;
 	}
 	if (lua_type(L, -1) == LUA_TSTRING) {
 		const char *s = lua_tostring(L, -1);
 		if (s && s[0])
 			return s;
 	}
-	return {};
+	return formspec;
 }
 
 bool DfScriptApi::on_open_nodemeta_form(v3s16 pos, const std::string &formspec)
@@ -312,14 +312,14 @@ std::string DfScriptApi::on_receiving_formspec(const std::string &formname,
 		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
 	} catch (LuaError &e) {
 		getClient()->setFatalError(e);
-		return {};
+		return formspec;
 	}
 	if (lua_type(L, -1) == LUA_TSTRING) {
 		const char *s = lua_tostring(L, -1);
 		if (s)
 			return s;
 	}
-	return {};
+	return formspec;
 }
 
 void DfScriptApi::on_node_add(v3s16 pos, const MapNode &node)
