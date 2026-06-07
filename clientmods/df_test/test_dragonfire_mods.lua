@@ -138,3 +138,17 @@ function test_ws_rg_new_api(T)
 			"setting should exist with default value")
 	end)
 end
+
+function test_session_stats(T)
+	T.run("session_stats registers .stats command", function()
+		T.assert(type(core.registered_chatcommands["stats"]) == "table",
+			".stats command should exist")
+		T.assert(type(core.registered_chatcommands["stats"].func) == "function",
+			".stats command should have a function")
+	end)
+
+	T.run("session_stats callbacks exist", function()
+		T.assert(type(core.registered_on_connect) == "table",
+			"registered_on_connect should exist")
+	end)
+end
