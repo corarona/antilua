@@ -46,6 +46,7 @@ set(client_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/clientmedia.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/clientobject.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/clouds.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/df_hooks.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/content_cao.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/content_cso.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/content_mapblock.cpp

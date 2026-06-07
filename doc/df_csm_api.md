@@ -180,7 +180,9 @@ and `core.get_nearby_objects()`.
 3. Callback Registration
 ========================
 
-All callbacks available to client-side mods:
+All callbacks available to client-side mods, organized by category.
+
+### Upstream Callbacks
 
 ```lua
 core.register_globalstep(func(dtime))
@@ -191,25 +193,12 @@ core.register_on_sending_chat_message(func(msg) -> bool)
 core.register_on_chatcommand(func(msg))
 core.register_on_damage_taken(func(amount))
 core.register_on_hp_modification(func(new_hp))
-core.register_on_death(func())
 core.register_on_dignode(func(pos, node))
 core.register_on_punchnode(func(pos, node))
 core.register_on_placenode(func(pointed, item))
 core.register_on_item_use(func(item, pointed))
 core.register_on_formspec_input(func(formname, fields))
-core.register_on_receiving_inventory_form(func(formname, formspec))
-core.register_on_sending_inventory_fields(func(formname, fields))
-core.register_on_sending_nodemeta_fields(func(pos, formname, fields))
-core.register_on_open_nodemeta_form(func(pos))
 core.register_on_inventory_open(func(inventory))
-core.register_on_recieve_physics_override(func(override))
-core.register_on_play_sound(func(spec))
-core.register_on_spawn_particle(func(particle))
-core.register_on_receive_particlespawner(func(spawner))
-core.register_on_object_add(func(id))
-core.register_on_object_hp_change(func(id))
-core.register_on_object_properties_change(func(id))
-core.register_on_detached_inventory_update(func(inventory))
 core.register_on_modchannel_message(func(channel, sender, message))
 core.register_on_modchannel_signal(func(channel, signal))
 ```
@@ -217,6 +206,105 @@ core.register_on_modchannel_signal(func(channel, signal))
 Return `true` from a `register_on_receiving_chat_message` handler to suppress
 the message. Return a string to replace the message with a modified version
 (e.g., `core.strip_colors(msg)` to remove color codes).
+
+### Notification Callbacks (fire-and-forget)
+
+```lua
+core.register_on_death(func())
+core.register_on_connect(func())
+core.register_on_disconnect(func())
+core.register_on_recieve_physics_override(func(movement))
+core.register_on_detached_inventory_update(func(name, keep))
+core.register_on_privileges_changed(func(privs))
+core.register_on_breath_changed(func(breath))
+core.register_on_player_list_changed(func(type, names))
+core.register_on_lighting_changed(func(lighting))
+core.register_on_pre_step(func(dtime))
+core.register_on_post_step(func(dtime))
+```
+
+- **`on_death`**: Called when the player dies (death screen shown).
+- **`on_connect`**: Called when the client successfully connects and joins the world.
+- **`on_disconnect`**: Called when the client begins disconnecting from the server.
+- **`on_recieve_physics_override`**: Called when server sends movement/physics parameters.
+  `movement` table: `{acceleration_default, acceleration_air, acceleration_fast, speed_walk, speed_crouch, speed_fast, speed_climb, speed_jump, liquid_fluidity, liquid_fluidity_smooth, liquid_sink, gravity}`.
+- **`on_detached_inventory_update`**: Called when a detached inventory is updated or removed.
+  `name` is the inventory name, `keep` is true for updates, false for removal.
+- **`on_privileges_changed`**: Called when server updates your privileges.
+  `privs` is an array of privilege strings like `{"interact", "shout"}`.
+- **`on_breath_changed`**: Called when breath/air value changes. `breath` is the new value.
+- **`on_player_list_changed`**: Called when the player list changes.
+  `type` is 0 (init), 1 (add), or 2 (remove). `names` is an array of player names.
+- **`on_lighting_changed`**: Called when server updates lighting params.
+  `lighting` table with shadow/exposure/bloom fields.
+- **`on_pre_step(dtime)`**: Called at the start of every client tick, before all packet processing.
+- **`on_post_step(dtime)`**: Called at the end of every client tick, after all processing.
+
+### Interception Callbacks (can modify or block)
+
+```lua
+core.register_on_receiving_inventory_form(func(formspec) -> modified_formspec)
+core.register_on_receiving_formspec(func(formname, formspec) -> modified_formspec)
+core.register_on_hud_add(func(hud_def) -> true to block)
+core.register_on_hud_remove(func(id) -> true to block)
+core.register_on_hud_change(func(id, stat, value) -> true to block)
+core.register_on_time_of_day(func(time, speed) -> modified_time)
+```
+
+- **`on_receiving_inventory_form`**: Called when server sends inventory formspec.
+  Return a modified formspec string to replace it.
+- **`on_receiving_formspec`**: Called when server sends any formspec.
+  Return a modified formspec to replace, or empty string `""` to block.
+- **`on_hud_add/remove/change`**: Called when server adds/removes/changes a HUD element.
+  Return `true` to prevent the change.
+- **`on_time_of_day`**: Called when server updates time of day.
+  Return a new time (0-24000) to override, or nil to keep original.
+
+### Object & World Callbacks
+
+```lua
+core.register_on_object_add(func(id))
+core.register_on_object_hp_change(func(id, hp))
+core.register_on_object_properties_change(func(id))
+core.register_on_node_add(func(pos, node))
+core.register_on_node_remove(func(pos))
+```
+
+- **`on_object_add`**: Called when a new active object (entity) appears.
+- **`on_object_hp_change`**: Called when an object's HP changes. `id` is the object ID, `hp` is the new HP.
+- **`on_object_properties_change`**: Called when object properties are synchronized.
+- **`on_node_add`**: Called when the server adds a node at a position.
+- **`on_node_remove`**: Called when the server removes a node at a position.
+
+### Formsound & Interaction Callbacks
+
+```lua
+core.register_on_sending_inventory_fields(func(formname, fields) -> true to cancel)
+core.register_on_sending_nodemeta_fields(func(formname, fields) -> true to cancel)
+core.register_on_open_nodemeta_form(func(pos, formspec) -> true to cancel)
+```
+
+- **`on_sending_inventory_fields`**: Called before sending inventory formspec fields to the server.
+  Return `true` to cancel the submission.
+- **`on_sending_nodemeta_fields`**: Called before sending nodemeta formspec fields.
+  Return `true` to cancel the submission.
+- **`on_open_nodemeta_form`**: Called when a nodemeta formspec is about to open.
+  Return `true` to block it.
+
+### Sound & Particle Callbacks
+
+```lua
+core.register_on_play_sound(func(spec) -> true to cancel)
+core.register_on_spawn_particle(func(particle) -> true to cancel)
+core.register_on_receive_particlespawner(func(spawner) -> true to cancel)
+```
+
+- **`on_play_sound`**: Called when server plays a sound. `spec` table contains `{name, gain, type, pos, object_id, loop, fade, pitch, ephemeral, start_time, server_id}`.
+  Return `true` to prevent the sound from playing.
+- **`on_spawn_particle`**: Called when server spawns a particle.
+  Return `true` to suppress it.
+- **`on_receive_particlespawner`**: Called when server adds a particle spawner.
+  Return `true` to suppress it.
 
 ---
 

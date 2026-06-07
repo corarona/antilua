@@ -27,6 +27,27 @@ core.registered_on_detached_inventory_update, core.register_on_detached_inventor
 core.registered_on_receiving_inventory_form, core.register_on_receiving_inventory_form = make_df_registration()
 core.registered_on_open_nodemeta_form, core.register_on_open_nodemeta_form = make_df_registration()
 
+-- Phase 2: Interception callbacks
+core.registered_on_receiving_formspec, core.register_on_receiving_formspec = make_df_registration()
+core.registered_on_node_add, core.register_on_node_add = make_df_registration()
+core.registered_on_node_remove, core.register_on_node_remove = make_df_registration()
+core.registered_on_hud_add, core.register_on_hud_add = make_df_registration()
+core.registered_on_hud_remove, core.register_on_hud_remove = make_df_registration()
+core.registered_on_hud_change, core.register_on_hud_change = make_df_registration()
+core.registered_on_time_of_day, core.register_on_time_of_day = make_df_registration()
+
+-- Phase 3: Notification callbacks
+core.registered_on_connect, core.register_on_connect = make_df_registration()
+core.registered_on_disconnect, core.register_on_disconnect = make_df_registration()
+core.registered_on_privileges_changed, core.register_on_privileges_changed = make_df_registration()
+core.registered_on_breath_changed, core.register_on_breath_changed = make_df_registration()
+core.registered_on_player_list_changed, core.register_on_player_list_changed = make_df_registration()
+core.registered_on_lighting_changed, core.register_on_lighting_changed = make_df_registration()
+
+-- Phase 4: Game loop hooks
+core.registered_on_pre_step, core.register_on_pre_step = make_df_registration()
+core.registered_on_post_step, core.register_on_post_step = make_df_registration()
+
 -- DF data tables
 core.registered_nodes = {}
 core.registered_items = {}

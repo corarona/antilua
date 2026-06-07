@@ -24,5 +24,6 @@ set(client_SCRIPT_CPP_API_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/s_mainmenu.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/s_pause_menu.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/s_sscsm.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/df/df_callbacks.cpp
 	PARENT_SCOPE)
 

@@ -17,6 +17,7 @@
 #include "client/sound.h"
 #include "client/texturepaths.h"
 #include "client/texturesource.h"
+#include "client/df_hooks.h"
 #include "camera.h"
 #include "filesys.h"
 #include "game.h"
@@ -383,8 +384,10 @@ const ModSpec* Client::getModSpec(const std::string &modname) const
 void Client::Stop()
 {
 	m_shutdown = true;
-	if (m_mods_loaded)
+	if (m_mods_loaded) {
+		DfClientHooks::on_disconnect(this);
 		m_script->on_shutdown();
+	}
 	//request all client managed threads to stop
 	m_mesh_update_manager->stop();
 	// Save local server map
@@ -470,6 +473,8 @@ void Client::step(float dtime)
 	// Limit a bit
 	if (dtime > DTIME_LIMIT)
 		dtime = DTIME_LIMIT;
+
+	DfClientHooks::on_pre_step(this, dtime);
 
 	m_animation_time = fmodf(m_animation_time + dtime, 60.0f);
 
@@ -853,6 +858,8 @@ void Client::step(float dtime)
 		m_localdb->endSave();
 		m_localdb->beginSave();
 	}
+
+	DfClientHooks::on_post_step(this, dtime);
 }
 
 bool Client::loadMedia(const std::string &data, const std::string &filename,

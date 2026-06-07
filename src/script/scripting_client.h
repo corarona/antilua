@@ -13,6 +13,7 @@
 #include "cpp_api/s_client_common.h"
 #include "cpp_api/s_modchannels.h"
 #include "cpp_api/s_security.h"
+#include "cpp_api/df/df_callbacks.h"
 
 class Client;
 class LocalPlayer;
@@ -25,6 +26,7 @@ class ClientScripting:
 	public ScriptApiCheats,
 	public ScriptApiClientCommon,
 	public ScriptApiClient,
+	public DfScriptApi,
 	public ScriptApiModChannels
 {
 public:

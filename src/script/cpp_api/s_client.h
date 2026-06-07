@@ -43,12 +43,5 @@ public:
 
 	bool on_inventory_open(Inventory *inventory);
 
-	void on_death();
-
-	// Object callbacks (uses ClientObjectRef)
-	bool on_object_add(u16 id);
-	void on_object_hp_change(u16 id);
-	void on_object_properties_change(u16 id);
-
 	void setEnv(ClientEnvironment *env);
 };

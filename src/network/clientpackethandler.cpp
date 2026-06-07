@@ -27,6 +27,7 @@
 #include "network/connection.h"
 #include "network/networkpacket.h"
 #include "script/scripting_client.h"
+#include "client/df_hooks.h"
 #include "util/serialize.h"
 #include "util/srp.h"
 #include "util/hashing.h"
@@ -163,6 +164,7 @@ void Client::handleCommand_AuthAccept(NetworkPacket* pkt)
 		remote.print(actionstream);
 		actionstream << ")" << std::endl;
 	}
+	// DF: on_connect fires later via game loop when mods are loaded
 }
 
 void Client::handleCommand_AcceptSudoMode(NetworkPacket* pkt)
@@ -247,6 +249,8 @@ void Client::handleCommand_RemoveNode(NetworkPacket* pkt)
 	v3s16 p;
 	*pkt >> p;
 	removeNode(p);
+	if (modsLoaded())
+		DfClientHooks::on_node_remove(this, p);
 }
 
 void Client::handleCommand_AddNode(NetworkPacket* pkt)
@@ -264,6 +268,8 @@ void Client::handleCommand_AddNode(NetworkPacket* pkt)
 	*pkt >> keep_metadata;
 
 	addNode(p, n, !keep_metadata);
+	if (modsLoaded())
+		DfClientHooks::on_node_add(this, p, n);
 }
 
 void Client::handleCommand_NodemetaChanged(NetworkPacket *pkt)
@@ -380,6 +386,8 @@ void Client::handleCommand_TimeOfDay(NetworkPacket* pkt)
 	// Update environment
 	m_env.setTimeOfDay(time_of_day);
 	m_env.setTimeOfDaySpeed(time_speed);
+	if (modsLoaded())
+		DfClientHooks::on_time_of_day(this, time_of_day, time_speed);
 }
 
 void Client::handleCommand_ChatMessage(NetworkPacket *pkt)
@@ -466,6 +474,8 @@ void Client::handleCommand_ActiveObjectRemoveAdd(NetworkPacket* pkt)
 		for (u16 i = 0; i < added_count; i++) {
 			*pkt >> id >> type;
 			m_env.addActiveObject(id, type, pkt->readLongString());
+			if (modsLoaded())
+				DfClientHooks::on_active_object_add_remove(this);
 		}
 	} while (0);
 
@@ -517,6 +527,8 @@ void Client::handleCommand_Movement(NetworkPacket* pkt)
 	player->movement_liquid_fluidity_smooth = lfs * BS;
 	player->movement_liquid_sink            = ls * BS;
 	player->movement_gravity                = g * BS;
+	if (modsLoaded())
+		DfClientHooks::on_movement(this, player);
 }
 
 void Client::handleCommand_Fov(NetworkPacket *pkt)
@@ -578,6 +590,8 @@ void Client::handleCommand_Breath(NetworkPacket* pkt)
 	*pkt >> breath;
 
 	player->setBreath(breath);
+	if (modsLoaded())
+		DfClientHooks::on_breath(this, breath);
 }
 
 void Client::handleCommand_MovePlayer(NetworkPacket* pkt)
@@ -624,6 +638,8 @@ void Client::handleCommand_MovePlayerRel(NetworkPacket *pkt)
 
 void Client::handleCommand_DeathScreenLegacy(NetworkPacket* pkt)
 {
+	if (modsLoaded())
+		DfClientHooks::on_death(this);
 	ClientEvent *event = new ClientEvent();
 	event->type = CE_DEATHSCREEN_LEGACY;
 	m_client_event_queue.push(event);
@@ -838,6 +854,8 @@ void Client::handleCommand_PlaySound(NetworkPacket* pkt)
 	// Generate a new id
 	sound_handle_t client_id = (ephemeral && object_id == 0) ? 0 : m_sound->allocateId(2);
 
+	if (modsLoaded())
+		DfClientHooks::on_play_sound(this, spec, type, pos, object_id, ephemeral, server_id);
 	// Start playing
 	switch(type) {
 	case SoundLocation::Local:
@@ -923,6 +941,10 @@ void Client::handleCommand_Privileges(NetworkPacket* pkt)
 		m_privileges.insert(priv);
 		infostream << priv << " ";
 	}
+	if (modsLoaded()) {
+		std::set<std::string> privs(m_privileges.begin(), m_privileges.end());
+		DfClientHooks::on_privileges(this, privs);
+	}
 	infostream << std::endl;
 }
 
@@ -932,7 +954,10 @@ void Client::handleCommand_InventoryFormSpec(NetworkPacket* pkt)
 	assert(player != NULL);
 
 	// Store formspec in LocalPlayer
-	player->inventory_formspec = pkt->readLongString();
+	std::string formspec = pkt->readLongString();
+	if (modsLoaded())
+		DfClientHooks::on_receiving_inventory_form(this, formspec);
+	player->inventory_formspec = formspec;
 	player->inventory_formspec_override.clear();
 }
 
@@ -941,6 +966,8 @@ void Client::handleCommand_DetachedInventory(NetworkPacket* pkt)
 	std::string name;
 	bool keep_inv = true;
 	*pkt >> name >> keep_inv;
+
+	DfClientHooks::on_detached_inventory_update(this, name, keep_inv);
 
 	infostream << "Client: Detached inventory update: \"" << name
 		<< "\", mode=" << (keep_inv ? "update" : "remove") << std::endl;
@@ -975,6 +1002,9 @@ void Client::handleCommand_ShowFormSpec(NetworkPacket* pkt)
 
 	*pkt >> formname;
 
+	if (modsLoaded())
+		DfClientHooks::on_receiving_formspec(this, formname, formspec);
+
 	ClientEvent *event = new ClientEvent();
 	event->type = CE_SHOW_FORMSPEC;
 	// pointer is required as event is a struct only!
@@ -990,6 +1020,9 @@ void Client::handleCommand_SpawnParticle(NetworkPacket* pkt)
 
 	ParticleParameters p;
 	p.deSerialize(is, m_proto_ver);
+
+	if (modsLoaded())
+		DfClientHooks::on_spawn_particle(this, p);
 
 	ClientEvent *event = new ClientEvent();
 	event->type           = CE_SPAWN_PARTICLE;
@@ -1144,6 +1177,9 @@ void Client::handleCommand_AddParticleSpawner(NetworkPacket* pkt)
 		p.size.end = p.size.start;
 	}
 
+	if (modsLoaded())
+		DfClientHooks::on_receive_particlespawner(this, p, server_id, attached_id);
+
 	auto event = new ClientEvent();
 	event->type                            = CE_ADD_PARTICLESPAWNER;
 	event->add_particlespawner.p           = new ParticleSpawnerParameters(p);
@@ -1241,6 +1277,8 @@ void Client::handleCommand_HudAdd(NetworkPacket* pkt)
 	event->hudadd->text2     = text2;
 	event->hudadd->style     = style;
 	event->hudadd->hideable  = flags % 2;
+	if (modsLoaded())
+		DfClientHooks::on_hud_add(this, server_id, type, pos, name, scale, text, number, item, dir, align, offset, world_pos, size, z_index, text2, style, flags % 2);
 	m_client_event_queue.push(event);
 }
 
@@ -1253,6 +1291,8 @@ void Client::handleCommand_HudRemove(NetworkPacket* pkt)
 	ClientEvent *event = new ClientEvent();
 	event->type     = CE_HUDRM;
 	event->hudrm.id = server_id;
+	if (modsLoaded())
+		DfClientHooks::on_hud_remove(this, server_id);
 	m_client_event_queue.push(event);
 }
 
@@ -1301,6 +1341,9 @@ void Client::handleCommand_HudChange(NetworkPacket* pkt)
 			*pkt >> intdata;
 			break;
 	}
+
+	if (modsLoaded())
+		DfClientHooks::on_hud_change(this, server_id, static_cast<HudElementStat>(stat), sdata, v2fdata, v3fdata, intdata);
 
 	ClientEvent *event = new ClientEvent();
 	event->type                 = CE_HUDCHANGE;
@@ -1642,6 +1685,8 @@ void Client::handleCommand_UpdatePlayerList(NetworkPacket* pkt)
 			continue;
 		}
 	}
+	if (modsLoaded())
+		DfClientHooks::on_player_list(this, type, {});
 }
 
 void Client::handleCommand_SrpBytesSandB(NetworkPacket* pkt)
@@ -1926,4 +1971,6 @@ void Client::handleCommand_SetLighting(NetworkPacket *pkt)
 		// >= 5.16.0-dev
 		*pkt >> lighting.shadow_direction;
 	} while (0);
+	if (modsLoaded() && m_env.getLocalPlayer())
+		DfClientHooks::on_lighting(this, m_env.getLocalPlayer()->getLighting());
 }

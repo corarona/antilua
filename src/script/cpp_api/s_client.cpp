@@ -239,69 +239,6 @@ bool ScriptApiClient::on_inventory_open(Inventory *inventory)
 	return readParam<bool>(L, -1);
 }
 
-void ScriptApiClient::on_death()
-{
-	SCRIPTAPI_PRECHECKHEADER
-
-	lua_getglobal(L, "core");
-	lua_getfield(L, -1, "registered_on_death");
-	try {
-		runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
-	} catch (LuaError &e) {
-		getClient()->setFatalError(e);
-	}
-}
-
-bool ScriptApiClient::on_object_add(u16 id)
-{
-	SCRIPTAPI_PRECHECKHEADER
-
-	lua_getglobal(L, "core");
-	lua_getfield(L, -1, "registered_on_object_add");
-
-	push_objectRef(L, id);
-
-	try {
-		runCallbacks(1, RUN_CALLBACKS_MODE_OR_SC);
-	} catch (LuaError &e) {
-		getClient()->setFatalError(e);
-		return true;
-	}
-	return readParam<bool>(L, -1);
-}
-
-void ScriptApiClient::on_object_hp_change(u16 id)
-{
-	SCRIPTAPI_PRECHECKHEADER
-
-	lua_getglobal(L, "core");
-	lua_getfield(L, -1, "registered_on_object_hp_change");
-
-	push_objectRef(L, id);
-
-	try {
-		runCallbacks(1, RUN_CALLBACKS_MODE_OR_SC);
-	} catch (LuaError &e) {
-		getClient()->setFatalError(e);
-	}
-}
-
-void ScriptApiClient::on_object_properties_change(u16 id)
-{
-	SCRIPTAPI_PRECHECKHEADER
-
-	lua_getglobal(L, "core");
-	lua_getfield(L, -1, "registered_on_object_properties_change");
-
-	push_objectRef(L, id);
-
-	try {
-		runCallbacks(1, RUN_CALLBACKS_MODE_OR_SC);
-	} catch (LuaError &e) {
-		getClient()->setFatalError(e);
-	}
-}
-
 void ScriptApiClient::setEnv(ClientEnvironment *env)
 {
 	ScriptApiBase::setEnv(env);
