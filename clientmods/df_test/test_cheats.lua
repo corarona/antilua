@@ -6,7 +6,7 @@ function test_cheat_settings(T)
 		"airjump", "spider", "jetpack", "no_slow", "antislip",
 		"entity_speed", "antiknockback", "autodig", "fastdig",
 		"jesus", "fastplace", "autoplace", "instant_break",
-		"coords", "point_liquids", "spamclick",
+		"point_liquids", "spamclick",
 		"no_force_rotate", "freecam", "freelook", "xray", "fullbright",
 		"priv_bypass", "prevent_natural_damage", "no_hurt_cam",
 		"reach", "hud_flags_bypass", "float_above_parent",

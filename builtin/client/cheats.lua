@@ -23,7 +23,6 @@ core.cheats = {
 		["Fullbright"] = "fullbright",
 		["HUDBypass"] = "hud_flags_bypass",
 		["NoHurtCam"] = "no_hurt_cam",
-		["Coords"] = "coords",
 		["CheatHUD"] = "cheat_hud",
 		["EntityHitboxes"] = "enable_entity_esp",
 		["EntityWallhack"] = "enable_entity_wallhack",

@@ -114,7 +114,6 @@ static void set_df_default_settings()
 	settings->setDefault("fastplace", "false");
 	settings->setDefault("autoplace", "false");
 	settings->setDefault("instant_break", "false");
-	settings->setDefault("coords", "false");
 	settings->setDefault("point_liquids", "false");
 	settings->setDefault("spamclick", "false");
 	settings->setDefault("no_force_rotate", "false");
