@@ -11,6 +11,7 @@ local hud_wp
 local shown_huds = {}
 local lpos
 local sort_by_distance = false
+local filter_group = ""
 
 local WP_COLORS = {
 	{ name = "Green",  hex = "00ff00" },
@@ -58,6 +59,10 @@ local function color_key(name)
 	return stprefix .. tostring(name) .. "_color"
 end
 
+local function group_key(name)
+	return stprefix .. tostring(name) .. "_group"
+end
+
 function poi.get_color(name)
 	return storage:get_string(color_key(name))
 end
@@ -66,11 +71,22 @@ function poi.set_color(name, color)
 	storage:set_string(color_key(name), color)
 end
 
+function poi.get_group(name)
+	return storage:get_string(group_key(name))
+end
+
+function poi.set_group(name, group)
+	storage:set_string(group_key(name), group or "")
+end
+
 function poi.getwps()
 	local wp = {}
 	for name, _ in pairs(storage:to_table().fields) do
 		if name:sub(1, #stprefix) == stprefix then
-			table.insert(wp, name:sub(#stprefix + 1))
+			local short = name:sub(#stprefix + 1)
+			if not short:match("_ss$") and not short:match("_color$") and not short:match("_group$") then
+				table.insert(wp, short)
+			end
 		end
 	end
 	table.sort(wp)
@@ -95,6 +111,8 @@ end
 function poi.delete_waypoint(name)
 	storage:set_string(full_key(name), "")
 	storage:set_string(color_key(name), "")
+	storage:set_string(group_key(name), "")
+	storage:set_string(stprefix .. tostring(name) .. "_ss", "")
 end
 
 function poi.rename_waypoint(oldname, newname)
@@ -105,6 +123,10 @@ function poi.rename_waypoint(oldname, newname)
 		local col = poi.get_color(oldname)
 		if col ~= "" then
 			poi.set_color(newname, col)
+		end
+		local grp = poi.get_group(oldname)
+		if grp ~= "" then
+			poi.set_group(newname, grp)
 		end
 		poi.delete_waypoint(oldname)
 	end
@@ -127,7 +149,7 @@ end
 function poi.color_int(name)
 	local hex = poi.get_color(name)
 	if hex == "" then hex = "00ff00" end
-	return tonumber(hex .. "ff", 16) or 0x00ff00ff
+	return tonumber(hex, 16) or 0x00ff00
 end
 
 function poi.set_hud_wp(pos, title)
@@ -231,6 +253,7 @@ minetest.register_on_death(function()
 		poi.set_waypoint(pos, name)
 		poi.display(pos, name)
 		poi.set_color(name, "ff0000")
+		poi.set_group(name, "Death")
 		local max = tonumber(core.settings:get("auto_death_waypoint_max")) or 10
 		trim_death_waypoints(max)
 	end
@@ -276,6 +299,23 @@ local function get_screenshot(name)
 	return (ss ~= "") and ss or nil
 end
 
+local function get_unique_groups()
+	local groups = {}
+	for key, value in pairs(storage:to_table().fields) do
+		if key:sub(1, #stprefix) == stprefix and key:match("_group$") then
+			if value and value ~= "" then
+				groups[value] = true
+			end
+		end
+	end
+	local sorted = {}
+	for g in pairs(groups) do
+		table.insert(sorted, g)
+	end
+	table.sort(sorted)
+	return sorted
+end
+
 function poi.display_formspec()
 	local raw_wps = poi.getwps()
 	local parts = {}
@@ -287,8 +327,30 @@ function poi.display_formspec()
 	table.insert(parts, "bgcolor[#000000AA;false]")
 	table.insert(parts, "label[0.25,0.5;Waypoint list]")
 
-	-- Sort waypoints
+	-- Group filter dropdown
+	local groups = get_unique_groups()
+	local filter_items = {"All"}
+	for _, g in ipairs(groups) do
+		table.insert(filter_items, g)
+	end
+	local filter_sel = 1
+	for i, g in ipairs(filter_items) do
+		if g == filter_group then filter_sel = i end
+	end
+	table.insert(parts, "dropdown[3,0.25;2.5,0.5;group_filter;" .. table.concat(filter_items, ",") .. ";" .. filter_sel .. ";true]")
+
+	-- Filter waypoints by group
 	local waypoints = raw_wps
+	if filter_group ~= "" then
+		waypoints = {}
+		for _, name in ipairs(raw_wps) do
+			if poi.get_group(name) == filter_group then
+				table.insert(waypoints, name)
+			end
+		end
+	end
+
+	-- Sort waypoints
 	if sort_by_distance then
 		table.sort(waypoints, function(a, b)
 			return wp_distance(a) < wp_distance(b)
@@ -346,7 +408,7 @@ function poi.display_formspec()
 		for _, c in ipairs(WP_COLORS) do
 			table.insert(color_names, c.name)
 		end
-		table.insert(parts, "dropdown[3,7.5;1.8,0.5;wp_color;" .. table.concat(color_names, ",") .. ";" .. sel_idx .. "]")
+		table.insert(parts, "dropdown[3,7.5;1.8,0.5;wp_color;" .. table.concat(color_names, ",") .. ";" .. sel_idx .. ";true]")
 	end
 
 	table.insert(parts, "button[9,7.5;1.3,0.5;rename;Rename]")
@@ -360,6 +422,8 @@ function poi.display_formspec()
 				.. minetest.formspec_escape(pos.x .. ", " .. pos.y .. ", " .. pos.z)
 			table.insert(parts, "label[0.25,7.25;" .. label .. "]")
 		end
+		local cur_group = poi.get_group(selected_name)
+		table.insert(parts, "field[5,7.25;3.5,0.5;wp_group;Group;" .. minetest.formspec_escape(cur_group) .. "]")
 	end
 
 	-- Transport buttons
@@ -443,6 +507,14 @@ minetest.register_on_formspec_input(function(formname, fields)
 		return true
 	end
 
+	-- Textlist selection change (must come before other field checks,
+	-- because dropdown fields are always submitted and would short-circuit)
+	if fields.wp_list and name ~= selected_name then
+		selected_name = name
+		poi.display_formspec()
+		return true
+	end
+
 	-- Transport buttons
 	for _, v in ipairs(poi.registered_transports) do
 		if fields[v.name] then
@@ -459,20 +531,6 @@ minetest.register_on_formspec_input(function(formname, fields)
 		end
 	elseif fields.sort_toggle then
 		sort_by_distance = not sort_by_distance
-		poi.display_formspec()
-	elseif fields.wp_color then
-		local idx = tonumber(fields.wp_color)
-		if idx then
-			local c = WP_COLORS[idx]
-			if c then
-				poi.set_color(name, c.hex)
-				shown_huds = {}
-				if hud_wp then
-					minetest.localplayer:hud_remove(hud_wp)
-					hud_wp = nil
-				end
-			end
-		end
 		poi.display_formspec()
 	elseif fields.rename then
 		show_rename_fs(name)
@@ -495,9 +553,35 @@ minetest.register_on_formspec_input(function(formname, fields)
 		poi.display_formspec()
 	elseif fields.cancel then
 		poi.display_formspec()
-	elseif name ~= selected_name then
-		selected_name = name
+	elseif fields.key_enter_field == "wp_group" and fields.wp_group then
+		poi.set_group(selected_name, fields.wp_group)
 		poi.display_formspec()
+	elseif fields.wp_color then
+		local idx = tonumber(fields.wp_color)
+		if idx then
+			local c = WP_COLORS[idx]
+			if c then
+				poi.set_color(name, c.hex)
+				shown_huds = {}
+				if hud_wp then
+					minetest.localplayer:hud_remove(hud_wp)
+					hud_wp = nil
+				end
+			end
+		end
+		poi.display_formspec()
+	elseif fields.group_filter then
+		local filter_names = {"All"}
+		local groups = get_unique_groups()
+		for _, g in ipairs(groups) do
+			table.insert(filter_names, g)
+		end
+		local idx = tonumber(fields.group_filter)
+		if idx and filter_names[idx] then
+			local new_filter = filter_names[idx]
+			filter_group = (new_filter == "All") and "" or new_filter
+			poi.display_formspec()
+		end
 	end
 
 	return true
@@ -541,7 +625,7 @@ minetest.register_chatcommand("add_waypoint_here", {
 			name = param
 		else
 			local ts = os.date("%Y-%m-%d_%H-%M")
-			local node = minetest.get_node(vector.offset(pos, 0, -1, 0))
+			local node = minetest.get_node_or_nil(vector.offset(pos, 0, -1, 0))
 			local hint = (node and node.name:match(":(.+)$")) or "waypoint"
 			name = hint .. "_" .. ts
 		end
