@@ -400,7 +400,7 @@ public:
 
 	LocalClientState getState() { return m_state; }
 
-	void makeScreenshot();
+	std::string makeScreenshot();
 
 	inline void pushToChatQueue(ChatMessage *cec)
 	{

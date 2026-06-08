@@ -550,7 +550,17 @@ int ModApiClient::l_get_objects_inside_radius(lua_State *L)
 // make_screenshot()
 int ModApiClient::l_make_screenshot(lua_State *L)
 {
-	getClient(L)->makeScreenshot();
+	auto filename = getClient(L)->makeScreenshot();
+	if (!filename.empty()) {
+		// return just the basename (no path) for formspec use
+		auto pos = filename.rfind("/");
+		if (pos == std::string::npos)
+			pos = filename.rfind("\\");
+		if (pos != std::string::npos)
+			filename = filename.substr(pos + 1);
+		lua_pushstring(L, filename.c_str());
+		return 1;
+	}
 	return 0;
 }
 

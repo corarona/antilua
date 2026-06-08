@@ -105,6 +105,12 @@ std::vector<std::string> getTextureDirs()
 			auto clientmod_textures = fs::GetRecursiveDirs(clientmods_dir);
 			ret.insert(ret.end(), clientmod_textures.begin(), clientmod_textures.end());
 		}
+		// Also search the screenshots directory for waypoint thumbnails
+		std::string screenshot_dir = g_settings->get("screenshot_path");
+		if (!fs::IsPathAbsolute(screenshot_dir))
+			screenshot_dir = porting::path_user + DIR_DELIM + screenshot_dir;
+		if (fs::IsDir(screenshot_dir))
+			ret.push_back(screenshot_dir);
 		g_texturedirs_cache.set(ret);
 	}
 	return ret;

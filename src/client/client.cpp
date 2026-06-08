@@ -2012,15 +2012,14 @@ float Client::getCurRate()
 			m_con->getLocalStat(con::CUR_DL_RATE));
 }
 
-void Client::makeScreenshot()
+std::string Client::makeScreenshot()
 {
-	video::IVideoDriver *driver = m_rendering_engine->get_video_driver();
 	std::string filename;
-	if (takeScreenshot(driver, filename)) {
-		std::string msg = fmtgettext("Saved screenshot to \"%s\"", filename.c_str());
-		pushToChatQueue(new ChatMessage(CHATMESSAGE_TYPE_SYSTEM,
-				utf8_to_wide(msg)));
+	if (takeScreenshot(m_rendering_engine->get_video_driver(), filename)) {
+		clearTextureNameCache();
+		return filename;
 	}
+	return "";
 }
 
 void Client::pushToEventQueue(ClientEvent *event)

@@ -81,6 +81,10 @@ function poi.set_waypoint(pos, name)
 	pos = ws.pos_to_string(pos)
 	if not pos then return end
 	storage:set_string(full_key(name), pos)
+	local ss = core.make_screenshot()
+	if ss and ss ~= "" then
+		storage:set_string(stprefix .. tostring(name) .. "_ss", ss)
+	end
 	return true
 end
 
@@ -267,12 +271,17 @@ local function wp_distance(name)
 	return vector.distance(lp, pos)
 end
 
+local function get_screenshot(name)
+	local ss = storage:get_string(stprefix .. tostring(name) .. "_ss")
+	return (ss ~= "") and ss or nil
+end
+
 function poi.display_formspec()
 	local raw_wps = poi.getwps()
 	local parts = {}
 
 	table.insert(parts, "formspec_version[4]")
-	table.insert(parts, "size[12,10]")
+	table.insert(parts, "size[13.5,10]")
 	table.insert(parts, "no_prepend[]")
 	table.insert(parts, "background9[1,1;1,1;blank.png;true;7]")
 	table.insert(parts, "bgcolor[#000000AA;false]")
@@ -286,7 +295,7 @@ function poi.display_formspec()
 		end)
 	end
 
-	-- Build textlist from waypoints
+	-- Build textlist from waypoints (left side)
 	formspec_list = {}
 	local tl_entries = {}
 	for id, name in ipairs(waypoints) do
@@ -300,7 +309,7 @@ function poi.display_formspec()
 		end
 		table.insert(tl_entries, "##" .. minetest.formspec_escape(entry))
 	end
-	local tl = "textlist[0.25,0.75;11.5,6;wp_list;"
+	local tl = "textlist[0.25,0.75;8.5,6;wp_list;"
 	tl = tl .. table.concat(tl_entries, ",")
 	local sel = 1
 	if not selected_name and #waypoints > 0 then
@@ -311,6 +320,14 @@ function poi.display_formspec()
 	end
 	tl = tl .. ";" .. sel .. "]"
 	table.insert(parts, tl)
+
+	-- Screenshot thumbnail (right side)
+	if selected_name then
+		local ss = get_screenshot(selected_name)
+		if ss then
+			table.insert(parts, "image[9.25,0.75;3.5,2.5;" .. ss .. "]")
+		end
+	end
 
 	-- Action buttons
 	local sort_label = sort_by_distance and "Dist" or "A-Z"
@@ -343,9 +360,6 @@ function poi.display_formspec()
 				.. minetest.formspec_escape(pos.x .. ", " .. pos.y .. ", " .. pos.z)
 			table.insert(parts, "label[0.25,7.25;" .. label .. "]")
 		end
-	else
-		table.insert(parts, "button_exit[0,10.5;5.25,0.5;quit;Close dialog]")
-		table.insert(parts, "label[0,6.75;No waypoints. Add one with \".wa\".]")
 	end
 
 	-- Transport buttons
