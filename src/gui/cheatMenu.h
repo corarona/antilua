@@ -52,7 +52,6 @@ struct CheatPanel {
 	bool pinned = false;
 	bool detached = false;
 	bool keyboard_focus = false;
-	bool hover_close = false;
 	bool hover_title = false;
 	bool hover_pin = false;
 	bool hover_focus = false;
@@ -71,6 +70,11 @@ public:
 
 	void handleMouse(v2s32 pos, bool left_down);
 	void onLayerClosed();
+
+	void createCategoryPanels();
+	void autoTilePanels(v2u32 screen_size);
+	void snapPanel(int idx);
+	bool overlapsAny(int idx, s32 tx, s32 ty);
 
 	void selectUp();
 	void selectDown();
@@ -115,6 +119,10 @@ private:
 	bool m_mouse_left_prev = false;
 	int m_drag_panel = -1;
 	s32 m_drag_off_x = 0, m_drag_off_y = 0;
+
+	// State
+	v2u32 m_screen_size{0, 0};
+	bool m_categories_initialized = false;
 
 	// Tooltip state
 	std::string m_tooltip_text;

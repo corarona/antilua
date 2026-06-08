@@ -140,5 +140,5 @@ lib/irrlichtmt
 
 # Generated mod storage database
 client/mod_storage.sqlite
+client/mod_storage.sqlite-journal
 .opencode/
-dragon2.png

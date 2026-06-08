@@ -125,7 +125,6 @@ static void drawText(gui::IGUIFont *font, const std::string &text, s32 x, s32 y,
 	font->draw(utf8_to_wide(text).c_str(), r, color, false, false);
 }
 
-static bool isMainPanel(const CheatPanel &p) { return p.id == "_categories"; }
 static bool isCatPanel(const CheatPanel &p) { return p.id.find("_cat_") == 0; }
 void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 mouse_pos)
 {
@@ -137,9 +136,7 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 
 	// Calculate height
 	s32 h = panel.title_h;
-	if (isMainPanel(panel)) {
-		h += (s32)script->m_cheat_categories.size() * (m_entry_height + m_gap);
-	} else if (isCatPanel(panel)) {
+	if (isCatPanel(panel)) {
 		h += (s32)script->m_cheat_categories[panel.selected_category]->m_cheats.size() * (m_entry_height + m_gap);
 	}
 	panel.h = h;
@@ -159,18 +156,8 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 
 	// Title text
 	std::string title;
-	if (isMainPanel(panel)) title = "Cheat Menu";
-	else if (isCatPanel(panel)) title = script->m_cheat_categories[panel.selected_category]->m_name;
+	if (isCatPanel(panel)) title = script->m_cheat_categories[panel.selected_category]->m_name;
 	drawText(m_font, title, x + 5, y + (panel.title_h - m_fontsize.Y) / 2, m_font_color);
-
-	// Close button (X) — only for non-main panels
-	if (!isMainPanel(panel)) {
-		s32 cx = x + w - 18;
-		panel.hover_close = point_in_rect(mouse_pos.X, mouse_pos.Y, cx, y, 16, panel.title_h);
-		driver->draw2DRectangle(panel.hover_close ? video::SColor(220, 180, 50, 50) : video::SColor(180, 80, 40, 40),
-			core::rect<s32>(cx, y, cx + 16, y + panel.title_h));
-		drawText(m_font, "\u2715", cx + 3, y + 4, video::SColor(255, 255, 255, 255));
-	}
 
 	// Pin button
 	s32 pin_x = x + w - 56;
@@ -198,20 +185,7 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 
 	int iy = y + panel.title_h + m_gap;
 
-	if (isMainPanel(panel)) {
-		int ci = 0;
-		for (auto &cat : script->m_cheat_categories) {
-			if (point_in_rect(mouse_pos.X, mouse_pos.Y, x, iy, w, m_entry_height))
-				panel.selected_category = ci;
-			bool sel = (ci == panel.selected_category);
-			video::SColor bg = sel ? m_active_bg_color : ((ci % 2 == 0) ? m_item_bg : m_bg_color);
-			driver->draw2DRectangle(bg, core::rect<s32>(x + 1, iy, x + w - 1, iy + m_entry_height));
-			drawText(m_font, "> " + cat->m_name, x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,
-				sel ? m_selected_font_color : m_font_color);
-			iy += m_entry_height + m_gap;
-			ci++;
-		}
-	} else if (isCatPanel(panel)) {
+	if (isCatPanel(panel)) {
 		int chi = 0;
 		if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 			for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
@@ -329,13 +303,12 @@ void CheatMenu::drawPanels(video::IVideoDriver *driver, v2s32 mouse_pos, bool sh
 {
 	CHEAT_MENU_GET_SCRIPTPTR
 
-	// Ensure main menu panel exists
-	if (m_panels.empty()) {
-		CheatPanel cp;
-		cp.id = "_categories";
-		cp.x = 10; cp.y = 60;
-		loadPanelPosition(cp);
-		m_panels.push_back(cp);
+	m_screen_size = driver->getScreenSize();
+
+	if (!m_categories_initialized) {
+		createCategoryPanels();
+		autoTilePanels(m_screen_size);
+		m_categories_initialized = true;
 	}
 
 	for (auto &panel : m_panels)
@@ -344,10 +317,148 @@ void CheatMenu::drawPanels(video::IVideoDriver *driver, v2s32 mouse_pos, bool sh
 
 void CheatMenu::drawPinned(video::IVideoDriver *driver, v2s32 mouse_pos)
 {
+	m_screen_size = driver->getScreenSize();
 	for (auto &panel : m_panels) {
 		if (panel.pinned)
 			drawPanel(driver, panel, mouse_pos);
 	}
+}
+
+void CheatMenu::createCategoryPanels()
+{
+	m_panels.clear();
+	CHEAT_MENU_GET_SCRIPTPTR
+	for (size_t i = 0; i < script->m_cheat_categories.size(); i++) {
+		CheatPanel cp;
+		cp.id = "_cat_" + std::to_string(i);
+		cp.selected_category = (int)i;
+		m_panels.push_back(cp);
+	}
+}
+
+void CheatMenu::autoTilePanels(v2u32 screen_size)
+{
+	CHEAT_MENU_GET_SCRIPTPTR
+
+	// Pre-calculate each panel's actual height
+	for (size_t i = 0; i < m_panels.size(); i++) {
+		s32 h = m_panels[i].title_h;
+		int cat = m_panels[i].selected_category;
+		if (cat >= 0 && (size_t)cat < script->m_cheat_categories.size())
+			h += (s32)script->m_cheat_categories[cat]->m_cheats.size() * (m_entry_height + m_gap);
+		m_panels[i].h = h;
+	}
+
+	s32 panel_w = m_entry_width + 20;
+	s32 cols = std::max(1, (s32)((screen_size.X - 20) / panel_w));
+	s32 x = 10, y = 60, row_max_h = 0;
+	for (size_t i = 0; i < m_panels.size(); i++) {
+		m_panels[i].x = x;
+		m_panels[i].y = y;
+		row_max_h = std::max(row_max_h, m_panels[i].h);
+		x += panel_w + m_gap;
+		if ((i + 1) % cols == 0) {
+			x = 10;
+			y += row_max_h + m_gap;
+			row_max_h = 0;
+		}
+	}
+	// Apply saved positions only where they don't cause overlap
+	for (size_t i = 0; i < m_panels.size(); i++) {
+		CheatPanel saved;
+		saved.id = m_panels[i].id;
+		loadPanelPosition(saved);
+		if (saved.x == 0 && saved.y == 0)
+			continue;
+		bool overlaps = false;
+		for (size_t j = 0; j < m_panels.size(); j++) {
+			if (i == j) continue;
+			auto &op = m_panels[j];
+			if (saved.x + m_panels[i].w > op.x && saved.x < op.x + op.w &&
+					saved.y + m_panels[i].h > op.y && saved.y < op.y + op.h) {
+				overlaps = true;
+				break;
+			}
+		}
+		if (!overlaps) {
+			m_panels[i].x = saved.x;
+			m_panels[i].y = saved.y;
+			m_panels[i].detached = true;
+		}
+	}
+}
+
+bool CheatMenu::overlapsAny(int idx, s32 tx, s32 ty)
+{
+	s32 tw = m_panels[idx].w;
+	s32 th = m_panels[idx].h;
+	for (size_t i = 0; i < m_panels.size(); i++) {
+		if ((s32)i == idx) continue;
+		auto &p = m_panels[i];
+		if (tx + tw > p.x && tx < p.x + p.w && ty + th > p.y && ty < p.y + p.h)
+			return true;
+	}
+	return false;
+}
+
+void CheatMenu::snapPanel(int idx)
+{
+	auto &panel = m_panels[idx];
+	s32 ox = panel.x, oy = panel.y;
+	s32 pw = panel.w, ph = panel.h;
+	auto &ss = m_screen_size;
+	s32 margin = 10;
+
+	// Try original position first
+	if (!overlapsAny(idx, ox, oy))
+		return;
+
+	// Scan positions in expanding spiral from drop point
+	const s32 step = 5;
+	s32 x = ox, y = oy;
+	for (s32 radius = step; radius < (s32)std::max(ss.X, ss.Y); radius += step) {
+		// Try right
+		x = ox + radius;
+		y = oy;
+		if (x + pw < (s32)ss.X - margin && !overlapsAny(idx, x, y)) {
+			panel.x = x;
+			panel.y = y;
+			panel.detached = true;
+			return;
+		}
+		// Try down
+		x = ox;
+		y = oy + radius;
+		if (y + ph < (s32)ss.Y - margin && !overlapsAny(idx, x, y)) {
+			panel.x = x;
+			panel.y = y;
+			panel.detached = true;
+			return;
+		}
+		// Try left
+		x = ox - radius;
+		y = oy;
+		if (x >= margin && !overlapsAny(idx, x, y)) {
+			panel.x = x;
+			panel.y = y;
+			panel.detached = true;
+			return;
+		}
+		// Try up
+		x = ox;
+		y = oy - radius;
+		if (y >= 60 && !overlapsAny(idx, x, y)) {
+			panel.x = x;
+			panel.y = y;
+			panel.detached = true;
+			return;
+		}
+	}
+
+	// Fallback: reset to auto-tile position
+	panel.x = 10 + idx * 30;
+	panel.y = 60 + idx * 30;
+	panel.detached = true;
 }
 
 void CheatMenu::handleMouse(v2s32 pos, bool left_down)
@@ -361,12 +472,14 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 
 	// Dragging
 	if (m_drag_panel >= 0 && (size_t)m_drag_panel < m_panels.size()) {
-		if (released) {
-			m_drag_panel = -1;
-			savePanelPositions();
-		} else if (left_down) {
+		if (left_down) {
 			m_panels[m_drag_panel].x = pos.X - m_drag_off_x;
 			m_panels[m_drag_panel].y = pos.Y - m_drag_off_y;
+		}
+		if (released) {
+			snapPanel(m_drag_panel);
+			m_drag_panel = -1;
+			savePanelPositions();
 		}
 		return;
 	}
@@ -383,15 +496,6 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 
 		// Title bar clicks
 		if (point_in_rect(pos.X, pos.Y, x, y, w, panel.title_h)) {
-			// Close button (non-main panels)
-			if (!isMainPanel(panel)) {
-				s32 cx = x + w - 18;
-				if (point_in_rect(pos.X, pos.Y, cx, y, 16, panel.title_h)) {
-					g_settings->set("cheat_panel_" + panel.id, "");
-					m_panels.erase(m_panels.begin() + (s32)pi);
-					return;
-				}
-			}
 			// Pin button
 			s32 pin_x = x + w - 56;
 			if (point_in_rect(pos.X, pos.Y, pin_x, y, 16, panel.title_h)) {
@@ -425,33 +529,7 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 		// Item area
 		int iy = y + panel.title_h + m_gap;
 
-		if (isMainPanel(panel)) {
-			CHEAT_MENU_GET_SCRIPTPTR
-			int ci = 0;
-			for (size_t cii = 0; cii < script->m_cheat_categories.size(); cii++) {
-				if (point_in_rect(pos.X, pos.Y, x, iy, w, m_entry_height)) {
-					panel.selected_category = ci;
-					std::string cid = "_cat_" + std::to_string(panel.selected_category);
-					// Reuse existing panel if already open
-					for (auto &p : m_panels)
-						if (p.id == cid) return;
-					// Close non-pinned child panels, keep pinned
-					for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
-						if (isCatPanel(m_panels[ei]) && !m_panels[ei].detached)
-							m_panels.erase(m_panels.begin() + ei);
-					CheatPanel cp;
-					cp.id = cid;
-					cp.selected_category = ci;
-					cp.x = panel.x + panel.w + 10;
-					cp.y = panel.y;
-					loadPanelPosition(cp);
-					m_panels.push_back(cp);
-					return;
-				}
-				iy += m_entry_height + m_gap;
-				ci++;
-			}
-		} else if (isCatPanel(panel)) {
+		if (isCatPanel(panel)) {
 			CHEAT_MENU_GET_SCRIPTPTR
 			int chi = 0;
 			if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
@@ -478,6 +556,12 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 void CheatMenu::onLayerClosed()
 {
 	m_drag_panel = -1;
+	m_categories_initialized = false;
+	savePanelPositions();
+	// Remove non-pinned cat panels
+	for (s32 i = (s32)m_panels.size() - 1; i >= 0; i--)
+		if (isCatPanel(m_panels[i]) && !m_panels[i].pinned)
+			m_panels.erase(m_panels.begin() + i);
 }
 
 void CheatMenu::drawHUD(video::IVideoDriver *driver, double dtime)
@@ -523,7 +607,6 @@ void CheatMenu::drawHUD(video::IVideoDriver *driver, double dtime)
 void CheatMenu::selectUp()
 {
 	CHEAT_MENU_GET_SCRIPTPTR
-	// Find focused panel
 	CheatPanel *panel = nullptr;
 	for (auto &p : m_panels) if (p.keyboard_focus) { panel = &p; break; }
 	if (!panel && !m_panels.empty()) panel = &m_panels[0];
@@ -533,10 +616,6 @@ void CheatMenu::selectUp()
 		int max = (int)script->m_cheat_categories[panel->selected_category]->m_cheats.size() - 1;
 		panel->selected_cheat--;
 		if (panel->selected_cheat < 0) panel->selected_cheat = max;
-	} else if (isMainPanel(*panel)) {
-		int max = (int)script->m_cheat_categories.size() - 1;
-		panel->selected_category--;
-		if (panel->selected_category < 0) panel->selected_category = max;
 	}
 }
 
@@ -552,49 +631,41 @@ void CheatMenu::selectDown()
 		int max = (int)script->m_cheat_categories[panel->selected_category]->m_cheats.size() - 1;
 		panel->selected_cheat++;
 		if (panel->selected_cheat > max) panel->selected_cheat = 0;
-	} else if (isMainPanel(*panel)) {
-		int max = (int)script->m_cheat_categories.size() - 1;
-		panel->selected_category++;
-		if (panel->selected_category > max) panel->selected_category = 0;
 	}
 }
 
 void CheatMenu::selectRight()
 {
-	CHEAT_MENU_GET_SCRIPTPTR
-	CheatPanel *panel = nullptr;
-	for (auto &p : m_panels) if (p.keyboard_focus) { panel = &p; break; }
-	if (!panel && !m_panels.empty()) panel = &m_panels[0];
-	if (!panel) return;
-
-	if (isMainPanel(*panel)) {
-		std::string cid = "_cat_" + std::to_string(panel->selected_category);
-		for (auto &p : m_panels)
-			if (p.id == cid) return;
-		for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
-			if (isCatPanel(m_panels[ei]) && !m_panels[ei].detached)
-				m_panels.erase(m_panels.begin() + ei);
-		CheatPanel cp;
-		cp.id = cid;
-		cp.selected_category = panel->selected_category;
-		cp.x = panel->x + panel->w + 10;
-		cp.y = panel->y;
-		loadPanelPosition(cp);
-		m_panels.push_back(cp);
+	if (m_panels.empty()) return;
+	// Cycle keyboard focus to the next panel
+	int focused = -1;
+	for (size_t i = 0; i < m_panels.size(); i++) {
+		if (m_panels[i].keyboard_focus) {
+			focused = (int)i;
+			break;
+		}
 	}
+	if (focused >= 0)
+		m_panels[focused].keyboard_focus = false;
+	int next = (focused + 1) % (int)m_panels.size();
+	m_panels[next].keyboard_focus = true;
 }
 
 void CheatMenu::selectLeft()
 {
+	if (m_panels.empty()) return;
+	// Cycle keyboard focus to the previous panel
+	int focused = -1;
 	for (size_t i = 0; i < m_panels.size(); i++) {
-		auto &p = m_panels[i];
-		if (p.keyboard_focus || (i == 0 && m_panels.size() > 1)) {
-			if (isCatPanel(p)) {
-				m_panels.erase(m_panels.begin() + (s32)i);
-				return;
-			}
+		if (m_panels[i].keyboard_focus) {
+			focused = (int)i;
+			break;
 		}
 	}
+	if (focused >= 0)
+		m_panels[focused].keyboard_focus = false;
+	int prev = (focused - 1 + (int)m_panels.size()) % (int)m_panels.size();
+	m_panels[prev].keyboard_focus = true;
 }
 
 void CheatMenu::selectConfirm()
@@ -605,21 +676,7 @@ void CheatMenu::selectConfirm()
 	if (!panel && !m_panels.empty()) panel = &m_panels[0];
 	if (!panel) return;
 
-	if (isMainPanel(*panel)) {
-		std::string cid = "_cat_" + std::to_string(panel->selected_category);
-		for (auto &p : m_panels)
-			if (p.id == cid) return;
-		for (s32 ei = (s32)m_panels.size() - 1; ei >= 0; ei--)
-			if (isCatPanel(m_panels[ei]) && !m_panels[ei].detached)
-				m_panels.erase(m_panels.begin() + ei);
-		CheatPanel cp;
-		cp.id = cid;
-		cp.selected_category = panel->selected_category;
-		cp.x = panel->x + panel->w + 10;
-		cp.y = panel->y;
-		loadPanelPosition(cp);
-		m_panels.push_back(cp);
-	} else if (isCatPanel(*panel)) {
+	if (isCatPanel(*panel)) {
 		if (panel->selected_category >= 0 && (size_t)panel->selected_category < script->m_cheat_categories.size()) {
 			auto &cat = script->m_cheat_categories[panel->selected_category];
 			if (panel->selected_cheat >= 0 && (size_t)panel->selected_cheat < cat->m_cheats.size()) {
