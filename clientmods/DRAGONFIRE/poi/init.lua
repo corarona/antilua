@@ -437,3 +437,23 @@ minetest.register_chatcommand("dump_pois",{
 
 core.register_cheat("ShowNames", { category = "Render", setting = "poi_shownames" })
 core.register_cheat("POIs", { category = "Misc", func = poi.display_formspec })
+
+--
+-- Auto-Screenshot
+--
+
+core.register_on_death(function()
+	if not core.settings:get_bool("auto_screenshot") then
+		return
+	end
+	core.after(0.5, function()
+		core.make_screenshot()
+		ws.notify("Screenshot saved", ws.NOTIFY_INFO, {toast = false})
+	end)
+end)
+
+core.register_cheat("AutoScreenshot", {
+	category = "Player",
+	setting = "auto_screenshot",
+	description = "Auto-screenshot on death",
+})

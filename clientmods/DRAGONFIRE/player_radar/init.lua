@@ -114,3 +114,92 @@ core.register_cheat("PlayerRadar", {
 	setting = "player_radar",
 	description = "Compass-style HUD bar showing nearby player directions and distances",
 })
+
+--
+-- Light Overlay
+--
+
+local light_hud_id = nil
+local light_etime = 0
+local light_range = 8
+
+local function update_light_overlay()
+	if not core.settings:get_bool("light_overlay") then
+		if light_hud_id then
+			minetest.localplayer:hud_remove(light_hud_id)
+			light_hud_id = nil
+		end
+		return
+	end
+
+	local lp = minetest.localplayer
+	if not lp then return end
+
+	local pos = lp:get_pos()
+	if not pos then return end
+
+	local low, medium, high = 0, 0, 0
+	local px, pz = math.floor(pos.x + 0.5), math.floor(pos.z + 0.5)
+	local py = math.floor(pos.y + 0.5)
+
+	for dx = -light_range, light_range do
+		for dz = -light_range, light_range do
+			local light = core.get_node_light({ x = px + dx, y = py, z = pz + dz })
+			if light then
+				if light < 7 then low = low + 1
+				elseif light < 11 then medium = medium + 1
+				else high = high + 1 end
+			end
+		end
+	end
+
+	local total = low + medium + high
+	if total == 0 then return end
+
+	local pct_low = math.floor(low / total * 20)
+	local pct_med = math.floor(medium / total * 20)
+	local pct_high = 20 - pct_low - pct_med
+
+	local bars = string.rep("#", pct_high) .. string.rep("=", pct_med) .. string.rep(".", pct_low)
+	if #bars < 20 then
+		bars = bars .. string.rep(" ", 20 - #bars)
+	end
+
+	local text = string.format("Light: #00ff00%s#ffff00%s#ff4444%s  #00ff00%d#ffff00 %d#ff4444 %d",
+		string.rep("|", pct_high), string.rep("|", pct_med), string.rep("|", pct_low),
+		high, medium, low)
+
+	if light_hud_id then
+		minetest.localplayer:hud_change(light_hud_id, "text", text)
+	else
+		light_hud_id = minetest.localplayer:hud_add({
+			hud_elem_type = "text",
+			position = {x = 0.5, y = 0.09},
+			alignment = {x = 1, y = 0},
+			offset = {x = 0, y = 0},
+			text = text,
+			number = 0xffffff,
+			scale = {x = 1.5, y = 1.5},
+		})
+	end
+end
+
+minetest.register_globalstep(function(dtime)
+	if not core.settings:get_bool("light_overlay") then
+		if light_hud_id then
+			minetest.localplayer:hud_remove(light_hud_id)
+			light_hud_id = nil
+		end
+		return
+	end
+	light_etime = light_etime + dtime
+	if light_etime < 0.5 then return end
+	light_etime = 0
+	update_light_overlay()
+end)
+
+core.register_cheat("LightOverlay", {
+	category = "Render",
+	setting = "light_overlay",
+	description = "Show nearby light level distribution",
+})

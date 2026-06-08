@@ -72,3 +72,65 @@ core.registered_chatcommands["stats"] = {
 		return true
 	end,
 }
+
+--
+-- Chat Alerts
+--
+
+local alert_keywords = {}
+if nlist and nlist.get then
+	alert_keywords = nlist.get("chat_alert_keywords")
+end
+
+core.register_on_receiving_chat_message(function(message)
+	if not core.settings:get_bool("chat_alerts") then
+		return nil
+	end
+	local stripped = core.strip_colors(message)
+	for _, kw in ipairs(alert_keywords) do
+		if stripped:lower():find(kw:lower()) then
+			ws.notify("Chat alert: " .. kw, ws.NOTIFY_WARNING)
+			return core.colorize("#ffff00", stripped)
+		end
+	end
+	return nil
+end)
+
+core.register_cheat("ChatAlerts", {
+	category = "Social",
+	setting = "chat_alerts",
+	description = "Highlight and notify on chat keywords",
+})
+
+--
+-- Name Colorizer
+--
+
+local name_colors = {}
+if nlist and nlist.get then
+	name_colors = nlist.get("name_colors")
+end
+
+core.register_on_receiving_chat_message(function(message)
+	if not core.settings:get_bool("name_colorizer") then
+		return nil
+	end
+	local result = message
+	for _, entry in ipairs(name_colors) do
+		local name, color = entry:match("^(.+)=#(%x+)$")
+		if name and color then
+			result = result:gsub("<" .. name .. ">", "<" .. core.colorize("#" .. color, name) .. ">")
+			result = result:gsub("(" .. name .. ")", "(" .. core.colorize("#" .. color, name) .. ")")
+		end
+	end
+	if result ~= message then
+		return result
+	end
+	return nil
+end)
+
+core.register_cheat("NameColorizer", {
+	category = "Social",
+	setting = "name_colorizer",
+	description = "Colorize player names in chat",
+})

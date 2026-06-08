@@ -288,3 +288,84 @@ core.register_cheat("ChestStealer", {
 	setting = "chest_stealer",
 	description = "Auto-steal all items when opening a container",
 })
+
+--
+-- Auto-Torch
+--
+
+local torch_items = { "default:torch", "mcl_torches:torch" }
+local torch_threshold = 7
+
+if nlist and nlist.get then
+	local custom = nlist.get("auto_torch_items")
+	if #custom > 0 then
+		torch_items = custom
+	end
+end
+
+local torch_etime = 0
+
+minetest.register_globalstep(function(dtime)
+	if not core.settings:get_bool("auto_torch") then
+		return
+	end
+	local player = minetest.localplayer
+	if not player then return end
+	if not player:is_touching_ground() then return end
+
+	torch_etime = torch_etime + dtime
+	if torch_etime < 0.5 then return end
+	torch_etime = 0
+
+	local pos = player:get_pos()
+	if not pos then return end
+
+	local light = core.get_node_light(vector.offset(pos, 0, 1, 0))
+	if not light or light >= torch_threshold then return end
+
+	for _, item in ipairs(torch_items) do
+		local idx = core.find_item(item)
+		if idx then
+			core.switch_to_item(item)
+			local below = { x = pos.x, y = math.floor(pos.y) - 1, z = pos.z }
+			ws.place(below)
+			return
+		end
+	end
+end)
+
+core.register_cheat("AutoTorch", {
+	category = "Place",
+	setting = "auto_torch",
+	description = "Auto-place light source in dark areas",
+})
+
+--
+-- Auto-Sort
+--
+
+core.register_cheat("AutoSort", { category = "Inventory", func = function()
+	local inv = core.get_inventory("current_player")
+	if not inv or not inv.main then return end
+
+	local items = {}
+	for i, stack in ipairs(inv.main) do
+		if not stack:is_empty() then
+			table.insert(items, { slot = i, stack = stack })
+		end
+	end
+
+	table.sort(items, function(a, b)
+		if a.stack:get_name() == b.stack:get_name() then
+			return a.slot < b.slot
+		end
+		return a.stack:get_name() < b.stack:get_name()
+	end)
+
+	for target_slot, entry in ipairs(items) do
+		if entry.slot ~= target_slot then
+			ws.move_stack("current_player", "main", entry.slot,
+				"current_player", "main", target_slot, entry.stack:get_count())
+		end
+	end
+end, setting = "auto_sort" })
