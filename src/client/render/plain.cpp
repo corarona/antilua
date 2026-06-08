@@ -102,8 +102,6 @@ void DrawTracersAndESP::drawWallhackBox(PipelineContext &context, GenericCAO *ca
 
 	bool occluded = isOccluded(env, world_camera_pos, world_entity_pos);
 
-	video::IVideoDriver *driver = context.device->getVideoDriver();
-
 	// For occluded entities: render through walls by calling the scene node's
 	// own render() with temporarily overridden depth settings.
 	// This preserves animations, bone transforms, and hardware skinning.

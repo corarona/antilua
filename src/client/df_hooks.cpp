@@ -81,11 +81,12 @@ std::string on_receiving_inventory_form(Client *client,
 	return "";
 }
 
-void on_open_nodemeta_form(Client *client, v3s16 pos,
+bool on_open_nodemeta_form(Client *client, v3s16 pos,
 		const std::string &formspec)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_open_nodemeta_form(pos, formspec);
+		return client->getScript()->on_open_nodemeta_form(pos, formspec);
+	return false;
 }
 
 // ---------------------------------------------------------------------------

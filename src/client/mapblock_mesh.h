@@ -51,6 +51,8 @@ struct MeshMakeData
 
 	const NodeDefManager *m_nodedef;
 
+	bool m_use_shaders = true;
+
 	MeshMakeData(const NodeDefManager *ndef, u16 side_lingth, MeshGrid mesh_grid);
 
 	/*

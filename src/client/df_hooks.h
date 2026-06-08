@@ -47,7 +47,7 @@ void on_detached_inventory_update(Client *client,
 std::string on_receiving_inventory_form(Client *client,
 		const std::string &formspec);
 
-void on_open_nodemeta_form(Client *client, v3s16 pos,
+bool on_open_nodemeta_form(Client *client, v3s16 pos,
 		const std::string &formspec);
 
 void on_death(Client *client);

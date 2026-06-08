@@ -280,7 +280,7 @@ void CheatMenu::drawPanel(video::IVideoDriver *driver, CheatPanel &panel, v2s32 
 			if (p.selected_category < 0 || (size_t)p.selected_category >= script->m_cheat_categories.size())
 				continue;
 			int iy2 = p.y + p.title_h + m_gap;
-			for (auto &ch : script->m_cheat_categories[p.selected_category]->m_cheats) {
+			for ([[maybe_unused]] auto &ch : script->m_cheat_categories[p.selected_category]->m_cheats) {
 				if (point_in_rect(mouse_pos.X, mouse_pos.Y, p.x, iy2, p.w, m_entry_height)) {
 					hovering = true;
 					break;

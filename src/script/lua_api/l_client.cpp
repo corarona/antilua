@@ -507,7 +507,7 @@ int ModApiClient::l_set_keypress(lua_State *L)
 	std::string setting_name = "keymap_" + readParam<std::string>(L, 1);
 	bool pressed = lua_isboolean(L, 2) && readParam<bool>(L, 2);
 	try {
-		const auto &keylist = getKeySetting(setting_name.c_str());
+		const auto keylist = getKeySetting(setting_name.c_str());
 		KeyPress keyCode = keylist.empty() ? KeyPress() : keylist[0];
 		if (pressed)
 			g_game->getInput()->setKeypress(keyCode);

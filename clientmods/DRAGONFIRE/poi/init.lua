@@ -101,7 +101,8 @@ local function update_speed() --to be called once a second by globalstep to get 
 end
 
 minetest.register_on_death(function()
-	if minetest.localplayer then
+	if not minetest.localplayer then return end
+	if core.settings:get_bool("auto_death_waypoint", true) then
 		local name = 'Death waypoint'
 		local pos  = minetest.localplayer:get_pos()
 		poi.death_pos = vector.new(pos)
@@ -109,20 +110,25 @@ minetest.register_on_death(function()
 		poi.last_name = name
 		poi.set_waypoint(pos,name)
 		poi.display(pos,name)
-		if minetest.settings:get_bool("death_tp") then
-			minetest.after(0.5,function()
-				minetest.localplayer:set_pos(poi.death_pos)
-				core.after(0.1, function()
-					local n = core.get_node_or_nil(poi.death_pos)
-					if n and n.name == "bones:bones" then
-						ws.dig_node(poi.death_pos())
-					end
-				end)
+	end
+	if minetest.settings:get_bool("death_tp") then
+		minetest.after(0.5,function()
+			minetest.localplayer:set_pos(poi.death_pos)
+			core.after(0.1, function()
+				local n = core.get_node_or_nil(poi.death_pos)
+				if n and n.name == "bones:bones" then
+					ws.dig_node(poi.death_pos())
+				end
 			end)
-		end
+		end)
 	end
 end)
 
+core.register_cheat("DeathWaypoints", {
+	category = "Player",
+	setting = "auto_death_waypoint",
+	description = "Auto-create a waypoint at death location",
+})
 ws.rg("DeathTP","Player","death_tp",function()end,function()end,function()end,{"autorespawn"})
 
 function poi.set_hud_wp(pos, title)
