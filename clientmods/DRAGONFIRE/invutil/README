@@ -1,8 +1,0 @@
-# invutil
-Inventory utilities for dragonfire (Includes AutoRefill and AutoEject)
-
-## Chatcommands
-## .invlists
-Get a list of the player's inventory lists
-## .openlist <listname>
-Shows a formspec with the list <listname>

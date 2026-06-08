@@ -121,3 +121,72 @@ local function find_biome(pos, biomes)
 	return spawn_pos, success
 
 end
+
+--
+-- MCL stronghold finder (merged from mcl_find_strongholds)
+--
+
+local stronghold_rings = {
+	{ amount = 3, min = 1408, max = 2688 },
+	{ amount = 6, min = 4480, max = 5760 },
+	{ amount = 10, min = 7552, max = 8832 },
+	{ amount = 15, min = 10624, max = 11904 },
+	{ amount = 21, min = 13696, max = 14976 },
+	{ amount = 28, min = 16768, max = 18048 },
+	{ amount = 36, min = 19840, max = 21120 },
+	{ amount = 9, min = 22912, max = 24192 },
+}
+
+local function init_strongholds(seed)
+	local stronghold_positions = {}
+	local pr = PseudoRandom(seed)
+	for s = 1, #stronghold_rings do
+		local ring = stronghold_rings[s]
+		local angle = pr:next()
+		angle = (angle / 32767) * (math.pi * 2)
+		for a = 1, ring.amount do
+			local dist = pr:next(ring.min, ring.max)
+			local y = pr:next(-124, -80)
+			local pos = { x = math.cos(angle) * dist, y = y, z = math.sin(angle) * dist }
+			pos = vector.round(pos)
+			table.insert(stronghold_positions, pos)
+			angle = math.fmod(angle + ((math.pi * 2) / ring.amount), math.pi * 2)
+		end
+	end
+	return stronghold_positions
+end
+
+minetest.register_chatcommand("find_strongholds", {
+	params = "[<seed>]",
+	description = "Returns a list of MCL stronghold positions using the current or specified seed.",
+	func = function(p)
+		local seed = tonumber(p)
+		if not seed and not minetest.get_server_info().seed then
+			minetest.display_chat_message("minetest.get_server_info().seed not available, try supplying the seed as an argument.")
+			return
+		elseif not seed then
+			seed = tonumber(minetest.get_server_info().seed)
+		end
+		if not seed then
+			minetest.display_chat_message("ERROR: seed must be a number.")
+			return
+		end
+
+		local lp = minetest.localplayer:get_pos()
+		local sp = init_strongholds(seed)
+		table.sort(sp, function(a, b)
+			return vector.distance(lp, a) < vector.distance(lp, b)
+		end)
+		if poi then
+			poi.display(sp[1], "Closest stronghold")
+		end
+		minetest.display_chat_message("strongholds for seed " .. string.format("%18.0f", seed) .. ":")
+		minetest.display_chat_message("(sorted by distance from player)")
+		local l = ""
+		for _, v in ipairs(sp) do
+			l = l .. " " .. minetest.pos_to_string(v)
+		end
+		minetest.display_chat_message(l)
+		minetest.log("info", l)
+	end,
+})

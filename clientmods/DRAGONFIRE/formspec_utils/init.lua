@@ -1,3 +1,29 @@
+-- Formspec utilities: merged from formspec_blocker + formspec_modifier
+
+--
+-- Formspec blocker
+--
+
+local blocked_patterns = {}
+
+core.register_on_receiving_formspec(function(formname, formspec)
+	if not core.settings:get_bool("formspec_blocker") then
+		return nil
+	end
+	for _, pattern in ipairs(blocked_patterns) do
+		if formname:find(pattern) then
+			return ""
+		end
+	end
+	return nil
+end)
+
+core.register_cheat("FormspecBlocker", { category = "Interact", setting = "formspec_blocker" })
+
+--
+-- Trash button injector
+--
+
 local function inject_trash_button(formname, formspec)
 	if formname ~= "" then
 		return nil

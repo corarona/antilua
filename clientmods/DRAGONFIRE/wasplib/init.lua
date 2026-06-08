@@ -168,3 +168,14 @@ minetest.register_chatcommand('givegear', {
 		end)
 	end
 })
+
+--
+-- AutoSneak and AutoSprint keypress cheats (merged from autokey)
+--
+
+if ws.register_keypress_cheat then
+	ws.register_keypress_cheat("autosneak", "AutoSneak", "Movement", "sneak", function()
+		return core.localplayer:is_touching_ground()
+	end)
+	ws.register_keypress_cheat("autosprint", "AutoSprint", "Movement", "aux1")
+end
