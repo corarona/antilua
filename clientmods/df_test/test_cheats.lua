@@ -13,7 +13,7 @@ function test_cheat_settings(T)
 		"killaura", "scaffold", "autohit",
 		"enable_entity_esp", "enable_entity_tracers",
 		"enable_player_esp", "enable_player_tracers",
-		"player_radar", "chest_stealer", "auto_death_waypoint",
+		"player_radar", "chest_stealer", "auto_death_waypoint", "auto_death_waypoint_max",
 		"auto_torch", "auto_sort", "block_logger", "chat_alerts",
 		"name_colorizer", "auto_screenshot", "light_overlay",
 	}

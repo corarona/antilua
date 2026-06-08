@@ -10,6 +10,17 @@ local selected_name
 local hud_wp
 local shown_huds = {}
 local lpos
+local sort_by_distance = false
+
+local WP_COLORS = {
+	{ name = "Green",  hex = "00ff00" },
+	{ name = "Red",    hex = "ff0000" },
+	{ name = "Blue",   hex = "0000ff" },
+	{ name = "Yellow", hex = "ffff00" },
+	{ name = "Cyan",   hex = "00ffff" },
+	{ name = "Magenta",hex = "ff00ff" },
+	{ name = "White",  hex = "ffffff" },
+}
 
 poi.registered_transports = {}
 poi.speed = 0
@@ -43,6 +54,18 @@ local function full_key(name)
 	return stprefix .. tostring(name)
 end
 
+local function color_key(name)
+	return stprefix .. tostring(name) .. "_color"
+end
+
+function poi.get_color(name)
+	return storage:get_string(color_key(name))
+end
+
+function poi.set_color(name, color)
+	storage:set_string(color_key(name), color)
+end
+
 function poi.getwps()
 	local wp = {}
 	for name, _ in pairs(storage:to_table().fields) do
@@ -67,6 +90,7 @@ end
 
 function poi.delete_waypoint(name)
 	storage:set_string(full_key(name), "")
+	storage:set_string(color_key(name), "")
 end
 
 function poi.rename_waypoint(oldname, newname)
@@ -74,6 +98,10 @@ function poi.rename_waypoint(oldname, newname)
 	local pos = poi.get_waypoint(oldname)
 	if not pos or not poi.set_waypoint(pos, newname) then return end
 	if oldname ~= newname then
+		local col = poi.get_color(oldname)
+		if col ~= "" then
+			poi.set_color(newname, col)
+		end
 		poi.delete_waypoint(oldname)
 	end
 	return true
@@ -92,21 +120,29 @@ end
 -- Public API: display
 --
 
+function poi.color_int(name)
+	local hex = poi.get_color(name)
+	if hex == "" then hex = "00ff00" end
+	return tonumber(hex .. "ff", 16) or 0x00ff00ff
+end
+
 function poi.set_hud_wp(pos, title)
 	pos = ws.string_to_pos(pos)
 	if not pos then return end
 	title = title or ws.pos_to_string(pos)
 	poi.last_name = title
 	poi.last_pos = pos
+	local color = poi.color_int(title)
 	if shown_huds[title] then
 		minetest.localplayer:hud_change(shown_huds[title], "name", title)
 		minetest.localplayer:hud_change(shown_huds[title], "world_pos", pos)
+		minetest.localplayer:hud_change(shown_huds[title], "number", color)
 	else
 		hud_wp = minetest.localplayer:hud_add({
 			hud_elem_type = "waypoint",
 			name = title,
 			text = "m",
-			number = 0x00ff00,
+			number = color,
 			world_pos = pos,
 		})
 	end
@@ -165,15 +201,34 @@ end
 -- Death handling
 --
 
+local function trim_death_waypoints(max)
+	local prefix = "Death - "
+	local death_wps = {}
+	for _, name in ipairs(poi.getwps()) do
+		if name:sub(1, #prefix) == prefix then
+			table.insert(death_wps, name)
+		end
+	end
+	table.sort(death_wps)
+	while #death_wps > max do
+		poi.delete_waypoint(death_wps[1])
+		table.remove(death_wps, 1)
+	end
+end
+
 minetest.register_on_death(function()
 	if not minetest.localplayer then return end
 	if core.settings:get_bool("auto_death_waypoint", true) then
 		local pos = minetest.localplayer:get_pos()
 		poi.death_pos = vector.new(pos)
 		poi.last_pos = pos
-		poi.last_name = "Death waypoint"
-		poi.set_waypoint(pos, "Death waypoint")
-		poi.display(pos, "Death waypoint")
+		local name = "Death - " .. os.date("%Y-%m-%d %H:%M")
+		poi.last_name = name
+		poi.set_waypoint(pos, name)
+		poi.display(pos, name)
+		poi.set_color(name, "ff0000")
+		local max = tonumber(core.settings:get("auto_death_waypoint_max")) or 10
+		trim_death_waypoints(max)
 	end
 	if core.settings:get_bool("death_tp") then
 		minetest.after(0.5, function()
@@ -193,14 +248,27 @@ core.register_cheat("DeathWaypoints", {
 	setting = "auto_death_waypoint",
 	description = "Auto-create a waypoint at death location",
 })
+core.register_cheat("DeathWaypointLimit", {
+	category = "Player",
+	setting = "auto_death_waypoint_max",
+	description = "Max death waypoints to keep",
+})
 ws.rg("DeathTP", "Player", "death_tp", function() end, function() end, function() end, { "autorespawn" })
 
 --
 -- Formspec
 --
 
+local function wp_distance(name)
+	local pos = poi.get_waypoint(name)
+	if not pos then return math.huge end
+	local lp = minetest.localplayer:get_pos()
+	if not lp then return math.huge end
+	return vector.distance(lp, pos)
+end
+
 function poi.display_formspec()
-	local waypoints = poi.getwps()
+	local raw_wps = poi.getwps()
 	local parts = {}
 
 	table.insert(parts, "formspec_version[4]")
@@ -210,12 +278,27 @@ function poi.display_formspec()
 	table.insert(parts, "bgcolor[#000000AA;false]")
 	table.insert(parts, "label[0.25,0.5;Waypoint list]")
 
+	-- Sort waypoints
+	local waypoints = raw_wps
+	if sort_by_distance then
+		table.sort(waypoints, function(a, b)
+			return wp_distance(a) < wp_distance(b)
+		end)
+	end
+
 	-- Build textlist from waypoints
 	formspec_list = {}
 	local tl_entries = {}
 	for id, name in ipairs(waypoints) do
 		formspec_list[id] = name
-		table.insert(tl_entries, "##" .. minetest.formspec_escape(name))
+		local entry = name
+		if sort_by_distance then
+			local d = wp_distance(name)
+			if d ~= math.huge then
+				entry = entry .. " (" .. math.floor(d) .. "m)"
+			end
+		end
+		table.insert(tl_entries, "##" .. minetest.formspec_escape(entry))
 	end
 	local tl = "textlist[0.25,0.75;11.5,6;wp_list;"
 	tl = tl .. table.concat(tl_entries, ",")
@@ -230,7 +313,25 @@ function poi.display_formspec()
 	table.insert(parts, tl)
 
 	-- Action buttons
-	table.insert(parts, "button_exit[0.5,7.5;1,0.5;display;Show]")
+	local sort_label = sort_by_distance and "Dist" or "A-Z"
+	table.insert(parts, "button[0.5,7.5;1,0.5;sort_toggle;" .. sort_label .. "]")
+	table.insert(parts, "button_exit[1.7,7.5;1,0.5;display;Show]")
+
+	-- Color dropdown (only when a waypoint is selected)
+	if selected_name then
+		local cur_hex = poi.get_color(selected_name)
+		if cur_hex == "" then cur_hex = "00ff00" end
+		local sel_idx = 1
+		for i, c in ipairs(WP_COLORS) do
+			if c.hex == cur_hex then sel_idx = i end
+		end
+		local color_names = {}
+		for _, c in ipairs(WP_COLORS) do
+			table.insert(color_names, c.name)
+		end
+		table.insert(parts, "dropdown[3,7.5;1.8,0.5;wp_color;" .. table.concat(color_names, ",") .. ";" .. sel_idx .. "]")
+	end
+
 	table.insert(parts, "button[9,7.5;1.3,0.5;rename;Rename]")
 	table.insert(parts, "button[10.5,7.5;1.3,0.5;delete;Delete]")
 
@@ -342,6 +443,23 @@ minetest.register_on_formspec_input(function(formname, fields)
 		if not poi.display_waypoint(name) then
 			ws.notify("Error displaying waypoint!", ws.NOTIFY_ERROR)
 		end
+	elseif fields.sort_toggle then
+		sort_by_distance = not sort_by_distance
+		poi.display_formspec()
+	elseif fields.wp_color then
+		local idx = tonumber(fields.wp_color)
+		if idx then
+			local c = WP_COLORS[idx]
+			if c then
+				poi.set_color(name, c.hex)
+				shown_huds = {}
+				if hud_wp then
+					minetest.localplayer:hud_remove(hud_wp)
+					hud_wp = nil
+				end
+			end
+		end
+		poi.display_formspec()
 	elseif fields.rename then
 		show_rename_fs(name)
 	elseif fields.rename_confirm then
@@ -403,8 +521,16 @@ minetest.register_chatcommand("add_waypoint_here", {
 	params = "[name]",
 	description = "Mark the current position as a waypoint.",
 	func = function(param)
-		local name = (tostring(param) ~= "") and param or os.date("%Y-%m-%d %H:%M:%S")
 		local pos = minetest.localplayer:get_pos()
+		local name
+		if tostring(param) ~= "" then
+			name = param
+		else
+			local ts = os.date("%Y-%m-%d_%H-%M")
+			local node = minetest.get_node(vector.offset(pos, 0, -1, 0))
+			local hint = (node and node.name:match(":(.+)$")) or "waypoint"
+			name = hint .. "_" .. ts
+		end
 		return poi.set_waypoint(pos, name), "Waypoint added."
 	end,
 })
