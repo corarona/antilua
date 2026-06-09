@@ -23,9 +23,18 @@ tests are being written for each new mod.
 ## Build
 
 ```sh
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DRUN_IN_PLACE=TRUE -DBUILD_SERVER=OFF
+cmake --build build -j$(nproc)
+```
+
+For debug builds:
+
+```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Debug -DRUN_IN_PLACE=TRUE -DBUILD_SERVER=OFF
 cmake --build build -j$(nproc)
 ```
+
+Only build debug builds when actually needed!
 
 Out-of-tree builds in `build/` only (in-tree artifacts break CMake). See
 `util/ci/build.sh` for CI build flags.

@@ -4,6 +4,7 @@
 
 local autominer_tgt
 local lava_nodes_list
+local pickup_wait = false
 
 local function parse_lava_nodes()
 	local s = core.settings:get("autominer.lava_nodes")
@@ -69,6 +70,27 @@ sbots.register_bot("AutoMiner", {
 
 		if hp < min_hp then return end
 
+		-- After digging: wait until all dropped items are picked up
+		if pickup_wait then
+			local objects = core.get_objects_inside_radius(lp, 4)
+			local has_items = false
+			for _, obj in ipairs(objects) do
+				if not obj:is_player() then
+					local props = obj:get_properties()
+					if props.visual == "wielditem" or props.visual == "sprite" then
+						has_items = true
+						break
+					end
+				end
+			end
+			if has_items then
+				return
+			end
+			pickup_wait = false
+			self.stage = 0
+			return
+		end
+
 		if autominer_tgt then
 			-- Entity proximity check
 			local its = core.get_objects_inside_radius(lp, 2)
@@ -91,13 +113,12 @@ sbots.register_bot("AutoMiner", {
 			local reach = get_reach()
 
 			if dist <= reach then
-				-- Dig first, then teleport into the now-empty space
+				-- Dig first, then teleport below so head is in the air pocket
 				local tpos = autominer_tgt
 				ws.dig(tpos)
-				-- Place feet one below the ore so head is in the air pocket
 				core.localplayer:set_pos(vector.offset(tpos, 0, -1, 0))
 				autominer_tgt = nil
-				self.stage = 0
+				pickup_wait = true
 			elseif not rhythmtp.is_moving() then
 				ws.aim(autominer_tgt)
 				rhythmtp.go_to(vector.offset(autominer_tgt, 0, -1, 0))
