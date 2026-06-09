@@ -139,8 +139,27 @@ function ws.get_itemslot_bg_v4(x, y, w, h, margin)
 	return table.concat(parts)
 end
 
+local function find_air_ahead(pos, steps)
+	local yaw = core.localplayer and core.localplayer:get_yaw()
+	if not yaw then return end
+	yaw = yaw * math.pi / 180
+	local dx = math.sin(yaw)
+	local dz = math.cos(yaw)
+	for step = 1, steps do
+		local fp = vector.offset(pos, dx * step, 0, dz * step)
+		local fpos = vector.round(fp)
+		local hp = vector.offset(fpos, 0, 1, 0)
+		local feet = core.get_node_or_nil(fpos)
+		local head = core.get_node_or_nil(hp)
+		if not feet or not head then return end
+		if feet.name == "air" and head.name == "air" then
+			return fpos
+		end
+	end
+end
+
 ------------------------------------------------------------------------------
--- headsaver (merged)
+-- headsaver (merged) -- wall-jump: prefers air ahead, then closest pocket, then dig
 ------------------------------------------------------------------------------
 ws.rg("HeadSaver", {
 	category = "Player",
@@ -166,62 +185,23 @@ ws.rg("HeadSaver", {
 
 ------------------------------------------------------------------------------
 -- lockview (merged)
-
--- headsaver helpers
-function ws.get_itemslot_bg_v4(x, y, w, h, margin)
-	margin = margin or 0.15
-	local parts = {}
-	for i = 1, w do
-		for j = 1, h do
-			local px = x + margin + (i - 1)
-			local py = y + margin + (j - 1)
-			parts[#parts + 1] = "image[" .. px .. "," .. py .. ";0,0;mcl_formspec_itemslot_bg.png]"
+------------------------------------------------------------------------------
+ws.rg("LockView", {
+	category = "Bots",
+	setting = "lockview",
+	on_step = function(self)
+		if self.pitch and self.yaw then
+			core.localplayer:set_yaw(self.yaw)
+			core.localplayer:set_pitch(self.pitch)
 		end
-	end
-	return table.concat(parts)
-end
-
-local function find_air_ahead(pos, steps)
-	local yaw = core.localplayer and core.localplayer:get_yaw()
-	if not yaw then return end
-	yaw = yaw * math.pi / 180
-	local dx = math.sin(yaw)
-	local dz = math.cos(yaw)
-	for step = 1, steps do
-		local fp = vector.offset(pos, dx * step, 0, dz * step)
-		local fpos = vector.round(fp)
-		local hp = vector.offset(fpos, 0, 1, 0)
-		local feet = core.get_node_or_nil(fpos)
-		local head = core.get_node_or_nil(hp)
-		if not feet or not head then return end
-		if feet.name == "air" and head.name == "air" then
-			return fpos
-		end
-	end
-end
-
--------------------------------------------------------------------------------
--- headsaver (merged) — wall-jump: prefers air ahead, then closest pocket, then dig
--------------------------------------------------------------------------------
-ws.rg("HeadSaver", {
-	category = "Player",
-	setting = "headsaver",
-	on_step = function()
-		local head = ws.dircoord(0, 1, 0)
-		local headnd = core.get_node_or_nil(head)
-		if headnd and headnd.name ~= "air" then
-			local ap = find_air_ahead(ws.dircoord(0, 0, 0), 10)
-			if ap then
-				core.localplayer:set_pos(ap)
-				return
-			end
-			ap = ws.find_closest_reachable_airpocket(ws.dircoord(0, 0, 0))
-			if ap then
-				core.localplayer:set_pos(ap)
-				return
-			end
-			ws.dig(head)
-		end
+	end,
+	on_start = function(self)
+		self.pitch = core.localplayer:get_pitch() * -1
+		self.yaw = core.localplayer:get_yaw()
+	end,
+	on_stop = function(self)
+		self.pitch = nil
+		self.yaw = nil
 	end,
 })
 
