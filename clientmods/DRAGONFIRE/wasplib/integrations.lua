@@ -149,7 +149,12 @@ ws.rg("HeadSaver", {
 		local head = ws.dircoord(0, 1, 0)
 		local headnd = core.get_node_or_nil(head)
 		if headnd and headnd.name ~= "air" then
-			local ap = ws.find_closest_reachable_airpocket(ws.dircoord(0, 0, 0))
+			local ap = find_air_ahead(ws.dircoord(0, 0, 0), 10)
+			if ap then
+				core.localplayer:set_pos(ap)
+				return
+			end
+			ap = ws.find_closest_reachable_airpocket(ws.dircoord(0, 0, 0))
 			if ap then
 				core.localplayer:set_pos(ap)
 				return
@@ -161,6 +166,26 @@ ws.rg("HeadSaver", {
 
 ------------------------------------------------------------------------------
 -- lockview (merged)
+
+-- headsaver helpers
+local function find_air_ahead(pos, steps)
+	local yaw = core.localplayer and core.localplayer:get_yaw()
+	if not yaw then return end
+	yaw = yaw * math.pi / 180
+	local dx = math.sin(yaw)
+	local dz = math.cos(yaw)
+	for step = 1, steps do
+		local fp = vector.offset(pos, dx * step, 0, dz * step)
+		local fpos = vector.round(fp)
+		local hp = vector.offset(fpos, 0, 1, 0)
+		local feet = core.get_node_or_nil(fpos)
+		local head = core.get_node_or_nil(hp)
+		if not feet or not head then return end
+		if feet.name == "air" and head.name == "air" then
+			return fpos
+		end
+	end
+end
 ------------------------------------------------------------------------------
 ws.rg("LockView", {
 	category = "Bots",
