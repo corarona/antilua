@@ -12,9 +12,9 @@ local function deserialize_workaround(content)
 end
 
 local function get_texture_by_name(name)
-	local def = core.get_item_def(name)
-	if def and def.inventory_image and def.inventory_image ~= "" then
-		return def.inventory_image
+	local def = core.get_node_def(name)
+	if def and def.tiles and def.tiles[1] and def.tiles[1] ~= "" then
+		return def.tiles[1]
 	end
 	return "unknown_node.png"
 end

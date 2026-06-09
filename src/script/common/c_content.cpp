@@ -1047,7 +1047,13 @@ void push_content_features(lua_State *L, const ContentFeatures &c)
 	std::string drawtype(enum_to_string(ScriptApiNode::es_DrawType, c.drawtype));
 	std::string liquid_type(enum_to_string(ScriptApiNode::es_LiquidType, c.liquid_type));
 
-	/* Missing "tiles" because I don't see a usecase (at least not yet). */
+	// Push tile names (used by litematica for particle previews)
+	lua_createtable(L, 6, 0);
+	for (u32 i = 0; i < 6; i++) {
+		lua_pushstring(L, c.tiledef[i].name.c_str());
+		lua_rawseti(L, -2, i + 1);
+	}
+	lua_setfield(L, -2, "tiles");
 
 	lua_newtable(L);
 	lua_pushboolean(L, c.has_on_construct);
