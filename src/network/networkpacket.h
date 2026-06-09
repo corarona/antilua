@@ -77,6 +77,8 @@ public:
 
 	void putLongString(std::string_view src);
 
+	void setPayload(const std::string &data);
+
 	NetworkPacket &operator>>(std::wstring &dst);
 	NetworkPacket &operator<<(std::wstring_view src);
 

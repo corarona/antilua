@@ -48,6 +48,10 @@ core.registered_on_lighting_changed, core.register_on_lighting_changed = make_df
 core.registered_on_pre_step, core.register_on_pre_step = make_df_registration()
 core.registered_on_post_step, core.register_on_post_step = make_df_registration()
 
+-- Phase 5: Raw packet interception
+core.registered_on_receiving_raw_packet, core.register_on_receiving_raw_packet = make_df_registration()
+core.registered_on_sending_raw_packet, core.register_on_sending_raw_packet = make_df_registration()
+
 -- DF data tables
 core.registered_nodes = {}
 core.registered_items = {}

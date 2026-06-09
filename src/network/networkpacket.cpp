@@ -47,6 +47,13 @@ void NetworkPacket::clear()
 	m_peer_id = 0;
 }
 
+void NetworkPacket::setPayload(const std::string &data)
+{
+	m_data.assign(data.begin(), data.end());
+	m_datasize = data.size();
+	m_read_offset = 0;
+}
+
 std::string_view NetworkPacket::getRemainingNoCopy() const
 {
 	size_t len = getRemainingBytes();
