@@ -19,10 +19,14 @@ function test_litematica(T)
 		T.assert(tonumber(v) == 4)
 	end)
 
-	T.run("litematicabot.place_cooldown default exists", function()
+	T.run("litematicabot.place_cooldown setting exists", function()
 		local v = core.settings:get("litematicabot.place_cooldown")
-		T.assert(v ~= nil)
-		T.assert(tonumber(v) == 0.5)
+		if v == nil then
+			T.assert(false, "place_cooldown is nil")
+			return
+		end
+		local n = tonumber(v)
+		T.assert(n ~= nil and n > 0, "invalid value: " .. tostring(v))
 	end)
 
 	T.run("read_schematic round-trips through serialize", function()

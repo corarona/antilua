@@ -416,7 +416,7 @@ if sbots and sbots.register_bot then
 		stand_waiting = true,
 		landing_distance = 3,
 		cheat_settings = {
-			place_cooldown = { type = "number", default = 0.5, min = 0.1, max = 5 },
+			place_cooldown = { type = "number", default = 0.1, min = 0, max = 5 },
 		},
 		find_pos = function(self, pos)
 			if #place_nodes == 0 then return end
