@@ -1,18 +1,6 @@
-local function dump_inv(pos)
-	local n = core.find_node_near(pos, 4, {"air"}, true)
-	if n then
-		ws.place(n, "mcl_chests:chest")
-		local plinv = core.get_inventory("current_player")
-		for i, v in pairs(plinv.main) do
-			if i > 9 then
-				ws.move_stack("current_player", "main", i, "nodemeta:" .. n.x .. "," .. n.y .. "," .. n.z, "main", i)
-			end
-		end
-	end
-end
-
 local function check_obslist(obj)
-	local p = obj:get_properties()
+	local p = obj and obj:get_properties()
+	if not p then return false end
 	for _, vv in pairs(nlist.get("obsbot")) do
 		if p.mesh == vv then
 			return true
@@ -81,8 +69,9 @@ ws.rg("EvadeWither", { category = "Combat", setting = "evade_wither",
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 3.5
 		local pos = core.localplayer:get_pos()
 		for _, obj in pairs(core.get_objects_inside_radius(pos, range)) do
-			local p = obj:get_properties()
-			if p.textures[1]:find("mobs_mc_wither_projectile.png") then
+			local p = obj and obj:get_properties()
+			local tex = p and p.textures
+			if tex and tex[1] and tex[1]:find("mobs_mc_wither_projectile.png") then
 				local nn = core.find_nodes_in_area(pos:offset(-4, -4, -4), pos:offset(4, 4, 4), {"air"})
 				if nn and #nn > 0 then
 					table.sort(nn, function(a, b) return vector.distance(pos, a) > vector.distance(pos, b) end)
@@ -128,14 +117,6 @@ local mobsbot = {
 		return true
 	end,
 	do_step = function(self, dtime)
-		local pos = core.localplayer:get_pos()
-		for _, v in pairs(get_close_objects(pos, 9, self.check_object)) do
-			local p = v:get_pos()
-			if vector.distance(p, pos) <= 5 then
-				local sp = find_close_safespot(pos, p)
-				if sp then end
-			end
-		end
 		if not self._target or not self._target.get_pos or not self._target:get_pos() then
 			self._target = nil
 			self._target_pos = nil
@@ -157,8 +138,8 @@ local itembot = table.copy(mobsbot)
 obsbot.check_object = check_obslist
 
 function hmobsbot.check_object(obj)
-	local p = obj:get_properties()
-	return p.mesh:find("mobs_mc") and obj:get_hp() > 0
+	local p = obj and obj:get_properties()
+	return p and p.mesh and p.mesh:find("mobs_mc") and obj:get_hp() > 0
 end
 
 function crystalbot.check_object(obj)

@@ -1,0 +1,16 @@
+safeaura (SafeAura) bool false
+selkillaura (SelKillaura) bool false
+evade_wither (EvadeWither) bool false
+autoevade (AutoEvade) bool false
+ObsBot (ObsBot) bool false
+PlBot (PlBot) bool false
+CrystalBot (CrystalBot) bool false
+MobsBot (MobsBot) bool false
+HostileMobs (HostileMobs) bool false
+ItemBot (ItemBot) bool false
+safeaura.range (SafeAura range) int 5 1 30
+selkillaura.range (SelKillaura range) int 4 1 20
+evade_wither.range (EvadeWither detection range) float 3.5 0.5 20
+autoevade.scan_range (Projectile scan range) int 4 1 20
+autoevade.trigger_distance (Trigger distance) int 4 1 10
+autoevade.evade_distance (Evade distance) int 2 1 10
