@@ -82,6 +82,16 @@ public:
 	void on_pre_step(float dtime);
 	void on_post_step(float dtime);
 
+	// Phase 5: Raw packet interception
+	std::string on_raw_packet_received(u16 command,
+			const std::string &payload);
+	std::string on_raw_packet_sending(u16 command,
+			const std::string &payload);
+	bool send_raw_packet(u16 command, const std::string &payload);
+
+protected:
+	void init_raw_packet_api();
+
 private:
 	Client *m_client = nullptr;
 

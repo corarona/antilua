@@ -235,4 +235,24 @@ void on_post_step(Client *client, float dtime)
 		client->getScript()->on_post_step(dtime);
 }
 
+// ---------------------------------------------------------------------------
+// Phase 5: Raw packet callbacks
+// ---------------------------------------------------------------------------
+
+std::string on_raw_packet_received(Client *client, u16 command,
+		const std::string &payload)
+{
+	if (client->modsLoaded())
+		return client->getScript()->on_raw_packet_received(command, payload);
+	return {};
+}
+
+std::string on_raw_packet_sending(Client *client, u16 command,
+		const std::string &payload)
+{
+	if (client->modsLoaded())
+		return client->getScript()->on_raw_packet_sending(command, payload);
+	return {};
+}
+
 } // namespace DfClientHooks

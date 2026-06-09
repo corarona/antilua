@@ -7,6 +7,8 @@
 #include "common/c_converter.h"
 #include "common/c_content.h"
 #include "client/localplayer.h"
+#include "network/clientopcodes.h"
+#include "network/networkprotocol.h"
 #include "particles.h"
 #include "sound_spec.h"
 #include "lighting.h"
@@ -603,4 +605,120 @@ void DfScriptApi::on_post_step(float dtime)
 	} catch (LuaError &e) {
 		getClient()->setFatalError(e);
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Phase 5: Raw packet interception
+// ---------------------------------------------------------------------------
+
+std::string DfScriptApi::on_raw_packet_received(u16 command,
+		const std::string &payload)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_receiving_raw_packet");
+	lua_pushinteger(L, command);
+	lua_pushlstring(L, payload.data(), payload.size());
+	try {
+		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+		return {}; // empty = let through unmodified on error
+	}
+	if (lua_type(L, -1) == LUA_TBOOLEAN) {
+		if (lua_toboolean(L, -1))
+			return "\x01"; // sentinel: drop packet
+		return {}; // false/nil: let through
+	}
+	if (lua_type(L, -1) == LUA_TSTRING) {
+		size_t len;
+		const char *s = lua_tolstring(L, -1, &len);
+		if (s)
+			return std::string(s, len); // modified payload
+	}
+	return {}; // let through unmodified
+}
+
+std::string DfScriptApi::on_raw_packet_sending(u16 command,
+		const std::string &payload)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_sending_raw_packet");
+	lua_pushinteger(L, command);
+	lua_pushlstring(L, payload.data(), payload.size());
+	try {
+		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+		return {};
+	}
+	if (lua_type(L, -1) == LUA_TBOOLEAN) {
+		if (lua_toboolean(L, -1))
+			return "\x01"; // drop
+		return {}; // let through
+	}
+	if (lua_type(L, -1) == LUA_TSTRING) {
+		size_t len;
+		const char *s = lua_tolstring(L, -1, &len);
+		if (s)
+			return std::string(s, len);
+	}
+	return {};
+}
+
+void DfScriptApi::init_raw_packet_api()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	// core.TOCLIENT table
+	lua_getglobal(L, "core");
+	lua_newtable(L);
+	for (u16 i = 0; i < TOCLIENT_NUM_MSG_TYPES; i++) {
+		if (!toClientCommandTable[i].name)
+			continue;
+		const char *name = toClientCommandTable[i].name + 9; // strip "TOCLIENT_"
+		lua_pushinteger(L, i);
+		lua_setfield(L, -2, name);
+	}
+	lua_setfield(L, -2, "TOCLIENT");
+
+	// core.TOSERVER table
+	lua_newtable(L);
+	for (u16 i = 0; i < TOSERVER_NUM_MSG_TYPES; i++) {
+		if (!serverCommandFactoryTable[i].name)
+			continue;
+		const char *name = serverCommandFactoryTable[i].name + 9; // strip "TOSERVER_"
+		lua_pushinteger(L, i);
+		lua_setfield(L, -2, name);
+	}
+	lua_setfield(L, -2, "TOSERVER");
+
+	lua_pop(L, 1); // pop core
+}
+
+bool DfScriptApi::send_raw_packet(u16 command, const std::string &payload)
+{
+	switch (command) {
+	case TOSERVER_INIT:
+	case TOSERVER_INIT2:
+	case TOSERVER_FIRST_SRP:
+	case TOSERVER_SRP_BYTES_A:
+	case TOSERVER_SRP_BYTES_M:
+		return false;
+	default:
+		break;
+	}
+
+	if (command >= TOSERVER_NUM_MSG_TYPES ||
+			!serverCommandFactoryTable[command].name)
+		return false;
+
+	Client *client = getClient();
+	NetworkPacket pkt(command, payload.size());
+	pkt.putRawString(payload.data(), payload.size());
+	client->Send(&pkt);
+	return true;
 }

@@ -161,5 +161,65 @@ Adds an `enable_shaders` toggle (`Settings → Enable shaders`) that falls back 
 - The `vcpkg.json` exists but is not the primary dependency manager on Linux
 
 
+## Raw Packet API
+
+Allows client-side mods to send arbitrary MTP packets and intercept/modify packets in transit.
+
+### Lua API
+
+```lua
+-- Send a raw packet to the server
+core.send_raw_packet(command, payload)
+-- command: number (opcode), string name like "TOSERVER_INTERACT" or "HUDCHANGE",
+--           or using constant tables (numbers)
+-- payload: string of raw bytes (can be empty)
+
+-- Intercept packets from the server
+core.register_on_receiving_raw_packet(function(command_id, payload)
+    -- command_id is a number; payload is a raw byte string
+    -- return nil/false → let through
+    -- return true → silently drop
+    -- return "new_payload" → replace payload and let handler process
+end)
+
+-- Intercept packets going to the server
+core.register_on_sending_raw_packet(function(command_id, payload)
+    -- same return conventions
+end)
+```
+
+### Constant tables
+
+These are populated at engine startup from the C++ opcode tables:
+
+| Table | Example entries |
+|-------|-----------------|
+| `core.TOCLIENT` | `HELLO=0x02`, `HUDCHANGE=0x4B`, `CHAT_MESSAGE=0x2F`, `INVENTORY=0x27` |
+| `core.TOSERVER` | `INTERACT=0x39`, `CHAT_MESSAGE=0x32`, `PLAYERPOS=0x23`, `INVENTORY_ACTION=0x31` |
+
+### Safety
+
+The following opcodes are **blacklisted** from `send_raw_packet`: `TOSERVER_INIT`, `TOSERVER_INIT2`, `TOSERVER_FIRST_SRP`, `TOSERVER_SRP_BYTES_A`, `TOSERVER_SRP_BYTES_M`. Attempting to send them raises a Lua error.
+
+### Architecture
+
+- **Hook sites**: `Client::ProcessData()` (`src/client/client.cpp:1106`) for incoming, `Client::Send()` (`src/client/client.cpp:1140`) for outgoing
+- **Script bridge**: `DfClientHooks` namespace (`src/client/df_hooks.h/cpp`) → `DfScriptApi` (`src/script/cpp_api/df/df_callbacks.h/cpp`) → Lua callbacks
+- **Callback tables**: `registered_on_receiving_raw_packet` and `registered_on_sending_raw_packet` registered in `builtin/client/register_df.lua`
+- **Payload encoding**: Lua receives/sends raw byte strings (can contain null bytes). Use `string.byte`, `string.char`, `string.sub` in Lua for structured access.
+- **Return value semantics**: Empty string `""` means passthrough, `"\x01"` (single byte `0x01`) means drop, anything else replaces the payload in-place.
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `src/network/networkpacket.h/cpp` | `NetworkPacket::setPayload()` for in-place payload replacement |
+| `src/script/cpp_api/df/df_callbacks.h/cpp` | `DfScriptApi` methods: `on_raw_packet_received`, `on_raw_packet_sending`, `send_raw_packet`, `init_raw_packet_api` |
+| `src/client/df_hooks.h/cpp` | `DfClientHooks` bridge functions |
+| `src/client/client.cpp` | Hook sites in `ProcessData()` and `Send()` |
+| `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_send_raw_packet` Lua binding |
+| `builtin/client/register_df.lua` | Callback table registrations |
+| `clientmods/df_test/test_raw_packet.lua` | Integration tests |
+
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
 - **EDT_OPENGL** (`irr/src/COpenGLDriver.cpp`): Legacy driver with full fixed-function pipeline (material renderers, `glTexEnv`, `GL_ALPHA_TEST`, client-side vertex arrays). Compiles only when `_IRR_COMPILE_WITH_OPENGL_` is defined (always on for Luanti).

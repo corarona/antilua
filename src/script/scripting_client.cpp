@@ -101,6 +101,7 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModApiEnv::InitializeClient(L, top);
 	ModApiChannels::Initialize(L, top);
 	ModApiParticlesLocal::Initialize(L, top);
+	init_raw_packet_api();
 }
 
 void ClientScripting::on_client_ready(LocalPlayer *localplayer)

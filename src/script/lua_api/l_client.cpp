@@ -20,6 +20,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "l_client.h"
 #include "chatmessage.h"
+#include "script/scripting_client.h"
 #include "itemdef.h"
 #include "client/client.h"
 #include "client/clientevent.h"
@@ -709,6 +710,58 @@ int ModApiClient::l_show_toast(lua_State *L)
 	return 0;
 }
 
+// send_raw_packet(command, raw_payload)
+int ModApiClient::l_send_raw_packet(lua_State *L)
+{
+	u16 command;
+	std::string payload;
+
+	if (lua_isnumber(L, 1)) {
+		command = luaL_checkint(L, 1);
+	} else if (lua_isstring(L, 1)) {
+		const char *name = luaL_checkstring(L, 1);
+		lua_getglobal(L, "core");
+		lua_getfield(L, -1, "TOCLIENT");
+		lua_getfield(L, -1, name);
+		if (lua_isnumber(L, -1)) {
+			command = lua_tointeger(L, -1);
+		} else {
+			lua_pop(L, 1);
+			lua_getfield(L, -2, "TOSERVER");
+			lua_getfield(L, -1, name);
+			if (lua_isnumber(L, -1)) {
+				command = lua_tointeger(L, -1);
+			} else {
+				lua_pop(L, 4);
+				throw LuaError(std::string("Unknown packet name: ") + name);
+			}
+			lua_pop(L, 1);
+		}
+		lua_pop(L, 2);
+	} else {
+		throw LuaError("Expected number or string for command");
+	}
+
+	if (lua_isstring(L, 2)) {
+		size_t len;
+		const char *data = luaL_checklstring(L, 2, &len);
+		payload.assign(data, len);
+	} else if (!lua_isnone(L, 2)) {
+		throw LuaError("Expected string for payload");
+	}
+
+	Client *client = getClient(L);
+	ClientScripting *script = dynamic_cast<ClientScripting*>(
+			client->getScript());
+	if (!script)
+		return 0;
+
+	bool ok = script->send_raw_packet(command, payload);
+	if (!ok)
+		throw LuaError("Failed to send raw packet: invalid or blacklisted command");
+	return 0;
+}
+
 void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
@@ -747,6 +800,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(interact);
 	API_FCT(send_inventory_fields);
 	API_FCT(send_nodemeta_fields);
+	API_FCT(send_raw_packet);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)

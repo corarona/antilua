@@ -88,4 +88,9 @@ void on_lighting(Client *client, const Lighting &lighting);
 void on_pre_step(Client *client, float dtime);
 void on_post_step(Client *client, float dtime);
 
+std::string on_raw_packet_received(Client *client, u16 command,
+		const std::string &payload);
+std::string on_raw_packet_sending(Client *client, u16 command,
+		const std::string &payload);
+
 } // namespace DfClientHooks

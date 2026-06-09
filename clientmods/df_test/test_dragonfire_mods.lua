@@ -51,27 +51,17 @@ function test_dragonfire_invsaver(T)
 	end)
 end
 
-function test_dragonfire_antitower(T)
-	T.run("anti_tower cheat setting exists", function()
-		local val = core.settings:get("anti_tower")
-		T.assert(val ~= nil, "setting 'anti_tower' should exist")
-	end)
-
-	T.run("atower cheat setting exists", function()
-		local val = core.settings:get("atower")
-		T.assert(val ~= nil, "setting 'atower' should exist")
-	end)
-end
+-- anti_tower removed during modpack consolidation
 
 function test_dragonfire_walls(T)
-	T.run("scaffold_wallin cheat setting exists", function()
-		local val = core.settings:get("scaffold_wallin")
-		T.assert(val ~= nil, "setting 'scaffold_wallin' should exist")
+	T.run("place_wallin cheat setting exists", function()
+		local val = core.settings:get("place_wallin")
+		T.assert(val ~= nil, "setting 'place_wallin' should exist")
 	end)
 
-	T.run("scaffold_skypltfrm cheat setting exists", function()
-		local val = core.settings:get("scaffold_skypltfrm")
-		T.assert(val ~= nil, "setting 'scaffold_skypltfrm' should exist")
+	T.run("place_skypltfrm cheat setting exists", function()
+		local val = core.settings:get("place_skypltfrm")
+		T.assert(val ~= nil, "setting 'place_skypltfrm' should exist")
 	end)
 
 	T.run("pceiling cheat setting exists", function()

@@ -144,6 +144,9 @@ private:
 	// send_nodemeta_fields(position, formname, fields)
 	static int l_send_nodemeta_fields(lua_State *L);
 
+	// send_raw_packet(command, raw_payload)
+	static int l_send_raw_packet(lua_State *L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 	static void InitializeSSCSM(lua_State *L, int top);
