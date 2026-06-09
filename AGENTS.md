@@ -230,5 +230,52 @@ The following opcodes are **blacklisted** from `send_raw_packet`: `TOSERVER_INIT
 | `builtin/client/register_df.lua` | Callback table registrations |
 | `clientmods/df_test/test_raw_packet.lua` | Integration tests |
 
+## Schematic API (Client-Side)
+
+Exposes MTS schematic deserialization/serialization to client-side mods. Mirrors the server-side `core.read_schematic()` and `core.serialize_schematic()` signatures.
+
+### Lua API
+
+```lua
+-- Read an MTS schematic from raw binary data
+local schem = core.read_schematic(mts_binary_data, options)
+-- mts_binary_data: string of raw .mts file bytes
+-- options: { write_yslice_prob = "all"|"low"|"none" }  (optional, default "all")
+-- Returns: {
+--   size = { x = <int>, y = <int>, z = <int> },
+--   yslice_prob = { { ypos = <int>, prob = <int> }, ... }, -- per-layer probabilities
+--   data = { { name = "<node_name>", prob = <int>, param2 = <int>, force_place = <bool> }, ... }
+-- }
+
+-- Serialize a schematic table to MTS binary format
+local mts_data = core.serialize_schematic(schem_table, format, options)
+-- schem_table: table with size and data fields (same format as read_schematic returns)
+-- format: "mts" (default) or "lua"
+-- options: { lua_use_comments = false, lua_num_indent_spaces = 0 }
+-- Returns: string (raw MTS bytes or Lua table text)
+
+-- Also accepts a table directly via read_schematic for identity/round-trip:
+local schem2 = core.read_schematic({ size = {...}, data = {...} }, {})
+```
+
+### Table format (same as server-side)
+
+The `data` array has `size.x * size.y * size.z` entries in Z/Y/X order. Each entry:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `name` | string | Node name (e.g. `"mcl_core:stone"`) |
+| `prob` | int | Probability * 2 (0-254). 254 = always place |
+| `param2` | int | Param2 value (default 0) |
+| `force_place` | bool | Optional, default false |
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_read_schematic`, `l_serialize_schematic` |
+| `clientmods/DRAGONFIRE/litematica/init.lua` | Uses `core.read_schematic` to load MTS data, `core.serialize_schematic` for `/litesave` |
+| `clientmods/df_test/test_litematica.lua` | Integration tests including round-trip validation |
+
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
 - **EDT_OPENGL** (`irr/src/COpenGLDriver.cpp`): Legacy driver with full fixed-function pipeline (material renderers, `glTexEnv`, `GL_ALPHA_TEST`, client-side vertex arrays). Compiles only when `_IRR_COMPILE_WITH_OPENGL_` is defined (always on for Luanti).
