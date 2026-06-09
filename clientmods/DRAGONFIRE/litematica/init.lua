@@ -82,6 +82,7 @@ local function load_schematic_nodes(value, pos)
 				place_nodes = nodes
 				for _, n in ipairs(nodes) do add_preview_if_needed(n, n.name) end
 				ws.notify("Loaded " .. count .. " nodes", ws.NOTIFY_INFO)
+				core.after(0.1, update_hud)
 			end
 			return count
 		end
@@ -101,6 +102,7 @@ local function load_schematic_nodes(value, pos)
 		end
 		if #place_nodes > 0 then
 			ws.notify("Loaded " .. #place_nodes .. " nodes", ws.NOTIFY_INFO)
+			core.after(0.1, update_hud)
 		end
 		return #place_nodes
 	end
@@ -108,14 +110,77 @@ local function load_schematic_nodes(value, pos)
 	return nil
 end
 
+local hud_id = nil
+
+local function update_hud()
+	if not core.localplayer then return end
+	if #place_nodes == 0 then
+		if hud_id then
+			core.localplayer:hud_remove(hud_id)
+			hud_id = nil
+		end
+		return
+	end
+	-- Count nodes by name
+	local counts = {}
+	for _, entry in ipairs(place_nodes) do
+		local n = entry.name
+		if n ~= "air" then
+			counts[n] = (counts[n] or 0) + 1
+		end
+	end
+	-- Build sorted list
+	local sorted = {}
+	for name, count in pairs(counts) do
+		table.insert(sorted, {name = name, count = count})
+	end
+	table.sort(sorted, function(a, b) return a.count > b.count end)
+	-- Truncate to top 15
+	local lines = {"Missing:"}
+	local total = 0
+	for i = 1, math.min(#sorted, 15) do
+		local s = sorted[i]
+		local short = s.name:match("[^:]+$") or s.name
+		table.insert(lines, short .. ": " .. s.count)
+		total = total + s.count
+	end
+	if #sorted > 15 then
+		table.insert(lines, "... +" .. (#sorted - 15) .. " more")
+	end
+	table.insert(lines, "Total: " .. total)
+
+	local text = table.concat(lines, "\n")
+
+	if hud_id then
+		core.localplayer:hud_change(hud_id, "text", text)
+	else
+		hud_id = core.localplayer:hud_add({
+			hud_elem_type = "text",
+			position = {x = 1, y = 0.5},
+			offset = {x = -10, y = -200},
+			alignment = {x = 1, y = 0},
+			scale = {x = 100, y = 100},
+			number = 0xFFFFFF,
+			text = text,
+		})
+	end
+end
+
 ws.rg("PlaceLiteM", {
 	category = "Place",
 	setting = "placelitem",
 	on_step = function(self, dtime)
-		if #place_nodes == 0 then return end
+		if #place_nodes == 0 then
+			if hud_id then
+				core.localplayer:hud_remove(hud_id)
+				hud_id = nil
+			end
+			return
+		end
 		local pp = vector.round(core.localplayer:get_pos())
 		local range = tonumber(core.settings:get("placelitem.range")) or 4
 
+		local changed = false
 		for i = #place_nodes, 1, -1 do
 			local entry = place_nodes[i]
 			if math.abs(entry.x - pp.x) <= range
@@ -127,15 +192,28 @@ ws.rg("PlaceLiteM", {
 					if node and node.name ~= "air" then
 						ws.dig(pos_v)
 						table.remove(place_nodes, i)
+						changed = true
 					end
 				else
-					-- ws.place handles item selection via find_any_swap
 					if ws.place(pos_v, entry.name) then
 						table.remove(place_nodes, i)
+						changed = true
 					end
 				end
 			end
 			::continue::
+		end
+		if changed then
+			update_hud()
+		end
+	end,
+	on_start = function(self)
+		core.after(0.2, update_hud)
+	end,
+	on_stop = function(self)
+		if hud_id then
+			core.localplayer:hud_remove(hud_id)
+			hud_id = nil
 		end
 	end,
 	cheat_settings = {
@@ -169,11 +247,12 @@ core.register_chatcommand("liteload", {
 			for _, entry in ipairs(schem.data) do
 				if entry.name == "air" or entry.prob == 0 then goto skip_file end
 				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name}
-			table.insert(place_nodes, node)
-			add_preview_if_needed(node, node.name)
-			::skip_file::
-		end
-		ws.notify("Loaded " .. #place_nodes .. " nodes from " .. filepath, ws.NOTIFY_INFO)
+				table.insert(place_nodes, node)
+				add_preview_if_needed(node, node.name)
+				::skip_file::
+			end
+			ws.notify("Loaded " .. #place_nodes .. " nodes from " .. filepath, ws.NOTIFY_INFO)
+			core.after(0.1, update_hud)
 			return true
 		end
 
