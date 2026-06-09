@@ -50,40 +50,52 @@ local function load_schematic(value)
 	return deserialize_workaround(content)
 end
 
-local function load_mts_data(mts_data)
-	local ok, schem = pcall(core.read_schematic, mts_data, {})
-	if not ok or not schem or not schem.data then
+local function load_schematic_nodes(value, pos)
+	if not value or value == "" then
 		return nil
 	end
-	local nodes = {}
-	for _, entry in ipairs(schem.data) do
-		table.insert(nodes, {x=0, y=0, z=0, name=entry.name, param1=entry.param1, param2=entry.param2})
-	end
-	return nodes
-end
+	local nodes, count
 
--- Forward declaration for circular dependency
-local load_schematic_data
-
-local function litematica_deserialize(origin_pos, value)
-	-- Try MTS first via load_schematic_data
-	local count = load_schematic_data(value, origin_pos)
-	if count then
-		return count
+	-- Try base64 MTS (new format)
+	local raw = core.decode_base64(value)
+	if raw and raw ~= "" then
+		local ok, schem = pcall(core.read_schematic, raw, {})
+		if ok and schem and schem.data then
+			nodes = {}
+			for _, entry in ipairs(schem.data) do
+				table.insert(nodes, {
+					x = pos.x + (entry.x or 0),
+					y = pos.y + (entry.y or 0),
+					z = pos.z + (entry.z or 0),
+					name = entry.name,
+					param1 = entry.param1,
+					param2 = entry.param2,
+				})
+			end
+			count = #nodes
+			if count > 0 then
+				place_nodes = nodes
+				for _, n in ipairs(nodes) do add_node(n, n) end
+				ws.notify("Loaded " .. count .. " nodes from MTS", ws.NOTIFY_INFO)
+			end
+			return count
+		end
 	end
-	-- Fall back to WorldEdit string format
-	local nodes = load_schematic(value)
-	if not nodes then return nil end
-	if #nodes == 0 then return #nodes end
-	place_nodes = nodes
 
-	local origin_x, origin_y, origin_z = origin_pos.x, origin_pos.y, origin_pos.z
-	for i, entry in ipairs(nodes) do
-		entry.x, entry.y, entry.z = origin_x + entry.x, origin_y + entry.y, origin_z + entry.z
-		add_node(entry, entry)
+	-- Try WorldEdit string format (old format)
+	local we_nodes = load_schematic(value)
+	if we_nodes and #we_nodes > 0 then
+		local ox, oy, oz = pos.x, pos.y, pos.z
+		for _, entry in ipairs(we_nodes) do
+			entry.x, entry.y, entry.z = ox + entry.x, oy + entry.y, oz + entry.z
+			add_node(entry, entry)
+		end
+		place_nodes = we_nodes
+		ws.notify("Loaded " .. #we_nodes .. " nodes", ws.NOTIFY_INFO)
+		return #we_nodes
 	end
-	ws.notify("Loaded " .. #nodes .. " nodes", ws.NOTIFY_INFO)
-	return #nodes
+
+	return nil
 end
 
 ws.rg("PlaceLiteM", {
@@ -123,39 +135,7 @@ ws.rg("PlaceLiteM", {
 	},
 })
 
-load_schematic_data = function(value, pos)
-	if not value or value == "" then
-		return nil, "No data"
-	end
-	-- Try MTS format (base64)
-	local raw = core.decode_base64(value)
-	if raw then
-		local ok, schem = pcall(core.read_schematic, raw, {})
-		if ok and schem and schem.data then
-			place_nodes = {}
-			for _, entry in ipairs(schem.data) do
-				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name, param1=entry.param1, param2=entry.param2}
-				table.insert(place_nodes, node)
-				add_node(node, node)
-			end
-			ws.notify("Loaded " .. #place_nodes .. " nodes from MTS", ws.NOTIFY_INFO)
-			return #place_nodes
-		end
-	end
-	-- WorldEdit string format (direct, no recursion)
-	local nodes = load_schematic(value)
-	if nodes and #nodes > 0 then
-		place_nodes = nodes
-		local ox, oy, oz = pos.x, pos.y, pos.z
-		for i, entry in ipairs(nodes) do
-			entry.x, entry.y, entry.z = ox + entry.x, oy + entry.y, oz + entry.z
-			add_node(entry, entry)
-		end
-		ws.notify("Loaded " .. #nodes .. " nodes", ws.NOTIFY_INFO)
-		return #nodes
-	end
-	return nil, "Failed to load schematic"
-end
+
 
 core.register_chatcommand("liteload", {
 	description = "Load schematic. $ for litematica_output setting, file:<path> for MTS file from disk.",
@@ -192,9 +172,9 @@ core.register_chatcommand("liteload", {
 		else
 			value = param
 		end
-		local count, err = load_schematic_data(value, pos)
+		local count = load_schematic_nodes(value, pos)
 		if not count then
-			return false, err or "Failed to load schematic"
+			return false, "Failed to load schematic"
 		end
 		return true
 	end,
