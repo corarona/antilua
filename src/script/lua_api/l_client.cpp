@@ -51,6 +51,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "collision.h"
 #include "face_position_cache.h"
 #include "util/basic_macros.h"
+#include "mapgen/mg_schematic.h"
+#include "serialization.h"
+#include "util/serialize.h"
 
 #define checkCSMRestrictionFlag(flag) \
 	( getClient(L)->checkCSMRestrictionFlag(CSMRestrictionFlags::flag) )
@@ -697,6 +700,301 @@ int ModApiClient::l_send_nodemeta_fields(lua_State *L)
 	return 0;
 }
 
+// read_schematic(schematic, options)
+int ModApiClient::l_read_schematic(lua_State *L)
+{
+	// If input is a table, parse as schematic def and return canonical form
+	if (lua_istable(L, 1)) {
+		lua_pushvalue(L, 1);
+		return 1;
+	}
+
+	// Input must be a string (raw MTS binary data)
+	size_t len;
+	const char *data = luaL_checklstring(L, 1, &len);
+	std::istringstream is(std::string(data, len), std::ios_base::binary);
+
+	// Read + validate signature
+	u32 signature = readU32(is);
+	if (signature != MTSCHEM_FILE_SIGNATURE)
+		throw LuaError("Not a valid MTS file (bad signature)");
+
+	u16 version = readU16(is);
+	if (version < 1 || version > MTSCHEM_FILE_VER_HIGHEST_READ)
+		throw LuaError("Unsupported MTS version");
+
+	// Read size
+	v3s16 size = readV3S16(is);
+	u32 nodecount = size.X * size.Y * size.Z;
+
+	// Read Y-slice probabilities
+	std::vector<u8> slice_probs(size.Y);
+	for (s16 y = 0; y < size.Y; y++)
+		slice_probs[y] = (version >= 3) ? readU8(is) : MTSCHEM_PROB_ALWAYS_OLD;
+
+	// Read node name table
+	u16 name_count = readU16(is);
+	std::vector<std::string> names(name_count);
+	for (u16 i = 0; i < name_count; i++)
+		names[i] = deSerializeString16(is);
+
+	// Fix old versions
+	if (version < 4) {
+		for (s16 y = 0; y < size.Y; y++)
+			slice_probs[y] >>= 1;
+	}
+
+	// Decompress bulk data
+	std::stringstream d_ss(std::ios_base::binary | std::ios_base::in | std::ios_base::out);
+	decompress(is, d_ss, MTSCHEM_MAPNODE_SER_FMT_VER);
+	std::string bulk = d_ss.str();
+
+	// Parse bulk: content_ids (u16), param1 (u8), param2 (u8) per node
+	u32 content_size = nodecount * 2;
+	const u8 *bp = (const u8 *)bulk.data();
+	std::vector<u16> content_ids(nodecount);
+	for (u32 i = 0; i < nodecount; i++)
+		content_ids[i] = readU16(bp + i * 2);
+
+	const u8 *param1s_src = bp + content_size;
+	const u8 *param2s_src = param1s_src + nodecount;
+
+	// Copy to mutable vectors (needed for version < 4 fixup)
+	std::vector<u8> param1s(param1s_src, param1s_src + nodecount);
+	std::vector<u8> param2s(param2s_src, param2s_src + nodecount);
+
+	// Fix probability range for v1-v3
+	if (version < 4) {
+		for (u32 i = 0; i < nodecount; i++)
+			param1s[i] >>= 1;
+	}
+
+	// Build Lua result table
+	lua_newtable(L);
+
+	// size field (v3s16 table with x, y, z)
+	lua_newtable(L);
+	lua_pushinteger(L, size.X); lua_setfield(L, -2, "x");
+	lua_pushinteger(L, size.Y); lua_setfield(L, -2, "y");
+	lua_pushinteger(L, size.Z); lua_setfield(L, -2, "z");
+	lua_setfield(L, -2, "size");
+
+	// yslice_prob field
+	lua_newtable(L);
+	for (s16 y = 0; y < size.Y; y++) {
+		lua_newtable(L);
+		lua_pushinteger(L, y); lua_setfield(L, -2, "ypos");
+		lua_pushinteger(L, (u32)(slice_probs[y] & MTSCHEM_PROB_MASK) * 2);
+		lua_setfield(L, -2, "prob");
+		lua_rawseti(L, -2, y + 1);
+	}
+	lua_setfield(L, -2, "yslice_prob");
+
+	// data field
+	lua_newtable(L);
+	u32 idx = 1;
+	for (s16 z = 0; z < size.Z; z++) {
+		for (s16 y = 0; y < size.Y; y++) {
+			for (s16 x = 0; x < size.X; x++) {
+				u32 i = z * size.Y * size.X + y * size.X + x;
+				u16 cid = content_ids[i];
+				if (cid >= names.size())
+					continue;
+				u8 p1 = param1s[i];
+				u8 p2 = param2s[i];
+
+				lua_newtable(L);
+				lua_pushstring(L, names[cid].c_str());
+				lua_setfield(L, -2, "name");
+				lua_pushinteger(L, (u32)(p1 & MTSCHEM_PROB_MASK) * 2);
+				lua_setfield(L, -2, "prob");
+				lua_pushinteger(L, p2);
+				lua_setfield(L, -2, "param2");
+				if (p1 & MTSCHEM_FORCE_PLACE) {
+					lua_pushboolean(L, 1);
+					lua_setfield(L, -2, "force_place");
+				}
+				lua_rawseti(L, -2, idx);
+				idx++;
+			}
+		}
+	}
+	lua_setfield(L, -2, "data");
+	return 1;
+}
+
+// serialize_schematic(schematic, format, options)
+int ModApiClient::l_serialize_schematic(lua_State *L)
+{
+	// Get format
+	std::string format = "mts";
+	if (lua_isstring(L, 2))
+		format = lua_tostring(L, 2);
+
+	// Parse input table (size, data, optional yslice_prob)
+	luaL_checktype(L, 1, LUA_TTABLE);
+
+	lua_getfield(L, 1, "size");
+	v3s16 size = check_v3s16(L, -1);
+	lua_pop(L, 1);
+
+	lua_getfield(L, 1, "data");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	u32 nodecount = size.X * size.Y * size.Z;
+
+	if (format == "lua") {
+		// Serialize to Lua table string format
+		bool use_comments = getboolfield_default(L, 3, "lua_use_comments", false);
+		u32 indent = getintfield_default(L, 3, "lua_num_indent_spaces", 0);
+
+		std::ostringstream os(std::ios_base::binary);
+		// Write Lua table
+		os << "return {";
+		if (use_comments) os << " -- schematic";
+		os << "\n";
+
+		os << "size = {x=" << size.X << ",y=" << size.Y << ",z=" << size.Z << "},"; if (use_comments) os << " -- size"; os << "\n";
+
+		os << "data = {";
+		std::string indent_str(indent, ' ');
+		// Iterate through data array
+		for (u32 i = 0; i < nodecount; i++) {
+			// Get each entry
+			lua_rawgeti(L, -1, i + 1);
+			lua_getfield(L, -1, "name");
+			std::string name = lua_tostring(L, -1);
+			lua_pop(L, 1);
+
+			u8 param1 = MTSCHEM_PROB_ALWAYS;
+			u8 param2 = 0;
+			bool force_place = false;
+
+			lua_getfield(L, -1, "prob");
+			if (lua_isnumber(L, -1))
+				param1 = lua_tointeger(L, -1) >> 1;
+			lua_pop(L, 1);
+
+			lua_getfield(L, -1, "param2");
+			if (lua_isnumber(L, -1))
+				param2 = lua_tointeger(L, -1);
+			lua_pop(L, 1);
+
+			lua_getfield(L, -1, "force_place");
+			if (lua_toboolean(L, -1))
+				force_place = true;
+			lua_pop(L, 1);
+
+			lua_pop(L, 1); // pop entry
+
+			os << indent_str << "{name=\"" << name << "\",prob=" << (u32)param1 * 2
+				<< ",param2=" << (u32)param2;
+			if (force_place)
+				os << ",force_place=true";
+			os << "},";
+			if (use_comments && i % 100 == 0)
+				os << " -- " << (i + 1) << "/" << nodecount;
+			os << "\n";
+		}
+		os << "},\n}\n";
+		lua_pop(L, 1); // pop data table
+		std::string result = os.str();
+		lua_pushlstring(L, result.data(), result.size());
+		return 1;
+	}
+
+	// Default: serialize to MTS binary format
+	//// Collect unique node names
+	std::unordered_map<std::string, u16> name_id_map;
+	std::vector<std::string> names;
+	std::vector<u16> content_ids(nodecount);
+	std::vector<u8> param1s(nodecount);
+	std::vector<u8> param2s(nodecount);
+
+	for (u32 i = 0; i < nodecount; i++) {
+		lua_rawgeti(L, -1, i + 1);
+		luaL_checktype(L, -1, LUA_TTABLE);
+
+		// Read name
+		lua_getfield(L, -1, "name");
+		std::string name = luaL_checkstring(L, -1);
+		lua_pop(L, 1);
+
+		// Insert or lookup name
+		auto it = name_id_map.find(name);
+		if (it != name_id_map.end()) {
+			content_ids[i] = it->second;
+		} else {
+			u16 id = names.size();
+			names.push_back(name);
+			name_id_map[name] = id;
+			content_ids[i] = id;
+		}
+
+		// Read prob/param1
+		u8 param1 = MTSCHEM_PROB_ALWAYS;
+		lua_getfield(L, -1, "prob");
+		if (lua_isnumber(L, -1))
+			param1 = lua_tointeger(L, -1) >> 1;
+		lua_pop(L, 1);
+
+		// Read force_place
+		lua_getfield(L, -1, "force_place");
+		if (lua_toboolean(L, -1))
+			param1 |= MTSCHEM_FORCE_PLACE;
+		lua_pop(L, 1);
+
+		param1s[i] = param1;
+
+		// Read param2
+		lua_getfield(L, -1, "param2");
+		param2s[i] = lua_isnumber(L, -1) ? lua_tointeger(L, -1) : 0;
+		lua_pop(L, 1);
+
+		lua_pop(L, 1); // pop entry
+	}
+	lua_pop(L, 1); // pop data table
+
+	//// Build MTS binary output
+	std::ostringstream os(std::ios_base::binary);
+
+	// Header: signature, version, size
+	writeU32(os, MTSCHEM_FILE_SIGNATURE);
+	writeU16(os, MTSCHEM_FILE_VER_HIGHEST_WRITE);
+	writeU16(os, size.X);
+	writeU16(os, size.Y);
+	writeU16(os, size.Z);
+
+	// Y-slice probabilities (all always-place)
+	for (s16 y = 0; y < size.Y; y++)
+		writeU8(os, MTSCHEM_PROB_ALWAYS);
+
+	// Node name table
+	writeU16(os, names.size());
+	for (u16 i = 0; i < names.size(); i++) {
+		writeU16(os, names[i].size());
+		os.write(names[i].data(), names[i].size());
+	}
+
+	// Bulk node data: all content_ids first, then all param1, then all param2
+	u32 content_size = nodecount * 2;
+	u32 bulk_size = content_size + nodecount * 2;
+	std::vector<u8> bulk(bulk_size, 0);
+	for (u32 i = 0; i < nodecount; i++) {
+		writeU16(&bulk[i * 2], content_ids[i]);
+		bulk[content_size + i] = param1s[i];
+		bulk[content_size + nodecount + i] = param2s[i];
+	}
+
+	// Compress bulk data
+	std::ostringstream cs(std::ios_base::binary);
+	compress(bulk.data(), bulk.size(), cs, MTSCHEM_MAPNODE_SER_FMT_VER, -1);
+	os << cs.str();
+
+	std::string result = os.str();
+	lua_pushlstring(L, result.data(), result.size());
+	return 1;
+}
+
 // show_toast(text, type)
 int ModApiClient::l_show_toast(lua_State *L)
 {
@@ -801,6 +1099,8 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(send_inventory_fields);
 	API_FCT(send_nodemeta_fields);
 	API_FCT(send_raw_packet);
+	API_FCT(read_schematic);
+	API_FCT(serialize_schematic);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)
