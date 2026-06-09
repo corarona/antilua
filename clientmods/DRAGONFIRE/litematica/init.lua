@@ -387,3 +387,98 @@ core.register_chatcommand("litesave", {
 		end
 	end,
 })
+
+-- Auto miner bot: walks to the nearest unplaced node and places it
+if sbots and sbots.register_bot then
+	local function has_item(name)
+		if not core.localplayer then return false end
+		local inv = core.get_inventory("current_player")
+		if not inv then return false end
+		for _, stack in ipairs(inv.main) do
+			if stack:get_name() == name then
+				return true
+			end
+		end
+		return false
+	end
+
+	sbots.register_bot("LitematicaBot", {
+		moving_target = true,
+		stand_waiting = true,
+		landing_distance = 3,
+		find_pos = function(self, pos)
+			if #place_nodes == 0 then return end
+			local closest, closest_dist
+			for _, entry in ipairs(place_nodes) do
+				if entry.name == "air" then goto skip_find end
+				if not has_item(entry.name) then goto skip_find end
+				local epos = vector.new(entry.x, entry.y, entry.z)
+				local dist = vector.distance(pos, epos)
+				if not closest or dist < closest_dist then
+					closest = epos
+					closest_dist = dist
+					self._current_entry = entry
+				end
+				::skip_find::
+			end
+			return closest
+		end,
+		update_pos = function(self, pos)
+			if self._current_entry then
+				-- Check if entry still valid
+				local found = false
+				for _, e in ipairs(place_nodes) do
+					if e == self._current_entry then
+						found = true
+						break
+					end
+				end
+				if found and has_item(self._current_entry.name) then
+					return vector.new(
+						self._current_entry.x,
+						self._current_entry.y,
+						self._current_entry.z
+					)
+				end
+			end
+			self._current_entry = nil
+			return self:find_pos(pos)
+		end,
+		do_pos = function(self, pos)
+			if not self._current_entry then return true end
+			local ep = vector.new(
+				self._current_entry.x,
+				self._current_entry.y,
+				self._current_entry.z
+			)
+			if ws.place(ep, self._current_entry.name) then
+				for i = #place_nodes, 1, -1 do
+					if place_nodes[i] == self._current_entry then
+						table.remove(place_nodes, i)
+						break
+					end
+				end
+			end
+			self._current_entry = nil
+			self.target_pos = nil
+			update_hud()
+			return true
+		end,
+		do_step = function(self, dtime)
+			-- If target was placed by PlaceLiteM, reset
+			if self._current_entry then
+				local found = false
+				for _, e in ipairs(place_nodes) do
+					if e == self._current_entry then
+						found = true
+						break
+					end
+				end
+				if not found then
+					self._current_entry = nil
+					self.stage = 0
+				end
+			end
+		end,
+	})
+end
