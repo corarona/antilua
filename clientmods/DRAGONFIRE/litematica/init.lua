@@ -1,6 +1,7 @@
 local modpath = core.get_modpath(core.get_current_modname())
 
 local litematica = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
+local place_nodes = {}
 
 local function deserialize_workaround(content)
 	local nodes, err = core.deserialize(content, true)
