@@ -836,6 +836,12 @@ int ModApiClient::l_read_schematic(lua_State *L)
 				lua_newtable(L);
 				lua_pushstring(L, names[cid].c_str());
 				lua_setfield(L, -2, "name");
+				lua_pushinteger(L, x);
+				lua_setfield(L, -2, "x");
+				lua_pushinteger(L, y);
+				lua_setfield(L, -2, "y");
+				lua_pushinteger(L, z);
+				lua_setfield(L, -2, "z");
 				lua_pushinteger(L, (u32)(p1 & MTSCHEM_PROB_MASK) * 2);
 				lua_setfield(L, -2, "prob");
 				lua_pushinteger(L, p2);
