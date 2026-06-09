@@ -45,8 +45,8 @@ function scaffold.template(setting, func, offset, funcstop)
 	offset = offset or {x = 0, y = -1, z = 0}
 	funcstop = funcstop or function() end
 	return function()
-		if minetest.localplayer and minetest.settings:get_bool(setting) then
-			local tgt = vector.add(minetest.localplayer:get_pos(), offset)
+		if core.localplayer and core.settings:get_bool(setting) then
+			local tgt = vector.add(core.localplayer:get_pos(), offset)
 			if not inside_constraints(tgt) then return end
 			func(tgt)
 		end
@@ -61,7 +61,7 @@ function scaffold.register_template_scaffold(name, setting, func, offset, funcst
 		on_stop = funcstop,
 	})
 end
-local mpath = minetest.get_modpath(minetest.get_current_modname())
+local mpath = core.get_modpath(core.get_current_modname())
 dofile(mpath .. "/bot_tools.lua")
 dofile(mpath .. "/spongebot.lua")
 dofile(mpath .. "/greenup.lua")
@@ -86,7 +86,7 @@ local function mscaffold(f)
 		for i = -n, n do
 			for j = yf, yt do
 				local p = ws.dircoord(fo, j, i)
-				local nd = p and minetest.get_node_or_nil(p)
+				local nd = p and core.get_node_or_nil(p)
 				if nd then
 					ws.place(p, {multiscaff_node})
 				end
@@ -101,7 +101,7 @@ ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold',
 		mscaffold(0)
 	end,
 	on_start = function(self)
-		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
+		multiscaff_node = core.localplayer:get_wielded_item():get_name()
 	end,
 	on_stop = function(self)
 	end,
@@ -137,7 +137,7 @@ ws.rg('MScaffModulo', { category = 'Place', setting = 'multiscaffm',
 		end
 	end,
 	on_start = function(self)
-		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
+		multiscaff_node = core.localplayer:get_wielded_item():get_name()
 	end,
 	on_stop = function(self)
 	end,
@@ -162,7 +162,7 @@ end)
 
 scaffold.register_template_scaffold("RandomScaff", "place_rnd", function()
 	local below=ws.dircoord(0,-1,0)
-	local n = minetest.get_node_or_nil(below)
+	local n = core.get_node_or_nil(below)
 	local nl=nlist.get('randomscaffold')
 	table.shuffle(nl)
 	if n and not ws.in_list(n.name, nl) then
@@ -198,7 +198,7 @@ ws.rg("Highway", { category = "Place", setting = "highwaymaker",
 			local pl = is_lantern(lp)
 			if pl then
 				local lpos = ws.dircoord(0, 3, 0)
-				local nd = minetest.get_node_or_nil(lpos)
+				local nd = core.get_node_or_nil(lpos)
 				if nd and nd.name ~= lightblock then
 					ws.dig(lpos)
 					ws.place(lpos, lightblock, 5)
@@ -209,7 +209,7 @@ ws.rg("Highway", { category = "Place", setting = "highwaymaker",
 	on_start = function(self)
 		core.settings:set("place.width", "5")
 		core.settings:set("place.depth", "3")
-		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
+		multiscaff_node = core.localplayer:get_wielded_item():get_name()
 	end,
 	daughters = {'block_sources'},
 	delay = 0.05,
@@ -229,7 +229,7 @@ ws.rg("HighwayZ", { category = "Place", setting = "highwayz",
 		}
 		for i, p in pairs(positions) do
 			if i > npt then break end
-			if p then minetest.place_node(p) end
+			if p then core.place_node(p) end
 		end
 	end,
 })
@@ -255,19 +255,19 @@ ws.rg("BlockSources", {
 			table.insert_all(targets, {"mcl_nether:nether_lava_source", "mcl_nether:nether_lava_flowing"})
 		end
 		if #targets == 0 then return end
-		local positions = minetest.find_nodes_near(lp, 5, targets, true)
+		local positions = core.find_nodes_near(lp, 5, targets, true)
 		for i, p in pairs(positions) do
 			if i > npt then return end
 			if p.y < 2 and p.x > 250 and p.z > 250 then return end
 			if use_wielded then
 				ws.place(p, multiscaff_node)
 			else
-				minetest.place_node(p)
+				core.place_node(p)
 			end
 		end
 	end,
 	on_start = function(self)
-		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
+		multiscaff_node = core.localplayer:get_wielded_item():get_name()
 		if not multiscaff_node then return true end
 	end,
 	cheat_settings = {
@@ -283,17 +283,17 @@ ws.rg("PlaceOnTop", { category = "Place", setting = "place_on_top",
 		if not multiscaff_node then return end
 		local npt = ws.get_nodes_per_tick()
 		local lp = ws.dircoord(0, 0, 0)
-		local item = minetest.localplayer:get_wielded_item():get_name()
+		local item = core.localplayer:get_wielded_item():get_name()
 		if not item then return end
-		local positions = minetest.find_nodes_near_under_air_except(lp, 5, {multiscaff_node}, true)
+		local positions = core.find_nodes_near_under_air_except(lp, 5, {multiscaff_node}, true)
 		for i, p in pairs(positions) do
 			if i > npt then break end
 			ws.place(vector.add(p, {x = 0, y = 1, z = 0}), multiscaff_node)
 		end
 	end,
 	on_start = function(self)
-		if not minetest.localplayer then return true end
-		local it = minetest.localplayer:get_wielded_item()
+		if not core.localplayer then return true end
+		local it = core.localplayer:get_wielded_item()
 		if it.type ~= "node" then return true end
 		multiscaff_node = it:get_name()
 		if not multiscaff_node then return true end
@@ -312,7 +312,7 @@ ws.rg("LanternTBM", { category = "Place", setting = "place_ltbm",
 		local ypos = tonumber(core.settings:get("place_ltbm.depth")) or 1
 		if lightblock and pl then
 			local lpos = ws.dircoord(0, ypos, 0)
-			local nd = minetest.get_node_or_nil(lpos)
+			local nd = core.get_node_or_nil(lpos)
 			if nd and nd.name ~= lightblock then
 				ws.dig(lpos)
 				ws.place(lpos, lightblock, 5)
@@ -320,7 +320,7 @@ ws.rg("LanternTBM", { category = "Place", setting = "place_ltbm",
 		end
 	end,
 	on_start = function(self)
-		lightblock = minetest.localplayer:get_wielded_item():get_name()
+		lightblock = core.localplayer:get_wielded_item():get_name()
 	end,
 	on_stop = function(self)
 	end,

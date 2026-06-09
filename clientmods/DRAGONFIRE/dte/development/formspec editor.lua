@@ -12,7 +12,7 @@ local data = {  -- window size
     height = 10,
     
 }
-local form_esc = minetest.formspec_escape  -- shorten the function
+local form_esc = core.formspec_escape  -- shorten the function
 
 local modstorage = core.get_mod_storage()
 
@@ -59,7 +59,7 @@ end
 
 local function reload_ui()  -- update the display, and save the file
     modstorage:set_string("_GUI_editor_file_"..current_ui_file, dump(widgets))
-    minetest.show_formspec("ui_editor:main", main_ui_form())
+    core.show_formspec("ui_editor:main", main_ui_form())
 end
 
 local function load_UI(name)  -- open/create a ui file
@@ -368,7 +368,7 @@ end
 -- generates a function to create the UI, with parameters
 local function generate_function()
     local form_esc = function(str)  -- escape symbols need to be escaped
-        return string.gsub(minetest.formspec_escape(str), "\\", "\\\\")  -- which have to be escaped...
+        return string.gsub(core.formspec_escape(str), "\\", "\\\\")  -- which have to be escaped...
     end
     
     local parameters = {}  -- these store info which will be put together at the end
@@ -719,7 +719,7 @@ local function generate_function()
                 local default = ""
                 if v.default_param then  -- default param
                     table.insert(parameters, name(v).."_default")
-                    default = '"..minetest.formspec_escape('..name(v)..'_default).."'
+                    default = '"..core.formspec_escape('..name(v)..'_default).."'
                 else
                     default = form_esc(v.default)
                 end
@@ -733,7 +733,7 @@ local function generate_function()
             local default = ""
             if v.default_param then
                 table.insert(parameters, name(v).."_default")
-                default = '"..minetest.formspec_escape('..name(v)..'_default).."'
+                default = '"..core.formspec_escape('..name(v)..'_default).."'
             else
                 default = form_esc(v.default)
             end
@@ -743,7 +743,7 @@ local function generate_function()
             local label = form_esc(v.label)
             if v.label_param then
                 table.insert(parameters, name(v).."_label")
-                label = '"..minetest.formspec_escape('..name(v)..'_label).."'
+                label = '"..core.formspec_escape('..name(v)..'_label).."'
             end
             if v.vertical then  -- vertical label
                 table.insert(display, '"vertlabel['..get_rect(v)..';'..label..']"')
@@ -759,7 +759,7 @@ local function generate_function()
                 '    local '..name(v)..'_item_str = ""\n' ..
                 '    for i, item in pairs('..name(v)..'_items) do\n' ..
                 '        if i ~= 1 then '..name(v)..'_item_str = '..name(v)..'_item_str.."," end\n' ..
-                '        '..name(v)..'_item_str = '..name(v)..'_item_str .. minetest.formspec_escape(item)\n' ..
+                '        '..name(v)..'_item_str = '..name(v)..'_item_str .. core.formspec_escape(item)\n' ..
                 '    end\n\n'
                 items = '"..'..name(v)..'_item_str.."'
             else
@@ -788,7 +788,7 @@ local function generate_function()
                 '    local '..name(v)..'_item_str = ""\n' ..
                 '    for i, item in pairs('..name(v)..'_items) do\n' ..
                 '        if i ~= 1 then '..name(v)..'_item_str = '..name(v)..'_item_str.."," end\n' ..
-                '        '..name(v)..'_item_str = '..name(v)..'_item_str .. minetest.formspec_escape(item)\n' ..
+                '        '..name(v)..'_item_str = '..name(v)..'_item_str .. core.formspec_escape(item)\n' ..
                 '    end\n\n'
                 items = '"..'..name(v)..'_item_str.."'
             else
@@ -854,7 +854,7 @@ local function generate_function()
             local data = ""
             if v.data_param then  -- extra location data needed in some locations
                 table.insert(parameters, name(v).."_data")
-                data = '"..minetest.formspec_escape('..name(v)..'_data).."'
+                data = '"..core.formspec_escape('..name(v)..'_data).."'
             elseif extras[v.location] then
                 data = form_esc(v.data)
             end
@@ -1014,7 +1014,7 @@ local function generate_function()
         '                if item == nil then ' ..
         'item = "" ' ..
         'end\n' ..
-        '                cell_str = cell_str..minetest.formspec_escape(item)\n' ..
+        '                cell_str = cell_str..core.formspec_escape(item)\n' ..
         '            end\n' ..
         '        end\n' ..
         '        return cell_str\n' ..
@@ -1045,7 +1045,7 @@ end
 -- generates a string for a static UI
 local function generate_string()
     local form_esc = function(str)  -- escape symbols need to be escaped with escaped escape symbols ;p
-        return string.gsub(minetest.formspec_escape(str), "\\", "\\\\")
+        return string.gsub(core.formspec_escape(str), "\\", "\\\\")
     end
     
     local fwidth = {0}
@@ -2190,12 +2190,12 @@ local widget_editor_uis = {
         end,
         func = function(id, fields)
             if fields.string_create then  -- display the formspec to output the generated string (and generate it)
-                minetest.show_formspec("ui_editor:output", 
+                core.show_formspec("ui_editor:output", 
                 "size[10,8]" ..
                 "textarea[1,1;9,7;_;Generated Code;"..form_esc(generate_string()).."]" ..
                 "button[8.8,0;1,1;back;back]")
             elseif fields.func_create then  -- display the (same) formspec to output the generated function (and generate it)
-                minetest.show_formspec("ui_editor:output", 
+                core.show_formspec("ui_editor:output", 
                 "size[10,8]" ..
                 "textarea[1,1;9,7;_;Generated Code;"..form_esc(generate_function()).."]" ..
                 "button[8.8,0;1,1;back;back]")
@@ -2304,12 +2304,12 @@ local widget_editor_uis = {
 ----------
 
 -- handles formspec input, or sends to correct places
-minetest.register_on_formspec_input(function(formname, fields)
+core.register_on_formspec_input(function(formname, fields)
     if formname == "ui_editor:main" then
         if fields.widg_select then  -- select a widget
             selected_widget = tonumber(string.sub(fields.widg_select, 5))-4
             new_widg_tab = false
-            minetest.show_formspec("ui_editor:main", main_ui_form())
+            core.show_formspec("ui_editor:main", main_ui_form())
         
         elseif fields.widg_mov_up then  -- move a widget up
             if selected_widget > 2 then
@@ -2458,9 +2458,9 @@ end
 ---------- ----------
 
 -- register the chat command
-minetest.register_chatcommand("gui", {
+core.register_chatcommand("gui", {
     description = core.gettext("UI editor"),
     func = function()
-        minetest.show_formspec("ui_editor:main", main_ui_form())
+        core.show_formspec("ui_editor:main", main_ui_form())
     end,
 })

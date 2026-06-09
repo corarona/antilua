@@ -1,4 +1,4 @@
--- Dragonfire-specific chat commands.
+-- Antilua-specific chat commands.
 -- Loaded after chatcommands.lua — keeps DF additions separate from upstream.
 
 core.register_chatcommand("say", {

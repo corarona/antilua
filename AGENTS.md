@@ -1,12 +1,12 @@
-# DragonfireClient (Luanti fork)
+# Antilua
 
-This repo is DragonfireClient, a fork of Luanti (formerly Minetest) — a free
+This repo is Antilua, a fork of Luanti (formerly Minetest) — a free
 open-source voxel game engine with client-side enhancements.
 
 ## Remotes
 
 - `luanti` — upstream Luanti at https://github.com/luanti-org/luanti/
-- `origin` — dragonfireclient fork on GitHub
+- `origin` — antilua fork on Codeberg
 - `ws` — waspsaliva (related fork)
 
 The project is currently being rebased onto `luanti/master` on the `df-rebased`
@@ -38,7 +38,7 @@ Prefer `-j3` on 4-core machines (keep one core free).
 # C++ unit tests (requires -DBUILD_UNITTESTS=TRUE, which is the default)
 ./bin/luanti --run-unittests
 
-# Integration tests (DragonfireClient client-side features)
+# Integration tests (Antilua client-side features)
 # Requires xvfb-run or Xvfb for headless display.
 # Lua-only changes don't need a rebuild — just re-run.
 ./util/ci/run_df_tests.sh
@@ -122,7 +122,6 @@ Adds an `enable_shaders` toggle (`Settings → Enable shaders`) that falls back 
 **Testing:** `./bin/luanti --run-unittests` — all 50 modules must pass.
 
 ## Key Directories
->>>>>>> 9c2ed3d3e (docs: add OpenGL 1.4 compat section to AGENTS.md)
 
 | Path | Purpose |
 |------|---------|
@@ -164,4 +163,3 @@ Adds an `enable_shaders` toggle (`Settings → Enable shaders`) that falls back 
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
 - **EDT_OPENGL** (`irr/src/COpenGLDriver.cpp`): Legacy driver with full fixed-function pipeline (material renderers, `glTexEnv`, `GL_ALPHA_TEST`, client-side vertex arrays). Compiles only when `_IRR_COMPILE_WITH_OPENGL_` is defined (always on for Luanti).
-

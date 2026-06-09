@@ -3,7 +3,7 @@ local data = {  -- window size
     height = 10,
     
 }
-local form_esc = minetest.formspec_escape  -- shorten the function
+local form_esc = core.formspec_escape  -- shorten the function
 
 local modstorage = core.get_mod_storage()
 
@@ -63,9 +63,9 @@ local reg_funcs = {formspec_input={}, chatcommands={}, on_connect={}, joinplayer
 local selected_files = {0, 0}
 
 
-minetest.register_on_connect(function()  -- some functions don't work after startup. this tries to replace them
+core.register_on_connect(function()  -- some functions don't work after startup. this tries to replace them
 
-    minetest.get_mod_storage = function()
+    core.get_mod_storage = function()
         return modstorage
     end
     
@@ -106,13 +106,13 @@ function print(...)  --  replace print to output into the UI. (doesn't refresh u
 end
 
 function safe(func)  -- run a function without crashing the game. All errors are displayed in the UI. 
-    f = function(...)  -- This can be used for functions being registered with minetest, like "minetest.register_chat_command()"
+    f = function(...)  -- This can be used for functions being registered with minetest, like "core.register_chat_command()"
         status, out = pcall(func, ...)
         if status then
             return out
         else
             table.insert(output, "#ff0000Error:  "..out)
-            minetest.debug("Error (func):  "..out)
+            core.debug("Error (func):  "..out)
             return nil
         end
     end
@@ -141,10 +141,10 @@ local function run(code, name)  -- run a script
         end
         if saved_file == false then
             table.insert(output, "#ff0000Error:  "..err)  -- display errors
-            minetest.log("Error (unsaved):  "..err)
+            core.log("Error (unsaved):  "..err)
         else
             table.insert(output, "#ff0000"..name..": Error:  "..err)
-            minetest.log("Error ("..name.."):  "..err)
+            core.log("Error ("..name.."):  "..err)
         end
     end
 end
@@ -273,7 +273,7 @@ end
 -- FUNCTIONALITY
 ----------
 
-minetest.register_on_formspec_input(function(formname, fields)
+core.register_on_formspec_input(function(formname, fields)
 
     -- EDITING PAGE
     ----------
@@ -282,7 +282,7 @@ minetest.register_on_formspec_input(function(formname, fields)
             save_lua(fields.editor)
             run(fields.editor)
             
-            minetest.show_formspec("lua:editor", lua_editor())
+            core.show_formspec("lua:editor", lua_editor())
         
         elseif fields.save then  --[SAVE] button
             if saved_file == false then
@@ -294,7 +294,7 @@ minetest.register_on_formspec_input(function(formname, fields)
         elseif fields.clear then  --[CLEAR] button
             output = {}
             save_lua(fields.editor)
-            minetest.show_formspec("lua:editor", lua_editor())
+            core.show_formspec("lua:editor", lua_editor())
         end
     
     -- STARTUP EDITOR
@@ -311,7 +311,7 @@ minetest.register_on_formspec_input(function(formname, fields)
                     end
                 end
                 modstorage:set_string("_lua_startup", startup_str)
-                minetest.show_formspec("lua:startup", startup_form())
+                core.show_formspec("lua:startup", startup_form())
             end
         
         elseif fields.chooser then  -- double click a file to add it to the list
@@ -325,7 +325,7 @@ minetest.register_on_formspec_input(function(formname, fields)
                     end
                 end
                 modstorage:set_string("_lua_startup", startup_str)
-                minetest.show_formspec("lua:startup", startup_form())
+                core.show_formspec("lua:startup", startup_form())
             end
         end
     end
@@ -353,7 +353,7 @@ end)
 -- UI FUNCTIONALITY
 ----------
 
-minetest.register_on_formspec_input(function(formname, fields)
+core.register_on_formspec_input(function(formname, fields)
         -- FILE VIEWER
     ----------    
     if formname == "files:viewer" then
@@ -374,7 +374,7 @@ minetest.register_on_formspec_input(function(formname, fields)
             end
             
             modstorage:set_string("_lua_files_list", files_str)
-            minetest.show_formspec("files:viewer", file_viewer())
+            core.show_formspec("files:viewer", file_viewer())
         
         elseif fields.del_ui then
             name = ui_files[selected_files[2] ]
@@ -391,7 +391,7 @@ minetest.register_on_formspec_input(function(formname, fields)
             end
             
             modstorage:set_string("_UI_files_list", files_str)
-            minetest.show_formspec("files:viewer", file_viewer())
+            core.show_formspec("files:viewer", file_viewer())
         
         elseif fields.lua_select then  -- click on a file to select it, double click to open it
             local index = tonumber(string.sub(fields.lua_select, 5))
@@ -399,10 +399,10 @@ minetest.register_on_formspec_input(function(formname, fields)
                 saved_file = lua_files[index]
                 
                 modstorage:set_string("_lua_saved", saved_file)
-                minetest.show_formspec("lua:editor", lua_editor())
+                core.show_formspec("lua:editor", lua_editor())
             else
                 selected_files[1] = index
-                minetest.show_formspec("files:viewer", file_viewer())
+                core.show_formspec("files:viewer", file_viewer())
             end
             
         elseif fields.ui_select then  -- click on a file to select it, double click to open it
@@ -412,7 +412,7 @@ minetest.register_on_formspec_input(function(formname, fields)
                 reload_ui()
             else
                 selected_files[2] = index
-                minetest.show_formspec("files:viewer", file_viewer())
+                core.show_formspec("files:viewer", file_viewer())
             end
         
         elseif fields.key_enter_field == "new_lua" or fields.add_lua then
@@ -435,7 +435,7 @@ minetest.register_on_formspec_input(function(formname, fields)
                 end
                 modstorage:set_string("_lua_files_list", files_str)
                 saved_file = fields.new_lua
-                minetest.show_formspec("lua:editor", lua_editor())
+                core.show_formspec("lua:editor", lua_editor())
             end
         
         elseif fields.key_enter_field == "new_ui" or fields.add_ui then
@@ -465,15 +465,15 @@ minetest.register_on_formspec_input(function(formname, fields)
     
     if fields._option_tabs_ then
         if fields._option_tabs_ == "1" then
-            minetest.show_formspec("lua:editor", lua_editor())
+            core.show_formspec("lua:editor", lua_editor())
         elseif fields._option_tabs_ == "2" then
             reload_ui()
         elseif fields._option_tabs_ == "4" then
-            minetest.show_formspec("files:viewer", file_viewer())
+            core.show_formspec("files:viewer", file_viewer())
         elseif fields._option_tabs_ == "5" then
-            minetest.show_formspec("lua:startup", startup_form())
+            core.show_formspec("lua:startup", startup_form())
         else
-            minetest.show_formspec("lua:unknown", 
+            core.show_formspec("lua:unknown", 
             "size["..data.width..","..data.height.."]label[1,1;COMING SOON]"..create_tabs(fields._option_tabs_))
         end
         
@@ -486,7 +486,7 @@ end)
 core.register_chatcommand("dte", {  -- register the chat command
     description = core.gettext("open a lua IDE"),
     func = function(parameter)
-        minetest.show_formspec("lua:editor", lua_editor())
+        core.show_formspec("lua:editor", lua_editor())
     end,
 })
 

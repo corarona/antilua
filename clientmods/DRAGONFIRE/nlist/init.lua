@@ -1,5 +1,5 @@
 nlist = {}
-local storage = minetest.get_mod_storage("nlist")
+local storage = core.get_mod_storage("nlist")
 local sl="default"
 local mode=1 --1:add, 2:remove
 local nled_hud
@@ -108,7 +108,7 @@ function nlist.show_list(list, hlp)
 		nlist_last_content = txt
 		local dtext = "List: " .. txt
 		if nled_hud then
-			minetest.localplayer:hud_change(nled_hud, 'text', dtext)
+			core.localplayer:hud_change(nled_hud, 'text', dtext)
 		else
 			nlist.set_nled_hud(txt)
 		end
@@ -123,18 +123,18 @@ local function textlist_idx(val)
 end
 
 function nlist.hide()
-	if not minetest.localplayer then return end
-	if nled_hud then minetest.localplayer:hud_remove(nled_hud) nled_hud=nil end
+	if not core.localplayer then return end
+	if nled_hud then core.localplayer:hud_remove(nled_hud) nled_hud=nil end
 end
 
 function nlist.set_nled_hud(ttext)
-	if not minetest.localplayer then return end
+	if not core.localplayer then return end
 	if type(ttext) ~= "string" then return end
 	local dtext = "List: " .. ttext
 	if nled_hud then
-		minetest.localplayer:hud_change(nled_hud, 'text', dtext)
+		core.localplayer:hud_change(nled_hud, 'text', dtext)
 	else
-		nled_hud = minetest.localplayer:hud_add({
+		nled_hud = core.localplayer:hud_add({
 			hud_elem_type = 'text',
 			name = "Nodelist",
 			text = dtext,
@@ -148,8 +148,8 @@ function nlist.set_nled_hud(ttext)
 	return true
 end
 
-minetest.register_on_punchnode(function(p, n)
-	if not minetest.settings:get_bool('nlist_edmode') then return end
+core.register_on_punchnode(function(p, n)
+	if not core.settings:get_bool('nlist_edmode') then return end
 	if mode == 1 then
 		nlist.add(nlist.selected, n.name)
 	elseif mode == 2 then
@@ -248,24 +248,24 @@ core.register_on_formspec_input(function(formname, fields)
 		core.show_cheat_settings_form("nlist_edmode")
 	end)
 
-minetest.register_chatcommand('nls',{
+core.register_chatcommand('nls',{
 	description = "Select a list",
 	params = "<list>",
 	func=function(list)
 		nlist.select(list)
 	end
 })
-minetest.register_chatcommand('nlshow',{
+core.register_chatcommand('nlshow',{
 	description = "Show a list without selecting",
 	params = "<list>",
 	func=function() nlist.show_list(sl) end
 })
-minetest.register_chatcommand('nlhide',{
+core.register_chatcommand('nlhide',{
 	description = "Hide the currently shown list",
 	params = "",
 	func=function() nlist.hide() end
 })
-minetest.register_chatcommand('nla',{
+core.register_chatcommand('nla',{
 	description = "Add an item to the selected list or switch to 'add' mode if run without parameters",
 	params = "[<item>]",
 	func=function(el)
@@ -273,7 +273,7 @@ minetest.register_chatcommand('nla',{
 		nlist.add(sl,el)
 	end
 })
-minetest.register_chatcommand('nlr',{
+core.register_chatcommand('nlr',{
 	description = "Remove an item from the selected list or switch to 'remove' mode if run without parameters",
 	params = "[<item>]",
 	func=function(el)
@@ -281,54 +281,54 @@ minetest.register_chatcommand('nlr',{
 		nlist.remove(sl,el)
 	end
 })
-minetest.register_chatcommand('nlc',{
+core.register_chatcommand('nlc',{
 	description = "Clear the selected list",
 	params = "",
 	func=function(el) nlist.clear(sl) end
 })
 
-minetest.register_chatcommand('nlawi',{
+core.register_chatcommand('nlawi',{
 	description = "Add wielded itemstring to the selected list",
 	params = "",
-	func=function() if not minetest.localplayer then return end nlist.add(sl,minetest.localplayer:get_wielded_item():get_name())  end
+	func=function() if not core.localplayer then return end nlist.add(sl,core.localplayer:get_wielded_item():get_name())  end
 })
 
-minetest.register_chatcommand('nlrwi',{
+core.register_chatcommand('nlrwi',{
 	description = "Remove wielded itemstring from the selected list",
 	params = "",
-	func=function() if not minetest.localplayer then return end nlist.remove(sl,minetest.localplayer:get_wielded_item():get_name())  end
+	func=function() if not core.localplayer then return end nlist.remove(sl,core.localplayer:get_wielded_item():get_name())  end
 })
 
-minetest.register_chatcommand('nlapn',{
+core.register_chatcommand('nlapn',{
 	description = "Add pointed node's itemstring to the selected list",
 	params = "",
 	func=function()
-		if not minetest.localplayer then return end
-		local ptd = minetest.get_pointed_thing()
+		if not core.localplayer then return end
+		local ptd = core.get_pointed_thing()
 		if ptd then
-			local nd=minetest.get_node_or_nil(ptd.under)
+			local nd=core.get_node_or_nil(ptd.under)
 			if nd then nlist.add(sl,nd.name) end
 		end
 end})
-minetest.register_chatcommand('nlrpn',{
+core.register_chatcommand('nlrpn',{
 	description = "Remove pointed node's itemstring from the selected list",
 	params = "",
 	func=function()
-		if not minetest.localplayer then return end
-		local ptd = minetest.get_pointed_thing()
+		if not core.localplayer then return end
+		local ptd = core.get_pointed_thing()
 		if ptd then
-			local nd=minetest.get_node_or_nil(ptd.under)
+			local nd=core.get_node_or_nil(ptd.under)
 			if nd then nlist.remove(sl,nd.name) end
 		end
 end})
 
 
-for k,v in pairs(minetest.registered_chatcommands) do
+for k,v in pairs(core.registered_chatcommands) do
 	if v.list_setting then
 		local oldfunc = v.func
-		minetest.registered_chatcommands[k].params = "del <item> | add <item> | list | nls"
-		minetest.registered_chatcommands[k].description = v.description..", nls to import currently selected nlist"
-		minetest.registered_chatcommands[k].func = function(p)
+		core.registered_chatcommands[k].params = "del <item> | add <item> | list | nls"
+		core.registered_chatcommands[k].description = v.description..", nls to import currently selected nlist"
+		core.registered_chatcommands[k].func = function(p)
 			if p == "nls" then
 				nlist.copy(nlist.selected,v.list_setting)
 				return

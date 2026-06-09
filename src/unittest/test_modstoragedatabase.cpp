@@ -1,4 +1,4 @@
-// Luanti
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2018 bendeutsch, Ben Deutsch <ben@bendeutsch.de>
 // Copyright (C) 2021 TurkeyMcMac, Jude Melton-Houghton <jwmhjwmh@gmail.com>

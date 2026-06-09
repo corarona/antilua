@@ -1,6 +1,6 @@
 local threads = {}
 local time = 0
-minetest.register_globalstep(function(dtime)
+core.register_globalstep(function(dtime)
 	time = time + dtime
 	if #threads < 1 then
 		return
@@ -42,7 +42,7 @@ function async.Async()
 	self.create_worker = function(func)
 		local thread = coroutine.create(func)
 		if not thread or coroutine.status(thread) == "dead" then
-			minetest.after(0.5, self.create_worker, func)
+			core.after(0.5, self.create_worker, func)
 			return
 		end
 		threads[#threads + 1] = {
@@ -54,7 +54,7 @@ function async.Async()
 	self.create_globalstep_worker = function(func)
 		local thread = coroutine.create(func)
 		if not thread or coroutine.status(thread) == "dead" then
-			minetest.after(0.5, self.create_globalstep_worker, func)
+			core.after(0.5, self.create_globalstep_worker, func)
 			return
 		end
 		threads[#threads + 1] = {
@@ -65,16 +65,16 @@ function async.Async()
 	end
 	self.iterate = function(from, to, func, callback)
 		self.create_worker(function()
-			local last_time = minetest.get_us_time() / 1000
+			local last_time = core.get_us_time() / 1000
 			local maxtime = self.maxtime
 			for i = from, to do
 				local b = func(i)
 				if b ~= nil and b == false then
 					break
 				end
-				if minetest.get_us_time() / 1000 > last_time + maxtime then
+				if core.get_us_time() / 1000 > last_time + maxtime then
 					coroutine.yield()
-					last_time = minetest.get_us_time() / 1000
+					last_time = core.get_us_time() / 1000
 				end
 			end
 			if callback then
@@ -85,16 +85,16 @@ function async.Async()
 	end
 	self.foreach = function(_pairs, func, callback)
 		self.create_worker(function()
-			local last_time = minetest.get_us_time() / 1000
+			local last_time = core.get_us_time() / 1000
 			local maxtime = self.maxtime
 			for k, v in _pairs do
 				local b = func(k, v)
 				if b ~= nil and b == false then
 					break
 				end
-				if minetest.get_us_time() / 1000 > last_time + maxtime then
+				if core.get_us_time() / 1000 > last_time + maxtime then
 					coroutine.yield()
-					last_time = minetest.get_us_time() / 1000
+					last_time = core.get_us_time() / 1000
 				end
 			end
 			if callback then
@@ -105,16 +105,16 @@ function async.Async()
 	end
 	self.do_while = function(condition_func, func, callback)
 		self.create_worker(function()
-			local last_time = minetest.get_us_time() / 1000
+			local last_time = core.get_us_time() / 1000
 			local maxtime = self.maxtime
 			while(condition_func()) do
 				local c = func()
 				if c ~= nil and c ~= condition_func() then
 					break
 				end
-				if minetest.get_us_time() / 1000 > last_time + maxtime then
+				if core.get_us_time() / 1000 > last_time + maxtime then
 					coroutine.yield()
-					last_time = minetest.get_us_time() / 1000
+					last_time = core.get_us_time() / 1000
 				end
 			end
 			if callback then
@@ -125,15 +125,15 @@ function async.Async()
 	end
 	self.register_globalstep = function(func)
 		self.create_globalstep_worker(function()
-			local last_time = minetest.get_us_time() / 1000000
+			local last_time = core.get_us_time() / 1000000
 			local dtime = last_time
 			while(true) do
-				dtime = (minetest.get_us_time() / 1000000) - last_time
+				dtime = (core.get_us_time() / 1000000) - last_time
 				func(dtime)
 				-- 0.05 seconds
-				if minetest.get_us_time() / 1000000 > last_time + 0.05 then
+				if core.get_us_time() / 1000000 > last_time + 0.05 then
 					coroutine.yield()
-					last_time = minetest.get_us_time() / 1000000
+					last_time = core.get_us_time() / 1000000
 				end
 			end
 		end)
@@ -141,16 +141,16 @@ function async.Async()
 	self.chain_task = function(tasks, callback)
 		self.create_worker(function()
 			local pass_arg = nil
-			local last_time = minetest.get_us_time() / 1000
+			local last_time = core.get_us_time() / 1000
 			local maxtime = self.maxtime
 			for index, task_func in pairs(tasks) do
 				local p = task_func(pass_arg)
 				if p ~= nil then
 					pass_arg = p
 				end
-				if minetest.get_us_time() / 1000 > last_time + maxtime then
+				if core.get_us_time() / 1000 > last_time + maxtime then
 					coroutine.yield()
-					last_time = minetest.get_us_time() / 1000
+					last_time = core.get_us_time() / 1000
 				end
 			end
 			if callback then
@@ -165,7 +165,7 @@ function async.Async()
 			self.queue_threads = self.queue_threads - 1
 			self.create_worker(function()
 				local pass_arg = nil
-				local last_time = minetest.get_us_time() / 1000
+				local last_time = core.get_us_time() / 1000
 				local maxtime = self.maxtime
 				while(true) do
 					local task_func = self.task_queue[#self.task_queue]
@@ -179,9 +179,9 @@ function async.Async()
 						if task_func.callback then
 							task_func.callback(pass_arg)
 						end
-						if minetest.get_us_time() / 1000 > last_time + maxtime then
+						if core.get_us_time() / 1000 > last_time + maxtime then
 							coroutine.yield()
-							last_time = minetest.get_us_time() / 1000
+							last_time = core.get_us_time() / 1000
 						end
 					else
 						self.queue_threads = self.queue_threads + 1

@@ -1,4 +1,4 @@
-// Luanti
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2014-2018 kwolekr, Ryan Kwolek <kwolekr@minetest.net>
 // Copyright (C) 2014-2018 paramat

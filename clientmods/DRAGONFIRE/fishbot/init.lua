@@ -4,7 +4,7 @@ local fb_obpos=vector.new(0,0,0)
 local function find_closest_water_source(self)
 	local lp=ws.dircoord(0,0,0)
 	local range = tonumber(core.settings:get(self.setting .. ".water_range")) or 10
-	local nds=minetest.find_nodes_near(lp, range, {"mcl_core:water_source"})
+	local nds=core.find_nodes_near(lp, range, {"mcl_core:water_source"})
 	local odst=100
 	local rt=vector.new()
 	for k,v in ipairs(nds) do
@@ -16,7 +16,7 @@ end
 
 local function get_bobber_pos(self)
 	local range = tonumber(core.settings:get(self.setting .. ".bobber_range")) or 10
-	local obs=minetest.get_objects_inside_radius(ws.dircoord(0,0,0), range)
+	local obs=core.get_objects_inside_radius(ws.dircoord(0,0,0), range)
 	for k,v in ipairs(obs) do
 		local txt = (v.get_properties and v:get_properties().textures[1]) or (v.get_item_textures and v:get_item_textures())  or ""
 		if txt:find("bobber") then
@@ -36,17 +36,17 @@ ws.rg('FishBot', {
 		local bpos=get_bobber_pos(self)
 		if not bpos then fb_state=0; return end
 		if fb_state == 0 then
-			minetest.interact("activate",{type="nothing"})
+			core.interact("activate",{type="nothing"})
 			fb_state=1
 		elseif fb_state == 1 then
 			if vector.distance(bpos,fb_obpos) == 0 then
 				fb_state=2
 			end
 		elseif fb_state == 2 then
-			local nd=minetest.get_node_or_nil(vector.add(bpos,vector.new(0,-0.5,0)))
+			local nd=core.get_node_or_nil(vector.add(bpos,vector.new(0,-0.5,0)))
 			if vector.distance(bpos,fb_obpos) > 0 then
-				minetest.after('0.1',function()
-					minetest.interact("activate",{type="nothing"})
+				core.after('0.1',function()
+					core.interact("activate",{type="nothing"})
 				end)
 				fb_state=3
 			end

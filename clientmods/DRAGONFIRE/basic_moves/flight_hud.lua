@@ -1,6 +1,6 @@
 local function set(id, stat, data)
-	if id and minetest.localplayer then
-		minetest.localplayer:hud_change(id, stat, data)
+	if id and core.localplayer then
+		core.localplayer:hud_change(id, stat, data)
 	end
 end
 
@@ -39,10 +39,10 @@ local S = 2.5
 
 ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 	on_start = function(self)
-		if not minetest.localplayer then return true end
+		if not core.localplayer then return true end
 
 		-- Horizon background
-		self._hud_bg = minetest.localplayer:hud_add({
+		self._hud_bg = core.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
 			offset = {x = -262, y = -309},
@@ -51,7 +51,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		})
 
 		-- Indicator line centered on the horizon image
-		self._hud_line = minetest.localplayer:hud_add({
+		self._hud_line = core.localplayer:hud_add({
 			hud_elem_type = "image", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
 			offset = {x = -247, y = -294},
@@ -61,7 +61,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		self._last_roll_tex = nil
 
 		-- Pitch/Roll numeric text (centered above horizon image)
-		self._hud_pitch = minetest.localplayer:hud_add({
+		self._hud_pitch = core.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 0.5, y = 1},
 			offset = {x = -174, y = -340},
@@ -69,7 +69,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		})
 
 		-- Target info (above pitch/roll)
-		self._hud_target = minetest.localplayer:hud_add({
+		self._hud_target = core.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 0.5, y = 1},
 			offset = {x = -174, y = -400},
@@ -77,14 +77,14 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		})
 
 		-- Altitude bar
-		self._hud_alt_bar = minetest.localplayer:hud_add({
+		self._hud_alt_bar = core.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 0.5, y = 1},
 			offset = {x = -15, y = -290},
 			number = 0xFF88FF88, text = ""
 		})
 		-- Y: value right under the bar
-		self._hud_alt = minetest.localplayer:hud_add({
+		self._hud_alt = core.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 0.5, y = 1},
 			offset = {x = -30, y = -50},
@@ -92,13 +92,13 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		})
 
 		-- Speed bar (below altitude, same x)
-		self._hud_speed = minetest.localplayer:hud_add({
+		self._hud_speed = core.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
 			offset = {x = -200, y = -50},
 			number = 0xFFFFCC66, text = ""
 		})
-		self._hud_speed_bar = minetest.localplayer:hud_add({
+		self._hud_speed_bar = core.localplayer:hud_add({
 			hud_elem_type = "text", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
 			offset = {x = -200, y = -38},
@@ -106,11 +106,11 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		})
 	end,
 	on_step = function(self, dtime)
-		local lp = minetest.localplayer
+		local lp = core.localplayer
 		if not lp then return end
 
 		local pitch = -lp:get_pitch()  -- negative = looking up
-		local roll = tonumber(minetest.settings:get("flight_hud_roll")) or 0
+		local roll = tonumber(core.settings:get("flight_hud_roll")) or 0
 
 		-- Indicator line: pitch down (positive) → moves UP
 		-- Indicator: move up/down with pitch, centered on horizon
@@ -175,14 +175,14 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		set(self._hud_speed_bar, "number", speed > 3 and 0xFFFF6666 or 0xFFAAAAAA)
 	end,
 	on_stop = function(self)
-		if not minetest.localplayer then return end
+		if not core.localplayer then return end
 		for _, id in ipairs{
 			self._hud_bg, self._hud_line, self._hud_pitch,
 			self._hud_alt, self._hud_alt_bar,
 			self._hud_speed, self._hud_speed_bar,
 			self._hud_target,
 		} do
-			if id then minetest.localplayer:hud_remove(id) end
+			if id then core.localplayer:hud_remove(id) end
 		end
 	end,
 })

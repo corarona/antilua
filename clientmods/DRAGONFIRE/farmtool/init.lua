@@ -46,19 +46,19 @@ end
 ws.rg("Reap", { category = "Place", setting = "farmtool_reap",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or ws.range
-		local nds = minetest.find_nodes_near(ws.dircoord(0, 0, 0), range, farmnodes, true)
+		local nds = core.find_nodes_near(ws.dircoord(0, 0, 0), range, farmnodes, true)
 		for k, v in ipairs(nds) do
-			local nd = minetest.get_node_or_nil(v)
+			local nd = core.get_node_or_nil(v)
 			if nd then
 				ws.dig(v)
 				local s = seeds[nd.name]
 				ws.place(v, s)
 			end
 		end
-		local knds = minetest.find_nodes_near(ws.dircoord(0, 0, 0), range, keepbottom, true)
+		local knds = core.find_nodes_near(ws.dircoord(0, 0, 0), range, keepbottom, true)
 		for k, v in ipairs(knds) do
-			local bt = minetest.get_node_or_nil(vector.offset(v, 0, -1, 0))
-			local nd = minetest.get_node_or_nil(v)
+			local bt = core.get_node_or_nil(vector.offset(v, 0, -1, 0))
+			local nd = core.get_node_or_nil(v)
 			if bt and bt.name == nd.name then
 				ws.dig(v)
 			end
@@ -91,13 +91,13 @@ local sseed = "mcl_farming:wheat_seed"
 ws.rg("Sow", { category = "Place", setting = "farmtool_sow",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or ws.range
-		local nds = minetest.find_nodes_near(ws.dircoord(0, 0, 0), range, farmsoil, true)
+		local nds = core.find_nodes_near(ws.dircoord(0, 0, 0), range, farmsoil, true)
 		for _, v in pairs(nds) do
 			ws.place(vector.add(vector.new(0, 1, 0), v), sseed)
 		end
 	end,
 	on_start = function(self)
-		local s = minetest.localplayer:get_wielded_item():get_name()
+		local s = core.localplayer:get_wielded_item():get_name()
 		for _, v in pairs(seeds) do
 			if v == s then
 				ws.notify("Sowing started with " .. s, ws.NOTIFY_INFO, {toast=false})
@@ -137,7 +137,7 @@ ws.rg("FarmRepair", { category = "Place", setting = "farmrepair",
 })
 
 local function find_soil(pos, r)
-	return minetest.find_nodes_in_area_under_air(pos:offset(-r, -r, -r), pos:offset(r, r, r), farmsoil)
+	return core.find_nodes_in_area_under_air(pos:offset(-r, -r, -r), pos:offset(r, r, r), farmsoil)
 end
 
 sbots.register_bot("FarmBot", {

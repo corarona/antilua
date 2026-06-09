@@ -1,5 +1,5 @@
 # Builtin Entities
-Luanti registers two entities by default: Falling nodes and dropped items.
+Antilua registers two entities by default: Falling nodes and dropped items.
 This document describes how they behave and what you can do with them.
 
 ## Falling node (`__builtin:falling_node`)

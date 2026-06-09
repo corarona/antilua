@@ -1,4 +1,4 @@
-package net.minetest.minetest;
+package cora.antilua.antilua;
 
 import android.content.Context;
 import android.util.Log;
@@ -24,7 +24,7 @@ public class Utils {
 			context.getExternalFilesDir(null),
 			"Cannot get external file directory"
 		);
-		return createDirs(extDir, "Minetest");
+		return createDirs(extDir, "Antilua");
 	}
 
 	@NonNull

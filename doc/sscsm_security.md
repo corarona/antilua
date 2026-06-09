@@ -4,7 +4,7 @@
 ## Threat model
 
 * SSCSM scripts come from the server (potential malicious actor). We are the client.
-* Authenticity of server is not given (Luanti's networking is not secure). So we have
+* Authenticity of server is not given (Antilua's networking is not secure). So we have
   to expect anyone who can send us UDP packets to the appropriate IP address to be
   able to act on behalf of the server.
 * The server may not tamper with, or get access to information of, anything besides

@@ -11,9 +11,9 @@ local function tablearg(arg)
 end
 
 function ws.buildable_to(pos)
-	local node = minetest.get_node_or_nil(pos)
+	local node = core.get_node_or_nil(pos)
 	if node then
-		return minetest.get_node_def(node.name).buildable_to
+		return core.get_node_def(node.name).buildable_to
 	end
 end
 
@@ -22,20 +22,20 @@ function ws.tplace(p, n, stay)
 	if n then ws.switch_to_item(n) end
 	local opos = ws.dircoord(0, 0, 0)
 	local tpos = vector.add(p, vector.new(0, 1, 0))
-	minetest.localplayer:set_pos(tpos)
+	core.localplayer:set_pos(tpos)
 	ws.place(p, {n})
 	if not stay then
-		minetest.after(0.1, function()
-			minetest.localplayer:set_pos(opos)
+		core.after(0.1, function()
+			core.localplayer:set_pos(opos)
 		end)
 	end
 end
 
-minetest.register_chatcommand("tplace", {
+core.register_chatcommand("tplace", {
 	description = "tp-place",
 	param = "Y",
 	func = function(param)
-		return ws.tplace(minetest.string_to_pos(param))
+		return ws.tplace(core.string_to_pos(param))
 	end
 })
 
@@ -44,36 +44,36 @@ function ws.ytp(param)
 	local lp = ws.dircoord(0, 0, 0)
 	if lp.y < y + 50 then return false, "Can't TP up." end
 	if y < -30912 then return false, "Don't TP into the void lol." end
-	minetest.localplayer:set_pos(vector.new(lp.x, y, lp.z))
+	core.localplayer:set_pos(vector.new(lp.x, y, lp.z))
 end
 
 function ws.isnode(pos, arg)
 	local nodename = tablearg(arg)
-	local nd = minetest.get_node_or_nil(pos)
+	local nd = core.get_node_or_nil(pos)
 	if nd and nodename and ws.in_list(nd.name, nodename) then
 		return true
 	end
 end
 
 function ws.can_place_at(pos)
-	local node = minetest.get_node_or_nil(pos)
+	local node = core.get_node_or_nil(pos)
 	return (node and (node.name == "air"
 		or node.name == "mcl_core:water_source"
 		or node.name == "mcl_core:water_flowing"
 		or node.name == "mcl_core:lava_source"
 		or node.name == "mcl_core:lava_flowing"
-		or (minetest.get_node_def(node.name) or {}).buildable_to))
+		or (core.get_node_def(node.name) or {}).buildable_to))
 end
 
 function ws.can_place_wielded_at(pos)
-	local wield_empty = minetest.localplayer:get_wielded_item():is_empty()
+	local wield_empty = core.localplayer:get_wielded_item():is_empty()
 	return not wield_empty and ws.can_place_at(pos)
 end
 
 function ws.find_any_swap(items, hslot)
 	hslot = hslot or 8
 	for i, v in ipairs(items) do
-		local n = minetest.find_item(v)
+		local n = core.find_item(v)
 		if n then
 			ws.switch_to_item(v, hslot)
 			return true
@@ -86,9 +86,9 @@ function ws.place(pos, items, hslot, place)
 	if not pos then return end
 	if not ws.can_place_at(pos) then return end
 	items = tablearg(items)
-	place = place or minetest.place_node
+	place = place or core.place_node
 
-	local node = minetest.get_node_or_nil(pos)
+	local node = core.get_node_or_nil(pos)
 	if not node then return end
 	if ws.isnode(pos, items) then
 		return true
@@ -103,15 +103,15 @@ end
 function ws.place_if_able(pos)
 	if not pos then return end
 	if ws.can_place_wielded_at(pos) then
-		minetest.place_node(pos)
+		core.place_node(pos)
 	end
 end
 
 function ws.is_diggable(pos)
 	if not pos then return false end
-	local nd = minetest.get_node_or_nil(pos)
+	local nd = core.get_node_or_nil(pos)
 	if not nd or not nd.name then return false end
-	local n = minetest.get_node_def(nd.name)
+	local n = core.get_node_def(nd.name)
 	if n and n.diggable then return true end
 	return false
 end
@@ -120,25 +120,25 @@ function ws.dig(pos, condition, autotool)
 	if autotool == nil then autotool = true end
 	if condition and not condition(pos) then return false end
 	if not ws.is_diggable(pos) then return end
-	local nd = minetest.get_node_or_nil(pos)
-	if nd and minetest.get_node_def(nd.name).diggable then
+	local nd = core.get_node_or_nil(pos)
+	if nd and core.get_node_def(nd.name).diggable then
 		if autotool then ws.select_best_tool(pos) end
 		local wear = core.localplayer:get_wielded_item():get_wear()
 		if wear > 60000 then return false end
-		minetest.dig_node(pos)
+		core.dig_node(pos)
 	end
 	return true
 end
 
 function ws.chunk_loaded()
-	local ign = minetest.find_nodes_near(ws.dircoord(0, 0, 0), 10, {'ignore'}, true)
+	local ign = core.find_nodes_near(ws.dircoord(0, 0, 0), 10, {'ignore'}, true)
 	if #ign == 0 then return true end
 	return false
 end
 
 function ws.get_near(nodes, range)
 	range = range or 5
-	local nds = minetest.find_nodes_near(ws.dircoord(0, 0, 0), range, nodes, true)
+	local nds = core.find_nodes_near(ws.dircoord(0, 0, 0), range, nodes, true)
 	if #nds > 0 then return nds end
 	return false
 end
@@ -178,11 +178,11 @@ end
 
 function ws.replace(pos, arg)
 	arg = tablearg(arg)
-	local nd = minetest.get_node_or_nil(pos)
+	local nd = core.get_node_or_nil(pos)
 	if nd and not ws.in_list(nd.name, arg) and ws.buildable_to(pos) then
 		local tm = ws.get_digtime(nd.name) or 0
 		ws.dig(pos)
-		minetest.after(tm + 0.1, function()
+		core.after(tm + 0.1, function()
 			ws.place(pos, arg)
 		end)
 		return tm
@@ -235,7 +235,7 @@ end
 
 function ws.find_closest_reachable_airpocket(pos)
 	local lp = ws.dircoord(0, 0, 0)
-	local nds = minetest.find_nodes_near(lp, 5, {'air'})
+	local nds = core.find_nodes_near(lp, 5, {'air'})
 	local odst = 10
 	local rt = lp
 	for k, v in ipairs(nds) do
@@ -264,8 +264,8 @@ end
 -- MakeBlocks: auto-craft blocks from wielded item (extracted from emicor)
 function ws.make_blocks()
 	local slot = 9
-	local it = minetest.get_wielded_item()
-	local wi = minetest.get_wield_index()
+	local it = core.get_wielded_item()
+	local wi = core.get_wield_index()
 	local nn = it:get_count() / 9
 	for i = 1, 9 do
 		ws.move_stack("current_player", "main", wi, "current_player", "craft", i, nn)
@@ -275,7 +275,7 @@ function ws.make_blocks()
 	craft_act:craft("current_player")
 	craft_act:apply()
 
-	local tslot = ws.find_empty(minetest.get_inventory("current_player").main)
+	local tslot = ws.find_empty(core.get_inventory("current_player").main)
 	if not tslot then tslot = 9 end
 	ws.move_stack("current_player", "craft_result", 1, "current_player", "main", tslot)
 end
@@ -304,35 +304,35 @@ function ws.invdump(src, dst)
 end
 
 function ws.dumpto()
-	local ptd = minetest.get_pointed_thing()
+	local ptd = core.get_pointed_thing()
 	if ptd then
 		ws.invdump("current_player", ws.invparse(ptd.under))
 	end
 end
 
 function ws.loot()
-	local ptd = minetest.get_pointed_thing()
+	local ptd = core.get_pointed_thing()
 	if ptd then
 		ws.invdump(ws.invparse(ptd.under), "current_player")
 	end
 end
 
 core.register_cheat('Loot', { category = 'Inventory', func = ws.dumpto })
-minetest.register_chatcommand("dumpto", {
+core.register_chatcommand("dumpto", {
 	description = "Dump main inv (not hotbar) to pointed storage block.",
 	func = ws.dumpto
 })
-minetest.register_chatcommand("loot", {
+core.register_chatcommand("loot", {
 	description = "Take as many items from pointed block as possible.",
 	func = ws.loot
 })
 
 -- IceBreaker: dig ice in range (extracted from emicor)
 function ws.icebreaker()
-	local owx = minetest.localplayer:get_wield_index()
-	local nds = minetest.find_nodes_near(ws.dircoord(0, 0, 0), 4, {'mcl_core:ice'}, true)
+	local owx = core.localplayer:get_wield_index()
+	local nds = core.find_nodes_near(ws.dircoord(0, 0, 0), 4, {'mcl_core:ice'}, true)
 	ws.dignodes(nds)
-	minetest.localplayer:set_wield_index(owx)
+	core.localplayer:set_wield_index(owx)
 end
 
 core.register_cheat('IceBreaker', { category = 'Dig', setting = 'icebreaker' })
@@ -359,8 +359,8 @@ function ws.ectoinv()
 	local q = quint.invaction_new()
 	local rt = quint.invaction_dump(q, src, dst, srcbounds, dstbounds)
 	quint.invaction_apply(q)
-	local ainv = minetest.get_inventory('current_player').armor
-	local plinv = minetest.get_inventory('current_player').main
+	local ainv = core.get_inventory('current_player').armor
+	local plinv = core.get_inventory('current_player').main
 	for k, v in ipairs(plinv) do
 		if v:get_name():find("helmet") then
 			ws.move_stack("current_player", "main", k, "current_player", "armor", 2)

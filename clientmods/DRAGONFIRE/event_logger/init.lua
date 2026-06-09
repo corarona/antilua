@@ -1,11 +1,11 @@
 -- Event logger: merged from entity_logger, world_observer, breath_alert, movement_display
 -- Per-server persistent logging: block counts, entity sightings, stats
 
-local storage = minetest.get_mod_storage("event_logger")
+local storage = core.get_mod_storage("event_logger")
 local prefix = ""
 
 core.register_on_connect(function()
-	local info = minetest.get_server_info()
+	local info = core.get_server_info()
 	prefix = info.address .. ":" .. info.port .. ":"
 	ws.notify("Session started", ws.NOTIFY_INFO, {toast = false})
 end)

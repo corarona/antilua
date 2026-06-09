@@ -376,17 +376,17 @@ if core.register_cheat then
 	})
 end
 
-minetest.register_chatcommand("autocraft", {
+core.register_chatcommand("autocraft", {
 	description = "Open the autocraft GUI",
 	func = show_gui,
 })
 
-minetest.register_chatcommand("autocraft_list", {
+core.register_chatcommand("autocraft_list", {
 	description = "Show known recipes",
 	func = show_list,
 })
 
-minetest.register_chatcommand("autocraft_clear", {
+core.register_chatcommand("autocraft_clear", {
 	description = "Clear all known recipes",
 	func = function()
 		RECIPES = {}

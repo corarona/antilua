@@ -1,4 +1,4 @@
-// Luanti
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2015 Nerzhul, Loic Blot <loic.blot@unix-experience.fr>
 

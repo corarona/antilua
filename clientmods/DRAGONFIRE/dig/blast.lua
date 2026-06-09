@@ -12,11 +12,11 @@ ws.rg("Nuke", {
 			for y = pos.y - radius, pos.y + radius do
 				for z = pos.z - radius, pos.z + radius do
 					local p = vector.new(x, y, z)
-					local node = minetest.get_node_or_nil(p)
-					local def = node and minetest.get_node_def(node.name)
+					local node = core.get_node_or_nil(p)
+					local def = node and core.get_node_def(node.name)
 					if def and def.diggable then
 						if i > npt then return end
-						minetest.dig_node(p)
+						core.dig_node(p)
 						i = i + 1
 					end
 				end

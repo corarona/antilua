@@ -1,17 +1,17 @@
-local modpath = minetest.get_modpath(minetest.get_current_modname())
+local modpath = core.get_modpath(core.get_current_modname())
 
 local litematica = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
 
 local function deserialize_workaround(content)
-	local nodes, err = minetest.deserialize(content, true)
+	local nodes, err = core.deserialize(content, true)
 	if err then
-		minetest.log("warning", "litematica: deserialize: " .. err)
+		core.log("warning", "litematica: deserialize: " .. err)
 	end
 	return nodes or {}
 end
 
 local function get_texture_by_name(name)
-	local def = minetest.get_node_def(name)
+	local def = core.get_node_def(name)
 	local tt = def.tiles or def.overlay_tiles or def.special_tiles
 
 	if tt[1] and tt[1].name then
@@ -22,7 +22,7 @@ local function get_texture_by_name(name)
 end
 
 local function litematica_particle(pos, texture, size, collision)
-	minetest.add_particle({
+	core.add_particle({
 		pos = vector.new(math.modf(pos.x), math.modf(pos.y), math.modf(pos.z)),
 		velocity = {x=0, y=0, z=0},
 		acceleration = {x=0, y=0, z=0},
@@ -87,7 +87,7 @@ ws.rg("PlaceLiteM", {
 	setting = "placelitem",
 	on_step = function(self, dtime)
 		if #place_nodes == 0 then return end
-		local pp = vector.round(minetest.localplayer:get_pos())
+		local pp = vector.round(core.localplayer:get_pos())
 		for i = #place_nodes, 1, -1 do
 			local entry = place_nodes[i]
 			if math.abs(entry.x - pp.x) <= 4
@@ -103,18 +103,18 @@ ws.rg("PlaceLiteM", {
 	end,
 })
 
-minetest.register_chatcommand("liteload", {
+core.register_chatcommand("liteload", {
 	description = "Load nodes as particles from WorldEdit schematic arguments in position of the player as the origin\nDoes not support loading external files\nUse $ as the parameter to load from the litematica_output setting.",
 	func = function(param)
 		local value
 		if param ~= "" then
 			value = param
 			if param == "$" then
-				value = minetest.settings:get("litematica_output") or "{}"
+				value = core.settings:get("litematica_output") or "{}"
 			end
-			local pos = {x=math.floor(minetest.localplayer:get_pos().x+0.5),
-			y=math.floor(minetest.localplayer:get_pos().y+0.5),
-			z=math.floor(minetest.localplayer:get_pos().z+0.5)}
+			local pos = {x=math.floor(core.localplayer:get_pos().x+0.5),
+			y=math.floor(core.localplayer:get_pos().y+0.5),
+			z=math.floor(core.localplayer:get_pos().z+0.5)}
 
 			local count = litematica_deserialize(pos, value)
 			print(count)
@@ -125,19 +125,19 @@ minetest.register_chatcommand("liteload", {
 	end,
 })
 
-minetest.register_chatcommand("litepos1", {
+core.register_chatcommand("litepos1", {
 	description = "Set pos1",
 	func = function(param)
-		litematica.pos1 = {x=math.floor(minetest.localplayer:get_pos().x+0.5),y=math.floor(minetest.localplayer:get_pos().y+0.5),z=math.floor(minetest.localplayer:get_pos().z+0.5)}
+		litematica.pos1 = {x=math.floor(core.localplayer:get_pos().x+0.5),y=math.floor(core.localplayer:get_pos().y+0.5),z=math.floor(core.localplayer:get_pos().z+0.5)}
 		print("pos1 set")
 		litematica_particle(litematica.pos1, "worldedit_pos1.png", 3, false)
 	end,
 })
 
-minetest.register_chatcommand("litepos2", {
+core.register_chatcommand("litepos2", {
 	description = "Set pos2",
 	func = function(param)
-		litematica.pos2 = {x=math.floor(minetest.localplayer:get_pos().x+0.5),y=math.floor(minetest.localplayer:get_pos().y+0.5),z=math.floor(minetest.localplayer:get_pos().z+0.5)}
+		litematica.pos2 = {x=math.floor(core.localplayer:get_pos().x+0.5),y=math.floor(core.localplayer:get_pos().y+0.5),z=math.floor(core.localplayer:get_pos().z+0.5)}
 		print("pos2 set")
 		litematica_particle(litematica.pos2, "worldedit_pos2.png", 5, false)
 	end,
@@ -161,7 +161,7 @@ end
 local function litematica_serialize(pos1, pos2)
 	pos1, pos2 = sort_pos(pos1, pos2)
 
-	local get_node = minetest.get_node_or_nil
+	local get_node = core.get_node_or_nil
 
 	local pos = vector.new(pos1.x, 0, 0)
 	local count = 0
@@ -189,11 +189,11 @@ local function litematica_serialize(pos1, pos2)
 		end
 		pos.x = pos.x + 1
 	end
-	result = minetest.serialize(result)
+	result = core.serialize(result)
 	return "5:" .. result, count
 end
 
-minetest.register_chatcommand("litesave", {
+core.register_chatcommand("litesave", {
 	description = "Save the current Litematica region to \"litematica_output\" setting",
 	parse = function(param)
 		if param == "" then
@@ -208,8 +208,8 @@ minetest.register_chatcommand("litesave", {
 		if litematica.pos1 ~= nil and litematica.pos2 ~= nil then
 			local result, count = litematica_serialize(litematica.pos1,
 					litematica.pos2)
-			minetest.settings:set("litematica_output", result)
-			minetest.display_chat_message("Saved to \"litematica_output\" setting")
+			core.settings:set("litematica_output", result)
+			core.display_chat_message("Saved to \"litematica_output\" setting")
 		end
 	end,
 })

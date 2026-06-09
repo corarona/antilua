@@ -1,4 +1,4 @@
-// Minetest
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
 // We want to have catch write to rawstream (stderr) instead of stdout.

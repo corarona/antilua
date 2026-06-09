@@ -1,4 +1,4 @@
-// Luanti
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2010-2013 celeron55, Perttu Ahola <celeron55@gmail.com>
 
@@ -66,8 +66,8 @@ extern "C" {
 #error ==================================
 #endif
 
-// TODO: luanti.conf with migration
-#define CONFIGFILE "minetest.conf"
+// TODO: migration from minetest.conf
+#define CONFIGFILE "antilua.conf"
 #define DEBUGFILE "debug.txt"
 #define DEFAULT_SERVER_PORT 30000
 
@@ -766,6 +766,8 @@ static bool init_common(const Settings &cmd_args, int argc, char *argv[])
 
 	if (!read_config_file(cmd_args))
 		return false;
+
+	porting::applyCompatPaths();
 
 	migrate_settings();
 

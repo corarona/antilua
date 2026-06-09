@@ -1,8 +1,8 @@
 # Compiling on Windows with MSYS2
 
-There are two ways to compile Luanti on a Windows machine: MSYS2 or a combination of vcpkg, cmake, and Visual Studio.
+There are two ways to compile Antilua on a Windows machine: MSYS2 or a combination of vcpkg, cmake, and Visual Studio.
 
-The simplest way to compile on Windows is with MSYS2. MSYS2 is a collection of tools and libraries providing you with an easy-to-use environment for building, installing and running native Windows software. This page lists how to compile Luanti on Windows using MSYS2.
+The simplest way to compile on Windows is with MSYS2. MSYS2 is a collection of tools and libraries providing you with an easy-to-use environment for building, installing and running native Windows software. This page lists how to compile Antilua on Windows using MSYS2.
 
 ## Installation
 
@@ -24,13 +24,13 @@ Install all the necessary dependencies:
 pacman -S git mingw-w64-clang-x86_64-{clang,cmake,ninja,curl-winssl,libpng,libjpeg-turbo,freetype,libogg,libvorbis,sqlite3,openal,zstd,gettext,luajit,SDL2}
 ```
 
-Navigate to some folder where you want to clone the Luanti repository. To get out of MSYS2's home folder and into your regular users folder, you would want to enter something like this:
+Navigate to some folder where you want to clone the Antilua repository. To get out of MSYS2's home folder and into your regular users folder, you would want to enter something like this:
 
 ```bash
 cd /c/Users/$USER/Desktop
 ```
 
-Clone Luanti:
+Clone Antilua:
 
 ```bash
 git clone --depth 1 https://github.com/luanti-org/luanti
@@ -45,7 +45,7 @@ cmake .. -G Ninja
 ninja -j$(nproc)
 ```
 
-Once it's finished compiling, there should be a luanti.exe executable inside of `bin/` inside your Luanti folder. You can run it inside of the MSYS2 environment by running `../bin/luanti.exe` in the terminal, but it will not work if you try to open the executable from Windows explorer, as the necessary DLLs aren't next to the executable.
+Once it's finished compiling, there should be a luanti.exe executable inside of `bin/` inside your Antilua folder. You can run it inside of the MSYS2 environment by running `../bin/luanti.exe` in the terminal, but it will not work if you try to open the executable from Windows explorer, as the necessary DLLs aren't next to the executable.
 
 ## Bundling DLLs
 
@@ -57,7 +57,7 @@ Run the following command from the build directory to run the script:
 ../util/bundle_dlls.sh ../bin/luanti.exe ../bin/
 ```
 
-It will print out a list of libraries it has copied to the binary folder once finished. Now it should be possible to run the Luanti executable outside of the MSYS2 environment.
+It will print out a list of libraries it has copied to the binary folder once finished. Now it should be possible to run the Antilua executable outside of the MSYS2 environment.
 
 ## Notes
 

@@ -1,6 +1,6 @@
 # Docker Server
 
-We provide Luanti server Docker images using the GitHub container registry.
+We provide Antilua server Docker images using the GitHub container registry.
 
 Images are built on each commit and available using the following tag scheme:
 
@@ -8,7 +8,7 @@ Images are built on each commit and available using the following tag scheme:
 * `ghcr.io/luanti-org/luanti:<tag>` (specific Git tag)
 * `ghcr.io/luanti-org/luanti:latest` (latest Git tag, which is the stable release)
 
-See [here](https://github.com/luanti-org/luanti/pkgs/container/luanti) for all available tags.
+See [here](https://codeberg.org/antilua/antilua/pkgs/container/luanti) for all available tags.
 
 Versions released before the project was renamed are available with the same tag scheme at `ghcr.io/minetest/minetest`.
 See [here](https://github.com/orgs/minetest/packages/container/package/minetest) for all available tags.

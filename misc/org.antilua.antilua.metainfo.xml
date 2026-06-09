@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-    <id>org.luanti.luanti</id>
+    <id>org.antilua.antilua</id>
     <provides>
         <id>net.minetest.minetest</id>
         <binary>luanti</binary>
@@ -9,7 +9,7 @@
         <id>net.minetest.minetest</id>
     </replaces>
 
-    <name>Luanti</name>
+    <name>Antilua</name>
     <summary>Block-based multiplayer game platform</summary>
     <summary xml:lang="de">Blockbasierte Mehrspieler-Spieleplattform</summary>
     <summary xml:lang="fr">Plate-forme de jeu multijoueurs à base de blocs</summary>
@@ -17,8 +17,8 @@
     <metadata_license>CC0-1.0</metadata_license>
     <project_license>LGPL-2.1+ AND CC-BY-SA-3.0 AND MIT AND Apache-2.0</project_license>
 
-    <developer id="org.luanti">
-        <name>Luanti Team</name>
+    <developer id="org.antilua">
+        <name>Antilua Team</name>
     </developer>
 
     <supports>
@@ -60,13 +60,13 @@
 
     <description>
         <p>
-            Luanti is a block-based sandbox game platform.
+            Antilua is a block-based sandbox game platform.
         </p>
         <p xml:lang="de">
-            Luanti ist eine blockbasierte Sandbox-Spielplattform.
+            Antilua ist eine blockbasierte Sandbox-Spielplattform.
         </p>
         <p xml:lang="fr">
-            Luanti est une plateforme de jeu de type bac à sable à base de blocs.
+            Antilua est une plateforme de jeu de type bac à sable à base de blocs.
         </p>
         <p>
             Players can create and destroy various types of blocks in a
@@ -84,25 +84,25 @@
             formes possibles, sur des serveurs multijoueurs ou en solo.
         </p>
         <p>
-            Luanti is designed to be simple, stable, and portable.
+            Antilua is designed to be simple, stable, and portable.
             It is lightweight enough to run on fairly old hardware.
         </p>
         <p xml:lang="de">
-            Luanti wurde entworfen, um einfach, stabil und portabel zu sein.
+            Antilua wurde entworfen, um einfach, stabil und portabel zu sein.
             Es ist leichtgewichtig genug, um auf relativ alter Hardware zu laufen.
         </p>
         <p xml:lang="fr">
-            Luanti est conçu pour être simple, stable et portable.
+            Antilua est conçu pour être simple, stable et portable.
             Il est suffisamment léger pour fonctionner sur du matériel relativement ancien.
         </p>
         <p>
-            Luanti has many features, including:
+            Antilua has many features, including:
         </p>
         <p xml:lang="de">
-            Luanti besitzt viele Features, unter anderem:
+            Antilua besitzt viele Features, unter anderem:
         </p>
         <p xml:lang="fr">
-            Luanti offre de nombreuses fonctionnalités, notamment :
+            Antilua offre de nombreuses fonctionnalités, notamment :
         </p>
         <ul>
             <li>Ability to walk around, dig, and build in a near-infinite voxel world</li>
@@ -126,7 +126,7 @@
         </ul>
     </description>
 
-    <launchable type="desktop-id">org.luanti.luanti.desktop</launchable>
+    <launchable type="desktop-id">org.antilua.antilua.desktop</launchable>
     <screenshots>
         <screenshot type="default">
             <image>https://www.luanti.org/media/gallery/1.jpg</image>
@@ -139,7 +139,7 @@
         </screenshot>
     </screenshots>
 
-    <icon type="stock">luanti</icon>
+    <icon type="stock">antilua</icon>
 
     <categories>
         <category>Game</category>
@@ -163,10 +163,10 @@
     <url type="donation">https://www.luanti.org/get-involved/#donate</url>
     <url type="faq">https://docs.luanti.org/about/faq</url>
     <url type="help">https://docs.luanti.org</url>
-    <url type="vcs-browser">https://github.com/luanti-org/luanti</url>
+    <url type="vcs-browser">https://codeberg.org/antilua/antilua</url>
     <url type="contribute">https://www.luanti.org/get-involved</url>
 
-    <translation type="gettext">luanti</translation>
+    <translation type="gettext">antilua</translation>
 
     <update_contact>celeron55@gmail.com</update_contact>
 

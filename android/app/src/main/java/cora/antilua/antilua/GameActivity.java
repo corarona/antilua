@@ -1,5 +1,5 @@
 /*
-Minetest
+Antilua
 Copyright (C) 2014-2020 MoNTE48, Maksim Gamarnik <MoNTE48@mail.ua>
 Copyright (C) 2014-2020 ubulem,  Bektur Mambetov <berkut87@gmail.com>
 
@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License along
 with this program; if not, see <https://www.gnu.org/licenses/>.
 */
 
-package net.minetest.minetest;
+package cora.antilua.antilua;
 
 import org.libsdl.app.SDLActivity;
 
@@ -56,7 +56,7 @@ import java.util.Objects;
 public class GameActivity extends SDLActivity {
 	@Override
 	protected String getMainSharedObject() {
-		return getContext().getApplicationInfo().nativeLibraryDir + "/libluanti.so";
+		return getContext().getApplicationInfo().nativeLibraryDir + "/libantilua.so";
 	}
 
 	@Override
@@ -67,7 +67,7 @@ public class GameActivity extends SDLActivity {
 	@Override
 	protected String[] getLibraries() {
 		return new String[] {
-			"luanti"
+			"antilua"
 		};
 	}
 
@@ -232,7 +232,7 @@ public class GameActivity extends SDLActivity {
 			return;
 		}
 
-		Uri fileUri = FileProvider.getUriForFile(this, "net.minetest.minetest.fileprovider", file);
+		Uri fileUri = FileProvider.getUriForFile(this, "cora.antilua.antilua.fileprovider", file);
 
 		Intent intent = new Intent(Intent.ACTION_SEND, fileUri);
 		intent.setDataAndType(fileUri, getContentResolver().getType(fileUri));

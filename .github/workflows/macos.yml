@@ -90,21 +90,21 @@ jobs:
 
       - name: Test GNU Make build
         run: |
-          mkdir -p "${HOME}/Library/Application Support/minetest/games/"
-          ln -s "${PWD}/games/devtest" "${HOME}/Library/Application Support/minetest/games/"
-          ./build/macos/luanti.app/Contents/MacOS/luanti --run-unittests
+          mkdir -p "${HOME}/Library/Application Support/antilua/games/"
+          ln -s "${PWD}/games/devtest" "${HOME}/Library/Application Support/antilua/games/"
+          ./build/macos/antilua.app/Contents/MacOS/antilua --run-unittests
 
       - name: Test XCode build
         if: ${{matrix.xcode == 'yes'}}
         run: |
-          ./build_xcode/build/${build_type}/luanti.app/Contents/MacOS/luanti --run-unittests
-          ./build_xcode/luanti.xcarchive/Products/Applications/luanti.app/Contents/MacOS/luanti --run-unittests
+          ./build_xcode/build/${build_type}/antilua.app/Contents/MacOS/antilua --run-unittests
+          ./build_xcode/antilua.xcarchive/Products/Applications/antilua.app/Contents/MacOS/antilua --run-unittests
 
       - name: Diff Resources
         if: ${{matrix.xcode == 'yes'}}
         run: |
-          diff -rd ./build/macos/luanti.app/Contents/Resources ./build_xcode/build/${build_type}/luanti.app/Contents/Resources || exit 1
-          diff -rd ./build/macos/luanti.app/Contents/Resources ./build_xcode/luanti.xcarchive/Products/Applications/luanti.app/Contents/Resources || exit 1
+          diff -rd ./build/macos/antilua.app/Contents/Resources ./build_xcode/build/${build_type}/antilua.app/Contents/Resources || exit 1
+          diff -rd ./build/macos/antilua.app/Contents/Resources ./build_xcode/antilua.xcarchive/Products/Applications/antilua.app/Contents/Resources || exit 1
       # Zipping the built .app preserves permissions on the contained files,
       #   which the GitHub artifact pipeline would otherwise strip away.
       - name: CPack

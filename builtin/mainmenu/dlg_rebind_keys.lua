@@ -1,4 +1,4 @@
--- Luanti
+-- Antilua
 -- SPDX-License-Identifier: LGPL-2.1-or-later
 -- Modified based on dlg_reinstall_mtg.lua
 -- Note that this is only needed for migrating from <5.11 to 5.12.

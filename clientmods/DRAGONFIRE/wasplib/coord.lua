@@ -23,7 +23,7 @@ function ws.cadd(c1, c2)
 end
 
 function ws.relcoord(x, y, z, rpos)
-	local pos = rpos or minetest.localplayer:get_pos()
+	local pos = rpos or core.localplayer:get_pos()
 	pos.y = math.ceil(pos.y)
 	return vector.add(pos, ws.optcoord(x, y, z))
 end
@@ -36,7 +36,7 @@ function ws.get_reachable_positions(range, under)
 	under = under or false
 	range = range or 4
 	local rt = {}
-	local lp = vector.round(minetest.localplayer:get_pos())
+	local lp = vector.round(core.localplayer:get_pos())
 	local ylim = range
 	if under then ylim = -1 end
 	for x = -range, range do
@@ -51,7 +51,7 @@ end
 
 function ws.do_area(radius, func, plane)
 	for k, v in pairs(ws.get_reachable_positions(range)) do
-		if not plane or v.y == minetest.localplayer:get_pos().y - 1 then
+		if not plane or v.y == core.localplayer:get_pos().y - 1 then
 			func(v)
 		end
 	end
@@ -69,19 +69,19 @@ end
 
 function ws.setdir(dir)
 	if dir == "north" then
-		minetest.localplayer:set_yaw(0)
+		core.localplayer:set_yaw(0)
 	elseif dir == "south" then
-		minetest.localplayer:set_yaw(180)
+		core.localplayer:set_yaw(180)
 	elseif dir == "east" then
-		minetest.localplayer:set_yaw(270)
+		core.localplayer:set_yaw(270)
 	elseif dir == "west" then
-		minetest.localplayer:set_yaw(90)
+		core.localplayer:set_yaw(90)
 	end
 end
 
 function ws.getdir(yaw)
-	if not minetest.localplayer then return "north" end
-	local rot = yaw or minetest.localplayer:get_yaw() % 360
+	if not core.localplayer then return "north" end
+	local rot = yaw or core.localplayer:get_yaw() % 360
 	if between(rot, 316, 360) or between(rot, 0, 45) then
 		return "north"
 	elseif between(rot, 136, 225) then
@@ -94,13 +94,13 @@ function ws.getdir(yaw)
 end
 
 function ws.dircoord(f, y, r, rpos, rdir)
-	if not minetest.localplayer then return vector.new() end
+	if not core.localplayer then return vector.new() end
 	local dir = ws.getdir(rdir)
 	local coord = ws.optcoord(f, y, r)
 	local f = coord.x
 	local y = coord.y
 	local r = coord.z
-	local lp = rpos or minetest.localplayer:get_pos()
+	local lp = rpos or core.localplayer:get_pos()
 	if dir == "north" then
 		return ws.relcoord(r, y, f, rpos)
 	elseif dir == "south" then

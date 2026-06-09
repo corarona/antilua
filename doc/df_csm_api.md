@@ -1,8 +1,8 @@
-DragonfireClient CSM API Reference
+Antilua CSM API Reference
 ===================================
 
 This document describes all client-side modding (CSM) API features added by
-DragonfireClient — features not present in upstream Luanti. These extend the
+Antilua — features not present in upstream Antilua. These extend the
 `core.*` API, add new Lua callbacks, a cheat menu system, settings, rendering
 extensions, and the `ws.*` utility library (wasplib).
 
@@ -420,7 +420,7 @@ corresponding setting to `"true"` / `"false"`.
 6. Custom Settings
 ==================
 
-These settings exist only in DragonfireClient. Set via `core.settings:set()`,
+These settings exist only in Antilua. Set via `core.settings:set()`,
 `.set` command, or the cheat menu.
 
 ### Toggle Cheats
@@ -775,5 +775,5 @@ core.delete_particlespawner(id)
 License
 -------
 
-This documentation applies to DragonfireClient, a fork of Luanti (formerly
-Minetest). See `LICENSE.txt` in the repository root for the full license.
+This documentation applies to Antilua, a fork of Antilua (formerly
+Antilua). See `LICENSE.txt` in the repository root for the full license.

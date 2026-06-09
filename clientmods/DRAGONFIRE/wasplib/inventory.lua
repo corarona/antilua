@@ -1,11 +1,11 @@
 function ws.find_item_in_table(items, rnd)
 	if type(items) == 'string' then
-		return minetest.find_item(items)
+		return core.find_item(items)
 	end
 	if type(items) ~= 'table' then return end
 	if rnd then items = ws.shuffle(items) end
 	for i, v in pairs(items) do
-		local n = minetest.find_item(v)
+		local n = core.find_item(v)
 		if n then
 			return n
 		end
@@ -58,7 +58,7 @@ end
 
 function ws.to_hotbar(it, hslot)
 	local tpos = nil
-	local plinv = minetest.get_inventory("current_player")
+	local plinv = core.get_inventory("current_player")
 	if hslot and hslot < 10 then
 		tpos = hslot
 	else
@@ -75,25 +75,25 @@ function ws.to_hotbar(it, hslot)
 end
 
 function ws.switch_to_item(itname, hslot)
-	if not minetest.localplayer then return false end
-	local plinv = minetest.get_inventory("current_player")
+	if not core.localplayer then return false end
+	local plinv = core.get_inventory("current_player")
 	for i, v in ipairs(plinv.main) do
 		if i < 10 and v:get_name() == itname then
-			minetest.localplayer:set_wield_index(i)
+			core.localplayer:set_wield_index(i)
 			return true
 		end
 	end
 	local pos = ws.find_named(plinv.main, itname)
 	if pos then
-		minetest.localplayer:set_wield_index(ws.to_hotbar(pos, hslot))
+		core.localplayer:set_wield_index(ws.to_hotbar(pos, hslot))
 		return true
 	end
 	return false
 end
 
 function ws.in_inv(itname)
-	if not minetest.localplayer then return false end
-	local plinv = minetest.get_inventory("current_player")
+	if not core.localplayer then return false end
+	local plinv = core.get_inventory("current_player")
 	local pos = ws.find_named(plinv.main, itname)
 	if pos then
 		return true
@@ -131,8 +131,8 @@ function core.switch_to_item(item)
 end
 
 function ws.switch_inv_or_echest(name, max_count, hslot)
-	if not minetest.localplayer then return false end
-	local plinv = minetest.get_inventory("current_player")
+	if not core.localplayer then return false end
+	local plinv = core.get_inventory("current_player")
 	if ws.switch_to_item(name) then return true end
 
 	local epos = ws.find_named(plinv.enderchest, name)
@@ -148,7 +148,7 @@ function ws.switch_inv_or_echest(name, max_count, hslot)
 
 		if tpos then
 		ws.move_stack("current_player", "enderchest", epos, "current_player", "main", tpos, max_count)
-			minetest.localplayer:set_wield_index(tpos)
+			core.localplayer:set_wield_index(tpos)
 			return true
 		end
 	end
@@ -210,7 +210,7 @@ end
 --- Register a key-hold cheat: holds a key while the setting is true.
 function ws.register_keypress_cheat(setting, desc, category, keyname, condition)
 	local was_active = false
-	minetest.register_globalstep(function()
+	core.register_globalstep(function()
 		if not core.localplayer then return end
 		local is_active = core.settings:get_bool(setting) and (not condition or condition())
 		if is_active then
@@ -225,7 +225,7 @@ end
 
 --- Nil-safe HUD change wrapper.
 function ws.hud_set(id, stat, data)
-	if id and minetest.localplayer then
-		minetest.localplayer:hud_change(id, stat, data)
+	if id and core.localplayer then
+		core.localplayer:hud_change(id, stat, data)
 	end
 end

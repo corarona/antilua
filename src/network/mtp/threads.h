@@ -1,4 +1,4 @@
-// Luanti
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2013-2017 celeron55, Perttu Ahola <celeron55@gmail.com>
 // Copyright (C) 2017 celeron55, Loic Blot <loic.blot@unix-experience.fr>

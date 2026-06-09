@@ -1,4 +1,4 @@
-// Luanti
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2014 sapier
 // Copyright (C) 2018 srifqi, Muhammad Rifqi Priyo Susanto

@@ -35,7 +35,7 @@ local function hit_objects(radius, check)
 	local pl = core.localplayer
 	local lp = pl:get_pos()
 	local rt = false
-	for _, obj in pairs(minetest.get_objects_inside_radius(lp, radius)) do
+	for _, obj in pairs(core.get_objects_inside_radius(lp, radius)) do
 		if not check or (check and check(obj)) then
 			killaura.punch_object(obj)
 			rt = true

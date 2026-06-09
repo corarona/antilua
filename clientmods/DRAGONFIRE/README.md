@@ -1,6 +1,6 @@
-# DRAGONFIRE — DragonfireClient Client-Side Modpack
+# DRAGONFIRE — Antilua Client-Side Modpack
 
-Client-side cheat/utility mods for the DragonfireClient Luanti fork (formerly Minetest).
+Client-side cheat/utility mods for Antilua.
 
 ## Directory structure
 
@@ -95,4 +95,4 @@ The cheat menu (default: TAB) groups cheats into:
 
 ## Compatibility
 
-These mods are designed for the DragonfireClient fork of Luanti. They rely on DragonfireClient-specific CSM APIs. They will **not** load in stock Luanti/Minotest.
+These mods are designed for Antilua. They rely on Antilua-specific CSM APIs. They will **not** load in stock Luanti.

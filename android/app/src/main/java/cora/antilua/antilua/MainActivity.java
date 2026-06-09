@@ -1,5 +1,5 @@
 /*
-Minetest
+Antilua
 Copyright (C) 2014-2020 MoNTE48, Maksim Gamarnik <MoNTE48@mail.ua>
 Copyright (C) 2014-2020 ubulem,  Bektur Mambetov <berkut87@gmail.com>
 
@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License along
 with this program; if not, see <https://www.gnu.org/licenses/>.
 */
 
-package net.minetest.minetest;
+package cora.antilua.antilua;
 
 import android.annotation.SuppressLint;
 import android.app.NotificationChannel;
@@ -39,15 +39,15 @@ import androidx.annotation.RequiresApi;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 
-import static net.minetest.minetest.UnzipService.*;
+import static cora.antilua.antilua.UnzipService.*;
 
 public class MainActivity extends AppCompatActivity {
-	public static final String NOTIFICATION_CHANNEL_ID = "Minetest channel";
+	public static final String NOTIFICATION_CHANNEL_ID = "Antilua channel";
 	public static final int NOTIFICATION_ID_UNZIP = 1;
 	public static final int NOTIFICATION_ID_GAME = 2;
 
 	private final static int versionCode = BuildConfig.VERSION_CODE;
-	private static final String SETTINGS = "MinetestSettings";
+	private static final String SETTINGS = "AntiluaSettings";
 	private static final String TAG_VERSION_CODE = "versionCode";
 
 	private ProgressBar mProgressBar;

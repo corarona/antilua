@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Update/create luanti po files
+# Update/create antilua po files
 
 # an auxiliary function to abort processing with an optional error
 # message
@@ -49,7 +49,7 @@ cd ..
 # --package-name
 potfile=po/luanti.pot
 echo "updating pot"
-xgettext --package-name=luanti \
+xgettext --package-name=antilua \
 	--add-comments='TRANSLATORS:'\
 	--sort-by-file \
 	--add-location=file \

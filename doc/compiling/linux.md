@@ -75,7 +75,7 @@ Download source (this is the URL to the latest of source repository, which might
 
 Download source, without using Git:
 
-    wget https://github.com/luanti-org/luanti/archive/master.tar.gz
+    wget https://codeberg.org/antilua/antilua/archive/master.tar.gz
     tar xf master.tar.gz
     cd luanti-master
 

@@ -3,14 +3,14 @@ local tpactive
 
 local function pos_ok(pos, lava_range)
 	lava_range = lava_range or 10
-	local p = minetest.find_node_near(pos, lava_range,
+	local p = core.find_node_near(pos, lava_range,
 		{"mcl_core:lava_source","mcl_core:lava_flowing","mcl_nether:nether_lava_source","mcl_nether:nether_lava_flowing"}, true)
 	return not p
 end
 
 local function get_miner_node(pos, search_range)
 	search_range = search_range or 50
-	local nds = minetest.find_nodes_near(pos, search_range, nlist.get(nlist.selected), true)
+	local nds = core.find_nodes_near(pos, search_range, nlist.get(nlist.selected), true)
 	table.sort(nds, function(a, b) return vector.distance(pos, a) < vector.distance(pos, b) end)
 	for _, p in ipairs(nds) do
 		if pos_ok(p) then
@@ -22,26 +22,26 @@ end
 local function do_tp(tpos, tpstep)
 	if tpactive then return end
 	tpactive = true
-	local lp = minetest.localplayer:get_pos()
-	minetest.after(1, function(lp, tpos)
+	local lp = core.localplayer:get_pos()
+	core.after(1, function(lp, tpos)
 		if not pos_ok(tpos) then
-			minetest.localplayer:set_pos(vector.offset(lp, 0, 25, 0))
+			core.localplayer:set_pos(vector.offset(lp, 0, 25, 0))
 			mclminer_tgt = nil
 			tpactive = false
 			ws.notify("LAVAAA", ws.NOTIFY_WARNING)
-			minetest.settings:set_bool("mclminer", false)
+			core.settings:set_bool("mclminer", false)
 			return
 		end
-		minetest.localplayer:set_pos(tpos)
+		core.localplayer:set_pos(tpos)
 		tpactive = false
 	end, lp, tpos)
 end
 
 local function lavapanic()
-	local head = vector.offset(minetest.localplayer:get_pos(), 0, 1, 0)
-	local headnode = minetest.get_node_or_nil(head)
+	local head = vector.offset(core.localplayer:get_pos(), 0, 1, 0)
+	local headnode = core.get_node_or_nil(head)
 	if headnode and headnode.name:find("lava") then
-		minetest.localplayer:set_pos(vector.offset(head, 0, 10, 0))
+		core.localplayer:set_pos(vector.offset(head, 0, 10, 0))
 	end
 end
 
@@ -58,22 +58,22 @@ sbots.register_bot("Mclminer", {
 	end,
 	do_step = function(self, dtime)
 		lavapanic()
-		local lp = minetest.localplayer:get_pos()
-		local hp = minetest.localplayer:get_hp()
+		local lp = core.localplayer:get_pos()
+		local hp = core.localplayer:get_hp()
 		local tpstep = tonumber(core.settings:get("mclminer.tp_step")) or 3.8
 		local min_hp = tonumber(core.settings:get("mclminer.min_hp")) or 15
 		local lava_range = tonumber(core.settings:get("mclminer.lava_range")) or 10
 		if hp < min_hp then return end
 
 		if mclminer_tgt then
-			local its = minetest.get_objects_inside_radius(lp, 2)
+			local its = core.get_objects_inside_radius(lp, 2)
 			for _, o in pairs(its) do
 				local p = o:get_properties()
 				if not o:is_local_player() and not p.wield_item then
 					return
 				end
 			end
-			local n = minetest.get_node_or_nil(mclminer_tgt)
+			local n = core.get_node_or_nil(mclminer_tgt)
 			if n and n.name == "air" then
 				mclminer_tgt = nil
 				return
@@ -90,8 +90,8 @@ sbots.register_bot("Mclminer", {
 		end
 	end,
 	on_activate = function(self)
-		minetest.settings:set_bool("autoeat", true)
-		minetest.settings:set_bool("dighead", true)
+		core.settings:set_bool("autoeat", true)
+		core.settings:set_bool("dighead", true)
 		mclminer_tgt = nil
 	end,
 	landing_distance = 0,

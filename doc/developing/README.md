@@ -1,6 +1,6 @@
 # Developer documentation
 
-## Luanti Documentation
+## Antilua Documentation
 
 Some important development docs are found on the docs site: https://docs.luanti.org/
 

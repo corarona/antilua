@@ -1,5 +1,5 @@
 --
--- This file contains built-in stuff in Luanti implemented in Lua.
+-- This file contains built-in stuff in Antilua implemented in Lua.
 --
 -- It is always loaded and executed after registration of the C API,
 -- before loading and running any mods.
@@ -35,7 +35,9 @@ do
 	math.randomseed(seed)
 end
 
-minetest = core
+if core.settings and core.settings:get_bool("antilua_compat") then
+	minetest = core
+end
 
 -- Load other files
 local scriptdir = core.get_builtin_path()

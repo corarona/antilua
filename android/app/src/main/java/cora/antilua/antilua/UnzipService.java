@@ -1,5 +1,5 @@
 /*
-Minetest
+Antilua
 Copyright (C) 2014-2020 MoNTE48, Maksim Gamarnik <MoNTE48@mail.ua>
 Copyright (C) 2014-2020 ubulem,  Bektur Mambetov <berkut87@gmail.com>
 
@@ -17,7 +17,7 @@ You should have received a copy of the GNU Lesser General Public License along
 with this program; if not, see <https://www.gnu.org/licenses/>.
 */
 
-package net.minetest.minetest;
+package cora.antilua.antilua;
 
 import android.app.IntentService;
 import android.app.Notification;
@@ -43,10 +43,10 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 public class UnzipService extends IntentService {
-	public static final String ACTION_UPDATE = "net.minetest.minetest.UPDATE";
-	public static final String ACTION_PROGRESS = "net.minetest.minetest.PROGRESS";
-	public static final String ACTION_PROGRESS_MESSAGE = "net.minetest.minetest.PROGRESS_MESSAGE";
-	public static final String ACTION_FAILURE = "net.minetest.minetest.FAILURE";
+	public static final String ACTION_UPDATE = "cora.antilua.antilua.UPDATE";
+	public static final String ACTION_PROGRESS = "cora.antilua.antilua.PROGRESS";
+	public static final String ACTION_PROGRESS_MESSAGE = "cora.antilua.antilua.PROGRESS_MESSAGE";
+	public static final String ACTION_FAILURE = "cora.antilua.antilua.FAILURE";
 	public static final int SUCCESS = -1;
 	public static final int FAILURE = -2;
 	public static final int INDETERMINATE = -3;
@@ -65,7 +65,7 @@ public class UnzipService extends IntentService {
 	}
 
 	public UnzipService() {
-		super("net.minetest.minetest.UnzipService");
+		super("cora.antilua.antilua.UnzipService");
 	}
 
 	@Override
@@ -88,12 +88,13 @@ public class UnzipService extends IntentService {
 
 			unzip(notificationBuilder, zipFile, userDataDirectory);
 		} catch (IOException e) {
-			Log.w("UnzipService", null, e);
 			isSuccess = false;
 			failureMessage = e.getLocalizedMessage();
 		} finally {
 			setIsRunning(false);
-			zipFile.delete();
+			if (!zipFile.delete()) {
+				Log.w("UnzipService", "Antilua installation ZIP cannot be deleted");
+			}
 		}
 	}
 
@@ -139,7 +140,6 @@ public class UnzipService extends IntentService {
 		try (ZipFile zipSize = new ZipFile(zipFile)) {
 			size = zipSize.size();
 		}
-		Log.i("UnzipService", String.format("Extracting %d entries", size));
 
 		int readLen;
 		byte[] readBuffer = new byte[16384];
@@ -153,16 +153,36 @@ public class UnzipService extends IntentService {
 					continue;
 				}
 				publishProgress(notificationBuilder, R.string.loading, 100 * ++per / size);
-				File destFile = new File(userDataDirectory, ze.getName());
-				try (OutputStream outputStream = new FileOutputStream(destFile)) {
+				try (OutputStream outputStream = new FileOutputStream(
+						new File(userDataDirectory, ze.getName()))) {
 					while ((readLen = zipInputStream.read(readBuffer)) != -1) {
 						outputStream.write(readBuffer, 0, readLen);
 					}
 				}
 			}
 		}
+	}
 
-		Log.i("UnzipService", "Done extracting");
+	void moveFileOrDir(@NonNull File src, @NonNull File dst) throws IOException {
+		try {
+			Process p = new ProcessBuilder("/system/bin/mv",
+				src.getAbsolutePath(), dst.getAbsolutePath()).start();
+			int exitCode = p.waitFor();
+			if (exitCode != 0)
+				throw new IOException("Move failed with exit code " + exitCode);
+		} catch (InterruptedException e) {
+			throw new IOException("Move operation interrupted");
+		}
+	}
+
+	boolean recursivelyDeleteDirectory(@NonNull File loc) {
+		try {
+			Process p = new ProcessBuilder("/system/bin/rm", "-rf",
+				loc.getAbsolutePath()).start();
+			return p.waitFor() == 0;
+		} catch (IOException | InterruptedException e) {
+			return false;
+		}
 	}
 
 	private void publishProgress(@Nullable Notification.Builder notificationBuilder, @StringRes int message, int progress) {

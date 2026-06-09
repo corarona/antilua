@@ -1,7 +1,7 @@
 -- help: centralized help system for DragonfireClient client mods
 -- Reads README.md files, populates cheat descriptions, shows full READMEs in formspec.
 
-local md_parser = dofile(minetest.get_modpath(minetest.get_current_modname()) .. "/md_parser.lua")
+local md_parser = dofile(core.get_modpath(core.get_current_modname()) .. "/md_parser.lua")
 
 -- Scan all READMEs and populate cheat descriptions
 local function populate_descriptions()
@@ -95,7 +95,7 @@ if core.register_cheat then
 		func = show_index,
 	})
 	-- Also register a search command
-	minetest.register_chatcommand("help", {
+	core.register_chatcommand("help", {
 		description = "Open help system",
 		func = show_index,
 	})

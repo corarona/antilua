@@ -14,10 +14,10 @@ local etime = 0
 function autoeat.eat()
 	local food_index
 	local food_count = 0
-	for index, stack in pairs(minetest.get_inventory("current_player").main) do
+	for index, stack in pairs(core.get_inventory("current_player").main) do
 		local stackname = stack:get_name()
 		if stackname ~= "" then
-			local def = minetest.get_item_def(stackname)
+			local def = core.get_item_def(stackname)
 			if def and def.groups.food then
 				food_count = food_count + 1
 				if food_index then
@@ -32,10 +32,10 @@ function autoeat.eat()
 			autodupe.needed(food_index)
 			autoeat.lock = true
 		else
-			local player = minetest.localplayer
+			local player = core.localplayer
 			local old_index = player:get_wield_index()
 			player:set_wield_index(food_index)
-			minetest.interact("activate", {type = "nothing"})
+			core.interact("activate", {type = "nothing"})
 			player:set_wield_index(old_index)
 			autoeat.lock = false
 		end
@@ -44,24 +44,24 @@ end
 
 function autoeat.get_hunger()
 	if hud_id then
-		return minetest.localplayer:hud_get(hud_id).number
+		return core.localplayer:hud_get(hud_id).number
 	else
 		return 20
 	end
 end
 
-minetest.register_globalstep(function(dtime)
-	if not minetest.localplayer then return end
+core.register_globalstep(function(dtime)
+	if not core.localplayer then return end
 	etime = etime + dtime
-	if autoeat.lock or minetest.settings:get_bool("autoeat") and etime >= get_float("cooldown", 0.5) and autoeat.get_hunger() < get_float("hunger", 9) then
+	if autoeat.lock or core.settings:get_bool("autoeat") and etime >= get_float("cooldown", 0.5) and autoeat.get_hunger() < get_float("hunger", 9) then
 		etime = 0
 		autoeat.eat()
 	end
 end)
 
 local function find_hud()
-	local player = minetest.localplayer
-	if not player then minetest.after(3,find_hud) end
+	local player = core.localplayer
+	if not player then core.after(3,find_hud) end
 	local def
 	local i = -1
 	repeat
@@ -73,6 +73,6 @@ local function find_hud()
 	end
 end
 
-minetest.after(3, find_hud)
+core.after(3, find_hud)
 
 core.register_cheat("AutoEat", { category = "Player", setting = "autoeat" })

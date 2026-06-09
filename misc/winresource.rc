@@ -10,11 +10,11 @@
 #undef USE_CMAKE_CONFIG_H
 
 #ifdef __MINGW32__
-CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "luanti.exe.manifest"
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "antilua.exe.manifest"
 #endif
 
 LANGUAGE 0, SUBLANG_NEUTRAL
-130        ICON         "luanti-icon.ico"
+130        ICON         "antilua-icon.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

@@ -12,7 +12,7 @@ function ws.set_pos1(pos)
 	if type(pos) == "string" then pos = core.string_to_pos(pos) end
 	if not pos then pos = ws.dircoord(0, 0, 0) end
 	ws.constraint_pos1 = vector.round(pos)
-	local pstr = minetest.pos_to_string(ws.constraint_pos1)
+	local pstr = core.pos_to_string(ws.constraint_pos1)
 	hwps[#hwps + 1] = ws.display_wp(pstr, ws.constraint_pos1)
 	ws.notify("Constraint pos1 set to " .. pstr, ws.NOTIFY_INFO, {toast=false})
 end
@@ -21,7 +21,7 @@ function ws.set_pos2(pos)
 	if type(pos) == "string" then pos = core.string_to_pos(pos) end
 	if not pos then pos = ws.dircoord(0, 0, 0) end
 	ws.constraint_pos2 = vector.round(pos)
-	local pstr = minetest.pos_to_string(ws.constraint_pos2)
+	local pstr = core.pos_to_string(ws.constraint_pos2)
 	hwps[#hwps + 1] = ws.display_wp(pstr, ws.constraint_pos2)
 	ws.notify("Constraint pos2 set to " .. pstr, ws.NOTIFY_INFO, {toast=false})
 end
@@ -30,8 +30,8 @@ function ws.reset_constraints()
 	ws.constraint_pos1 = false
 	ws.constraint_pos2 = false
 	for k, v in pairs(hwps) do
-		if minetest.localplayer then
-			minetest.localplayer:hud_remove(v)
+		if core.localplayer then
+			core.localplayer:hud_remove(v)
 		end
 		hwps[k] = nil
 	end
@@ -47,12 +47,12 @@ function ws.inside_constraints(pos)
 	return false
 end
 
-minetest.register_chatcommand("pos1", {
+core.register_chatcommand("pos1", {
 	description = "Set constraint position 1",
 	params = "[x,y,z]",
 	func = function(param)
 		if param and param ~= "" then
-			local p = minetest.string_to_pos(param)
+			local p = core.string_to_pos(param)
 			if p then
 				ws.set_pos1(p)
 			end
@@ -62,12 +62,12 @@ minetest.register_chatcommand("pos1", {
 	end,
 })
 
-minetest.register_chatcommand("pos2", {
+core.register_chatcommand("pos2", {
 	description = "Set constraint position 2",
 	params = "[x,y,z]",
 	func = function(param)
 		if param and param ~= "" then
-			local p = minetest.string_to_pos(param)
+			local p = core.string_to_pos(param)
 			if p then ws.set_pos2(p) end
 		else
 			ws.set_pos2()
@@ -75,7 +75,7 @@ minetest.register_chatcommand("pos2", {
 	end,
 })
 
-minetest.register_chatcommand("creset", {
+core.register_chatcommand("creset", {
 	description = "Reset constraints",
 	func = ws.reset_constraints,
 })
@@ -86,9 +86,9 @@ minetest.register_chatcommand("creset", {
 function ws.place_if_needed(items, pos, place)
 	if not ws.inside_constraints(pos) then return end
 	if not pos then return end
-	place = place or minetest.place_node
+	place = place or core.place_node
 
-	local node = minetest.get_node_or_nil(pos)
+	local node = core.get_node_or_nil(pos)
 	if not node then return end
 	if ws.in_list(node.name, items) then
 		return true
@@ -147,11 +147,11 @@ ws.rg("HeadSaver", {
 	setting = "headsaver",
 	on_step = function()
 		local head = ws.dircoord(0, 1, 0)
-		local headnd = minetest.get_node_or_nil(head)
+		local headnd = core.get_node_or_nil(head)
 		if headnd and headnd.name ~= "air" then
 			local ap = ws.find_closest_reachable_airpocket(ws.dircoord(0, 0, 0))
 			if ap then
-				minetest.localplayer:set_pos(ap)
+				core.localplayer:set_pos(ap)
 				return
 			end
 			ws.dig(head)
@@ -186,25 +186,25 @@ ws.rg("LockView", {
 ------------------------------------------------------------------------------
 local at_new_idx, at_old_idx, at_pointed_pos, at_best_time
 
-minetest.register_on_punchnode(function(pos, node)
-	if minetest.settings:get_bool("autotool") then
+core.register_on_punchnode(function(pos, node)
+	if core.settings:get_bool("autotool") then
 		at_pointed_pos = pos
-		at_old_idx = at_old_idx or minetest.localplayer:get_wield_index()
+		at_old_idx = at_old_idx or core.localplayer:get_wield_index()
 		at_new_idx, at_best_time = ws.find_best_tool(node.name)
 	end
 end)
 
-minetest.register_globalstep(function()
-	local player = minetest.localplayer
+core.register_globalstep(function()
+	local player = core.localplayer
 	if not at_new_idx or not player then return end
-	if minetest.settings:get_bool("autotool") then
-		local pt = minetest.get_pointed_thing()
+	if core.settings:get_bool("autotool") then
+		local pt = core.get_pointed_thing()
 		if pt and pt.type == "node" then
-			local ptpos = minetest.get_pointed_thing_position(pt)
+			local ptpos = core.get_pointed_thing_position(pt)
 			if ptpos and vector.equals(ptpos, at_pointed_pos) and player:get_control().dig then
 				player:set_wield_index(at_new_idx)
 				if at_best_time == 0 then
-					minetest.dig_node(at_pointed_pos)
+					core.dig_node(at_pointed_pos)
 				end
 				return
 			end

@@ -1,13 +1,13 @@
 -- Session logger: merged from cchat + session_stats
 
-local mod_name = minetest.get_current_modname()
+local mod_name = core.get_current_modname()
 
 local function log(level, message)
-	minetest.log(level, ('[%s] %s'):format(mod_name, message))
+	core.log(level, ('[%s] %s'):format(mod_name, message))
 end
 
 local LOG_LEVEL = 'action'
-local server_info = minetest.get_server_info()
+local server_info = core.get_server_info()
 local server_id = server_info.address .. ':' .. server_info.port
 local my_name = ''
 

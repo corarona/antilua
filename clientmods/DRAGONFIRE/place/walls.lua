@@ -25,7 +25,7 @@ ws.rg("WallIn", { category = "Place", setting = "place_wallin",
 		local height = tonumber(core.settings:get(self.setting .. ".height")) or 4
 		local poss = get_wall(width, depth, height)
 		for k, v in pairs(poss) do
-			minetest.place_node(v)
+			core.place_node(v)
 		end
 	end,
 	delay = 0.5,
@@ -43,7 +43,7 @@ ws.rg("SkyPltfrm", { category = "Place", setting = "place_skypltfrm",
 	on_step = function(self)
 		local width = tonumber(core.settings:get(self.setting .. ".width")) or 5
 		local n = math.floor(width / 2)
-		if not skypltfrm_nd then skypltfrm_nd = minetest.localplayer:get_wielded_item():get_name() end
+		if not skypltfrm_nd then skypltfrm_nd = core.localplayer:get_wielded_item():get_name() end
 		for i = -n, n do
 			local obpos = ws.dircoord(0, -2, i)
 			ws.place(ws.dircoord(0, -1, i), skypltfrm_nd, 7)
@@ -56,7 +56,7 @@ ws.rg("SkyPltfrm", { category = "Place", setting = "place_skypltfrm",
 		end
 	end,
 	on_start = function(self)
-		skypltfrm_nd = minetest.localplayer:get_wielded_item():get_name()
+		skypltfrm_nd = core.localplayer:get_wielded_item():get_name()
 		if skypltfrm_nd:find('glass') then skypltfrm_glassmode = true end
 	end,
 	on_stop = function(self)
@@ -70,11 +70,11 @@ ws.rg("SkyPltfrm", { category = "Place", setting = "place_skypltfrm",
 local multiscaff_node
 
 local function get_nodes_over_air(pos, range, nodes)
-	local nds = minetest.find_nodes_near(pos, range, nodes)
+	local nds = core.find_nodes_near(pos, range, nodes)
 	local rt = {}
 	for k, v in ipairs(nds) do
 		local under = vector.add(v, vector.new(0, -1, 0))
-		local un = minetest.get_node_or_nil(under)
+		local un = core.get_node_or_nil(under)
 		if un and un.name == "air" then table.insert(rt, v) end
 	end
 	return rt
@@ -92,7 +92,7 @@ ws.rg("PCeiling", { category = "Place", setting = "pceiling",
 		end
 	end,
 	on_start = function(self)
-		multiscaff_node = minetest.localplayer:get_wielded_item():get_name()
+		multiscaff_node = core.localplayer:get_wielded_item():get_name()
 		-- started notification handled by lifecycle hook
 	end,
 	cheat_settings = {

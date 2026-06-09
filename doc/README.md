@@ -1,6 +1,6 @@
 # Documentation
 
-This directory contains mostly reference documentation for the Luanti engine.
+This directory contains mostly reference documentation for the Antilua engine.
 For a less prescriptive and more guiding documentation, also look at:
 https://docs.luanti.org
 
@@ -24,7 +24,7 @@ Here is a list with descriptions of relevant files:
 
 ## Client-Side Content
 
-- [texture_packs.md](texture_packs.md): Layout and description of Luanti's
+- [texture_packs.md](texture_packs.md): Layout and description of Antilua's
     texture packs structure and configuration.
 - [client_lua_api.md](client_lua_api.md): Client-Provided Client-Side Modding
     (CPCSM) API reference.
@@ -38,23 +38,23 @@ Here is a list with descriptions of relevant files:
 
 ## Formats and Protocols
 
-- [world_format.md](world_format.md): Structure of Luanti world directories and
+- [world_format.md](world_format.md): Structure of Antilua world directories and
     format of the files therein.
     Note: If you want to write your own deserializer, it will be easier to read
     the `serialize()` and `deSerialize()` functions of the various structures in
     C++, e.g. `MapBlock::deSerialize()`.
-- [protocol.txt](protocol.txt): *Rough* outline of Luanti's network protocol.
+- [protocol.txt](protocol.txt): *Rough* outline of Antilua's network protocol.
 
 ## Misc.
 
 - [compiling/](compiling/): Compilation instructions, and options.
 - [ides/](ides/): Instructions for configuring certain IDEs for engine development.
-- [developing/](developing/): Information about Luanti development.
+- [developing/](developing/): Information about Antilua development.
     Note: [developing/profiling.md](developing/profiling.md) can be useful for
     modders and server owners!
 - [android.md](android.md): Android quirks.
 - [direction.md](direction.md): Information related to the future direction of
-    Luanti. Commonly referred to as the roadmap document.
+    Antilua. Commonly referred to as the roadmap document.
 - [breakages.md](breakages.md): List of planned breakages for the next major
     release, i.e. 6.0.0.
 - [docker_server.md](docker_server.md): Information about our Docker server

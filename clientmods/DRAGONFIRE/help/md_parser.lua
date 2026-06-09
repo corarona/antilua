@@ -201,7 +201,7 @@ function M.parse_cheats_table(md_text)
 end
 
 -- Load embedded README content
-local readme_data = dofile(minetest.get_modpath(minetest.get_current_modname()) .. "/readmes.lua")
+local readme_data = dofile(core.get_modpath(core.get_current_modname()) .. "/readmes.lua")
 
 function M.read_readme(modname)
 	return readme_data[modname]

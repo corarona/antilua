@@ -1,5 +1,5 @@
 /*
-Minetest
+Antilua
 Copyright (C) 2014-2020 MoNTE48, Maksim Gamarnik <MoNTE48@mail.ua>
 Copyright (C) 2014-2020 ubulem,  Bektur Mambetov <berkut87@gmail.com>
 Copyright (C) 2023 srifqi, Muhammad Rifqi Priyo Susanto
@@ -19,7 +19,7 @@ You should have received a copy of the GNU Lesser General Public License along
 with this program; if not, see <https://www.gnu.org/licenses/>.
 */
 
-package net.minetest.minetest;
+package cora.antilua.antilua;
 
 import android.content.Context;
 import android.view.KeyEvent;

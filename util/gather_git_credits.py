@@ -14,7 +14,7 @@ CUTOFF_ACTIVE = 3
 CUTOFF_PREVIOUS = 21
 
 # For a description of the points system see:
-# <https://github.com/luanti-org/luanti/pull/9593#issue-398677198>
+# <https://codeberg.org/antilua/antilua/pull/9593#issue-398677198>
 
 def load(revs):
 	points = defaultdict(int)

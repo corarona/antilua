@@ -1,11 +1,11 @@
 local water_level = 1
---tonumber(minetest.get_mapgen_setting("water_level"))
+--tonumber(core.get_mapgen_setting("water_level"))
 
 -- Calculate the maximum playable limit
 local mapgen_limit = 31007
---tonumber(minetest.get_mapgen_setting("mapgen_limit"))
+--tonumber(core.get_mapgen_setting("mapgen_limit"))
 local chunksize = 5
---tonumber(minetest.get_mapgen_setting("chunksize"))
+--tonumber(core.get_mapgen_setting("chunksize"))
 local playable_limit = math.max(mapgen_limit - (chunksize + 1) * 16, 0)
 
 -- Parameters
@@ -74,7 +74,7 @@ local function find_biome(pos, biomes)
 		local attempt = 1
 		while attempt < 3 do
 			for iter = 1, checks do
-				local biome_data = minetest.get_biome_data(pos)
+				local biome_data = core.get_biome_data(pos)
 				-- Sometimes biome_data is nil
 				local biome = biome_data and biome_data.biome
 				for id_ind = 1, #biome_ids do
@@ -83,7 +83,7 @@ local function find_biome(pos, biomes)
 					local spos = table.copy(pos)
 					if biome == biome_id then
 						local good_spawn_height = pos.y <= water_level + 16 and pos.y >= water_level
-						local spawn_y = minetest.get_spawn_level(spos.x, spos.z)
+						local spawn_y = core.get_spawn_level(spos.x, spos.z)
 						if spawn_y then
 							spawn_pos = {x = spos.x, y = spawn_y, z = spos.z}
 						elseif not good_spawn_height then
@@ -110,7 +110,7 @@ local function find_biome(pos, biomes)
 	-- Table of suitable biomes
 	biome_ids = {}
 	for i=1, #biomes do
-		local id = minetest.get_biome_id(biomes[i])
+		local id = core.get_biome_id(biomes[i])
 		if not id then
 			return nil, false
 		end
@@ -156,23 +156,23 @@ local function init_strongholds(seed)
 	return stronghold_positions
 end
 
-minetest.register_chatcommand("find_strongholds", {
+core.register_chatcommand("find_strongholds", {
 	params = "[<seed>]",
 	description = "Returns a list of MCL stronghold positions using the current or specified seed.",
 	func = function(p)
 		local seed = tonumber(p)
-		if not seed and not minetest.get_server_info().seed then
-			minetest.display_chat_message("minetest.get_server_info().seed not available, try supplying the seed as an argument.")
+		if not seed and not core.get_server_info().seed then
+			core.display_chat_message("core.get_server_info().seed not available, try supplying the seed as an argument.")
 			return
 		elseif not seed then
-			seed = tonumber(minetest.get_server_info().seed)
+			seed = tonumber(core.get_server_info().seed)
 		end
 		if not seed then
-			minetest.display_chat_message("ERROR: seed must be a number.")
+			core.display_chat_message("ERROR: seed must be a number.")
 			return
 		end
 
-		local lp = minetest.localplayer:get_pos()
+		local lp = core.localplayer:get_pos()
 		local sp = init_strongholds(seed)
 		table.sort(sp, function(a, b)
 			return vector.distance(lp, a) < vector.distance(lp, b)
@@ -180,13 +180,13 @@ minetest.register_chatcommand("find_strongholds", {
 		if poi then
 			poi.display(sp[1], "Closest stronghold")
 		end
-		minetest.display_chat_message("strongholds for seed " .. string.format("%18.0f", seed) .. ":")
-		minetest.display_chat_message("(sorted by distance from player)")
+		core.display_chat_message("strongholds for seed " .. string.format("%18.0f", seed) .. ":")
+		core.display_chat_message("(sorted by distance from player)")
 		local l = ""
 		for _, v in ipairs(sp) do
-			l = l .. " " .. minetest.pos_to_string(v)
+			l = l .. " " .. core.pos_to_string(v)
 		end
-		minetest.display_chat_message(l)
-		minetest.log("info", l)
+		core.display_chat_message(l)
+		core.log("info", l)
 	end,
 })

@@ -1,4 +1,4 @@
-// Luanti
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2013 celeron55, Perttu Ahola <celeron55@gmail.com>
 
@@ -73,6 +73,9 @@ static bool detect_touch()
 static void set_df_default_settings()
 {
 	Settings *settings = Settings::getLayer(SL_DEFAULTS);
+
+	// Backward compatibility with Minetest/Luanti
+	settings->setDefault("antilua_compat", "false");
 
 	// Cheat menu
 	settings->setDefault("cheat_menu_font", "FM_Standard");

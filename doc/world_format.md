@@ -1,4 +1,4 @@
-# Luanti World Format 22...29
+# Antilua World Format 22...29
 
 This applies to a world format carrying the block serialization version
 22...27, used at least in
@@ -261,14 +261,14 @@ Example content:
 
 # Map File Format
 
-Luanti maps consist of `MapBlock`s, each holds 16x16x16 nodes.
+Antilua maps consist of `MapBlock`s, each holds 16x16x16 nodes.
 
 In addition to the bulk node data, `MapBlock`s stored on disk also contain
 other things.
 
 ## History
 
-Initially, Luanti stored maps in a format called the "sectors" format.
+Initially, Antilua stored maps in a format called the "sectors" format.
 It was a directory/file structure like this:
 
     sectors2/XXX/ZZZ/YYYY
@@ -277,7 +277,7 @@ For example, the `MapBlock` at `(0, 1, -2)` was this file:
 
     sectors2/000/ffd/0001
 
-Eventually Luanti outgrew this directory structure, as filesystems were
+Eventually Antilua outgrew this directory structure, as filesystems were
 struggling under the number of files and directories.
 
 Large servers seriously needed a new format, and thus the base of the
@@ -397,7 +397,7 @@ See below for description.
 * Indicates if the light is correct at the sides of a map block.
   Lighting may not be correct if the light changed, but a neighbor
   block was not loaded at that time.
-  If these flags are false, Luanti will automatically recompute light
+  If these flags are false, Antilua will automatically recompute light
   when both this block and its required neighbor are loaded.
 
 * The bit order is:
@@ -410,7 +410,7 @@ See below for description.
   to indicate if direct sunlight spreading is finished.
 
 * Example: if the block at `(0, 0, 0)` has `lighting_complete = 0b1111111111111110`,
-  Luanti will correct lighting in the day light bank when the block at
+  Antilua will correct lighting in the day light bank when the block at
   `(1, 0, 0)` is also loaded.
 
 Timestamp and node ID mappings come here if map format version >= 29.

@@ -1,4 +1,4 @@
--- Luanti
+-- Antilua
 -- SPDX-License-Identifier: LGPL-2.1-or-later
 
 -- These colors are used by the main menu and the settings menu

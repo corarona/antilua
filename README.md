@@ -1,7 +1,7 @@
-DragonfireClient
-================
+Antilua
+=======
 
-A fork of [Luanti](https://www.luanti.org/) (formerly Minetest) — a free
+A fork of Luanti (formerly Minetest) — a free
 open-source voxel game engine — with client-side enhancements, cheat
 features, and quality-of-life improvements.
 
@@ -40,7 +40,7 @@ See `doc/compiling/` for platform-specific guides (Linux, Windows, macOS).
 
 ## What's different from Luanti
 
-DragonfireClient adds features directly in the C++ engine layer — no mods or
+Antilua adds features directly in the C++ engine layer — no mods or
 games required. All are toggleable via the **Cheat Menu** (default key: `TAB`)
 or by setting their corresponding settings.
 
@@ -140,7 +140,7 @@ A `>` suffix indicates the cheat has additional settings (right-arrow or click t
 
 ### Lua API (client-side modding)
 
-DragonfireClient extends the client-side Lua API with callbacks, object
+Antilua extends the client-side Lua API with callbacks, object
 refs, inventory actions, and a virtual mod filesystem. See
 `doc/df_csm_api.md` for the full reference.
 
@@ -159,7 +159,7 @@ All 145+ integration tests pass (0 failures, 0 skipped).
 
 ## Version
 
-DragonfireClient is based on Luanti 5.17.0-dev.
+Antilua is based on Luanti 5.17.0-dev.
 See `LUANTI_README.md` for upstream documentation, compiling,
 configuration, and Docker instructions.
 

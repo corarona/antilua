@@ -1,4 +1,4 @@
--- Luanti
+-- Antilua
 -- Copyright (C) 2018-24 rubenwardy
 -- SPDX-License-Identifier: LGPL-2.1-or-later
 

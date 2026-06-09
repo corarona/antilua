@@ -6,18 +6,18 @@
 
 local etime = 0
 
-minetest.register_globalstep(function(dtime)
-	local player = minetest.localplayer
+core.register_globalstep(function(dtime)
+	local player = core.localplayer
 	if not player then return end
 	local item = player:get_wielded_item()
 	local itemname = item:get_name()
-	local itemdef = minetest.get_item_def(itemname)
+	local itemdef = core.get_item_def(itemname)
 	local wieldindex = player:get_wield_index()
 	etime = etime + dtime
 	if core.settings:get_bool("autorefill") and itemname ~= "" and itemdef and etime > 0.1 then
 		etime = 0
 		local space = item:get_free_space()
-		local i = minetest.find_item(item:get_name(), wieldindex + 1)
+		local i = core.find_item(item:get_name(), wieldindex + 1)
 		if i and space > 0 then
 			ws.move_stack("current_player", "main", i, "current_player", "main", wieldindex, space)
 		end
@@ -25,7 +25,7 @@ minetest.register_globalstep(function(dtime)
 	if core.settings:get_bool("autoeject") then
 		local invact = InventoryAction("drop")
 		local list = (core.settings:get("eject_items") or ""):split(",")
-		local inventory = minetest.get_inventory("current_player")
+		local inventory = core.get_inventory("current_player")
 		for index, stack in pairs(inventory.main) do
 			if table.indexof(list, stack:get_name()) ~= -1 then
 				invact:from("current_player", "main", index)
@@ -35,7 +35,7 @@ minetest.register_globalstep(function(dtime)
 	end
 end)
 
-minetest.register_chatcommand("eject", {
+core.register_chatcommand("eject", {
 	params = "<item_string>",
 	description = "Configure AutoEject items (comma-separated)",
 	func = function(param)
@@ -122,15 +122,15 @@ local craft_fs = table.concat({
 	"tooltip[__mcl_craftguide;Recipe book]",
 })
 
-minetest.register_chatcommand("craft", {
+core.register_chatcommand("craft", {
 	description = "Open a crafting grid",
 	func = function()
-		minetest.show_formspec("inv_craft", craft_fs)
+		core.show_formspec("inv_craft", craft_fs)
 	end,
 })
 
 core.register_cheat("OpenCraftGrid", { category = "Inventory", func = function()
-	minetest.show_formspec("inv_craft", craft_fs)
+	core.show_formspec("inv_craft", craft_fs)
 end })
 
 --
@@ -151,8 +151,8 @@ local function get_node_invs(pos)
 end
 
 local function show_list_fs(param, ll)
-	local name = minetest.localplayer:get_name()
-	local inv = minetest.get_inventory("player:" .. name)
+	local name = core.localplayer:get_name()
+	local inv = core.get_inventory("player:" .. name)
 	local dlists = ""
 	local llists = ""
 	local i, j, idx, idxl = 1, 1, 1, 1
@@ -202,11 +202,11 @@ local function show_list_fs(param, ll)
 		"listring[current_player;" .. param .. "]",
 		"listring[current_player;main]",
 	})
-	minetest.show_formspec("inv_list", fs)
+	core.show_formspec("inv_list", fs)
 	return true
 end
 
-minetest.register_chatcommand("openlist", {
+core.register_chatcommand("openlist", {
 	description = "Show inventory list",
 	params = "[listname]",
 	func = function(param)
@@ -235,7 +235,7 @@ end)
 
 local punch_pos
 
-minetest.register_on_punchnode(function(pos, node)
+core.register_on_punchnode(function(pos, node)
 	if not core.settings:get_bool("punchinv") then return end
 	punch_pos = pos
 	show_list_fs(nil, pos)
@@ -305,11 +305,11 @@ end
 
 local torch_etime = 0
 
-minetest.register_globalstep(function(dtime)
+core.register_globalstep(function(dtime)
 	if not core.settings:get_bool("auto_torch") then
 		return
 	end
-	local player = minetest.localplayer
+	local player = core.localplayer
 	if not player then return end
 	if not player:is_touching_ground() then return end
 

@@ -3,7 +3,7 @@ apply plugin: 'com.android.application'
 android {
 	ndkVersion "$ndk_version"
 	defaultConfig {
-		applicationId 'net.minetest.minetest'
+		applicationId 'cora.antilua.antilua'
 		minSdkVersion 21
 		compileSdk 34
 		targetSdkVersion 35
@@ -52,7 +52,7 @@ android {
 		sourceCompatibility JavaVersion.VERSION_1_8
 		targetCompatibility JavaVersion.VERSION_1_8
 	}
-	namespace 'net.minetest.minetest'
+	namespace 'cora.antilua.antilua'
 }
 
 task prepareAssets() {
@@ -67,7 +67,7 @@ task prepareAssets() {
 	}
 	doLast {
 		copy {
-			from "${projRoot}/minetest.conf.example", "${projRoot}/README.md" into assetsFolder
+			from "${projRoot}/antilua.conf.example", "${projRoot}/README.md" into assetsFolder
 		}
 		copy {
 			from "${projRoot}/doc/lgpl-2.1.txt" into assetsFolder

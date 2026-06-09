@@ -1,12 +1,12 @@
-# DragonfireClient — Features Not Yet Ported
+# Antilua — Features Not Yet Ported
 
-These are DF features that exist in the old `big_rebase` branch but have
+These are Dragonfire features that exist in the old `big_rebase` branch but have
 not yet been ported to modern Luanti master on `df-rebased`. Each entry
 notes why the port is non-trivial.
 
 ## Camera — Nametag Images (`src/client/camera.cpp`, `src/client/camera.h`)
 
-**What changed in DF:**
+**What changed in Dragonfire:**
 - `Nametag` struct expanded with `images` / `images_dim` / `texture_source` fields
 - `addNametag()` signature changed from `(const Nametag &params)` to individual
   parameters plus an `image_names` vector
@@ -16,9 +16,9 @@ notes why the port is non-trivial.
 
 **Why it's hard:**
 - The `Nametag` struct in luanti master is simpler — uses `std::optional<SColor>`
-  for `bgcolor` (DF used a custom `Optional<T>` wrapper). The struct layout and
+  for `bgcolor` (Dragonfire used a custom `Optional<T>` wrapper). The struct layout and
   `getBgColor()` logic differ slightly.
-- `Camera::update()` in luanti master references player fields that DF renamed
+- `Camera::update()` in luanti master references player fields that Dragonfire renamed
   (e.g. `LocalPlayer::gravity` vs the `physics_override` struct).
 - `WieldMeshSceneNode` API changed (`setNodeLightColor` removed).
 - The `ICameraSceneNode` / `ISceneNode` include chain differs (luanti uses
@@ -47,9 +47,9 @@ Entity/player ESP boxes and tracer lines are drawn in a dedicated pipeline step
 
 ## ContentCAO — Nametag Images (`src/client/content_cao.cpp`, `src/client/content_cao.h`)
 
-**DF diff**: ~moderate (nametag_images member + updateNametag changes)
+**Dragonfire diff**: ~moderate (nametag_images member + updateNametag changes)
 
-**What changed in DF:**
+**What changed in Dragonfire:**
 - `GenericCAO::nametag_images` (`std::vector<std::string>`) member added
 - `GenericCAO::updateNametag()` passes `nametag_images` to `addNametag()`
 - The `ClientObjectRef::l_set_nametag_images()` Lua method depends on this
@@ -64,9 +64,9 @@ Entity/player ESP boxes and tracer lines are drawn in a dedicated pipeline step
 
 ## Client — Mod Loading & Constructor (`src/client/client.cpp`, `src/client/client.h`)
 
-**DF diff**: ~massive (constructor, mod loading, protocol changes)
+**Dragonfire diff**: ~massive (constructor, mod loading, protocol changes)
 
-**What changed in DF:**
+**What changed in Dragonfire:**
 - `Client::loadMods()` — replaced SSCSM-based mod loading with direct
   `clientmods/` directory scanning
 - Constructor signature changed (added `GameUI *game_ui`, removed
@@ -83,5 +83,3 @@ Entity/player ESP boxes and tracer lines are drawn in a dedicated pipeline step
 - Protocol changes (player position, init, client info) need to match server
   expectations.
 - The sound system replacement is a separate large change.
-
-

@@ -1,6 +1,6 @@
-# DragonfireClient — Additional Features vs Vanilla Luanti
+# Antilua — Additional Features vs Vanilla Luanti
 
-DragonfireClient extends Luanti with client-side enhancements, cheat features,
+Antilua extends Luanti with client-side enhancements, cheat features,
 and quality-of-life improvements. This file documents what has been ported to
 the `df-rebased` branch and what is still in progress.
 
@@ -84,7 +84,7 @@ them unless `priv_bypass` is active.
 | AutoRespawn | `autorespawn` | 🔄 |
 | ThroughWalls | `dont_point_nodes` | 🔄 |
 
-## Key Bindings (DF-specific)
+## Key Bindings (Antilua-specific)
 
 | Key | Action | Status |
 |-----|--------|--------|
@@ -94,7 +94,7 @@ them unless `priv_bypass` is active.
 | Y | Toggle Scaffold | ✅ |
 | H | Open Ender Chest | ✅ |
 
-## C++ Engine Features (DF-specific)
+## C++ Engine Features (Antilua-specific)
 
 | Feature | Description | Status |
 |---------|-------------|--------|
@@ -124,14 +124,14 @@ at `old-clientmods/DRAGONFIRE/`. Core mods:
 | `walls` | Wall/ceiling/platform builder | ✅ |
 | `autoevade` | Dodge projectiles automatically | ✅ |
 
-See `doc/df_csm_api.md` for the full Dragonfire-specific CSM API reference,
+See `doc/df_csm_api.md` for the full Antilua-specific CSM API reference,
 and `PLAN.md` for the modpack restructuring plan.
 
 ## Lua API Additions
 
 See `src/script/lua_api/` and `clientmods/df_test/` for the full list of
-client-side Lua API additions ported from DF. Also see `doc/df_csm_api.md`
-for the complete reference of Dragonfire-specific APIs.
+client-side Lua API additions ported from Dragonfire. Also see `doc/df_csm_api.md`
+for the complete reference.
 
 ## Test Coverage
 

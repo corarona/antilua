@@ -1,4 +1,4 @@
-// Luanti
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2013 celeron55, Perttu Ahola <celeron55@gmail.com>
 
@@ -58,6 +58,7 @@
 
 #include "debug.h"
 #include "filesys.h"
+#include "settings.h"
 #include "log.h"
 #include "util/string.h"
 #include "util/tracy_wrapper.h"
@@ -169,14 +170,20 @@ void signal_handler_init(void)
 
 static std::optional<std::string> getUserPathEnvVar()
 {
+	if (const char *user_path = getenv("ANTILUA_USER_PATH");
+	    		user_path && *user_path) {
+		return user_path;
+	}
 	if (const char *user_path = getenv("LUANTI_USER_PATH");
 	    		user_path && *user_path) {
+		warningstream << "LUANTI_USER_PATH is deprecated, "
+			      << "use ANTILUA_USER_PATH instead." << std::endl;
 		return user_path;
 	}
 	if (const char *user_path = getenv("MINETEST_USER_PATH");
 	    		user_path && *user_path) {
 		warningstream << "MINETEST_USER_PATH is deprecated, "
-			      << "use LUANTI_USER_PATH instead." << std::endl;
+			      << "use ANTILUA_USER_PATH instead." << std::endl;
 		return user_path;
 	}
 	return std::nullopt;
@@ -492,23 +499,30 @@ bool setSystemPaths()
 		path_share += DIR_DELIM "..";
 	}
 
-	// Use %LUANTI_USER_PATH%
-	DWORD len = GetEnvironmentVariable("LUANTI_USER_PATH", buf, sizeof(buf));
+	// Use %ANTILUA_USER_PATH%
+	DWORD len = GetEnvironmentVariable("ANTILUA_USER_PATH", buf, sizeof(buf));
+	if (!len) {
+		len = GetEnvironmentVariable("LUANTI_USER_PATH", buf, sizeof(buf));
+		if (len) {
+			warningstream << "LUANTI_USER_PATH is deprecated, "
+				      << "use ANTILUA_USER_PATH instead." << std::endl;
+		}
+	}
 	if (!len) {
 		len = GetEnvironmentVariable("MINETEST_USER_PATH", buf, sizeof(buf));
 		if (len) {
 			warningstream << "MINETEST_USER_PATH is deprecated, "
-				      << "use LUANTI_USER_PATH instead." << std::endl;
+				      << "use ANTILUA_USER_PATH instead." << std::endl;
 		}
 	}
 
-	FATAL_ERROR_IF(len >= sizeof(buf), "Failed to get LUANTI_USER_PATH (too large for buffer)");
+	FATAL_ERROR_IF(len >= sizeof(buf), "Failed to get ANTILUA_USER_PATH (too large for buffer)");
 	if (len == 0) {
 		// Use "C:\Users\<user>\AppData\Roaming\<PROJECT_NAME_C>"
 		len = GetEnvironmentVariable("APPDATA", buf, sizeof(buf));
 		FATAL_ERROR_IF(len == 0 || len > sizeof(buf), "Failed to get APPDATA");
-		// TODO: Luanti with migration
-		path_user = std::string(buf) + DIR_DELIM "Minetest";
+		// TODO: migration from minetest
+		path_user = std::string(buf) + DIR_DELIM "Antilua";
 	} else {
 		path_user = std::string(buf);
 	}
@@ -572,8 +586,8 @@ bool setSystemPaths()
 	if (user_path_env) {
 		path_user = std::move(user_path_env.value());
 	} else {
-		// TODO: luanti with migration
-		path_user = std::string(getHomeOrFail()) + DIR_DELIM "." "minetest";
+		// TODO: migration from minetest
+		path_user = std::string(getHomeOrFail()) + DIR_DELIM "." "antilua";
 	}
 
 	return true;
@@ -619,14 +633,32 @@ bool setSystemPaths()
 	if (user_path_env) {
 		path_user = std::move(user_path_env.value());
 	} else {
-		// TODO: luanti with migration
-		path_user  = std::string(getHomeOrFail()) + DIR_DELIM "." "minetest";
+		// TODO: migration from minetest
+		path_user  = std::string(getHomeOrFail()) + DIR_DELIM "." "antilua";
 	}
 	return true;
 }
 
 
 #endif
+
+void applyCompatPaths()
+{
+	if (!g_settings->getBool("antilua_compat"))
+		return;
+
+	// If using the default antilua path and it doesn't exist,
+	// fall back to the legacy minetest path
+	std::string antilua_default = std::string(getHomeOrFail()) + DIR_DELIM "." "antilua";
+	if (path_user == antilua_default && !fs::PathExists(path_user)) {
+		std::string minetest_path = std::string(getHomeOrFail()) + DIR_DELIM "." "minetest";
+		if (fs::PathExists(minetest_path)) {
+			warningstream << "Using legacy ~/.minetest/ directory. "
+				"Set antilua_compat=false or migrate data to ~/.antilua/." << std::endl;
+			path_user = minetest_path;
+		}
+	}
+}
 
 // Move cache folder from path_user to system cache location if possible.
 [[maybe_unused]] static void migrateCachePath()

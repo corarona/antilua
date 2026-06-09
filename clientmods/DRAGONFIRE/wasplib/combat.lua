@@ -1,5 +1,5 @@
 function ws.aim(tpos)
-	local ppos = minetest.localplayer:get_pos()
+	local ppos = core.localplayer:get_pos()
 	local dir = vector.direction(ppos, tpos)
 	local yyaw = 0
 	local pitch = 0
@@ -10,14 +10,14 @@ function ws.aim(tpos)
 	end
 	yyaw = ws.round2(math.deg(yyaw), 2)
 	pitch = ws.round2(math.deg(math.asin(-dir.y) * 1), 2)
-	minetest.localplayer:set_yaw(yyaw)
-	minetest.localplayer:set_pitch(pitch)
+	core.localplayer:set_yaw(yyaw)
+	core.localplayer:set_pitch(pitch)
 end
 
 function ws.gaim(tpos, v, g)
 	if not tpos then return end
 	local atan, pi, pow, sqrt = math.atan, math.pi, math.pow, math.sqrt
-	local player = minetest.localplayer
+	local player = core.localplayer
 	local ppos = player:get_pos()
 	local vec = vector.subtract(ppos, tpos)
 
@@ -36,7 +36,7 @@ end
 
 function ws.find_player(name)
 	local lp = ws.dircoord(0, 0, 0)
-	for k, v in ipairs(minetest.get_objects_inside_radius(lp, 500)) do
+	for k, v in ipairs(core.get_objects_inside_radius(lp, 500)) do
 		if v:get_name() == name then
 			return v:get_pos(), v
 		end
@@ -44,7 +44,7 @@ function ws.find_player(name)
 end
 
 function ws.playeron(p)
-	local pls = minetest.get_player_names()
+	local pls = core.get_player_names()
 	for k, v in pairs(pls) do
 		if v == p then return true end
 	end

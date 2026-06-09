@@ -1,5 +1,5 @@
-# Luanti Android build
-All Luanti builds, including the Android variant, are based on the same code.
+# Antilua Android build
+All Antilua builds, including the Android variant, are based on the same code.
 However, additional Java code is used for proper Android integration.
 
 ## Controls
@@ -33,15 +33,15 @@ When a menu or inventory is displayed:
 * Complicated control can be difficult or impossible on Android device
 
 ## File Path
-There are some settings especially useful for Android users. The Luanti-wide
+There are some settings especially useful for Android users. The Antilua-wide
 configuration file can usually be found at:
 
 * Before 5.4.2:
     * `/sdcard/Minetest/` or `/storage/emulated/0/` if stored on the device
     * `/storage/emulated/(varying folder name)/` if stored on an SD card
 * After 5.4.2:
-    * `/sdcard/Android/data/net.minetest.minetest/` or `/storage/emulated/0/Android/data/net.minetest.minetest/` if stored on the device
-    * `/storage/emulated/(varying folder name)/Android/data/net.minetest.minetest/` if stored on the SD card
+    * `/sdcard/Android/data/cora.antilua.antilua/` or `/storage/emulated/0/Android/data/cora.antilua.antilua/` if stored on the device
+    * `/storage/emulated/(varying folder name)/Android/data/cora.antilua.antilua/` if stored on the SD card
 * [Learn more about Android directory](https://docs.luanti.org/for-players/mobile/)
 
 ## Useful settings
@@ -56,7 +56,7 @@ Mobile device generally have less RAM than PC, this setting limit how many mapbl
 this setting limit max FPS (Frame per second). Default value is 60, which lowest Android device screen refresh rate commonly found, but if you're using an device have lower refresh rate, change this
 
 ## Requirements
-The recommended system requirements for Luanti are listed below.
+The recommended system requirements for Antilua are listed below.
 
 ### CPU
 Supported architectures:
@@ -90,7 +90,7 @@ build system, as the Android build will download some source packages.
 
 ## Build
 
-The new build system Luanti Android is fully functional and is designed to
+The new build system Antilua Android is fully functional and is designed to
 speed up and simplify the work, as well as adding the possibility of
 cross-platform build.
 You can use `./gradlew assembleRelease` or `./gradlew assembleDebug` from the
@@ -109,4 +109,4 @@ automatically. You have to create a `local.properties` file and specify
   file "ant.properties" there. Add the following lines to that file:
 
   > key.store=<path to your keystore>
-  > key.alias=Minetest
+  > key.alias=Antilua

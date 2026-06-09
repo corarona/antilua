@@ -18,11 +18,11 @@ local function excavate(condition)
 		for b = -n, n do
 			local v = ws.dircoord(1, a, b)
 			if condition == nil or condition(v) then
-				local nd = minetest.get_node_or_nil(v)
+				local nd = core.get_node_or_nil(v)
 				local dst = vector.distance(lp, v)
 				ws.dig(v)
 				if dst < maxv and (not nd or nd.name ~= "air") then
-					minetest.settings:set_bool("continuous_forward", false)
+					core.settings:set_bool("continuous_forward", false)
 				end
 			end
 		end
@@ -42,7 +42,7 @@ ws.rg("Excavator", {
 	setting = "excavator",
 	on_step = function(self)
 		local mode = core.settings:get(self.setting .. ".mode") or "normal"
-		minetest.settings:set_bool("continuous_forward", true)
+		core.settings:set_bool("continuous_forward", true)
 		-- Dig
 		if mode == "full" then
 			excavate(nil)
@@ -77,10 +77,10 @@ ws.rg("WallExcavator", {
 	category = "Dig",
 	setting = "wallexcavator",
 	on_step = function()
-		minetest.settings:set_bool("continuous_forward", true)
+		core.settings:set_bool("continuous_forward", true)
 		local lp = ws.dircoord(0, 0, 0)
 		if tps_client and tps_client.ping and tps_client.ping > 1000 then
-			minetest.settings:set_bool("continuous_forward", false)
+			core.settings:set_bool("continuous_forward", false)
 			return
 		end
 		local width = get_width()
@@ -88,11 +88,11 @@ ws.rg("WallExcavator", {
 		for a = -depth, depth do
 			for b = -width, width do
 				local v = ws.dircoord(1, a, b)
-				local nd = minetest.get_node_or_nil(v)
+				local nd = core.get_node_or_nil(v)
 				local dst = vector.distance(lp, v)
 				if ws.inside_wall(v) then ws.dig(v) end
 				if not ws.inside_wall(v) and dst < 2 and (not nd or nd.name ~= "air") then
-					minetest.settings:set_bool("continuous_forward", false)
+					core.settings:set_bool("continuous_forward", false)
 				end
 			end
 		end

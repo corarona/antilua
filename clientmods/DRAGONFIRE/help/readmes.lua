@@ -423,7 +423,7 @@ No chat commands or cheats.
 
 ## API
 
-- `find_biome(pos, biomes)` — Searches outwards on a spiral grid (64-node resolution, 16384 checks) from `pos` for any biome named in the `biomes` array. Returns `spawn_pos, success` where `spawn_pos` is a `{x,y,z}` table with the y-coordinate adjusted via `minetest.get_spawn_level`, or `nil, false` if a biome name is invalid.
+- `find_biome(pos, biomes)` — Searches outwards on a spiral grid (64-node resolution, 16384 checks) from `pos` for any biome named in the `biomes` array. Returns `spawn_pos, success` where `spawn_pos` is a `{x,y,z}` table with the y-coordinate adjusted via `core.get_spawn_level`, or `nil, false` if a biome name is invalid.
 
 ## Cheats
 
@@ -715,7 +715,7 @@ Calculates stronghold positions for Minecraft-like (mcl) worlds for a given nume
 
 ## Player usage
 
-- `/find_strongholds [seed]` — Display all stronghold positions, sorted by distance from the player. If seed is omitted, attempts to retrieve it from `minetest.get_server_info().seed`. Also marks the closest stronghold via the `poi` system.
+- `/find_strongholds [seed]` — Display all stronghold positions, sorted by distance from the player. If seed is omitted, attempts to retrieve it from `core.get_server_info().seed`. Also marks the closest stronghold via the `poi` system.
 
 ## Cheats
 
@@ -1287,7 +1287,7 @@ Legacy signature: `ws.rg(name, category, setting, func, funcstart, funcstop, dau
 
 `ws.sb(name, [value])` — get or set a boolean setting.
 
-`ws.dcm(msg)` — display chat message (`minetest.display_chat_message`).
+`ws.dcm(msg)` — display chat message (`core.display_chat_message`).
 
 `ws.set_bool_bulk(settings, value)` — set multiple boolean settings (`true`/`false`).
 

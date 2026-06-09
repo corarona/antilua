@@ -23,16 +23,16 @@ local function step()
 		return
 	end
 
-	local player = minetest.localplayer
+	local player = core.localplayer
 	if not player then
-		minetest.after(0.1, step)
+		core.after(0.1, step)
 		return
 	end
 
 	local target = MOVING
 	local pos = player:get_pos()
 	if not pos then
-		minetest.after(0.05, step)
+		core.after(0.05, step)
 		return
 	end
 
@@ -85,7 +85,7 @@ local function step()
 
 	local actual_cost = math.max(move_h / h_speed, move_vup / vup_speed)
 	local wait = math.max(0.05, actual_cost * drain)
-	minetest.after(wait, step)
+	core.after(wait, step)
 end
 
 local function go_to(target)
@@ -94,7 +94,7 @@ local function go_to(target)
 	end
 	ACTIVE = true
 	MOVING = target
-	minetest.settings:set_bool("free_move", true)
+	core.settings:set_bool("free_move", true)
 	step()
 end
 
@@ -103,7 +103,7 @@ local function go_forward(dist)
 		return
 	end
 	dist = dist or get("dist", 100)
-	local player = minetest.localplayer
+	local player = core.localplayer
 	if not player then
 		return
 	end
@@ -123,7 +123,7 @@ local function stop()
 end
 
 -- auto-run when the cheat toggle is on
-minetest.register_globalstep(function()
+core.register_globalstep(function()
 	if ACTIVE then
 		return
 	end
@@ -166,7 +166,7 @@ if core.register_cheat then
 	})
 end
 
-minetest.register_chatcommand("rhythmtp", {
+core.register_chatcommand("rhythmtp", {
 	description = "One-shot burst forward. 'stop' to cancel.",
 	params = "[dist]",
 	func = function(param)
@@ -179,11 +179,11 @@ minetest.register_chatcommand("rhythmtp", {
 	end,
 })
 
-minetest.register_chatcommand("rhythmtp_to", {
+core.register_chatcommand("rhythmtp_to", {
 	description = "Burst-teleport to coordinates",
 	params = "<x,y,z>",
 	func = function(param)
-		local t = minetest.string_to_pos(param)
+		local t = core.string_to_pos(param)
 		if not t then
 			return false, "Invalid position"
 		end

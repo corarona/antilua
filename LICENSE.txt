@@ -42,9 +42,9 @@ rubenwardy, paramat:
   textures/base/pack/end_icon.png
 
 erle:
-  misc/luanti-icon-24x24.png
-  misc/luanti-icon.ico
-  misc/luanti.svg
+  misc/antilua-icon-24x24.png
+  misc/antilua-icon.ico
+  misc/antilua.svg
   textures/base/pack/logo.png
 
 JRottm:

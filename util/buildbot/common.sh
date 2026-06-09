@@ -1,6 +1,6 @@
-CORE_GIT=https://github.com/luanti-org/luanti
+CORE_GIT=https://codeberg.org/antilua/antilua
 CORE_BRANCH=master
-CORE_NAME=minetest
+CORE_NAME=antilua
 
 ogg_version=1.3.5
 openal_version=1.25.1
@@ -38,8 +38,8 @@ download () {
 
 # sets $sourcedir
 get_sources () {
-	if [ -n "$EXISTING_MINETEST_DIR" ]; then
-		sourcedir="$( cd "$EXISTING_MINETEST_DIR" && pwd )"
+	if [ -n "$EXISTING_ANTILUA_DIR" ]; then
+		sourcedir="$( cd "$EXISTING_ANTILUA_DIR" && pwd )"
 		return
 	fi
 	cd $builddir

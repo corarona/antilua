@@ -1,4 +1,4 @@
-// Luanti
+// Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2013 sapier, sapier at gmx dot net
 // Copyright (C) 2016 est31, <MTest31@outlook.com>

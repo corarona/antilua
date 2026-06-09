@@ -1,19 +1,19 @@
-.TH luanti 6 "2025-10-16" "" ""
+.TH antilua 6 "2026-06-09" "" ""
 
 .SH NAME
-luanti, luantiserver \- voxel game engine
+antilua, antiluaserver \- voxel game engine
 
 .SH SYNOPSIS
-.B luanti
+.B antilua
 [\fB--server SERVER OPTIONS\fR | \fBCLIENT OPTIONS\fR]
 [\fBCOMMON OPTIONS\fR]
 
-.B luantiserver
+.B antiluaserver
 [\fBSERVER OPTIONS\fR]
 [\fBCOMMON OPTIONS\fR]
 
 .SH DESCRIPTION
-.B Luanti (formerly Minetest) is a voxel game engine with easy modding and game creation.
+.B Antilua is a voxel game engine with easy modding and game creation.
 
 .SH COMMON OPTIONS
 .TP
@@ -114,24 +114,24 @@ Display an interactive terminal over ncurses during execution.
 
 .SH ENVIRONMENT VARIABLES
 .TP
-.B LUANTI_GAME_PATH
+.B ANTILUA_GAME_PATH
 Colon delimited list of directories to search for games. This should
-be used instead of \fBMINETEST_GAME_PATH\fP, which is deprecated.
+be used instead of \fBMINETEST_GAME_PATH\fP, which is deprecated (use ANTILUA_GAME_PATH instead).
 
 .TP
-.B LUANTI_MOD_PATH
+.B ANTILUA_MOD_PATH
 Colon delimited list of directories to search for mods. This should be
-used instead of \fBMINETEST_MOD_PATH\fP, which is deprecated.
+used instead of \fBMINETEST_MOD_PATH\fP, which is deprecated (use ANTILUA_MOD_PATH instead).
 
 .TP
-.B LUANTI_USER_PATH
-Path to Luanti user data directory (only on RUN_IN_PLACE=0 build)
+.B ANTILUA_USER_PATH
+Path to Antilua user data directory (only on RUN_IN_PLACE=0 build)
 .TP
 .B LOG_TIMESTAMP
 Equivalent to \-\-log-timestamp
 
 .SH BUGS
-Please report all bugs at https://github.com/luanti-org/luanti/issues.
+Please report all bugs at https://codeberg.org/antilua/antilua/issues.
 
 .SH AUTHORS
 .PP

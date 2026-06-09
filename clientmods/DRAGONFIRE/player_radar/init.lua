@@ -29,13 +29,13 @@ end
 local function update_radar()
 	if not core.settings:get_bool("player_radar") then
 		if hud_id then
-			minetest.localplayer:hud_remove(hud_id)
+			core.localplayer:hud_remove(hud_id)
 			hud_id = nil
 		end
 		return
 	end
 
-	local lp = minetest.localplayer
+	local lp = core.localplayer
 	if not lp then return end
 
 	local pos = lp:get_pos()
@@ -53,7 +53,7 @@ local function update_radar()
 		z = -math.cos(yaw_rad) * math.cos(pitch_rad),
 	}
 
-	local objects = minetest.get_objects_inside_radius(pos, range)
+	local objects = core.get_objects_inside_radius(pos, range)
 	local entries = {}
 
 	for _, obj in ipairs(objects) do
@@ -86,16 +86,16 @@ local function update_radar()
 	local text = table.concat(parts, "  ")
 	if text == "" then
 		if hud_id then
-			minetest.localplayer:hud_remove(hud_id)
+			core.localplayer:hud_remove(hud_id)
 			hud_id = nil
 		end
 		return
 	end
 
 	if hud_id then
-		minetest.localplayer:hud_change(hud_id, "text", text)
+		core.localplayer:hud_change(hud_id, "text", text)
 	else
-		hud_id = minetest.localplayer:hud_add({
+		hud_id = core.localplayer:hud_add({
 			hud_elem_type = "text",
 			position = {x = 0.5, y = 0.05},
 			alignment = {x = 1, y = 0},
@@ -107,7 +107,7 @@ local function update_radar()
 	end
 end
 
-minetest.register_globalstep(update_radar)
+core.register_globalstep(update_radar)
 
 core.register_cheat("PlayerRadar", {
 	category = "Render",
@@ -126,13 +126,13 @@ local light_range = 8
 local function update_light_overlay()
 	if not core.settings:get_bool("light_overlay") then
 		if light_hud_id then
-			minetest.localplayer:hud_remove(light_hud_id)
+			core.localplayer:hud_remove(light_hud_id)
 			light_hud_id = nil
 		end
 		return
 	end
 
-	local lp = minetest.localplayer
+	local lp = core.localplayer
 	if not lp then return end
 
 	local pos = lp:get_pos()
@@ -170,9 +170,9 @@ local function update_light_overlay()
 		high, medium, low)
 
 	if light_hud_id then
-		minetest.localplayer:hud_change(light_hud_id, "text", text)
+		core.localplayer:hud_change(light_hud_id, "text", text)
 	else
-		light_hud_id = minetest.localplayer:hud_add({
+		light_hud_id = core.localplayer:hud_add({
 			hud_elem_type = "text",
 			position = {x = 0.5, y = 0.09},
 			alignment = {x = 1, y = 0},
@@ -184,10 +184,10 @@ local function update_light_overlay()
 	end
 end
 
-minetest.register_globalstep(function(dtime)
+core.register_globalstep(function(dtime)
 	if not core.settings:get_bool("light_overlay") then
 		if light_hud_id then
-			minetest.localplayer:hud_remove(light_hud_id)
+			core.localplayer:hud_remove(light_hud_id)
 			light_hud_id = nil
 		end
 		return

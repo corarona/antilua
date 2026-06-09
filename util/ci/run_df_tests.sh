@@ -1,5 +1,5 @@
 #!/bin/bash -e
-# Run DragonfireClient integration tests headlessly
+# Run Antilua integration tests headlessly
 # Requires xvfb-run (from xvfb package) or Xephyr
 #
 # Usage:
@@ -21,12 +21,12 @@ else
 	exit 1
 fi
 
-echo "=== DragonfireClient Integration Tests ==="
+echo "=== Antilua Integration Tests ==="
 echo "World: $WORLD"
 
 # Create/ensure the world exists with devtest game
 if [ ! -d "worlds/$WORLD" ]; then
-	./bin/luanti --info --world "worlds/$WORLD" --gamename devtest 2>&1 &
+	./bin/antilua --info --world "worlds/$WORLD" --gamename devtest 2>&1 &
 	sleep 2
 	kill %1 2>/dev/null || true
 	wait 2>/dev/null || true
@@ -40,11 +40,11 @@ echo "Output: $OUTFILE"
 if command -v xvfb-run &>/dev/null; then
 	xvfb-run --auto-servernum \
 		timeout 60 \
-		./bin/luanti --info --world "worlds/$WORLD" \
+		./bin/antilua --info --world "worlds/$WORLD" \
 		--go 2>&1 | tee "$OUTFILE" || true
 else
 	timeout 60 \
-		./bin/luanti --info --world "worlds/$WORLD" \
+		./bin/antilua --info --world "worlds/$WORLD" \
 		--go 2>&1 | tee "$OUTFILE" || true
 fi
 

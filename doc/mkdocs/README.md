@@ -1,4 +1,4 @@
-# Luanti API Documentation Generator
+# Antilua API Documentation Generator
 
 ## Building HTML files from the API reference
 

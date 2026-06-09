@@ -17,13 +17,13 @@ function ws.sb(name, value)
 end
 
 function ws.dcm(msg)
-	return minetest.display_chat_message(msg)
+	return core.display_chat_message(msg)
 end
 
 function ws.set_bool_bulk(settings, value)
 	if type(settings) ~= 'table' then return false end
 	for k, v in pairs(settings) do
-		minetest.settings:set_bool(v, value)
+		core.settings:set_bool(v, value)
 	end
 	return true
 end
@@ -55,10 +55,10 @@ function ws.random_table_element(tbl)
 end
 
 function ws.register_chatcommand_alias(old, ...)
-	local def = assert(minetest.registered_chatcommands[old])
+	local def = assert(core.registered_chatcommands[old])
 	def.name = nil
 	for i = 1, select('#', ...) do
-		minetest.register_chatcommand(select(i, ...), table.copy(def))
+		core.register_chatcommand(select(i, ...), table.copy(def))
 	end
 end
 
@@ -68,7 +68,7 @@ end
 
 function ws.pos_to_string(pos)
 	if type(pos) == 'table' then
-		pos = minetest.pos_to_string(vector.round(pos))
+		pos = core.pos_to_string(vector.round(pos))
 	end
 	if type(pos) == 'string' then
 		return pos
@@ -78,7 +78,7 @@ end
 
 function ws.string_to_pos(pos)
 	if type(pos) == 'string' then
-		pos = minetest.string_to_pos(pos)
+		pos = core.string_to_pos(pos)
 	end
 	if type(pos) == 'table' then
 		return vector.round(pos)

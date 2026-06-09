@@ -35,29 +35,29 @@ function sbots.register_bot(name, def)
 		on_step = function(self, dtime)
 			local bot = registered_bots[tn]
 			if not bot then return end
-			local lp = minetest.localplayer:get_pos()
+			local lp = core.localplayer:get_pos()
 			if bot.stage == 0 then
 				bot.target_pos = bot:find_pos(lp)
 				if bot.target_pos then
 					bot.stage = 1
 				elseif bot.orig_pos and vector.distance(lp, bot.orig_pos) > bot.landing_distance then
-					minetest.settings:set_bool("continuous_forward", false)
+					core.settings:set_bool("continuous_forward", false)
 				else
-					minetest.settings:set_bool("continuous_forward", false)
+					core.settings:set_bool("continuous_forward", false)
 					if not bot.stand_waiting then
-						minetest.log("nothing found!")
-						minetest.settings:set_bool(tn, false)
+						core.log("nothing found!")
+						core.settings:set_bool(tn, false)
 					end
 				end
 			elseif bot.stage == 1 then
 				if not bot.target_pos then return end
 				ws.aim(bot.target_pos)
-				minetest.settings:set_bool("continuous_forward", true)
+				core.settings:set_bool("continuous_forward", true)
 				if vector.distance(lp, bot.target_pos) < bot.landing_distance then
 					bot.stage = 2
 				end
 			elseif bot.stage == 2 then
-				minetest.settings:set_bool("continuous_forward", false)
+				core.settings:set_bool("continuous_forward", false)
 				if bot:do_pos(lp) then
 					bot.stage = 0
 				end
@@ -79,11 +79,11 @@ function sbots.register_bot(name, def)
 				end
 			end
 			bot.active = true
-			bot.orig_pos = minetest.localplayer:get_pos()
+			bot.orig_pos = core.localplayer:get_pos()
 			bot.target_pos = nil
 			bot.stage = 0
-			minetest.settings:set_bool("pitch_move", true)
-			minetest.settings:set_bool("free_move", true)
+			core.settings:set_bool("pitch_move", true)
+			core.settings:set_bool("free_move", true)
 			if bot.on_activate then
 				return bot.on_activate(bot)
 			end
@@ -92,8 +92,8 @@ function sbots.register_bot(name, def)
 			local bot = registered_bots[tn]
 			if not bot then return end
 			bot.active = false
-			minetest.settings:set_bool("continuous_forward", false)
-			minetest.settings:set_bool("pitch_move", false)
+			core.settings:set_bool("continuous_forward", false)
+			core.settings:set_bool("pitch_move", false)
 			if bot.on_deactivate then
 				return bot.on_deactivate(bot)
 			end
@@ -107,13 +107,13 @@ end
 if nlist then
 	sbots.register_bot("listDigBot", {
 		find_pos = function(self, pos)
-			local nds = minetest.find_nodes_near(pos, 60, nlist.get(nlist.selected))
+			local nds = core.find_nodes_near(pos, 60, nlist.get(nlist.selected))
 			if not nds or #nds == 0 then return end
 			table.sort(nds, function(a, b) return vector.distance(pos, a) < vector.distance(pos, b) end)
 			return nds[1]
 		end,
 		do_pos = function(self, pos)
-			local nn = minetest.find_nodes_near(pos, 1, nlist.get(nlist.selected), true)
+			local nn = core.find_nodes_near(pos, 1, nlist.get(nlist.selected), true)
 			if not nn or #nn == 0 then return true end
 			for _, v in pairs(nn) do ws.dig(v) end
 		end,

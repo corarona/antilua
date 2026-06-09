@@ -18,15 +18,15 @@ function dig.calculate_dig_time(toolcaps, groups)
 end
 
 function dig.get_dig_time(pos)
-	local node = minetest.get_node_or_nil(pos)
-	local nodedef = node and minetest.get_node_def(node.name)
+	local node = core.get_node_or_nil(pos)
+	local nodedef = node and core.get_node_def(node.name)
 	local groups = nodedef and nodedef.groups
 	if not groups then return end
-	local player = minetest.localplayer
+	local player = core.localplayer
 	local wielditem = player and player:get_wielded_item()
 	local toolcaps = wielditem and wielditem:get_tool_capabilities()
 	local tool_time = toolcaps and dig.calculate_dig_time(toolcaps, groups)
-	local inv = minetest.get_inventory("current_player")
+	local inv = core.get_inventory("current_player")
 	local hand = inv and inv.hand and inv.hand[1] or ItemStack("")
 	local hand_toolcaps = hand and hand:get_tool_capabilities()
 	local hand_time = hand_toolcaps and dig.calculate_dig_time(hand_toolcaps, groups)
@@ -39,17 +39,17 @@ function dig.dig_node(pos, max_time)
 	local tm = dig.get_dig_time(pos)
 	if not tm or (max_time and max_time > 0 and tm > max_time) then return end
 	coroutine.wrap(function()
-		local debug_msgs = minetest.settings:get_bool("dig_debug")
+		local debug_msgs = core.settings:get_bool("dig_debug")
 		if debug_msgs then print("start_digging", pos.x, pos.y, pos.z) end
-		minetest.interact("start_digging", {type = "node", under = pos, above = pos})
+		core.interact("start_digging", {type = "node", under = pos, above = pos})
 		if debug_msgs then print("sleep", tm) end
 		lua_async.sleep(tm * 1000)
 		if debug_msgs then print("digging_completed", pos.x, pos.y, pos.z) end
-		minetest.interact("digging_completed", {type = "node", under = pos, above = pos})
+		core.interact("digging_completed", {type = "node", under = pos, above = pos})
 	end)()
 end
 
-dofile(minetest.get_modpath(minetest.get_current_modname()) .. "/autocustom.lua")
-dofile(minetest.get_modpath(minetest.get_current_modname()) .. "/tunnel.lua")
-dofile(minetest.get_modpath(minetest.get_current_modname()) .. "/blast.lua")
-dofile(minetest.get_modpath(minetest.get_current_modname()) .. "/sponge.lua")
+dofile(core.get_modpath(core.get_current_modname()) .. "/autocustom.lua")
+dofile(core.get_modpath(core.get_current_modname()) .. "/tunnel.lua")
+dofile(core.get_modpath(core.get_current_modname()) .. "/blast.lua")
+dofile(core.get_modpath(core.get_current_modname()) .. "/sponge.lua")

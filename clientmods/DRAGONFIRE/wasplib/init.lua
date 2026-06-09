@@ -13,15 +13,15 @@ local ghwason = {}
 -- No-op stub for legacy register_list_command calls
 function core.register_list_command() end
 
-dofile(minetest.get_modpath("wasplib") .. "/settings.lua")
-dofile(minetest.get_modpath("wasplib") .. "/coord.lua")
-dofile(minetest.get_modpath("wasplib") .. "/inventory.lua")
-dofile(minetest.get_modpath("wasplib") .. "/tools.lua")
-dofile(minetest.get_modpath("wasplib") .. "/world.lua")
-dofile(minetest.get_modpath("wasplib") .. "/combat.lua")
-dofile(minetest.get_modpath("wasplib") .. "/waypoints.lua")
-dofile(minetest.get_modpath("wasplib") .. "/compat.lua")
-dofile(minetest.get_modpath("wasplib") .. "/notification.lua")
+dofile(core.get_modpath("wasplib") .. "/settings.lua")
+dofile(core.get_modpath("wasplib") .. "/coord.lua")
+dofile(core.get_modpath("wasplib") .. "/inventory.lua")
+dofile(core.get_modpath("wasplib") .. "/tools.lua")
+dofile(core.get_modpath("wasplib") .. "/world.lua")
+dofile(core.get_modpath("wasplib") .. "/combat.lua")
+dofile(core.get_modpath("wasplib") .. "/waypoints.lua")
+dofile(core.get_modpath("wasplib") .. "/compat.lua")
+dofile(core.get_modpath("wasplib") .. "/notification.lua")
 
 local cheat_defaults = {
 	on_step   = function() end,
@@ -34,8 +34,8 @@ local cheat_defaults = {
 function ws.globalhacktemplate(def)
 	local setting = def.setting
 	return function(dtime)
-		if not minetest.localplayer then return end
-		if minetest.settings:get_bool(setting) then
+		if not core.localplayer then return end
+		if core.settings:get_bool(setting) then
 			if tps_client and tps_client.ping and tps_client.ping > 1000 then return end
 			if nextact[setting] and nextact[setting] > os.clock() then return end
 			nextact[setting] = os.clock() + (def.delay or 0.2)
@@ -51,7 +51,7 @@ function ws.globalhacktemplate(def)
 					if startup_done then
 						ws.notify(msg or (def.name .. " failed to activate"), ws.NOTIFY_ERROR)
 					end
-					minetest.settings:set_bool(setting, false)
+					core.settings:set_bool(setting, false)
 				end
 			else
 				def.on_step(def, dtime)
@@ -102,7 +102,7 @@ end
 
 ws.rg = ws.register_globalhacktemplate
 
-dofile(minetest.get_modpath("wasplib") .. "/integrations.lua")
+dofile(core.get_modpath("wasplib") .. "/integrations.lua")
 
 local startup_done = false
 
@@ -113,26 +113,26 @@ function ws.step_globalhacks(dtime)
 	startup_done = true
 end
 
-minetest.register_globalstep(function(dtime) ws.step_globalhacks(dtime) end)
-minetest.settings:set_bool('continuous_forward', false)
+core.register_globalstep(function(dtime) ws.step_globalhacks(dtime) end)
+core.settings:set_bool('continuous_forward', false)
 
 function ws.on_connect(func)
-	if not minetest.localplayer then
-		minetest.after(0, function() ws.on_connect(func) end)
+	if not core.localplayer then
+		core.after(0, function() ws.on_connect(func) end)
 		return
 	end
 	if func then func() end
 end
 
-minetest.register_chatcommand('giveme', {
+core.register_chatcommand('giveme', {
 	func = function(param)
 		for k, v in ipairs(nlist.get(nlist.selected)) do
-			minetest.send_chat_message("/giveme " .. v .. " -1")
+			core.send_chat_message("/giveme " .. v .. " -1")
 		end
 	end
 })
 
-minetest.register_chatcommand('givegear', {
+core.register_chatcommand('givegear', {
 	func = function(param)
 		local armor = {
 			"mcl_armor:helmet_diamond",
@@ -148,22 +148,22 @@ minetest.register_chatcommand('givegear', {
 			"mcl_core:apple_gold_enchanted -1"
 		}
 		for k, v in ipairs(tools) do
-			minetest.send_chat_message("/giveme " .. v)
+			core.send_chat_message("/giveme " .. v)
 		end
 		for k, v in ipairs(armor) do
-			minetest.send_chat_message("/giveme " .. v)
+			core.send_chat_message("/giveme " .. v)
 		end
-		minetest.after(1, function()
-			local name = minetest.localplayer:get_name()
+		core.after(1, function()
+			local name = core.localplayer:get_name()
 			for k, v in ipairs(tools) do
 				ws.switch_to_item(v)
-				minetest.send_chat_message("/forceenchant " .. name .. " unbreaking 3")
-				minetest.send_chat_message("/forceenchant " .. name .. " mending")
+				core.send_chat_message("/forceenchant " .. name .. " unbreaking 3")
+				core.send_chat_message("/forceenchant " .. name .. " mending")
 			end
 			for k, v in ipairs(armor) do
 				ws.switch_to_item(v)
-				minetest.send_chat_message("/forceenchant " .. name .. " unbreaking 3")
-				minetest.send_chat_message("/forceenchant " .. name .. " protection 4")
+				core.send_chat_message("/forceenchant " .. name .. " unbreaking 3")
+				core.send_chat_message("/forceenchant " .. name .. " protection 4")
 			end
 		end)
 	end

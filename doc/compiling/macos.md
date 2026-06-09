@@ -16,8 +16,8 @@ brew install cmake freetype gettext gmp hiredis jpeg-turbo jsoncpp leveldb libog
 Download source (this is the URL to the latest of source repository, which might not work at all times) using Git:
 
 ```bash
-git clone --depth 1 https://github.com/luanti-org/luanti luanti
-cd luanti
+git clone --depth 1 https://codeberg.org/antilua/antilua antilua
+cd antilua
 ```
 
 ## Building for personal usage

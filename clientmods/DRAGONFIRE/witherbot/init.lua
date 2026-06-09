@@ -204,13 +204,13 @@ sbots.register_bot("ItemBot", itembot)
 
 local function checkprojectile(self)
 	local range = tonumber(core.settings:get(self.setting .. ".scan_range")) or 4
-	local pos = minetest.localplayer:get_pos()
-	for k, v in ipairs(minetest.get_objects_inside_radius(pos, range)) do
+	local pos = core.localplayer:get_pos()
+	for k, v in ipairs(core.get_objects_inside_radius(pos, range)) do
 		local tex = v:get_item_textures()
 		if tex and (tex:sub(-9) == "arrow_box" or tex:sub(-7) == "_splash" or tex:sub(-17) == "shulkerbullet.png") then
 			local vel = v:get_velocity()
 			local trigger = tonumber(core.settings:get(self.setting .. ".trigger_distance")) or 4
-			local dst = vector.distance(minetest.localplayer:get_pos(), v:get_pos())
+			local dst = vector.distance(core.localplayer:get_pos(), v:get_pos())
 			if dst > trigger then return false end
 			if vel and vel.x == 0 and vel.y == 0 and vel.z == 0 then return false end
 			return true
@@ -227,7 +227,7 @@ ws.rg("AutoEvade", {
 			local dist = tonumber(core.settings:get(self.setting .. ".evade_distance")) or 2
 			local rndx = math.random(-dist, dist)
 			local rndz = math.random(-dist, dist)
-			minetest.localplayer:set_pos(ws.dircoord(rndx, 2, rndz))
+			core.localplayer:set_pos(ws.dircoord(rndx, 2, rndz))
 		end
 	end,
 	daughters = {"headsaver"},

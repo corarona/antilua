@@ -1,4 +1,4 @@
--- Dragonfire-specific callback registrations and utilities.
+-- Antilua-specific callback registrations and utilities.
 -- Loaded after register.lua — keeps DF additions separate from upstream.
 
 local getinfo = debug.getinfo

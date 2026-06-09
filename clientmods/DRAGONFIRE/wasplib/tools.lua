@@ -15,9 +15,9 @@ local function check_tool(stack, node_groups, old_best_time)
 end
 
 local function find_best_tool(nodename)
-	local player = minetest.localplayer
-	local inventory = minetest.get_inventory("current_player")
-	local node_groups = minetest.get_node_def(nodename).groups
+	local player = core.localplayer
+	local inventory = core.get_inventory("current_player")
+	local node_groups = core.get_node_def(nodename).groups
 	local new_index = player:get_wield_index()
 	local is_better, best_time = false, math.huge
 
@@ -48,11 +48,11 @@ end
 function ws.select_best_tool(pos)
 	local nodename = 'air'
 	if type(pos) == "table" then
-		local nd = minetest.get_node_or_nil(pos)
+		local nd = core.get_node_or_nil(pos)
 		if nd then nodename = nd.name end
 	elseif type(pos) == "string" then
 		nodename = pos
 	end
 	local t = find_best_tool(nodename)
-	minetest.localplayer:set_wield_index(ws.to_hotbar(t, ws.hotbar_slot))
+	core.localplayer:set_wield_index(ws.to_hotbar(t, ws.hotbar_slot))
 end

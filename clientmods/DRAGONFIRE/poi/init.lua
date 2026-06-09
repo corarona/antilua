@@ -1,6 +1,6 @@
 poi = {}
-local storage = minetest.get_mod_storage("poi")
-local info = minetest.get_server_info()
+local storage = core.get_mod_storage("poi")
+local info = core.get_server_info()
 local stprefix = "POI-" .. info.address .. "-"
 
 local DISTANCE_NEAR = 256
@@ -33,8 +33,8 @@ poi.last_pos = nil
 --
 
 local function update_speed()
-	if not minetest.localplayer then return end
-	local cpos = minetest.localplayer:get_pos()
+	if not core.localplayer then return end
+	local cpos = core.localplayer:get_pos()
 	if lpos and cpos then
 		poi.speed = ws.round2(vector.distance(cpos, lpos), 2)
 	end
@@ -160,11 +160,11 @@ function poi.set_hud_wp(pos, title)
 	poi.last_pos = pos
 	local color = poi.color_int(title)
 	if shown_huds[title] then
-		minetest.localplayer:hud_change(shown_huds[title], "name", title)
-		minetest.localplayer:hud_change(shown_huds[title], "world_pos", pos)
-		minetest.localplayer:hud_change(shown_huds[title], "number", color)
+		core.localplayer:hud_change(shown_huds[title], "name", title)
+		core.localplayer:hud_change(shown_huds[title], "world_pos", pos)
+		core.localplayer:hud_change(shown_huds[title], "number", color)
 	else
-		hud_wp = minetest.localplayer:hud_add({
+		hud_wp = core.localplayer:hud_add({
 			hud_elem_type = "waypoint",
 			name = title,
 			text = "m",
@@ -195,7 +195,7 @@ end
 
 function poi.get_nearest_name()
 	local nearest, odst = nil, 500
-	local lp = minetest.localplayer:get_pos()
+	local lp = core.localplayer:get_pos()
 	for _, name in ipairs(poi.getwps()) do
 		local wpos = poi.get_waypoint(name)
 		if wpos then
@@ -210,7 +210,7 @@ function poi.get_nearest_name()
 end
 
 function poi.get_quad()
-	local lp = minetest.localplayer:get_pos()
+	local lp = core.localplayer:get_pos()
 	local quad = lp.z < 0 and "South" or "North"
 	return lp.x < 0 and quad .. "-west" or quad .. "-east"
 end
@@ -242,10 +242,10 @@ local function trim_death_waypoints(max)
 	end
 end
 
-minetest.register_on_death(function()
-	if not minetest.localplayer then return end
+core.register_on_death(function()
+	if not core.localplayer then return end
 	if core.settings:get_bool("auto_death_waypoint", true) then
-		local pos = minetest.localplayer:get_pos()
+		local pos = core.localplayer:get_pos()
 		poi.death_pos = vector.new(pos)
 		poi.last_pos = pos
 		local name = "Death - " .. os.date("%Y-%m-%d %H:%M")
@@ -258,8 +258,8 @@ minetest.register_on_death(function()
 		trim_death_waypoints(max)
 	end
 	if core.settings:get_bool("death_tp") then
-		minetest.after(0.5, function()
-			minetest.localplayer:set_pos(poi.death_pos)
+		core.after(0.5, function()
+			core.localplayer:set_pos(poi.death_pos)
 			core.after(0.1, function()
 				local n = core.get_node_or_nil(poi.death_pos)
 				if n and n.name == "bones:bones" then
@@ -289,7 +289,7 @@ ws.rg("DeathTP", "Player", "death_tp", function() end, function() end, function(
 local function wp_distance(name)
 	local pos = poi.get_waypoint(name)
 	if not pos then return math.huge end
-	local lp = minetest.localplayer:get_pos()
+	local lp = core.localplayer:get_pos()
 	if not lp then return math.huge end
 	return vector.distance(lp, pos)
 end
@@ -369,7 +369,7 @@ function poi.display_formspec()
 				entry = entry .. " (" .. math.floor(d) .. "m)"
 			end
 		end
-		table.insert(tl_entries, "##" .. minetest.formspec_escape(entry))
+		table.insert(tl_entries, "##" .. core.formspec_escape(entry))
 	end
 	local tl = "textlist[0.25,0.75;8.5,6;wp_list;"
 	tl = tl .. table.concat(tl_entries, ",")
@@ -419,11 +419,11 @@ function poi.display_formspec()
 		local pos = poi.get_waypoint(selected_name)
 		if pos then
 			local label = "Waypoint position: "
-				.. minetest.formspec_escape(pos.x .. ", " .. pos.y .. ", " .. pos.z)
+				.. core.formspec_escape(pos.x .. ", " .. pos.y .. ", " .. pos.z)
 			table.insert(parts, "label[0.25,7.25;" .. label .. "]")
 		end
 		local cur_group = poi.get_group(selected_name)
-		table.insert(parts, "field[5,7.25;3.5,0.5;wp_group;Group;" .. minetest.formspec_escape(cur_group) .. "]")
+		table.insert(parts, "field[5,7.25;3.5,0.5;wp_group;Group;" .. core.formspec_escape(cur_group) .. "]")
 	end
 
 	-- Transport buttons
@@ -437,7 +437,7 @@ function poi.display_formspec()
 		end
 	end
 
-	return minetest.show_formspec("poi-csm", table.concat(parts))
+	return core.show_formspec("poi-csm", table.concat(parts))
 end
 
 --
@@ -446,7 +446,7 @@ end
 
 local speed_timer = 1
 
-minetest.register_globalstep(function(dtime)
+core.register_globalstep(function(dtime)
 	speed_timer = speed_timer - dtime
 	if speed_timer > 0 then return end
 	speed_timer = 1
@@ -463,20 +463,20 @@ end)
 --
 
 local function show_rename_fs(name)
-	return minetest.show_formspec("poi-csm", table.concat({
+	return core.show_formspec("poi-csm", table.concat({
 		"formspec_version[4]",
 		"size[6,3]",
 		"no_prepend[]",
 		"bgcolor[#000000AA;false]",
 		"label[0.35,0.2;Rename waypoint]",
-		"field[0.3,1.3;6,1;new_name;New name;" .. minetest.formspec_escape(name) .. "]",
+		"field[0.3,1.3;6,1;new_name;New name;" .. core.formspec_escape(name) .. "]",
 		"button[0,2;3,1;cancel;Cancel]",
 		"button[3,2;3,1;rename_confirm;Rename]",
 	}))
 end
 
 local function show_delete_fs(name)
-	return minetest.show_formspec("poi-csm", table.concat({
+	return core.show_formspec("poi-csm", table.concat({
 		"formspec_version[4]",
 		"size[6,2]",
 		"no_prepend[]",
@@ -487,12 +487,12 @@ local function show_delete_fs(name)
 	}))
 end
 
-minetest.register_on_formspec_input(function(formname, fields)
+core.register_on_formspec_input(function(formname, fields)
 	if formname ~= "poi-csm" then return end
 
 	local name
 	if fields.wp_list then
-		local event = minetest.explode_textlist_event(fields.wp_list)
+		local event = core.explode_textlist_event(fields.wp_list)
 		if event.index then
 			name = formspec_list[event.index]
 		end
@@ -564,7 +564,7 @@ minetest.register_on_formspec_input(function(formname, fields)
 				poi.set_color(name, c.hex)
 				shown_huds = {}
 				if hud_wp then
-					minetest.localplayer:hud_remove(hud_wp)
+					core.localplayer:hud_remove(hud_wp)
 					hud_wp = nil
 				end
 			end
@@ -591,13 +591,13 @@ end)
 -- Chat commands
 --
 
-minetest.register_chatcommand("waypoints", {
+core.register_chatcommand("waypoints", {
 	description = "Open the waypoint GUI",
 	func = function() poi.display_formspec() end,
 })
 ws.register_chatcommand_alias("waypoints", "wp", "wps", "waypoint")
 
-minetest.register_chatcommand("add_waypoint", {
+core.register_chatcommand("add_waypoint", {
 	params = "<pos> <name>",
 	description = "Add a waypoint at the given position.",
 	func = function(param)
@@ -615,17 +615,17 @@ minetest.register_chatcommand("add_waypoint", {
 })
 ws.register_chatcommand_alias("add_waypoint", "wa", "add_wp")
 
-minetest.register_chatcommand("add_waypoint_here", {
+core.register_chatcommand("add_waypoint_here", {
 	params = "[name]",
 	description = "Mark the current position as a waypoint.",
 	func = function(param)
-		local pos = minetest.localplayer:get_pos()
+		local pos = core.localplayer:get_pos()
 		local name
 		if tostring(param) ~= "" then
 			name = param
 		else
 			local ts = os.date("%Y-%m-%d_%H-%M")
-			local node = minetest.get_node_or_nil(vector.offset(pos, 0, -1, 0))
+			local node = core.get_node_or_nil(vector.offset(pos, 0, -1, 0))
 			local hint = (node and node.name:match(":(.+)$")) or "waypoint"
 			name = hint .. "_" .. ts
 		end
@@ -634,12 +634,12 @@ minetest.register_chatcommand("add_waypoint_here", {
 })
 ws.register_chatcommand_alias("add_waypoint_here", "wah", "add_wph")
 
-minetest.register_chatcommand("clear_waypoint", {
+core.register_chatcommand("clear_waypoint", {
 	description = "Hide the displayed waypoint.",
 	func = function()
 		if poi.flying then poi.flying = false end
 		if hud_wp then
-			minetest.localplayer:hud_remove(hud_wp)
+			core.localplayer:hud_remove(hud_wp)
 			hud_wp = nil
 			shown_huds = {}
 			return true, "Waypoint hidden."
@@ -649,7 +649,7 @@ minetest.register_chatcommand("clear_waypoint", {
 })
 ws.register_chatcommand_alias("clear_waypoint", "cwp", "cls")
 
-minetest.register_chatcommand("wpdisplay", {
+core.register_chatcommand("wpdisplay", {
 	params = "<pos> <name>",
 	description = "Display a waypoint at the given position.",
 	func = function(pos, name)
@@ -658,11 +658,11 @@ minetest.register_chatcommand("wpdisplay", {
 })
 ws.register_chatcommand_alias("wpdisplay", "wpd")
 
-minetest.register_chatcommand("dump_pois", {
+core.register_chatcommand("dump_pois", {
 	description = "Debug: print all stored waypoints.",
 	func = function()
 		for name, pos in pairs(storage:to_table().fields) do
-			minetest.log(name .. " : " .. pos)
+			core.log(name .. " : " .. pos)
 		end
 	end,
 })

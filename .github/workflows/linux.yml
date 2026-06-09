@@ -34,7 +34,7 @@ on:
       - '.github/workflows/linux.yml'
 
 env:
-  MINETEST_POSTGRESQL_CONNECT_STRING: 'host=localhost user=minetest password=minetest dbname=minetest'
+  ANTILUA_POSTGRESQL_CONNECT_STRING: 'host=localhost user=antilua password=antilua dbname=antilua'
 
 jobs:
   # Older gcc version (should be close to our minimum supported version)
@@ -57,7 +57,7 @@ jobs:
 
       - name: Unittest
         run: |
-          ./bin/luanti --run-unittests
+          ./bin/antilua --run-unittests
 
       # Do this here because we have ASan and error paths are sensitive to dangling pointers
       - name: Test error cases
@@ -88,7 +88,7 @@ jobs:
           mkdir nowrite
           chmod a-w nowrite
           cd nowrite
-          ../bin/luanti --run-unittests
+          ../bin/antilua --run-unittests
 
   # Older clang version (should be close to our minimum supported version)
   clang_11:
@@ -111,7 +111,7 @@ jobs:
 
       - name: Test
         run: |
-          ./bin/luanti --run-unittests
+          ./bin/antilua --run-unittests
 
       - name: Singleplayer test (GLES)
         run: |
@@ -136,7 +136,7 @@ jobs:
 
       - name: Test
         run: |
-          ./bin/luanti --run-unittests
+          ./bin/antilua --run-unittests
 
       - name: Integration test + devtest
         run: |
@@ -170,4 +170,4 @@ jobs:
 
       - name: Test
         run: |
-          ./bin/luantiserver --run-unittests
+          ./bin/antiluaserver --run-unittests
