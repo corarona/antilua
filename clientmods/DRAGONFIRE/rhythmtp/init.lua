@@ -3,6 +3,7 @@
 -- Each burst spends up to budget seconds of pool, then recharges
 -- Settings in cheat menu: budget, dist, h_speed, vup_speed, drain_factor
 
+rhythmtp = {}
 local MOVING = false
 local ACTIVE = false
 
@@ -190,3 +191,9 @@ core.register_chatcommand("rhythmtp_to", {
 		go_to(t)
 	end,
 })
+
+rhythmtp.go_to = go_to
+rhythmtp.stop = stop
+rhythmtp.go_forward = go_forward
+rhythmtp.is_moving = function() return ACTIVE end
+rhythmtp.get_target = function() return MOVING end
