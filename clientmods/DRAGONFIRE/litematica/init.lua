@@ -390,16 +390,25 @@ core.register_chatcommand("litesave", {
 
 -- Auto miner bot: walks to the nearest unplaced node and places it
 if sbots and sbots.register_bot then
+	local _item_cache = {}
+	local _item_cache_time = 0
 	local function has_item(name)
-		if not core.localplayer then return false end
-		local inv = core.get_inventory("current_player")
-		if not inv then return false end
-		for _, stack in ipairs(inv.main) do
-			if stack:get_name() == name then
-				return true
+		local now = os.clock()
+		if now - _item_cache_time > 0.3 then
+			_item_cache = {}
+			_item_cache_time = now
+			if core.localplayer then
+				local inv = core.get_inventory("current_player")
+				if inv then
+					for _, stack in ipairs(inv.main) do
+						if not stack:is_empty() then
+							_item_cache[stack:get_name()] = true
+						end
+					end
+				end
 			end
 		end
-		return false
+		return _item_cache[name] or false
 	end
 
 	sbots.register_bot("LitematicaBot", {
@@ -411,24 +420,32 @@ if sbots and sbots.register_bot then
 		},
 		find_pos = function(self, pos)
 			if #place_nodes == 0 then return end
-			local closest, closest_dist
+			local closest_dist_sq
+			local px, py, pz = pos.x, pos.y, pos.z
+			self._current_entry = nil
 			for _, entry in ipairs(place_nodes) do
 				if entry.name == "air" then goto skip_find end
 				if not has_item(entry.name) then goto skip_find end
-				local epos = vector.new(entry.x, entry.y, entry.z)
-				local dist = vector.distance(pos, epos)
-				if not closest or dist < closest_dist then
-					closest = epos
-					closest_dist = dist
+				local dx = entry.x - px
+				local dy = entry.y - py
+				local dz = entry.z - pz
+				local dist_sq = dx*dx + dy*dy + dz*dz
+				if not closest_dist_sq or dist_sq < closest_dist_sq then
+					closest_dist_sq = dist_sq
 					self._current_entry = entry
 				end
 				::skip_find::
 			end
-			return closest
+			if self._current_entry then
+				return vector.new(
+					self._current_entry.x,
+					self._current_entry.y,
+					self._current_entry.z
+				)
+			end
 		end,
 		update_pos = function(self, pos)
 			if self._current_entry then
-				-- Check if entry still valid
 				local found = false
 				for _, e in ipairs(place_nodes) do
 					if e == self._current_entry then
@@ -437,11 +454,7 @@ if sbots and sbots.register_bot then
 					end
 				end
 				if found and has_item(self._current_entry.name) then
-					return vector.new(
-						self._current_entry.x,
-						self._current_entry.y,
-						self._current_entry.z
-					)
+					return self._current_entry
 				end
 			end
 			self._current_entry = nil
@@ -453,12 +466,7 @@ if sbots and sbots.register_bot then
 			if self._last_place_time and os.clock() - self._last_place_time < cooldown then
 				return false
 			end
-			local ep = vector.new(
-				self._current_entry.x,
-				self._current_entry.y,
-				self._current_entry.z
-			)
-			if ws.place(ep, self._current_entry.name) then
+			if ws.place(self._current_entry, self._current_entry.name) then
 				self._last_place_time = os.clock()
 				for i = #place_nodes, 1, -1 do
 					if place_nodes[i] == self._current_entry then
