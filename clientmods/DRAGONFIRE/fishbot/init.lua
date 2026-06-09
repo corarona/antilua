@@ -1,6 +1,5 @@
 local fb_state = 0
 local fb_obpos = vector.new(0, 0, 0)
-local had_rod = false
 
 local function get_bobber_pos(range)
 	local lp = core.localplayer:get_pos()
@@ -16,15 +15,18 @@ local function get_bobber_pos(range)
 	return false
 end
 
-ws.rg("FishBot", {
-	category = "Bots",
-	setting = "fishbot",
-	on_step = function(self, dtime)
+sbots.register_bot("FishBot", {
+	find_pos = function(self, pos)
+		return nil
+	end,
+	do_pos = function(self, pos)
+		return true
+	end,
+	do_step = function(self, dtime)
 		local rod = "mcl_fishing:fishing_rod_enchanted"
 		if not ws.switch_to_item(rod) then
 			ws.switch_to_item("mcl_fishing:fishing_rod")
 		end
-		had_rod = true
 
 		local bobber_range = tonumber(core.settings:get("fishbot.bobber_range")) or 10
 		local bpos = get_bobber_pos(bobber_range)
@@ -59,7 +61,7 @@ ws.rg("FishBot", {
 			fb_obpos = bpos
 		end
 	end,
-	on_start = function(self)
+	on_activate = function(self)
 		if ws.game ~= "mineclone" then
 			ws.notify("Fishbot only works on mineclone/ia", ws.NOTIFY_ERROR)
 			return false
@@ -69,11 +71,13 @@ ws.rg("FishBot", {
 			ws.notify("Put a fishing rod in the hotbar", ws.NOTIFY_WARNING)
 			return false
 		end
-		had_rod = true
-	end,
-	on_stop = function(self)
 		fb_state = 0
 	end,
+	on_deactivate = function(self)
+		fb_state = 0
+	end,
+	stand_waiting = true,
+	delay = 0.2,
 	daughters = {"autodump", "autoeject", "lockview"},
 	cheat_settings = {
 		water_range = { type = "number", default = 10, min = 1, max = 50 },
