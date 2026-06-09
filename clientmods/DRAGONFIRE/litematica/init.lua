@@ -24,7 +24,7 @@ end
 
 local function litematica_particle(pos, texture, size, collision)
 	core.add_particle({
-		pos = vector.new(math.modf(pos.x), math.modf(pos.y), math.modf(pos.z)),
+		pos = vector.new(math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)),
 		velocity = {x=0, y=0, z=0},
 		acceleration = {x=0, y=0, z=0},
 		expirationtime = 9999,
