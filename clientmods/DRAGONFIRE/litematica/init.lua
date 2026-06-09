@@ -213,12 +213,27 @@ core.register_chatcommand("liteload", {
 	end,
 })
 
+local function pos_marker(pos, texture)
+	core.add_particle({
+		pos = vector.new(math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)),
+		velocity = {x=0, y=0, z=0},
+		acceleration = {x=0, y=0, z=0},
+		expirationtime = PARTICLE_TTL,
+		size = 0.5,
+		collisiondetection = false,
+		collision_removal = false,
+		vertical = false,
+		texture = texture,
+		glow = 14,
+	})
+end
+
 core.register_chatcommand("litepos1", {
 	description = "Set pos1",
 	func = function(param)
 		litematica.pos1 = vector.round(core.localplayer:get_pos())
 		ws.notify("pos1 set", ws.NOTIFY_INFO)
-		litematica_particle(litematica.pos1, "worldedit_pos1.png", 3, false)
+		pos_marker(litematica.pos1, "worldedit_pos1.png")
 	end,
 })
 
@@ -227,7 +242,7 @@ core.register_chatcommand("litepos2", {
 	func = function(param)
 		litematica.pos2 = vector.round(core.localplayer:get_pos())
 		ws.notify("pos2 set", ws.NOTIFY_INFO)
-		litematica_particle(litematica.pos2, "worldedit_pos2.png", 5, false)
+		pos_marker(litematica.pos2, "worldedit_pos2.png")
 	end,
 })
 
