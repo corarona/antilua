@@ -92,6 +92,7 @@ dofile(modpath .. "/test_callbacks.lua")
 dofile(modpath .. "/test_dragonfire_mods.lua")
 dofile(modpath .. "/test_df_mods.lua")
 dofile(modpath .. "/test_raw_packet.lua")
+dofile(modpath .. "/test_autominer.lua")
 
 -- Run API/registration tests at mod load time
 core.register_on_mods_loaded(function()
@@ -133,6 +134,7 @@ core.register_on_mods_loaded(function()
 	test_formspec_modifier(df_test)
 	test_category_assignments(df_test)
 	test_raw_packet_api(df_test)
+	test_autominer(df_test)
 
 	-- Integration tests (deferred — register but don't run yet)
 	test_ws_rg_lifecycle(df_test)
