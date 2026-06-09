@@ -36,7 +36,7 @@ old-clientmods/DRAGONFIRE/
 ├── digcustom/            # Kept as-is
 ├── fishbot/              # Kept as-is
 ├── witherbot/            # Kept as-is
-├── mclminer/             # Kept as-is
+├── autominer/            # Kept as-is
 ├── mcl_find_stronholds/  # Kept as-is (fix typo in name)
 ├── gregon_litematica/    # Kept as-is (compatibility review)
 ├── scaffold/             # API compatibility review

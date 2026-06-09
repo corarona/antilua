@@ -57,7 +57,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 |-----|-------------|
 | **farmtool** | Reap, Till, Sow, FarmRepair. FarmBot via sbots. |
 | **fishbot** | Automatic fishing bot with state machine. |
-| **mclminer** | Strip-mining bot. Teleports to target nodes, digs, avoids lava. |
+| **autominer** | Automated mining bot. Teleports to target nodes, digs, avoids lava. |
 
 ### Developer / World tools
 
