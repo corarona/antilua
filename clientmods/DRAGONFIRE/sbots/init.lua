@@ -31,7 +31,7 @@ function sbots.register_bot(name, def)
 
 	ws.rg(name, {
 		category = "Bots",
-		setting = tn,
+		setting = tn:lower(),
 		on_step = function(self, dtime)
 			local bot = registered_bots[tn]
 			if not bot then return end
