@@ -83,6 +83,7 @@ sbots.register_bot("AutoMiner", {
 			local n = core.get_node_or_nil(autominer_tgt)
 			if n and n.name == "air" then
 				autominer_tgt = nil
+				self.stage = 0
 				return
 			end
 
@@ -93,11 +94,13 @@ sbots.register_bot("AutoMiner", {
 				-- Dig first, then teleport into the now-empty space
 				local tpos = autominer_tgt
 				ws.dig(tpos)
-				core.localplayer:set_pos(tpos)
+				-- Place feet one below the ore so head is in the air pocket
+				core.localplayer:set_pos(vector.offset(tpos, 0, -1, 0))
 				autominer_tgt = nil
+				self.stage = 0
 			elseif not rhythmtp.is_moving() then
 				ws.aim(autominer_tgt)
-				rhythmtp.go_to(autominer_tgt)
+				rhythmtp.go_to(vector.offset(autominer_tgt, 0, -1, 0))
 			end
 		end
 	end,
