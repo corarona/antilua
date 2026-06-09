@@ -417,6 +417,7 @@ if sbots and sbots.register_bot then
 		landing_distance = 3,
 		cheat_settings = {
 			place_cooldown = { type = "number", default = 0.1, min = 0, max = 5 },
+			batch_size = { type = "number", default = 8, min = 1, max = 64 },
 		},
 		find_pos = function(self, pos)
 			if #place_nodes == 0 then return end
@@ -462,10 +463,16 @@ if sbots and sbots.register_bot then
 		end,
 		do_pos = function(self, pos)
 			if not self._current_entry then return true end
-			local cooldown = tonumber(core.settings:get("litematicabot.place_cooldown")) or 0.5
+			local cooldown = tonumber(core.settings:get("litematicabot.place_cooldown")) or 0.1
 			if self._last_place_time and os.clock() - self._last_place_time < cooldown then
 				return false
 			end
+			local batch = tonumber(core.settings:get("litematicabot.batch_size")) or 8
+			local range = tonumber(core.settings:get("placelitem.range")) or 4
+			local px, py, pz = pos.x, pos.y, pos.z
+			local placed = 0
+
+			-- Place the primary target first
 			if ws.place(self._current_entry, self._current_entry.name) then
 				self._last_place_time = os.clock()
 				for i = #place_nodes, 1, -1 do
@@ -474,8 +481,29 @@ if sbots and sbots.register_bot then
 						break
 					end
 				end
+				placed = 1
 			end
 			self._current_entry = nil
+
+			-- Also place nearby nodes in the same tick
+			if placed > 0 and #place_nodes > 0 then
+				for i = #place_nodes, 1, -1 do
+					if placed >= batch then break end
+					local entry = place_nodes[i]
+					if entry.name ~= "air" then
+						local dx = entry.x - px
+						local dy = entry.y - py
+						local dz = entry.z - pz
+						if dx*dx + dy*dy + dz*dz <= range*range then
+							if ws.place(entry, entry.name) then
+								table.remove(place_nodes, i)
+								placed = placed + 1
+							end
+						end
+					end
+				end
+			end
+
 			self.target_pos = nil
 			update_hud()
 			return true

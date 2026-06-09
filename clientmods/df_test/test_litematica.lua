@@ -29,6 +29,13 @@ function test_litematica(T)
 		T.assert(n ~= nil and n > 0, "invalid value: " .. tostring(v))
 	end)
 
+	T.run("litematicabot.batch_size setting exists", function()
+		local v = core.settings:get("litematicabot.batch_size")
+		T.assert(v ~= nil, "batch_size is nil")
+		local n = tonumber(v)
+		T.assert(n ~= nil and n >= 1, "invalid batch_size: " .. tostring(v))
+	end)
+
 	T.run("read_schematic round-trips through serialize", function()
 		local schem = {
 			size = {x = 2, y = 1, z = 1},
