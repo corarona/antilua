@@ -1,4 +1,3 @@
 placelitem (PlaceLiteM) bool false
 placelitem.range (Placement range) int 4 1 20
-placelitem.require_item (Only place if in inventory) bool false
 litematica_output (Schematic data) string

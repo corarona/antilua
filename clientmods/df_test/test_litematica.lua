@@ -19,11 +19,6 @@ function test_litematica(T)
 		T.assert(tonumber(v) == 4)
 	end)
 
-	T.run("placelitem.require_item default exists", function()
-		local v = core.settings:get("placelitem.require_item")
-		T.assert(v ~= nil)
-	end)
-
 	T.run("read_schematic round-trips through serialize", function()
 		local schem = {
 			size = {x = 2, y = 1, z = 1},

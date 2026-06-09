@@ -115,7 +115,6 @@ ws.rg("PlaceLiteM", {
 		if #place_nodes == 0 then return end
 		local pp = vector.round(core.localplayer:get_pos())
 		local range = tonumber(core.settings:get("placelitem.range")) or 4
-		local check_inv = core.settings:get_bool("placelitem.require_item", false)
 
 		for i = #place_nodes, 1, -1 do
 			local entry = place_nodes[i]
@@ -129,14 +128,11 @@ ws.rg("PlaceLiteM", {
 						ws.dig(pos_v)
 						table.remove(place_nodes, i)
 					end
-				elseif ws.can_place_at(pos_v) then
-					if check_inv then
-						if not ws.switch_to_item or not ws.switch_to_item(entry.name) then
-							goto continue
-						end
+				else
+					-- ws.place handles item selection via find_any_swap
+					if ws.place(pos_v, entry.name) then
+						table.remove(place_nodes, i)
 					end
-					ws.place(pos_v, entry.name)
-					table.remove(place_nodes, i)
 				end
 			end
 			::continue::
@@ -144,7 +140,6 @@ ws.rg("PlaceLiteM", {
 	end,
 	cheat_settings = {
 		range = { type = "number", default = 4, min = 1, max = 20 },
-		require_item = { type = "bool", default = false },
 	},
 })
 
