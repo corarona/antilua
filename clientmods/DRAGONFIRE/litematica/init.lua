@@ -12,15 +12,11 @@ local function deserialize_workaround(content)
 end
 
 local function get_texture_by_name(name)
-	local def = core.get_node_def(name)
-	if not def then return "unknown_node.png" end
-	local tt = def.tiles or def.overlay_tiles or def.special_tiles
-	if not tt or #tt == 0 then return "unknown_node.png" end
-	local tex = tt[1]
-	if type(tex) == "table" and tex.name then
-		return tex.name
+	local def = core.get_item_def(name)
+	if def and def.inventory_image and def.inventory_image ~= "" then
+		return def.inventory_image
 	end
-	return tex or "unknown_node.png"
+	return "unknown_node.png"
 end
 
 local function litematica_particle(pos, texture, size, collision)
