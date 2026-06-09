@@ -19,6 +19,12 @@ function test_litematica(T)
 		T.assert(tonumber(v) == 4)
 	end)
 
+	T.run("litematicabot.place_cooldown default exists", function()
+		local v = core.settings:get("litematicabot.place_cooldown")
+		T.assert(v ~= nil)
+		T.assert(tonumber(v) == 0.5)
+	end)
+
 	T.run("read_schematic round-trips through serialize", function()
 		local schem = {
 			size = {x = 2, y = 1, z = 1},

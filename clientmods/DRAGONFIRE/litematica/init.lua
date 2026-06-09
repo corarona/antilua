@@ -406,6 +406,9 @@ if sbots and sbots.register_bot then
 		moving_target = true,
 		stand_waiting = true,
 		landing_distance = 3,
+		cheat_settings = {
+			place_cooldown = { type = "number", default = 0.5, min = 0.1, max = 5 },
+		},
 		find_pos = function(self, pos)
 			if #place_nodes == 0 then return end
 			local closest, closest_dist
@@ -446,12 +449,17 @@ if sbots and sbots.register_bot then
 		end,
 		do_pos = function(self, pos)
 			if not self._current_entry then return true end
+			local cooldown = tonumber(core.settings:get("litematicabot.place_cooldown")) or 0.5
+			if self._last_place_time and os.clock() - self._last_place_time < cooldown then
+				return false
+			end
 			local ep = vector.new(
 				self._current_entry.x,
 				self._current_entry.y,
 				self._current_entry.z
 			)
 			if ws.place(ep, self._current_entry.name) then
+				self._last_place_time = os.clock()
 				for i = #place_nodes, 1, -1 do
 					if place_nodes[i] == self._current_entry then
 						table.remove(place_nodes, i)
