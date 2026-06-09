@@ -39,7 +39,7 @@ local function litematica_particle(pos, texture, size, collision)
 end
 
 local function add_node(pos, node)
-	litematica_particle(pos, get_texture_by_name(node.name), 9, true)
+	litematica_particle(pos, get_texture_by_name(node.name), 9, false)
 end
 
 local function load_schematic(value)
