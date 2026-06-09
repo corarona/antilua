@@ -53,6 +53,15 @@ function test_litematica(T)
 		T.assert(result.data[2].name == "mcl_core:dirt")
 	end)
 
+	T.run("core.read_file exists", function()
+		T.assert(type(core.read_file) == "function")
+	end)
+
+	T.run("core.read_file rejects path traversal", function()
+		local ok, data, err = pcall(core.read_file, "../evil.lua")
+		T.assert(not ok or data == nil)
+	end)
+
 	T.run("read_schematic rejects bad signature", function()
 		local ok, err = pcall(core.read_schematic, "not an mts file", {})
 		T.assert(not ok, "should reject non-MTS data")

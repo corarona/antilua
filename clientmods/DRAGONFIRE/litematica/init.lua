@@ -62,24 +62,11 @@ local function load_mts_data(mts_data)
 end
 
 local function litematica_deserialize(origin_pos, value)
-	-- Try MTS format first (base64-encoded binary)
-	local raw = core.decode_base64(value)
-	if raw then
-		local ok, schem = pcall(core.read_schematic, raw, {})
-		if ok and schem and schem.data then
-			place_nodes = {}
-			for _, entry in ipairs(schem.data) do
-				local pos = vector.add(origin_pos, {x=entry.x or 0, y=entry.y or 0, z=entry.z or 0})
-				local node = {x=pos.x, y=pos.y, z=pos.z, name=entry.name, param1=entry.param1, param2=entry.param2}
-				table.insert(place_nodes, node)
-				add_node(node, node)
-			end
-			ws.notify("Loaded " .. #place_nodes .. " nodes from MTS", ws.NOTIFY_INFO)
-			return #place_nodes
-		end
+	local count = load_schematic_data(value, origin_pos)
+	if count then
+		return count
 	end
-
-	-- Fall back to WorldEdit string format
+	-- Fall back to WorldEdit string format directly (not detected as MTS)
 	local nodes = load_schematic(value)
 	if not nodes then return nil end
 	if #nodes == 0 then return #nodes end
@@ -131,22 +118,71 @@ ws.rg("PlaceLiteM", {
 	},
 })
 
+local function load_schematic_data(value, pos)
+	if not value or value == "" then
+		return nil, "No data"
+	end
+	-- Try MTS format (base64)
+	local raw = core.decode_base64(value)
+	if raw then
+		local ok, schem = pcall(core.read_schematic, raw, {})
+		if ok and schem and schem.data then
+			place_nodes = {}
+			for _, entry in ipairs(schem.data) do
+				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name, param1=entry.param1, param2=entry.param2}
+				table.insert(place_nodes, node)
+				add_node(node, node)
+			end
+			ws.notify("Loaded " .. #place_nodes .. " nodes from MTS", ws.NOTIFY_INFO)
+			return #place_nodes
+		end
+	end
+	-- Fall back to WorldEdit string format
+	local count = litematica_deserialize(pos, value)
+	if count then
+		return count
+	end
+	return nil, "Failed to load schematic"
+end
+
 core.register_chatcommand("liteload", {
-	description = "Load schematic. Use $ for litematica_output setting. MTS via base64.",
+	description = "Load schematic. $ for litematica_output setting, file:<path> for MTS file from disk.",
 	func = function(param)
 		if param == "" then
 			return false, "Need an argument to load"
 		end
+		local pos = vector.round(core.localplayer:get_pos())
 		local value
+
+		-- file:<path> — load an MTS file from disk
+		if param:match("^file:") then
+			local filepath = param:sub(6)
+			local ok, data = pcall(core.read_file, filepath)
+			if not ok or not data then
+				return false, "File not found: " .. filepath
+			end
+			local ok2, schem = pcall(core.read_schematic, data, {})
+			if not ok2 or not schem or not schem.data then
+				return false, "Failed to parse MTS file"
+			end
+			place_nodes = {}
+			for _, entry in ipairs(schem.data) do
+				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name, param1=entry.param1, param2=entry.param2}
+				table.insert(place_nodes, node)
+				add_node(node, node)
+			end
+			ws.notify("Loaded " .. #place_nodes .. " nodes from " .. filepath, ws.NOTIFY_INFO)
+			return true
+		end
+
 		if param == "$" then
 			value = core.settings:get("litematica_output") or "{}"
 		else
 			value = param
 		end
-		local pos = vector.round(core.localplayer:get_pos())
-		local count = litematica_deserialize(pos, value)
+		local count, err = load_schematic_data(value, pos)
 		if not count then
-			return false, "Failed to load schematic"
+			return false, err or "Failed to load schematic"
 		end
 		return true
 	end,

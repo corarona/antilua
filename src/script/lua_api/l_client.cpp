@@ -40,6 +40,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "gui/mainmenumanager.h"
 #include "gui/toastManager.h"
 #include "map.h"
+#include "filesys.h"
 #include "util/string.h"
 #include "nodedef.h"
 #include "client/keycode.h"
@@ -700,6 +701,26 @@ int ModApiClient::l_send_nodemeta_fields(lua_State *L)
 	return 0;
 }
 
+// read_file(path)
+int ModApiClient::l_read_file(lua_State *L)
+{
+	std::string path = luaL_checkstring(L, 1);
+	// Prevent directory traversal
+	if (path.find("..") != std::string::npos) {
+		lua_pushnil(L);
+		lua_pushstring(L, "Path traversal denied");
+		return 2;
+	}
+	std::string content;
+	if (!fs::ReadFile(path, content)) {
+		lua_pushnil(L);
+		lua_pushstring(L, "File not found");
+		return 2;
+	}
+	lua_pushlstring(L, content.data(), content.size());
+	return 1;
+}
+
 // read_schematic(schematic, options)
 int ModApiClient::l_read_schematic(lua_State *L)
 {
@@ -1101,6 +1122,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(send_raw_packet);
 	API_FCT(read_schematic);
 	API_FCT(serialize_schematic);
+	API_FCT(read_file);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)
