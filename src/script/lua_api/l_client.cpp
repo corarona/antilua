@@ -48,6 +48,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/content_cao.h"
 #include "client/gameui.h"
 #include "server.h"
+#include "porting.h"
 #include "settings.h"
 #include "collision.h"
 #include "face_position_cache.h"
@@ -711,14 +712,22 @@ int ModApiClient::l_read_file(lua_State *L)
 		lua_pushstring(L, "Path traversal denied");
 		return 2;
 	}
+	// Try as-is first, then relative to share path (for RUN_IN_PLACE setups
+	// where cwd may be bin/ instead of the project root)
 	std::string content;
-	if (!fs::ReadFile(path, content)) {
-		lua_pushnil(L);
-		lua_pushstring(L, "File not found");
-		return 2;
+	if (fs::ReadFile(path, content)) {
+		lua_pushlstring(L, content.data(), content.size());
+		return 1;
 	}
-	lua_pushlstring(L, content.data(), content.size());
-	return 1;
+	// Try relative to share path
+	std::string alt = porting::path_share + DIR_DELIM + path;
+	if (fs::ReadFile(alt, content)) {
+		lua_pushlstring(L, content.data(), content.size());
+		return 1;
+	}
+	lua_pushnil(L);
+	lua_pushstring(L, "File not found");
+	return 2;
 }
 
 // read_schematic(schematic, options)
