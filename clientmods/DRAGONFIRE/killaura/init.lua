@@ -1,6 +1,5 @@
 killaura = {
 	hph = 1,
-	hps = 20,
 	hit_y = -0.1,
 }
 
@@ -31,6 +30,13 @@ local function in_enemylist(obj)
 		or table.indexof(enemies, obj:get_properties().nametag) ~= -1
 end
 
+local function is_mob(obj)
+	local p = obj and obj:get_properties()
+	local r = obj and obj:get_rotation()
+	local m = p and p.mesh
+	return p and r and r.z == 0 and m and (m:find("mobs_mc") or m:find("extra_mobs"))
+end
+
 local function hit_objects(radius, check)
 	local pl = core.localplayer
 	local lp = pl:get_pos()
@@ -44,64 +50,96 @@ local function hit_objects(radius, check)
 	return rt
 end
 
+local function make_filter(mode)
+	if mode == "players_enemies" then
+		return function(obj)
+			return obj and obj:is_player() and in_enemylist(obj) and not obj:is_local_player()
+		end
+	elseif mode == "players_all" then
+		return function(obj)
+			return obj and obj:is_player() and not_in_friendlist(obj) and not obj:is_local_player()
+		end
+	elseif mode == "mobs" then
+		return function(obj)
+			return obj and not obj:is_player() and is_mob(obj)
+		end
+	elseif mode == "all" then
+		return function(obj)
+			return obj and not obj:is_local_player()
+				and (obj:is_player() or is_mob(obj))
+		end
+	end
+end
+
 ws.rg("Killaura", {
 	category = "Combat",
 	setting = "killaura",
 	on_step = function(self, dtime)
-		local friendfunc = in_enemylist
-		if core.settings:get_bool("killaura.attack_all", false) then
-			friendfunc = not_in_friendlist
+		local mode = core.settings:get("killaura.target_mode")
+		if not mode or mode == "" then mode = "players_enemies" end
+		local filter = make_filter(mode)
+		if filter then
+			hit_objects(tonumber(core.settings:get("killaura.range")) or 10, filter)
 		end
-		hit_objects(tonumber(core.settings:get("killaura.range")) or 10, function(obj)
-			return obj and obj:is_player() and friendfunc(obj) and not obj:is_local_player()
-		end)
 	end,
 	cheat_settings = {
 		hph = { type = "number", default = 1, min = 1, max = 10 },
 		hit_y = { type = "number", default = -0.1, min = -5, max = 5 },
 		range = { type = "number", default = 10, min = 1, max = 30 },
-		attack_all = { type = "bool", default = false },
+		target_mode = {
+			type = "enum",
+			default = "players_enemies",
+			values = {"players_enemies", "players_all", "mobs", "all"},
+		},
 	},
-})
-
-ws.rg("Mobaura", {
-	category = "Combat",
-	setting = "mobaura",
-	on_step = function(self, dtime)
-		hit_objects(tonumber(core.settings:get("mobaura.range")) or 10, function(obj)
-			local p = obj and obj:get_properties()
-			local r = obj and obj:get_rotation()
-			return p and r and r.z == 0 and (p.mesh:find("mobs_mc") or p.mesh:find("extra_mobs"))
-		end)
-	end,
-	cheat_settings = {
-		range = { type = "number", default = 10, min = 1, max = 30 },
-	},
-})
-
-core.register_cheat("ForceField", { category = "Combat", setting = "forcefield" })
-
-core.register_list_command("friend", "Configure Friend List (friends dont get attacked by Killaura or Forcefield)", "friendlist")
-
-local function find_safespot(pos)
-	local n = core.get_node_or_nil(pos)
-	if not n or n.name == "air" then return end
-	local nn = core.find_nodes_in_area(ws.dircoord(1, -4, -3), ws.dircoord(4, 4, 3), {"air"})
-	table.sort(nn, function(a, b) return vector.distance(pos, a) < vector.distance(pos, b) end)
-	if #nn > 0 then
-		return nn[1]
-	end
-	return false
-end
-
-ws.rg("AirHead", {
-	category = "Player",
-	setting = "airhead",
-	on_step = function(self, dtime)
-		local pos = core.localplayer:get_pos()
-		local sp = find_safespot(pos:offset(0, 1, 0))
-		if sp then
-			core.localplayer:set_pos(sp:offset(0, -1, 0))
+	get_formspec = function(setting)
+		local function esc(t)
+			local out = {}
+			for _, v in ipairs(t) do
+				table.insert(out, core.formspec_escape(v))
+			end
+			return table.concat(out, ",")
 		end
+
+		local friends = nlist.get("friends")
+		local enemies = nlist.get("enemies")
+		local f_str = #friends > 0 and esc(friends) or " "
+		local e_str = #enemies > 0 and esc(enemies) or " "
+
+		local fs = "size[10,8.5]"
+		fs = fs .. "bgcolor[#000000;true]"
+		fs = fs .. "label[0.3,0;Friends (not attacked)]"
+		fs = fs .. "textlist[0.3,0.5;4.4,3;friend_entries;" .. f_str .. ";1]"
+		fs = fs .. "field[0.3,3.8;7,0.8;friend_input;;]"
+		fs = fs .. "button[7.4,3.8;1.2,0.8;btn_add_friend;Add]"
+		fs = fs .. "button[8.7,3.8;1.2,0.8;btn_rm_friend;Rem]"
+		fs = fs .. "label[5.3,0;Enemies (always attacked)]"
+		fs = fs .. "textlist[5.3,0.5;4.4,3;enemy_entries;" .. e_str .. ";1]"
+		fs = fs .. "field[5.3,3.8;7,0.8;enemy_input;;]"
+		fs = fs .. "button[7.4,3.8;1.2,0.8;btn_add_enemy;Add]"
+		fs = fs .. "button[8.7,3.8;1.2,0.8;btn_rm_enemy;Rem]"
+		fs = fs .. "label[0.3,4.8;Tip: click a name in the list to remove it]"
+		fs = fs .. "button_exit[8.5,7.5;1.3,0.8;btn_done;Done]"
+		return fs
 	end,
 })
+
+core.register_on_formspec_input(function(formname, fields)
+	if formname ~= "cheat_settings:killaura:custom" then return end
+	if fields.btn_done or not next(fields) then return end
+
+	if fields.btn_add_friend and fields.friend_input and fields.friend_input ~= "" then
+		nlist.add("friends", fields.friend_input)
+	end
+	if fields.btn_rm_friend and fields.friend_input and fields.friend_input ~= "" then
+		nlist.remove("friends", fields.friend_input)
+	end
+	if fields.btn_add_enemy and fields.enemy_input and fields.enemy_input ~= "" then
+		nlist.add("enemies", fields.enemy_input)
+	end
+	if fields.btn_rm_enemy and fields.enemy_input and fields.enemy_input ~= "" then
+		nlist.remove("enemies", fields.enemy_input)
+	end
+end)
+
+core.register_list_command("friend", "Configure Friend List (friends are not attacked by Killaura)", "friendlist")

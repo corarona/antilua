@@ -94,6 +94,7 @@ dofile(modpath .. "/test_df_mods.lua")
 dofile(modpath .. "/test_raw_packet.lua")
 dofile(modpath .. "/test_autominer.lua")
 dofile(modpath .. "/test_fishbot.lua")
+dofile(modpath .. "/test_killaura.lua")
 
 -- Run API/registration tests at mod load time
 core.register_on_mods_loaded(function()
@@ -137,6 +138,7 @@ core.register_on_mods_loaded(function()
 	test_raw_packet_api(df_test)
 	test_autominer(df_test)
 	test_fishbot(df_test)
+	test_killaura(df_test)
 
 	-- Integration tests (deferred — register but don't run yet)
 	test_ws_rg_lifecycle(df_test)

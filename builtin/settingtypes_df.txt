@@ -9,11 +9,8 @@ antiknockback (AntiKnockback) bool false
 #    Makes the player float above attached entities (boats/minecarts).
 float_above_parent (Float above parent) bool false
 
-#    Auto-attack nearby entities.
+#    Auto-attack nearby entities (players/mobs/all modes).
 killaura (Killaura) bool false
-
-#    Auto-attack nearby mobs (MineClone).
-mobaura (Mobaura) bool false
 
 #    Build/place blocks below the player automatically.
 scaffold (Scaffold) bool false

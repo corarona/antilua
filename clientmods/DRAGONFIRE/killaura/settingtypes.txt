@@ -1,5 +1,6 @@
 killaura (Killaura) bool false
-forcefield (ForceField) bool false
 friendlist (Friend List) string
-killaura_interval (Killaura Interval) string "auto"
-killaura_only_players (Only Killaura Players) bool false
+killaura.hph (Hits per hit) int 1 1 10
+killaura.hit_y (Vertical hit offset) float -0.1 -5 5
+killaura.range (Attack range) int 10 1 30
+killaura.target_mode (Target mode) enum players_enemies players_enemies,players_all,mobs,all

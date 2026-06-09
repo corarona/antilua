@@ -1,6 +1,6 @@
 # killaura
 
-Combat automation: auto-attack players (Killaura), auto-attack mobs (Mobaura), repulsion field (ForceField), and in-air position preservation (AirHead). Includes friend/enemy list management.
+Auto-attack nearby entities with configurable targeting. Supports player enemies, all players (except friends), mobs, and combined modes. Includes friend/enemy list management via settings formspec.
 
 ## Player usage
 
@@ -8,10 +8,16 @@ Combat automation: auto-attack players (Killaura), auto-attack mobs (Mobaura), r
 
 | Cheat | Category | Setting | Description |
 |-------|----------|---------|-------------|
-| Killaura | Combat | `killaura` | Auto-punch nearby players (respects friend/enemy lists) |
-| Mobaura | Combat | `mobaura` | Auto-punch nearby mobs (detected by mesh name) |
-| ForceField | Combat | `forcefield` | Repulsion field effect |
-| AirHead | Player | `airhead` | Teleport back to a safe spot when flying into air |
+| Killaura | Combat | `killaura` | Auto-punch nearby targets (configurable mode) |
+
+### Targeting modes
+
+| Mode | Description |
+|------|-------------|
+| `players_enemies` | Attack only players in enemy list (default) |
+| `players_all` | Attack all players except friends |
+| `mobs` | Attack hostile mobs (mesh-based detection) |
+| `all` | Attack enemies + mobs |
 
 ### Settings
 
@@ -20,34 +26,24 @@ Combat automation: auto-attack players (Killaura), auto-attack mobs (Mobaura), r
 | `killaura.hph` | 1 | Hits per hit (1–10) |
 | `killaura.hit_y` | -0.1 | Vertical velocity offset on each hit |
 | `killaura.range` | 10 | Attack range |
-| `killaura.attack_all` | false | Attack all players (not just enemies) |
-| `mobaura.range` | 10 | Mob attack range |
+| `killaura.target_mode` | `players_enemies` | Targeting mode |
 
-### Chat commands
+### Friend/enemy list
 
-| Command | Description |
-|---------|-------------|
-| `/list friend [names]` | Configure friend list (friends are not attacked) |
-| `/list enemies [names]` | Configure enemy list (enemies are always attacked) |
+Open the Killaura cheat settings in the cheat menu to manage friend and enemy lists via formspec. Friends are never attacked in any mode. Enemies are always attacked in `players_enemies` and `all` modes.
 
 ## API
 
 ```lua
 killaura = {
 	hph = 1,
-	hps = 20,
 	hit_y = -0.1,
 }
 ```
 
 ### `killaura.get(key)`
 
-Get a killaura setting value by key, falling back to the default from the `killaura` table.
-
-**Parameters:**
-- `key` — `string` setting name (e.g. `"hph"`, `"hit_y"`, `"range"`)
-
-**Returns:** `number`
+Get a killaura setting value by key, falling back to the default.
 
 ### `killaura.punch_object(obj)`
 
@@ -55,12 +51,3 @@ Punch an object multiple times (`hph` times) while preserving the player's origi
 
 **Parameters:**
 - `obj` — `ObjectRef` to punch
-
-## Cheats
-
-| Cheat | Setting | Description |
-|-------|---------|-------------|
-| Killaura | `killaura` | Auto-punch nearby players (respects friend/enemy lists) |
-| Mobaura | `mobaura` | Auto-punch nearby mobs (detected by mesh name) |
-| ForceField | `forcefield` | Repulsion field effect |
-| AirHead | `airhead` | Teleport back to a safe spot when flying into air |
