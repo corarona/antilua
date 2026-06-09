@@ -62,12 +62,16 @@ local function load_mts_data(mts_data)
 	return nodes
 end
 
+-- Forward declaration for circular dependency
+local load_schematic_data
+
 local function litematica_deserialize(origin_pos, value)
+	-- Try MTS first via load_schematic_data
 	local count = load_schematic_data(value, origin_pos)
 	if count then
 		return count
 	end
-	-- Fall back to WorldEdit string format directly (not detected as MTS)
+	-- Fall back to WorldEdit string format
 	local nodes = load_schematic(value)
 	if not nodes then return nil end
 	if #nodes == 0 then return #nodes end
@@ -119,7 +123,7 @@ ws.rg("PlaceLiteM", {
 	},
 })
 
-local function load_schematic_data(value, pos)
+load_schematic_data = function(value, pos)
 	if not value or value == "" then
 		return nil, "No data"
 	end
@@ -138,10 +142,17 @@ local function load_schematic_data(value, pos)
 			return #place_nodes
 		end
 	end
-	-- Fall back to WorldEdit string format
-	local count = litematica_deserialize(pos, value)
-	if count then
-		return count
+	-- WorldEdit string format (direct, no recursion)
+	local nodes = load_schematic(value)
+	if nodes and #nodes > 0 then
+		place_nodes = nodes
+		local ox, oy, oz = pos.x, pos.y, pos.z
+		for i, entry in ipairs(nodes) do
+			entry.x, entry.y, entry.z = ox + entry.x, oy + entry.y, oz + entry.z
+			add_node(entry, entry)
+		end
+		ws.notify("Loaded " .. #nodes .. " nodes", ws.NOTIFY_INFO)
+		return #nodes
 	end
 	return nil, "Failed to load schematic"
 end
