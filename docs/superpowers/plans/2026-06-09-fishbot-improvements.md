@@ -21,42 +21,7 @@ Add to init.lua: dofile + test function call.
 
 ---
 
-### Task 2: Add cobot conflict detection
-
-**Files:**
-- Modify: `clientmods/DRAGONFIRE/fishbot/init.lua`
-
-FishBot uses `ws.rg` directly (not `sbots.register_bot`) so it misses the sbots cobot conflict detection. Add a manual check in `on_start` that scans for other active bots:
-
-```lua
-on_start = function(self)
-    -- Cobot check: prevent running alongside other bots
-    for _, hack in ipairs(ws.registered_globalhacks) do
-        -- ws.registered_globalhacks stores closures, need to check settings
-    end
-    ...
-end
-```
-
-This is tricky because `ws.registered_globalhacks` stores closures, not def tables. A simpler approach: check known bot settings directly:
-
-```lua
-on_start = function(self)
-    local bots = {"autominer", "WitherBot", "FarmBot", "listDigBot",
-        "ObsBot", "PlBot", "CrystalBot", "MobsBot", "HostileMobs", "ItemBot"}
-    for _, name in ipairs(bots) do
-        if core.settings:get_bool(name) then
-            ws.notify("Stop other bots first", ws.NOTIFY_WARNING)
-            return false
-        end
-    end
-    ...
-end
-```
-
----
-
-### Task 3: Graceful failure on unsupported games
+### Task 2: Graceful failure on unsupported games
 
 **Files:**
 - Modify: `clientmods/DRAGONFIRE/fishbot/init.lua`
