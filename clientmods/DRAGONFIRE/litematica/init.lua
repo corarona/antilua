@@ -19,23 +19,23 @@ local function get_texture_by_name(name)
 	return "unknown_node.png"
 end
 
-local function litematica_particle(pos, texture, size, collision)
+	local PARTICLE_TTL = 2.0
+
+local function add_preview_particle(pos, node_name)
+	local tex = get_texture_by_name(node_name)
+	if tex == "unknown_node.png" then return end
 	core.add_particle({
 		pos = vector.new(math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)),
 		velocity = {x=0, y=0, z=0},
 		acceleration = {x=0, y=0, z=0},
-		expirationtime = 9999,
-		size = size,
-		collisiondetection = collision,
-		collision_removal = collision,
+		expirationtime = PARTICLE_TTL,
+		size = 1,
+		collisiondetection = false,
+		collision_removal = false,
 		vertical = false,
-		texture = texture,
+		texture = tex,
 		glow = 14,
 	})
-end
-
-local function add_node(pos, node)
-	litematica_particle(pos, get_texture_by_name(node.name), 9, false)
 end
 
 local function load_schematic(value)
@@ -59,20 +59,22 @@ local function load_schematic_nodes(value, pos)
 		if ok and schem and schem.data then
 			nodes = {}
 			for _, entry in ipairs(schem.data) do
+				if entry.name == "air" or entry.prob == 0 then
+					goto skip
+				end
 				table.insert(nodes, {
 					x = pos.x + (entry.x or 0),
 					y = pos.y + (entry.y or 0),
 					z = pos.z + (entry.z or 0),
 					name = entry.name,
-					param1 = entry.param1,
-					param2 = entry.param2,
 				})
+				::skip::
 			end
 			count = #nodes
 			if count > 0 then
 				place_nodes = nodes
-				for _, n in ipairs(nodes) do add_node(n, n) end
-				ws.notify("Loaded " .. count .. " nodes from MTS", ws.NOTIFY_INFO)
+				for _, n in ipairs(nodes) do add_preview_particle(n, n.name) end
+				ws.notify("Loaded " .. count .. " nodes", ws.NOTIFY_INFO)
 			end
 			return count
 		end
@@ -80,19 +82,26 @@ local function load_schematic_nodes(value, pos)
 
 	-- Try WorldEdit string format (old format)
 	local we_nodes = load_schematic(value)
-	if we_nodes and #we_nodes > 0 then
+	if we_nodes then
+		place_nodes = {}
 		local ox, oy, oz = pos.x, pos.y, pos.z
 		for _, entry in ipairs(we_nodes) do
+			if entry.name == "air" then goto skip2 end
 			entry.x, entry.y, entry.z = ox + entry.x, oy + entry.y, oz + entry.z
-			add_node(entry, entry)
+			table.insert(place_nodes, entry)
+			add_preview_particle(entry, entry.name)
+			::skip2::
 		end
-		place_nodes = we_nodes
-		ws.notify("Loaded " .. #we_nodes .. " nodes", ws.NOTIFY_INFO)
-		return #we_nodes
+		if #place_nodes > 0 then
+			ws.notify("Loaded " .. #place_nodes .. " nodes", ws.NOTIFY_INFO)
+		end
+		return #place_nodes
 	end
 
 	return nil
 end
+
+local particle_refresh_counter = 0
 
 ws.rg("PlaceLiteM", {
 	category = "Place",
@@ -102,27 +111,53 @@ ws.rg("PlaceLiteM", {
 		local pp = vector.round(core.localplayer:get_pos())
 		local range = tonumber(core.settings:get("placelitem.range")) or 4
 		local check_inv = core.settings:get_bool("placelitem.require_item", false)
+
+		-- Refresh particles every 10 ticks so they don't expire
+		particle_refresh_counter = particle_refresh_counter + 1
+		local do_refresh = particle_refresh_counter >= 10
+
 		for i = #place_nodes, 1, -1 do
 			local entry = place_nodes[i]
 			if math.abs(entry.x - pp.x) <= range
 			and math.abs(entry.y - pp.y) <= range
 			and math.abs(entry.z - pp.z) <= range then
-				local pos = vector.new(entry.x, entry.y, entry.z)
-				if ws.can_place_at(pos) then
+				local pos_v = vector.new(entry.x, entry.y, entry.z)
+				if entry.name == "air" then
+					-- Air node: dig whatever is here
+					local node = core.get_node_or_nil(pos_v)
+					if node and node.name ~= "air" then
+						ws.dig(pos_v)
+						table.remove(place_nodes, i)
+					end
+				elseif ws.can_place_at(pos_v) then
 					if check_inv then
 						local had_item = false
 						if ws.switch_to_item then
 							had_item = ws.switch_to_item(entry.name)
 						end
 						if not had_item then
+							if do_refresh then
+								add_preview_particle(pos_v, entry.name)
+							end
 							goto continue
 						end
 					end
-					ws.place(pos, entry.name)
+					ws.place(pos_v, entry.name)
 					table.remove(place_nodes, i)
+				elseif do_refresh then
+					add_preview_particle(pos_v, entry.name)
 				end
+			elseif do_refresh then
+				add_preview_particle(
+					vector.new(entry.x, entry.y, entry.z),
+					entry.name
+				)
 			end
 			::continue::
+		end
+
+		if do_refresh then
+			particle_refresh_counter = 0
 		end
 	end,
 	cheat_settings = {
@@ -155,9 +190,11 @@ core.register_chatcommand("liteload", {
 			end
 			place_nodes = {}
 			for _, entry in ipairs(schem.data) do
-				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name, param1=entry.param1, param2=entry.param2}
+				if entry.name == "air" or entry.prob == 0 then goto skip_file end
+				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name}
 				table.insert(place_nodes, node)
-				add_node(node, node)
+				add_preview_particle(node, node.name)
+				::skip_file::
 			end
 			ws.notify("Loaded " .. #place_nodes .. " nodes from " .. filepath, ws.NOTIFY_INFO)
 			return true
