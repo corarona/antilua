@@ -19,8 +19,6 @@ local function get_texture_by_name(name)
 	return "unknown_node.png"
 end
 
-	local PARTICLE_TTL = 2.0
-
 local function add_preview_particle(pos, node_name)
 	local tex = get_texture_by_name(node_name)
 	if tex == "unknown_node.png" then return end
@@ -28,7 +26,7 @@ local function add_preview_particle(pos, node_name)
 		pos = vector.new(math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)),
 		velocity = {x=0, y=0, z=0},
 		acceleration = {x=0, y=0, z=0},
-		expirationtime = PARTICLE_TTL,
+		expirationtime = 9999,
 		size = 1,
 		collisiondetection = false,
 		collision_removal = false,
@@ -36,6 +34,15 @@ local function add_preview_particle(pos, node_name)
 		texture = tex,
 		glow = 14,
 	})
+end
+
+-- Only add a particle if the target isn't already in place
+local function add_preview_if_needed(pos, node_name)
+	local current = core.get_node_or_nil(pos)
+	if current and current.name == node_name then
+		return  -- already correct, no particle
+	end
+	add_preview_particle(pos, node_name)
 end
 
 local function load_schematic(value)
@@ -73,7 +80,7 @@ local function load_schematic_nodes(value, pos)
 			count = #nodes
 			if count > 0 then
 				place_nodes = nodes
-				for _, n in ipairs(nodes) do add_preview_particle(n, n.name) end
+				for _, n in ipairs(nodes) do add_preview_if_needed(n, n.name) end
 				ws.notify("Loaded " .. count .. " nodes", ws.NOTIFY_INFO)
 			end
 			return count
@@ -89,7 +96,7 @@ local function load_schematic_nodes(value, pos)
 			if entry.name == "air" then goto skip2 end
 			entry.x, entry.y, entry.z = ox + entry.x, oy + entry.y, oz + entry.z
 			table.insert(place_nodes, entry)
-			add_preview_particle(entry, entry.name)
+			add_preview_if_needed(entry, entry.name)
 			::skip2::
 		end
 		if #place_nodes > 0 then
@@ -101,8 +108,6 @@ local function load_schematic_nodes(value, pos)
 	return nil
 end
 
-local particle_refresh_counter = 0
-
 ws.rg("PlaceLiteM", {
 	category = "Place",
 	setting = "placelitem",
@@ -112,10 +117,6 @@ ws.rg("PlaceLiteM", {
 		local range = tonumber(core.settings:get("placelitem.range")) or 4
 		local check_inv = core.settings:get_bool("placelitem.require_item", false)
 
-		-- Refresh particles every 10 ticks so they don't expire
-		particle_refresh_counter = particle_refresh_counter + 1
-		local do_refresh = particle_refresh_counter >= 10
-
 		for i = #place_nodes, 1, -1 do
 			local entry = place_nodes[i]
 			if math.abs(entry.x - pp.x) <= range
@@ -123,7 +124,6 @@ ws.rg("PlaceLiteM", {
 			and math.abs(entry.z - pp.z) <= range then
 				local pos_v = vector.new(entry.x, entry.y, entry.z)
 				if entry.name == "air" then
-					-- Air node: dig whatever is here
 					local node = core.get_node_or_nil(pos_v)
 					if node and node.name ~= "air" then
 						ws.dig(pos_v)
@@ -131,33 +131,15 @@ ws.rg("PlaceLiteM", {
 					end
 				elseif ws.can_place_at(pos_v) then
 					if check_inv then
-						local had_item = false
-						if ws.switch_to_item then
-							had_item = ws.switch_to_item(entry.name)
-						end
-						if not had_item then
-							if do_refresh then
-								add_preview_particle(pos_v, entry.name)
-							end
+						if not ws.switch_to_item or not ws.switch_to_item(entry.name) then
 							goto continue
 						end
 					end
 					ws.place(pos_v, entry.name)
 					table.remove(place_nodes, i)
-				elseif do_refresh then
-					add_preview_particle(pos_v, entry.name)
 				end
-			elseif do_refresh then
-				add_preview_particle(
-					vector.new(entry.x, entry.y, entry.z),
-					entry.name
-				)
 			end
 			::continue::
-		end
-
-		if do_refresh then
-			particle_refresh_counter = 0
 		end
 	end,
 	cheat_settings = {
@@ -192,11 +174,11 @@ core.register_chatcommand("liteload", {
 			for _, entry in ipairs(schem.data) do
 				if entry.name == "air" or entry.prob == 0 then goto skip_file end
 				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name}
-				table.insert(place_nodes, node)
-				add_preview_particle(node, node.name)
-				::skip_file::
-			end
-			ws.notify("Loaded " .. #place_nodes .. " nodes from " .. filepath, ws.NOTIFY_INFO)
+			table.insert(place_nodes, node)
+			add_preview_if_needed(node, node.name)
+			::skip_file::
+		end
+		ws.notify("Loaded " .. #place_nodes .. " nodes from " .. filepath, ws.NOTIFY_INFO)
 			return true
 		end
 
