@@ -94,4 +94,30 @@ function test_litematica(T)
 	T.run("/litesave chat command registered", function()
 		T.assert(type(core.registered_chatcommands["litesave"]) == "table")
 	end)
+
+	T.run("ws.loot_list exists", function()
+		T.assert(type(ws.loot_list) == "function")
+	end)
+
+	T.run("ws.loot_list returns 0 for empty items", function()
+		local r = ws.loot_list({}, 5)
+		T.assert(type(r) == "number")
+		T.assert(r == 0)
+	end)
+
+	T.run("schematic_looter cheat setting exists", function()
+		T.assert(core.settings:get("schematic_looter") ~= nil)
+	end)
+
+	T.run("schematic_looter.range default exists", function()
+		local v = core.settings:get("schematic_looter.range")
+		T.assert(v ~= nil)
+		T.assert(tonumber(v) == 5)
+	end)
+
+	T.run("schematic_looter.max_per_scan default exists", function()
+		local v = core.settings:get("schematic_looter.max_per_scan")
+		T.assert(v ~= nil)
+		T.assert(tonumber(v) == 16)
+	end)
 end
