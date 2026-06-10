@@ -971,6 +971,12 @@ void GenericCAO::setPos(v3f pos)
 	pos_translator.init(pos);
 }
 
+void GenericCAO::setInitProperties(const ObjectProperties &prop)
+{
+	m_prop = prop;
+	m_visuals_expired = true;
+}
+
 void GenericCAO::updateNodePos()
 {
 	if (getParent() != NULL)

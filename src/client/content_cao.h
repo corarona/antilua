@@ -293,6 +293,9 @@ public:
 
 	void setPos(v3f pos);
 
+	// Set initial properties before addToScene (skips animated_meshnode access)
+	void setInitProperties(const ObjectProperties &prop);
+
 	void step(float dtime, ClientEnvironment *env) override;
 
 	void updateTextureAnim();

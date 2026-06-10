@@ -743,19 +743,22 @@ int ModApiClient::l_create_client_entity(lua_State *L)
 
 	raw_obj->setPos(pos);
 
+	if (lua_istable(L, 2)) {
+		ObjectProperties prop = raw_obj->getProperties();
+		read_object_properties(L, 2, nullptr, &prop, client->idef());
+		raw_obj->setInitProperties(prop);
+	}
+
 	u16 id = env.addActiveObject(std::move(obj));
 	if (id == 0)
 		return 0;
 
-	if (lua_istable(L, 2)) {
-		if (GenericCAO *gcao = env.getGenericCAO(id)) {
-			ObjectProperties prop = gcao->getProperties();
-			read_object_properties(L, 2, nullptr, &prop, client->idef());
-			gcao->setProperties(prop);
-		}
+	ClientActiveObject *cao = env.getActiveObject(id);
+	if (!cao) {
+		// Object was removed between creation and now
+		return 0;
 	}
-
-	ClientObjectRef::create(L, (s16)id);
+	ClientObjectRef::create(L, cao);
 
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "object_refs");
