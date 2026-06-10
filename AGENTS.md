@@ -16,7 +16,7 @@ feature commits.
 ## Current work: Modpack restructuring
 
 See `PLAN.md` for the full plan. All old-clientmods are being consolidated into
-the `DRAGONFIRE` modpack. The `wasplib` mod is being split into subfiles, and
+the `ANTILUA` modpack. The `wasplib` mod is being split into subfiles, and
 useful features from `emicor` are being extracted into focused mods. Integration
 tests are being written for each new mod.
 
@@ -275,7 +275,7 @@ The `data` array has `size.x * size.y * size.z` entries in Z/Y/X order. Each ent
 | File | Purpose |
 |------|---------|
 | `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_read_schematic`, `l_serialize_schematic` |
-| `clientmods/DRAGONFIRE/schembuilder/init.lua` | Schematic builder: load MTS, preview as particles, place via PlaceLiteM/SchemBuilderBot, auto-loot materials |
+| `clientmods/ANTILUA/schembuilder/init.lua` | Schematic builder: load MTS, preview as particles, place via PlaceLiteM/SchemBuilderBot, auto-loot materials |
 | `clientmods/df_test/test_schembuilder.lua` | Integration tests for schembuilder features |
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.

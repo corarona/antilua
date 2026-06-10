@@ -1,4 +1,4 @@
-# DRAGONFIRE — Antilua Client-Side Modpack
+# ANTILUA — Antilua Client-Side Modpack
 
 Client-side cheat/utility mods for Antilua.
 

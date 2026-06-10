@@ -1,6 +1,6 @@
--- Tests for DragonfireClient DRAGONFIRE modpack mods
+-- Tests for ANTILUA modpack mods
 
-function test_dragonfire_wasplib(T)
+function test_antilua_wasplib(T)
 	T.run("ws namespace exists", function()
 		T.assert(type(ws) == "table", "ws should be a table")
 	end)
@@ -30,21 +30,21 @@ function test_dragonfire_wasplib(T)
 	end)
 end
 
-function test_dragonfire_lockview(T)
+function test_antilua_lockview(T)
 	T.run("lockview cheat setting exists", function()
 		local val = core.settings:get("lockview")
 		T.assert(val ~= nil, "setting 'lockview' should exist")
 	end)
 end
 
-function test_dragonfire_headsaver(T)
+function test_antilua_headsaver(T)
 	T.run("headsaver cheat setting exists", function()
 		local val = core.settings:get("headsaver")
 		T.assert(val ~= nil, "setting 'headsaver' should exist")
 	end)
 end
 
-function test_dragonfire_invsaver(T)
+function test_antilua_invsaver(T)
 	T.run("invsaver cheat setting exists", function()
 		local val = core.settings:get("invsaver")
 		T.assert(val ~= nil, "setting 'invsaver' should exist")
@@ -53,7 +53,7 @@ end
 
 -- anti_tower removed during modpack consolidation
 
-function test_dragonfire_walls(T)
+function test_antilua_walls(T)
 	T.run("place_wallin cheat setting exists", function()
 		local val = core.settings:get("place_wallin")
 		T.assert(val ~= nil, "setting 'place_wallin' should exist")
@@ -70,14 +70,14 @@ function test_dragonfire_walls(T)
 	end)
 end
 
-function test_dragonfire_autoevade(T)
+function test_antilua_autoevade(T)
 	T.run("autoevade cheat setting exists", function()
 		local val = core.settings:get("autoevade")
 		T.assert(val ~= nil, "setting 'autoevade' should exist")
 	end)
 end
 
-function test_dragonfire_extracted_features(T)
+function test_antilua_extracted_features(T)
 	T.run("ws.make_blocks exists", function()
 		T.assert(type(ws.make_blocks) == "function", "ws.make_blocks should be a function")
 	end)
