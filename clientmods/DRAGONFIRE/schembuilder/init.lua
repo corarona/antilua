@@ -246,11 +246,14 @@ ws.rg("PlaceLiteM", {
 
 
 
-local function do_schembuild(param)
+local function do_schembuild(param, use_pos)
 	if param == "" then
 		return false, "Need an argument to load"
 	end
-	local pos = vector.round(core.localplayer:get_pos())
+	local pos = use_pos or (core.localplayer and vector.round(core.localplayer:get_pos()))
+	if not pos then
+		return false, "No position available"
+	end
 	local value
 
 	-- file:<path> — load an MTS file from disk
@@ -306,7 +309,7 @@ core.register_chatcommand("schembuild", {
 })
 
 core.register_chatcommand("schemresume", {
-	description = "Resume the last schematic build: teleports to saved position and reloads the schematic",
+	description = "Resume the last schematic build at the saved position without teleporting",
 	func = function(param)
 		local saved_pos = core.settings:get("schembuilder_resume_pos")
 		local saved_param = core.settings:get("schembuilder_resume_param")
@@ -317,11 +320,12 @@ core.register_chatcommand("schemresume", {
 		if not px then
 			return false, "Invalid saved position: " .. saved_pos
 		end
-		core.localplayer:set_pos({x = tonumber(px), y = tonumber(py), z = tonumber(pz)})
-		core.after(0.3, function()
-			do_schembuild(saved_param)
-		end)
-		return true, "Teleporting to saved position and resuming schematic build"
+		local pos = {x = tonumber(px), y = tonumber(py), z = tonumber(pz)}
+		local ok, err = do_schembuild(saved_param, pos)
+		if ok then
+			return true, "Resumed schematic build at saved position"
+		end
+		return false, err or "Failed to resume schematic"
 	end,
 })
 
