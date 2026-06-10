@@ -531,7 +531,7 @@ end
 ws.rg("SchematicLooter", {
 	category = "Inventory",
 	setting = "schematic_looter",
-	delay = 3,
+	delay = 1,
 	on_step = function(self, dtime)
 		if #place_nodes == 0 then return end
 		local items = {}
