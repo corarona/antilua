@@ -11,51 +11,38 @@ local function deserialize_workaround(content)
 	return nodes or {}
 end
 
-local preview_entities = {}
-
-local function preview_key(pos)
-	return math.floor(pos.x) .. "," .. math.floor(pos.y) .. "," .. math.floor(pos.z)
-end
-
-local function remove_preview(pos)
-	local key = preview_key(pos)
-	local e = preview_entities[key]
-	if e then
-		e:remove()
-		preview_entities[key] = nil
+local function get_texture_by_name(name)
+	local def = core.get_node_def(name)
+	if def and def.tiles and def.tiles[1] and def.tiles[1] ~= "" then
+		return def.tiles[1]
 	end
+	return "unknown_node.png"
 end
 
-local function clear_all_previews()
-	for key, e in pairs(preview_entities) do
-		e:remove()
-	end
-	preview_entities = {}
+local function add_preview_particle(pos, node_name)
+	local tex = get_texture_by_name(node_name)
+	if tex == "unknown_node.png" then return end
+	core.add_particle({
+		pos = vector.new(math.floor(pos.x), math.floor(pos.y), math.floor(pos.z)),
+		velocity = {x=0, y=0, z=0},
+		acceleration = {x=0, y=0, z=0},
+		expirationtime = 9999,
+		size = 1,
+		collisiondetection = false,
+		collision_removal = false,
+		vertical = false,
+		texture = tex,
+		glow = 14,
+	})
 end
 
+-- Only add a particle if the target isn't already in place
 local function add_preview_if_needed(pos, node_name)
 	local current = core.get_node_or_nil(pos)
 	if current and current.name == node_name then
 		return
 	end
-	if node_name == "air" or node_name == "ignore" then
-		return
-	end
-	local key = preview_key(pos)
-	if preview_entities[key] then
-		preview_entities[key]:remove()
-	end
-	local epos = {x = pos.x + 0.5, y = pos.y + 0.53, z = pos.z + 0.5}
-	local ok, e = pcall(core.create_client_entity, epos, {
-		visual = "node",
-		node = { name = node_name },
-		is_visible = true,
-		glow = 14,
-		physical = false,
-	})
-	if ok and e then
-		preview_entities[key] = e
-	end
+	add_preview_particle(pos, node_name)
 end
 
 local function load_schematic(value)
@@ -92,7 +79,6 @@ local function load_schematic_nodes(value, pos)
 			end
 			count = #nodes
 			if count > 0 then
-				clear_all_previews()
 				place_nodes = nodes
 				for _, n in ipairs(nodes) do add_preview_if_needed(n, n.name) end
 				ws.notify("Loaded " .. count .. " nodes", ws.NOTIFY_INFO)
@@ -105,7 +91,6 @@ local function load_schematic_nodes(value, pos)
 	-- Try WorldEdit string format (old format)
 	local we_nodes = load_schematic(value)
 	if we_nodes then
-		clear_all_previews()
 		place_nodes = {}
 		local ox, oy, oz = pos.x, pos.y, pos.z
 		for _, entry in ipairs(we_nodes) do
@@ -208,13 +193,11 @@ ws.rg("PlaceLiteM", {
 						ws.dig(pos_v)
 						table.remove(place_nodes, i)
 						changed = true
-						remove_preview(pos_v)
 					end
 				else
 					if ws.place(pos_v, entry.name) then
 						table.remove(place_nodes, i)
 						changed = true
-						remove_preview(pos_v)
 					end
 				end
 			end
@@ -232,7 +215,6 @@ ws.rg("PlaceLiteM", {
 			core.localplayer:hud_remove(hud_id)
 			hud_id = nil
 		end
-		clear_all_previews()
 	end,
 	cheat_settings = {
 		range = { type = "number", default = 4, min = 1, max = 20 },
@@ -261,7 +243,6 @@ core.register_chatcommand("liteload", {
 			if not ok2 or not schem or not schem.data then
 				return false, "Failed to parse MTS file"
 			end
-			clear_all_previews()
 			place_nodes = {}
 			for _, entry in ipairs(schem.data) do
 				if entry.name == "air" or entry.prob == 0 then goto skip_file end
@@ -494,7 +475,6 @@ if sbots and sbots.register_bot then
 			-- Place the primary target first
 			if ws.place(self._current_entry, self._current_entry.name) then
 				self._last_place_time = os.clock()
-				remove_preview(self._current_entry)
 				for i = #place_nodes, 1, -1 do
 					if place_nodes[i] == self._current_entry then
 						table.remove(place_nodes, i)
@@ -516,7 +496,6 @@ if sbots and sbots.register_bot then
 						local dz = entry.z - pz
 						if dx*dx + dy*dy + dz*dz <= range*range then
 							if ws.place(entry, entry.name) then
-								remove_preview(entry)
 								table.remove(place_nodes, i)
 								placed = placed + 1
 							end
