@@ -29,10 +29,10 @@ function test_callback_registration(T)
 		T.assert(ok, "registering nodemeta form callback should not crash")
 	end)
 
-	T.run("register_on_recieve_physics_override exists", function()
-		T.assert(type(core.register_on_recieve_physics_override) == "function",
-			"core.register_on_recieve_physics_override should be a function")
-		local ok = pcall(core.register_on_recieve_physics_override, function() end)
+	T.run("register_on_receive_physics_override exists", function()
+		T.assert(type(core.register_on_receive_physics_override) == "function",
+			"core.register_on_receive_physics_override should be a function")
+		local ok = pcall(core.register_on_receive_physics_override, function() end)
 		T.assert(ok, "registering physics callback should not crash")
 	end)
 

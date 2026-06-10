@@ -14,7 +14,7 @@ local function make_df_registration()
 	return t, registerfunc
 end
 
-core.registered_on_recieve_physics_override, core.register_on_recieve_physics_override = make_df_registration()
+core.registered_on_receive_physics_override, core.register_on_receive_physics_override = make_df_registration()
 core.registered_on_play_sound, core.register_on_play_sound = make_df_registration()
 core.registered_on_spawn_particle, core.register_on_spawn_particle = make_df_registration()
 core.registered_on_object_properties_change, core.register_on_object_properties_change = make_df_registration()

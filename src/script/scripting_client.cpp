@@ -66,7 +66,7 @@ ClientScripting::ClientScripting(Client *client):
 	lua_pushstring(L, "client");
 	lua_setglobal(L, "INIT");
 
-	DfScriptApi::setClient(client);
+	AlScriptApi::setClient(client);
 
 	infostream << "SCRIPTAPI: Initialized client game modules" << std::endl;
 }

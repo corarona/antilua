@@ -20,7 +20,13 @@ struct Lighting;
 enum class SoundLocation : u8;
 enum HudElementStat : u8;
 
-namespace DfClientHooks {
+struct RawPacketHookResult
+{
+	bool drop = false;
+	std::string payload; // empty = no modification, non-empty = replacement
+};
+
+namespace AlClientHooks {
 
 void on_movement(Client *client, LocalPlayer *player);
 
@@ -52,7 +58,6 @@ bool on_open_nodemeta_form(Client *client, v3s16 pos,
 
 void on_death(Client *client);
 
-void on_active_object_add_remove(Client *client);
 
 void on_hp_change(Client *client, u16 hp);
 
@@ -88,9 +93,9 @@ void on_lighting(Client *client, const Lighting &lighting);
 void on_pre_step(Client *client, float dtime);
 void on_post_step(Client *client, float dtime);
 
-std::string on_raw_packet_received(Client *client, u16 command,
+RawPacketHookResult on_raw_packet_received(Client *client, u16 command,
 		const std::string &payload);
-std::string on_raw_packet_sending(Client *client, u16 command,
+RawPacketHookResult on_raw_packet_sending(Client *client, u16 command,
 		const std::string &payload);
 
-} // namespace DfClientHooks
+} // namespace AlClientHooks

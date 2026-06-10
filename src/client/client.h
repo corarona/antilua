@@ -219,6 +219,9 @@ public:
 
 	void ProcessData(NetworkPacket *pkt);
 
+	bool interceptIncomingPacket(NetworkPacket *pkt);
+	bool interceptOutgoingPacket(NetworkPacket *pkt);
+
 	void Send(NetworkPacket* pkt);
 
 	void interact(InteractAction action, const PointedThing &pointed);

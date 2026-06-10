@@ -6,7 +6,7 @@
 
 #include <cmath>
 #include <csignal>
-#include "client/df_hooks.h"
+#include "client/al_hooks.h"
 #include "client/gameui.h"
 #include "client/inputhandler.h"
 #include "client/texturepaths.h"
@@ -3189,7 +3189,7 @@ bool Game::nodePlacement(const ItemDefinition &selected_def,
 		if (nodedef_manager->get(map.getNode(nodepos)).rightclickable)
 			client->interact(INTERACT_PLACE, pointed);
 
-		if (DfClientHooks::on_open_nodemeta_form(client, nodepos,
+		if (AlClientHooks::on_open_nodemeta_form(client, nodepos,
 				meta->getString("formspec")))
 			return false;
 

@@ -7,6 +7,7 @@
 #include "inventory.h"
 #include "mapnode.h"
 #include "network/networkpacket.h"
+#include "client/al_hooks.h"
 #include <string>
 #include <vector>
 #include <set>
@@ -21,13 +22,13 @@ struct Lighting;
 enum class SoundLocation : u8;
 enum HudElementStat : u8;
 
-class DfScriptApi : virtual public ScriptApiBase
+class AlScriptApi : virtual public ScriptApiBase
 {
 public:
 	void setClient(Client *client) { m_client = client; }
 
 	// Phase 1a: Wire dead callbacks
-	void on_recieve_physics_override(LocalPlayer *player);
+	void on_receive_physics_override(LocalPlayer *player);
 	bool on_play_sound(const SoundSpec &spec, SoundLocation type,
 			v3f pos, u16 object_id, bool ephemeral, s32 server_id);
 	bool on_spawn_particle(const ParticleParameters &p);
@@ -83,9 +84,9 @@ public:
 	void on_post_step(float dtime);
 
 	// Phase 5: Raw packet interception
-	std::string on_raw_packet_received(u16 command,
+	RawPacketHookResult on_raw_packet_received(u16 command,
 			const std::string &payload);
-	std::string on_raw_packet_sending(u16 command,
+	RawPacketHookResult on_raw_packet_sending(u16 command,
 			const std::string &payload);
 	bool send_raw_packet(u16 command, const std::string &payload);
 

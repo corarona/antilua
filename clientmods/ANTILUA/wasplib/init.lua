@@ -24,12 +24,15 @@ dofile(core.get_modpath("wasplib") .. "/compat.lua")
 dofile(core.get_modpath("wasplib") .. "/notification.lua")
 
 local cheat_defaults = {
+
 	on_step   = function() end,
 	on_start  = function() end,
 	on_stop   = function() end,
 	daughters = {},
 	delay     = 0.2,
 }
+
+local startup_done = false
 
 function ws.globalhacktemplate(def)
 	local setting = def.setting
@@ -104,7 +107,6 @@ ws.rg = ws.register_globalhacktemplate
 
 dofile(core.get_modpath("wasplib") .. "/integrations.lua")
 
-local startup_done = false
 
 function ws.step_globalhacks(dtime)
 	for i, v in ipairs(ws.registered_globalhacks) do

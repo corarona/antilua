@@ -213,23 +213,41 @@ The following opcodes are **blacklisted** from `send_raw_packet`: `TOSERVER_INIT
 
 ### Architecture
 
-- **Hook sites**: `Client::ProcessData()` (`src/client/client.cpp:1106`) for incoming, `Client::Send()` (`src/client/client.cpp:1140`) for outgoing
-- **Script bridge**: `DfClientHooks` namespace (`src/client/df_hooks.h/cpp`) → `DfScriptApi` (`src/script/cpp_api/df/df_callbacks.h/cpp`) → Lua callbacks
+- **Hook sites**: `Client::ProcessData()` for incoming via `Client::interceptIncomingPacket()`, `Client::Send()` for outgoing via `Client::interceptOutgoingPacket()` — both at `src/client/client.cpp`
+- **Script bridge**: `AlClientHooks` namespace (`src/client/al_hooks.h/cpp`) → `AlScriptApi` (`src/script/cpp_api/al/al_callbacks.h/cpp`) → Lua callbacks
 - **Callback tables**: `registered_on_receiving_raw_packet` and `registered_on_sending_raw_packet` registered in `builtin/client/register_df.lua`
 - **Payload encoding**: Lua receives/sends raw byte strings (can contain null bytes). Use `string.byte`, `string.char`, `string.sub` in Lua for structured access.
-- **Return value semantics**: Empty string `""` means passthrough, `"\x01"` (single byte `0x01`) means drop, anything else replaces the payload in-place.
+- **Return value semantics**: Return `false`/`nil` to passthrough, `true` to drop, or a string to replace the payload in-place. Single-byte `0x01` payloads are not mistaken for "drop" — the drop signal is a boolean `true`.
 
 ### Key files
 
 | File | Purpose |
 |------|---------|
 | `src/network/networkpacket.h/cpp` | `NetworkPacket::setPayload()` for in-place payload replacement |
-| `src/script/cpp_api/df/df_callbacks.h/cpp` | `DfScriptApi` methods: `on_raw_packet_received`, `on_raw_packet_sending`, `send_raw_packet`, `init_raw_packet_api` |
-| `src/client/df_hooks.h/cpp` | `DfClientHooks` bridge functions |
-| `src/client/client.cpp` | Hook sites in `ProcessData()` and `Send()` |
+| `src/script/cpp_api/al/al_callbacks.h/cpp` | `AlScriptApi` methods: `on_raw_packet_received`, `on_raw_packet_sending`, `send_raw_packet`, `init_raw_packet_api` |
+| `src/client/al_hooks.h/cpp` | `AlClientHooks` bridge functions; also defines `RawPacketHookResult` struct |
+| `src/client/client.cpp` | Hook sites in `ProcessData()` and `Send()`; `Client::interceptIncomingPacket()` and `Client::interceptOutgoingPacket()` |
 | `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_send_raw_packet` Lua binding |
 | `builtin/client/register_df.lua` | Callback table registrations |
 | `clientmods/df_test/test_raw_packet.lua` | Integration tests |
+
+## Client-Side Item Override
+
+Provides `core.override_item()` to modify item definitions client-side (mirrors server-side `minetest.override_item()`).
+
+### Lua API
+
+```lua
+core.override_item(name, redefinition)
+-- name: string item/node name (e.g. "mcl_core:stone")
+-- redefinition: table of fields to override (name and type fields are rejected)
+```
+
+### Safety
+
+Attempting to redefine `name` or `type` fields raises a Lua error. Defined in `builtin/client/register_df.lua`.
+
+---
 
 ## Schematic API (Client-Side)
 

@@ -75,7 +75,7 @@ core.register_cheat("BreathAlert", { category = "Player", setting = "breath_aler
 -- Movement display
 --
 
-core.register_on_recieve_physics_override(function(movement)
+core.register_on_receive_physics_override(function(movement)
 	if not core.settings:get_bool("movement_display") then
 		return
 	end

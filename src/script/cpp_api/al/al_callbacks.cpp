@@ -1,7 +1,7 @@
 // Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "df_callbacks.h"
+#include "al_callbacks.h"
 #include "../s_internal.h"
 #include "client/client.h"
 #include "common/c_converter.h"
@@ -17,7 +17,7 @@
 // Phase 1a: Wire dead callbacks
 // ---------------------------------------------------------------------------
 
-void DfScriptApi::push_movement_table(LocalPlayer *player)
+void AlScriptApi::push_movement_table(LocalPlayer *player)
 {
 	lua_State *L = getStack();
 	lua_newtable(L);
@@ -35,12 +35,12 @@ void DfScriptApi::push_movement_table(LocalPlayer *player)
 	lua_pushnumber(L, player->movement_gravity); lua_setfield(L, -2, "gravity");
 }
 
-void DfScriptApi::on_recieve_physics_override(LocalPlayer *player)
+void AlScriptApi::on_receive_physics_override(LocalPlayer *player)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
 	lua_getglobal(L, "core");
-	lua_getfield(L, -1, "registered_on_recieve_physics_override");
+	lua_getfield(L, -1, "registered_on_receive_physics_override");
 	push_movement_table(player);
 	try {
 		runCallbacks(1, RUN_CALLBACKS_MODE_FIRST);
@@ -49,7 +49,7 @@ void DfScriptApi::on_recieve_physics_override(LocalPlayer *player)
 	}
 }
 
-bool DfScriptApi::on_play_sound(const SoundSpec &spec, SoundLocation type,
+bool AlScriptApi::on_play_sound(const SoundSpec &spec, SoundLocation type,
 		v3f pos, u16 object_id, bool ephemeral, s32 server_id)
 {
 	SCRIPTAPI_PRECHECKHEADER
@@ -79,7 +79,7 @@ bool DfScriptApi::on_play_sound(const SoundSpec &spec, SoundLocation type,
 	return readParam<bool>(L, -1);
 }
 
-bool DfScriptApi::on_spawn_particle(const ParticleParameters &p)
+bool AlScriptApi::on_spawn_particle(const ParticleParameters &p)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -104,7 +104,7 @@ bool DfScriptApi::on_spawn_particle(const ParticleParameters &p)
 	return readParam<bool>(L, -1);
 }
 
-bool DfScriptApi::on_receive_particlespawner(
+bool AlScriptApi::on_receive_particlespawner(
 		const ParticleSpawnerParameters &p, u32 server_id, u16 attached_id)
 {
 	SCRIPTAPI_PRECHECKHEADER
@@ -137,7 +137,7 @@ bool DfScriptApi::on_receive_particlespawner(
 	return readParam<bool>(L, -1);
 }
 
-bool DfScriptApi::on_sending_inventory_fields(const std::string &formname,
+bool AlScriptApi::on_sending_inventory_fields(const std::string &formname,
 		const StringMap &fields)
 {
 	SCRIPTAPI_PRECHECKHEADER
@@ -159,7 +159,7 @@ bool DfScriptApi::on_sending_inventory_fields(const std::string &formname,
 	return readParam<bool>(L, -1);
 }
 
-bool DfScriptApi::on_sending_nodemeta_fields(const std::string &formname,
+bool AlScriptApi::on_sending_nodemeta_fields(const std::string &formname,
 		const StringMap &fields)
 {
 	SCRIPTAPI_PRECHECKHEADER
@@ -181,7 +181,7 @@ bool DfScriptApi::on_sending_nodemeta_fields(const std::string &formname,
 	return readParam<bool>(L, -1);
 }
 
-void DfScriptApi::on_detached_inventory_update(const std::string &name, bool keep)
+void AlScriptApi::on_detached_inventory_update(const std::string &name, bool keep)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -196,7 +196,7 @@ void DfScriptApi::on_detached_inventory_update(const std::string &name, bool kee
 	}
 }
 
-std::string DfScriptApi::on_receiving_inventory_form(const std::string &formspec)
+std::string AlScriptApi::on_receiving_inventory_form(const std::string &formspec)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -217,7 +217,7 @@ std::string DfScriptApi::on_receiving_inventory_form(const std::string &formspec
 	return formspec;
 }
 
-bool DfScriptApi::on_open_nodemeta_form(v3s16 pos, const std::string &formspec)
+bool AlScriptApi::on_open_nodemeta_form(v3s16 pos, const std::string &formspec)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -239,7 +239,7 @@ bool DfScriptApi::on_open_nodemeta_form(v3s16 pos, const std::string &formspec)
 // Phase 1b: Moved from ScriptApiClient
 // ---------------------------------------------------------------------------
 
-void DfScriptApi::on_death()
+void AlScriptApi::on_death()
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -252,7 +252,7 @@ void DfScriptApi::on_death()
 	}
 }
 
-bool DfScriptApi::on_object_add(u16 id)
+bool AlScriptApi::on_object_add(u16 id)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -268,7 +268,7 @@ bool DfScriptApi::on_object_add(u16 id)
 	return readParam<bool>(L, -1);
 }
 
-void DfScriptApi::on_object_hp_change(u16 id, u16 hp)
+void AlScriptApi::on_object_hp_change(u16 id, u16 hp)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -283,7 +283,7 @@ void DfScriptApi::on_object_hp_change(u16 id, u16 hp)
 	}
 }
 
-void DfScriptApi::on_object_properties_change(u16 id)
+void AlScriptApi::on_object_properties_change(u16 id)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -301,7 +301,7 @@ void DfScriptApi::on_object_properties_change(u16 id)
 // Phase 2: New interception callbacks
 // ---------------------------------------------------------------------------
 
-std::string DfScriptApi::on_receiving_formspec(const std::string &formname,
+std::string AlScriptApi::on_receiving_formspec(const std::string &formname,
 		const std::string &formspec)
 {
 	SCRIPTAPI_PRECHECKHEADER
@@ -324,7 +324,7 @@ std::string DfScriptApi::on_receiving_formspec(const std::string &formname,
 	return formspec;
 }
 
-void DfScriptApi::on_node_add(v3s16 pos, const MapNode &node)
+void AlScriptApi::on_node_add(v3s16 pos, const MapNode &node)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -339,7 +339,7 @@ void DfScriptApi::on_node_add(v3s16 pos, const MapNode &node)
 	}
 }
 
-void DfScriptApi::on_node_remove(v3s16 pos)
+void AlScriptApi::on_node_remove(v3s16 pos)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -353,7 +353,7 @@ void DfScriptApi::on_node_remove(v3s16 pos)
 	}
 }
 
-bool DfScriptApi::on_hud_add(u32 server_id, u8 type, const v2f &pos,
+bool AlScriptApi::on_hud_add(u32 server_id, u8 type, const v2f &pos,
 		const std::string &name, const v2f &scale,
 		const std::string &text, u32 number, u32 item,
 		u32 dir, const v2f &align, const v2f &offset,
@@ -393,7 +393,7 @@ bool DfScriptApi::on_hud_add(u32 server_id, u8 type, const v2f &pos,
 	return readParam<bool>(L, -1);
 }
 
-bool DfScriptApi::on_hud_remove(u32 server_id)
+bool AlScriptApi::on_hud_remove(u32 server_id)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -409,7 +409,7 @@ bool DfScriptApi::on_hud_remove(u32 server_id)
 	return readParam<bool>(L, -1);
 }
 
-bool DfScriptApi::on_hud_change(u32 server_id, HudElementStat stat,
+bool AlScriptApi::on_hud_change(u32 server_id, HudElementStat stat,
 		const std::string &sdata, const v2f &v2fdata,
 		const v3f &v3fdata, u32 intdata)
 {
@@ -434,7 +434,7 @@ bool DfScriptApi::on_hud_change(u32 server_id, HudElementStat stat,
 	return readParam<bool>(L, -1);
 }
 
-float DfScriptApi::on_time_of_day(u16 time, float speed)
+float AlScriptApi::on_time_of_day(u16 time, float speed)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -460,7 +460,7 @@ float DfScriptApi::on_time_of_day(u16 time, float speed)
 // Phase 3: New notification callbacks
 // ---------------------------------------------------------------------------
 
-void DfScriptApi::on_connect()
+void AlScriptApi::on_connect()
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -473,7 +473,7 @@ void DfScriptApi::on_connect()
 	}
 }
 
-void DfScriptApi::on_disconnect()
+void AlScriptApi::on_disconnect()
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -486,7 +486,7 @@ void DfScriptApi::on_disconnect()
 	}
 }
 
-void DfScriptApi::on_privileges_changed(const std::set<std::string> &privileges)
+void AlScriptApi::on_privileges_changed(const std::set<std::string> &privileges)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -506,7 +506,7 @@ void DfScriptApi::on_privileges_changed(const std::set<std::string> &privileges)
 	}
 }
 
-void DfScriptApi::on_breath_changed(u16 breath)
+void AlScriptApi::on_breath_changed(u16 breath)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -520,7 +520,7 @@ void DfScriptApi::on_breath_changed(u16 breath)
 	}
 }
 
-void DfScriptApi::on_player_list_changed(u8 type,
+void AlScriptApi::on_player_list_changed(u8 type,
 		const std::vector<std::string> &names)
 {
 	SCRIPTAPI_PRECHECKHEADER
@@ -542,7 +542,7 @@ void DfScriptApi::on_player_list_changed(u8 type,
 	}
 }
 
-void DfScriptApi::push_lighting_table(const Lighting &lighting)
+void AlScriptApi::push_lighting_table(const Lighting &lighting)
 {
 	lua_State *L = getStack();
 	lua_newtable(L);
@@ -561,7 +561,7 @@ void DfScriptApi::push_lighting_table(const Lighting &lighting)
 	lua_pushnumber(L, lighting.bloom_radius); lua_setfield(L, -2, "bloom_radius");
 }
 
-void DfScriptApi::on_lighting_changed(const Lighting &lighting)
+void AlScriptApi::on_lighting_changed(const Lighting &lighting)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -579,7 +579,7 @@ void DfScriptApi::on_lighting_changed(const Lighting &lighting)
 // Phase 4: Game loop hooks
 // ---------------------------------------------------------------------------
 
-void DfScriptApi::on_pre_step(float dtime)
+void AlScriptApi::on_pre_step(float dtime)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -593,7 +593,7 @@ void DfScriptApi::on_pre_step(float dtime)
 	}
 }
 
-void DfScriptApi::on_post_step(float dtime)
+void AlScriptApi::on_post_step(float dtime)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -611,7 +611,7 @@ void DfScriptApi::on_post_step(float dtime)
 // Phase 5: Raw packet interception
 // ---------------------------------------------------------------------------
 
-std::string DfScriptApi::on_raw_packet_received(u16 command,
+RawPacketHookResult AlScriptApi::on_raw_packet_received(u16 command,
 		const std::string &payload)
 {
 	SCRIPTAPI_PRECHECKHEADER
@@ -624,23 +624,23 @@ std::string DfScriptApi::on_raw_packet_received(u16 command,
 		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
 	} catch (LuaError &e) {
 		getClient()->setFatalError(e);
-		return {}; // empty = let through unmodified on error
+		return {false, {}};
 	}
 	if (lua_type(L, -1) == LUA_TBOOLEAN) {
 		if (lua_toboolean(L, -1))
-			return "\x01"; // sentinel: drop packet
-		return {}; // false/nil: let through
+			return {true, {}};
+		return {false, {}};
 	}
 	if (lua_type(L, -1) == LUA_TSTRING) {
 		size_t len;
 		const char *s = lua_tolstring(L, -1, &len);
 		if (s)
-			return std::string(s, len); // modified payload
+			return {false, std::string(s, len)};
 	}
-	return {}; // let through unmodified
+	return {false, {}};
 }
 
-std::string DfScriptApi::on_raw_packet_sending(u16 command,
+RawPacketHookResult AlScriptApi::on_raw_packet_sending(u16 command,
 		const std::string &payload)
 {
 	SCRIPTAPI_PRECHECKHEADER
@@ -653,23 +653,23 @@ std::string DfScriptApi::on_raw_packet_sending(u16 command,
 		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
 	} catch (LuaError &e) {
 		getClient()->setFatalError(e);
-		return {};
+		return {false, {}};
 	}
 	if (lua_type(L, -1) == LUA_TBOOLEAN) {
 		if (lua_toboolean(L, -1))
-			return "\x01"; // drop
-		return {}; // let through
+			return {true, {}};
+		return {false, {}};
 	}
 	if (lua_type(L, -1) == LUA_TSTRING) {
 		size_t len;
 		const char *s = lua_tolstring(L, -1, &len);
 		if (s)
-			return std::string(s, len);
+			return {false, std::string(s, len)};
 	}
-	return {};
+	return {false, {}};
 }
 
-void DfScriptApi::init_raw_packet_api()
+void AlScriptApi::init_raw_packet_api()
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -699,7 +699,7 @@ void DfScriptApi::init_raw_packet_api()
 	lua_pop(L, 1); // pop core
 }
 
-bool DfScriptApi::send_raw_packet(u16 command, const std::string &payload)
+bool AlScriptApi::send_raw_packet(u16 command, const std::string &payload)
 {
 	switch (command) {
 	case TOSERVER_INIT:

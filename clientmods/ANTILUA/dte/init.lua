@@ -33,7 +33,7 @@ end
 local split = function (str, splitter)  -- a function to split a string into a list. "\" before the splitter makes it ignore it (usefull for minetests formspecs)
 	local result = {""}
 	for i=1, str:len() do
-		char = string.sub(str, i, i)
+		local char = string.sub(str, i, i)
 		if char == splitter and string.sub(str, i-1, i-1) ~= "\\" then
 			table.insert(result, "")
 		else
@@ -96,7 +96,7 @@ function print(...)  --  replace print to output into the UI. (doesn't refresh u
 		end
 		table.insert(output, "")
 		for i=1, str:len() do
-			char = string.sub(str, i, i)
+			local char = string.sub(str, i, i)
 			if char == "\n" then
 				table.insert(output, "")  -- split multiple lines over multiple lines. without this, text with line breaks would not display properly
 			else

@@ -17,7 +17,7 @@
 #include "client/sound.h"
 #include "client/texturepaths.h"
 #include "client/texturesource.h"
-#include "client/df_hooks.h"
+#include "client/al_hooks.h"
 #include "camera.h"
 #include "filesys.h"
 #include "game.h"
@@ -385,7 +385,7 @@ void Client::Stop()
 {
 	m_shutdown = true;
 	if (m_mods_loaded) {
-		DfClientHooks::on_disconnect(this);
+		AlClientHooks::on_disconnect(this);
 		m_script->on_shutdown();
 	}
 	//request all client managed threads to stop
@@ -474,7 +474,7 @@ void Client::step(float dtime)
 	if (dtime > DTIME_LIMIT)
 		dtime = DTIME_LIMIT;
 
-	DfClientHooks::on_pre_step(this, dtime);
+	AlClientHooks::on_pre_step(this, dtime);
 
 	m_animation_time = fmodf(m_animation_time + dtime, 60.0f);
 
@@ -859,7 +859,7 @@ void Client::step(float dtime)
 		m_localdb->beginSave();
 	}
 
-	DfClientHooks::on_post_step(this, dtime);
+	AlClientHooks::on_post_step(this, dtime);
 }
 
 bool Client::loadMedia(const std::string &data, const std::string &filename,
@@ -1103,24 +1103,8 @@ void Client::ProcessData(NetworkPacket *pkt)
 	 * But we must use the new ToClientConnectionState in the future,
 	 * as a byte mask
 	 */
-	auto raw_packet_hook = [this, command](NetworkPacket *pkt) -> bool {
-		if (!modsLoaded())
-			return true;
-		u32 size = pkt->getSize();
-		std::string payload;
-		if (size > 0)
-			payload.assign(pkt->getString(0), size);
-		std::string result = DfClientHooks::on_raw_packet_received(
-				this, command, payload);
-		if (result.size() == 1 && result[0] == '\x01')
-			return false;
-		if (!result.empty() && result != payload)
-			pkt->setPayload(result);
-		return true;
-	};
-
 	if (toClientCommandTable[command].state == TOCLIENT_STATE_NOT_CONNECTED) {
-		if (!raw_packet_hook(pkt))
+		if (!interceptIncomingPacket(pkt))
 			return;
 		handleCommand(pkt);
 		return;
@@ -1133,7 +1117,7 @@ void Client::ProcessData(NetworkPacket *pkt)
 		return;
 	}
 
-	if (!raw_packet_hook(pkt))
+	if (!interceptIncomingPacket(pkt))
 		return;
 
 	handleCommand(pkt);
@@ -1144,21 +1128,44 @@ void Client::Send(NetworkPacket* pkt)
 	auto &scf = serverCommandFactoryTable[pkt->getCommand()];
 	FATAL_ERROR_IF(!scf.name, "packet type missing in table");
 
-	if (modsLoaded()) {
-		u16 command = pkt->getCommand();
-		u32 size = pkt->getSize();
-		std::string payload;
-		if (size > 0)
-			payload.assign(pkt->getString(0), size);
-		std::string result = DfClientHooks::on_raw_packet_sending(
-				this, command, payload);
-		if (result.size() == 1 && result[0] == '\x01')
-			return;
-		if (!result.empty() && result != payload)
-			pkt->setPayload(result);
-	}
+	if (interceptOutgoingPacket(pkt))
+		m_con->Send(PEER_ID_SERVER, scf.channel, pkt, scf.reliable);
+}
 
-	m_con->Send(PEER_ID_SERVER, scf.channel, pkt, scf.reliable);
+bool Client::interceptIncomingPacket(NetworkPacket *pkt)
+{
+	if (!modsLoaded())
+		return true;
+	u16 command = pkt->getCommand();
+	u32 size = pkt->getSize();
+	std::string payload;
+	if (size > 0)
+		payload.assign(pkt->getString(0), size);
+	RawPacketHookResult result = AlClientHooks::on_raw_packet_received(
+			this, command, payload);
+	if (result.drop)
+		return false;
+	if (!result.payload.empty() && result.payload != payload)
+		pkt->setPayload(result.payload);
+	return true;
+}
+
+bool Client::interceptOutgoingPacket(NetworkPacket *pkt)
+{
+	if (!modsLoaded())
+		return true;
+	u16 command = pkt->getCommand();
+	u32 size = pkt->getSize();
+	std::string payload;
+	if (size > 0)
+		payload.assign(pkt->getString(0), size);
+	RawPacketHookResult result = AlClientHooks::on_raw_packet_sending(
+			this, command, payload);
+	if (result.drop)
+		return false;
+	if (!result.payload.empty() && result.payload != payload)
+		pkt->setPayload(result.payload);
+	return true;
 }
 
 // Will fill up 12 + 12 + 4 + 4 + 4 + 1 + 1 + 1 + 4 + 4 bytes

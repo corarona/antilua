@@ -149,19 +149,24 @@ core.register_on_mods_loaded(function()
 	test_inventory_action_integration(df_test)
 	test_world_interaction(df_test)
 
-	-- Defer localplayer-dependent tests (poll until localplayer is ready)
+	-- Defer localplayer-dependent tests (poll until localplayer + its CAO are ready)
 	if #deferred_tests > 0 then
 		core.log("action", "[DF_TEST] " .. #deferred_tests .. " tests deferred until localplayer is ready")
 
+		local max_polls = 60 -- 60 * 0.5s = 30s timeout
 		local function check_and_run()
-			if core.localplayer then
+			if core.localplayer and core.localplayer:get_object() then
 				for _, t in ipairs(deferred_tests) do
 					df_test.run(t.name, t.fn)
 				end
 				core.log("action", "[DF_TEST] Deferred tests complete")
 				df_test.report()
-			else
+			elseif max_polls > 0 then
+				max_polls = max_polls - 1
 				core.after(0.5, check_and_run)
+			else
+				core.log("warning", "[DF_TEST] Deferred tests timed out waiting for localplayer/CAO")
+				df_test.report()
 			end
 		end
 		core.after(1, check_and_run)

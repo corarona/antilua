@@ -1,17 +1,17 @@
 // Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 
-#include "df_hooks.h"
+#include "al_hooks.h"
 #include "client.h"
 #include "client/localplayer.h"
 #include "script/scripting_client.h"
-#include "script/cpp_api/df/df_callbacks.h"
+#include "script/cpp_api/al/al_callbacks.h"
 #include "particles.h"
 #include "sound_spec.h"
 #include "hud.h"
 #include "lighting.h"
 
-namespace DfClientHooks {
+namespace AlClientHooks {
 
 // ---------------------------------------------------------------------------
 // Phase 1a helpers
@@ -20,7 +20,7 @@ namespace DfClientHooks {
 void on_movement(Client *client, LocalPlayer *player)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_recieve_physics_override(player);
+		client->getScript()->on_receive_physics_override(player);
 }
 
 bool on_play_sound(Client *client, const SoundSpec &spec,
@@ -99,14 +99,6 @@ void on_death(Client *client)
 		client->getScript()->on_death();
 }
 
-void on_active_object_add_remove(Client *client)
-{
-	if (client->modsLoaded()) {
-		// Note: individual object add/remove IDs need to be tracked
-		// This is called from the handler; the individual calls happen
-		// directly from the packet handler code.
-	}
-}
 
 void on_hp_change(Client *client, u16 hp)
 {
@@ -239,20 +231,20 @@ void on_post_step(Client *client, float dtime)
 // Phase 5: Raw packet callbacks
 // ---------------------------------------------------------------------------
 
-std::string on_raw_packet_received(Client *client, u16 command,
+RawPacketHookResult on_raw_packet_received(Client *client, u16 command,
 		const std::string &payload)
 {
 	if (client->modsLoaded())
 		return client->getScript()->on_raw_packet_received(command, payload);
-	return {};
+	return {false, {}};
 }
 
-std::string on_raw_packet_sending(Client *client, u16 command,
+RawPacketHookResult on_raw_packet_sending(Client *client, u16 command,
 		const std::string &payload)
 {
 	if (client->modsLoaded())
 		return client->getScript()->on_raw_packet_sending(command, payload);
-	return {};
+	return {false, {}};
 }
 
-} // namespace DfClientHooks
+} // namespace AlClientHooks
