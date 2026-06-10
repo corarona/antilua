@@ -293,6 +293,8 @@ public:
 
 	void setPos(v3f pos);
 
+	inline void setShadersEnabled(bool enabled) { m_enable_shaders = enabled; }
+
 	// Set initial properties before addToScene (skips animated_meshnode access)
 	void setInitProperties(const ObjectProperties &prop);
 

@@ -575,9 +575,8 @@ void GenericCAO::addToScene(ITextureSource *tsrc, scene::ISceneManager *smgr)
 {
 	m_smgr = smgr;
 
-	if (getSceneNode() != NULL) {
+	if (getSceneNode() != NULL)
 		return;
-	}
 
 	m_visuals_expired = false;
 

@@ -21,6 +21,7 @@ useful features from `emicor` are being extracted into focused mods. Integration
 tests are being written for each new mod.
 
 ## Build
+Building can take a long time. Always use long timeouts( > 30 minutes!)
 
 ```sh
 cmake -B build -DCMAKE_BUILD_TYPE=Release -DRUN_IN_PLACE=TRUE -DBUILD_SERVER=OFF

@@ -41,23 +41,19 @@ local function add_preview_if_needed(pos, node_name)
 	if node_name == "air" or node_name == "ignore" then
 		return
 	end
-	if not core.get_node_def(node_name) then
-		return
-	end
 	local key = preview_key(pos)
 	if preview_entities[key] then
 		preview_entities[key]:remove()
 	end
-	local e = core.create_client_entity(
-		{x = pos.x + 0.5, y = pos.y + 0.5, z = pos.z + 0.5},
-		{
-			visual = "node",
-			node = { name = node_name },
-			is_visible = true,
-			glow = 14,
-		}
-	)
-	if e then
+	local epos = {x = pos.x + 0.5, y = pos.y + 0.53, z = pos.z + 0.5}
+	local ok, e = pcall(core.create_client_entity, epos, {
+		visual = "node",
+		node = { name = node_name },
+		is_visible = true,
+		glow = 14,
+		physical = false,
+	})
+	if ok and e then
 		preview_entities[key] = e
 	end
 end

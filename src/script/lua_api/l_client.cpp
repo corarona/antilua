@@ -742,6 +742,8 @@ int ModApiClient::l_create_client_entity(lua_State *L)
 	GenericCAO *raw_obj = obj.get();
 
 	raw_obj->setPos(pos);
+	raw_obj->setShadersEnabled(g_settings->getBool("enable_shaders"));
+	raw_obj->setVisible(true);
 
 	if (lua_istable(L, 2)) {
 		ObjectProperties prop = raw_obj->getProperties();
@@ -754,10 +756,8 @@ int ModApiClient::l_create_client_entity(lua_State *L)
 		return 0;
 
 	ClientActiveObject *cao = env.getActiveObject(id);
-	if (!cao) {
-		// Object was removed between creation and now
+	if (!cao)
 		return 0;
-	}
 	ClientObjectRef::create(L, cao);
 
 	lua_getglobal(L, "core");
