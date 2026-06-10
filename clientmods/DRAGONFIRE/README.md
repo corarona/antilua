@@ -65,7 +65,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 |-----|-------------|
 | **devtools** | Item/pointed/node metadata dumpers, void air finder, no-water-stop, particle/sound leak detector. |
 | **dte** | In-game Lua IDE with tabbed formspec editor, file management, startup scripts. |
-| **litematica** | Schematic viewer and placer (WorldEdit format). `/liteload`, `/litepos1`, `/litepos2`, `/litesave`. |
+| **schembuilder** | Schematic builder: load/preview via particles, place via PlaceLiteM/SchemBuilderBot, auto-loot materials. `/schembuild`, `/spos1`, `/spos2`, `/ssave`. |
 | **findbiome** | Spiral-search biome finder. Exports `find_biome(pos, biomes)`. |
 | **mcl_find_strongholds** | Stronghold position predictor using seed-based ring algorithm. `/find_strongholds [seed]`. |
 

@@ -635,28 +635,27 @@ Punch an object multiple times (`hph` times) while preserving the player's origi
 **Parameters:**
 - `obj` — `ObjectRef` to punch
 ]],
-  ["litematica"] = [[
-# litematica
+  ["schembuilder"] = [[
+# SchemBuilder
 
-Schematic preview and placement tool. Loads WorldEdit-format schematics as colored particle overlays in the world, and allows placing the schematic nodes via the PlaceLiteM cheat. Based on WorldEdit code.
+Schematic preview and placement tool. Loads MTS schematics as colored particle overlays in the world, and provides multiple ways to place the schematic nodes. Based on Gregon's Litematica (see README for credits).
 
 ## Player usage
 
 - **Chat commands:**
-  - `/liteload <schematic>` — Load and display a WorldEdit schematic (raw string or `$` for `litematica_output` setting). Nodes appear as colored particles.
-  - `/litepos1` — Set region corner 1 at player position.
-  - `/litepos2` — Set region corner 2 at player position.
-  - `/litesave` — Save nodes between pos1 and pos2 to `litematica_output` setting.
-- **Cheat:** `PlaceLiteM` (category Place, setting `placelitem`) — Place loaded schematic nodes within a 4-block radius around the player.
+  - `/schembuild <schematic>` — Load and display a schematic (`$` for schembuilder_output setting, or `file:<path>` for MTS files).
+  - `/spos1` — Set region corner 1 at player position.
+  - `/spos2` — Set region corner 2 at player position.
+  - `/ssave` — Save nodes between pos1 and pos2 to `schembuilder_output` setting.
+- **Cheats:**
+  - `PlaceLiteM` (Place category) — Place loaded schematic nodes within range around the player.
+  - `SchemBuilderBot` (Bots category) — Walks to the nearest unplaced schematic node and places it.
+  - `SchematicLooter` (Inventory category) — Loots building materials from nearby containers.
 - **Settings:**
-  - `litematica_file` — (unused) would load from file.
-  - `litematica_output` — stores serialized schematic data.
-  - `litematica_node_names` — JSON array of node names for particle display.
-  - `litematica_texture_names` — JSON array of corresponding texture filenames.
-
-## API
-
-None.
+  - `schembuilder_output` — stores serialized schematic data.
+  - `placelitem.range` — Placement range for PlaceLiteM.
+  - `schembuilderbot.*` — SchemBuilderBot settings (cooldown, batch size).
+  - `schematic_looter.*` — Looter settings (range, max per scan).
 
 ## Cheats
 

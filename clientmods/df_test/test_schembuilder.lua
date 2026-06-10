@@ -1,6 +1,6 @@
--- Tests for litematica mod
+-- Tests for SchemBuilder mod
 
-function test_litematica(T)
+function test_schembuilder(T)
 	T.run("core.read_schematic exists", function()
 		T.assert(type(core.read_schematic) == "function")
 	end)
@@ -19,8 +19,8 @@ function test_litematica(T)
 		T.assert(tonumber(v) == 4)
 	end)
 
-	T.run("litematicabot.place_cooldown setting exists", function()
-		local v = core.settings:get("litematicabot.place_cooldown")
+	T.run("schembuilderbot.place_cooldown setting exists", function()
+		local v = core.settings:get("schembuilderbot.place_cooldown")
 		if v == nil then
 			T.assert(false, "place_cooldown is nil")
 			return
@@ -29,8 +29,8 @@ function test_litematica(T)
 		T.assert(n ~= nil and n > 0, "invalid value: " .. tostring(v))
 	end)
 
-	T.run("litematicabot.batch_size setting exists", function()
-		local v = core.settings:get("litematicabot.batch_size")
+	T.run("schembuilderbot.batch_size setting exists", function()
+		local v = core.settings:get("schembuilderbot.batch_size")
 		T.assert(v ~= nil, "batch_size is nil")
 		local n = tonumber(v)
 		T.assert(n ~= nil and n >= 1, "invalid batch_size: " .. tostring(v))
@@ -79,20 +79,20 @@ function test_litematica(T)
 		T.assert(not ok, "should reject non-MTS data")
 	end)
 
-	T.run("/liteload chat command registered", function()
-		T.assert(type(core.registered_chatcommands["liteload"]) == "table")
+	T.run("/schembuild chat command registered", function()
+		T.assert(type(core.registered_chatcommands["schembuild"]) == "table")
 	end)
 
-	T.run("/litepos1 chat command registered", function()
-		T.assert(type(core.registered_chatcommands["litepos1"]) == "table")
+	T.run("/spos1 chat command registered", function()
+		T.assert(type(core.registered_chatcommands["spos1"]) == "table")
 	end)
 
-	T.run("/litepos2 chat command registered", function()
-		T.assert(type(core.registered_chatcommands["litepos2"]) == "table")
+	T.run("/spos2 chat command registered", function()
+		T.assert(type(core.registered_chatcommands["spos2"]) == "table")
 	end)
 
-	T.run("/litesave chat command registered", function()
-		T.assert(type(core.registered_chatcommands["litesave"]) == "table")
+	T.run("/ssave chat command registered", function()
+		T.assert(type(core.registered_chatcommands["ssave"]) == "table")
 	end)
 
 	T.run("ws.loot_list exists", function()

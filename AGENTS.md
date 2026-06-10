@@ -275,8 +275,8 @@ The `data` array has `size.x * size.y * size.z` entries in Z/Y/X order. Each ent
 | File | Purpose |
 |------|---------|
 | `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_read_schematic`, `l_serialize_schematic` |
-| `clientmods/DRAGONFIRE/litematica/init.lua` | Uses `core.read_schematic` to load MTS data, `core.serialize_schematic` for `/litesave` |
-| `clientmods/df_test/test_litematica.lua` | Integration tests including round-trip validation |
+| `clientmods/DRAGONFIRE/schembuilder/init.lua` | Schematic builder: load MTS, preview as particles, place via PlaceLiteM/SchemBuilderBot, auto-loot materials |
+| `clientmods/df_test/test_schembuilder.lua` | Integration tests for schembuilder features |
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
 - **EDT_OPENGL** (`irr/src/COpenGLDriver.cpp`): Legacy driver with full fixed-function pipeline (material renderers, `glTexEnv`, `GL_ALPHA_TEST`, client-side vertex arrays). Compiles only when `_IRR_COMPILE_WITH_OPENGL_` is defined (always on for Luanti).

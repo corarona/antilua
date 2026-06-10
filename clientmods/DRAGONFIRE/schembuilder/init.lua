@@ -1,12 +1,12 @@
 local modpath = core.get_modpath(core.get_current_modname())
 
-local litematica = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
+local schembuilder = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
 local place_nodes = {}
 
 local function deserialize_workaround(content)
 	local nodes, err = core.deserialize(content, true)
 	if err then
-		core.log("warning", "litematica: deserialize: " .. err)
+		core.log("warning", "schembuilder: deserialize: " .. err)
 	end
 	return nodes or {}
 end
@@ -36,11 +36,11 @@ local function add_preview_particle(pos, node_name)
 		velocity = {x=0, y=0, z=0},
 		acceleration = {x=0, y=0, z=0},
 		expirationtime = 9999,
-		size = 2,
+		size = 12,
 		collisiondetection = false,
 		collision_removal = false,
 		vertical = false,
-		texture = tex,
+		texture = tex .. "^[opacity:191",
 		glow = 14,
 	})
 end
@@ -165,11 +165,11 @@ local function update_hud()
 	else
 		hud_id = core.localplayer:hud_add({
 			hud_elem_type = "text",
-			position = {x = 1, y = 0.5},
-			offset = {x = -10, y = -200},
-			alignment = {x = 1, y = 0},
-			scale = {x = 100, y = 100},
-			number = 0xFFFFFF,
+			direction = 0,
+			position = {x = 0.8, y = 0.40},
+			alignment = {x = 1, y = 1},
+			offset = {x = 0, y = 0},
+			number = 0x00FF00,
 			text = text,
 		})
 	end
@@ -232,8 +232,8 @@ ws.rg("PlaceLiteM", {
 
 
 
-core.register_chatcommand("liteload", {
-	description = "Load schematic. $ for litematica_output setting, file:<path> for MTS file from disk.",
+core.register_chatcommand("schembuild", {
+		description = "Load schematic. $ for schembuilder_output setting, file:<path> for MTS file from disk.",
 	func = function(param)
 		if param == "" then
 			return false, "Need an argument to load"
@@ -266,7 +266,7 @@ core.register_chatcommand("liteload", {
 		end
 
 		if param == "$" then
-			value = core.settings:get("litematica_output") or "{}"
+			value = core.settings:get("schembuilder_output") or "{}"
 		else
 			value = param
 		end
@@ -293,21 +293,21 @@ local function pos_marker(pos, texture)
 	})
 end
 
-core.register_chatcommand("litepos1", {
+core.register_chatcommand("spos1", {
 	description = "Set pos1",
 	func = function(param)
-		litematica.pos1 = vector.round(core.localplayer:get_pos())
+		schembuilder.pos1 = vector.round(core.localplayer:get_pos())
 		ws.notify("pos1 set", ws.NOTIFY_INFO)
-		pos_marker(litematica.pos1, "worldedit_pos1.png")
+		pos_marker(schembuilder.pos1, "worldedit_pos1.png")
 	end,
 })
 
-core.register_chatcommand("litepos2", {
+core.register_chatcommand("spos2", {
 	description = "Set pos2",
 	func = function(param)
-		litematica.pos2 = vector.round(core.localplayer:get_pos())
+		schembuilder.pos2 = vector.round(core.localplayer:get_pos())
 		ws.notify("pos2 set", ws.NOTIFY_INFO)
-		pos_marker(litematica.pos2, "worldedit_pos2.png")
+		pos_marker(schembuilder.pos2, "worldedit_pos2.png")
 	end,
 })
 
@@ -320,7 +320,7 @@ local function sort_pos(pos1, pos2)
 	return pos1, pos2
 end
 
-local function litematica_serialize(pos1, pos2)
+local function schembuilder_serialize(pos1, pos2)
 	pos1, pos2 = sort_pos(pos1, pos2)
 	local get_node = core.get_node_or_nil
 	local pos = vector.new(pos1.x, 0, 0)
@@ -384,20 +384,20 @@ local function litematica_serialize(pos1, pos2)
 	return schem, count
 end
 
-core.register_chatcommand("litesave", {
-	description = "Save the current Litematica region to litematica_output setting",
+core.register_chatcommand("ssave", {
+	description = "Save the current region to schembuilder_output setting",
 	func = function(param)
-		if litematica.pos1 ~= nil and litematica.pos2 ~= nil then
-			local schem, count = litematica_serialize(litematica.pos1, litematica.pos2)
+		if schembuilder.pos1 ~= nil and schembuilder.pos2 ~= nil then
+			local schem, count = schembuilder_serialize(schembuilder.pos1, schembuilder.pos2)
 			local mts_data = core.serialize_schematic(schem, "mts")
 			local b64 = core.encode_base64(mts_data)
-			core.settings:set("litematica_output", b64)
-			ws.notify("Saved " .. count .. " nodes to litematica_output", ws.NOTIFY_INFO)
+			core.settings:set("schembuilder_output", b64)
+			ws.notify("Saved " .. count .. " nodes to schembuilder_output", ws.NOTIFY_INFO)
 		end
 	end,
 })
 
--- Auto miner bot: walks to the nearest unplaced node and places it
+-- SchemBuilder bot: walks to the nearest unplaced node and places it
 if sbots and sbots.register_bot then
 	local _item_cache = {}
 	local _item_cache_time = 0
@@ -420,7 +420,7 @@ if sbots and sbots.register_bot then
 		return _item_cache[name] or false
 	end
 
-	sbots.register_bot("LitematicaBot", {
+	sbots.register_bot("SchemBuilderBot", {
 		moving_target = true,
 		stand_waiting = true,
 		landing_distance = 3,
@@ -472,11 +472,11 @@ if sbots and sbots.register_bot then
 		end,
 		do_pos = function(self, pos)
 			if not self._current_entry then return true end
-			local cooldown = tonumber(core.settings:get("litematicabot.place_cooldown")) or 0.1
+			local cooldown = tonumber(core.settings:get("schembuilderbot.place_cooldown")) or 0.1
 			if self._last_place_time and os.clock() - self._last_place_time < cooldown then
 				return false
 			end
-			local batch = tonumber(core.settings:get("litematicabot.batch_size")) or 8
+			local batch = tonumber(core.settings:get("schembuilderbot.batch_size")) or 8
 			local range = tonumber(core.settings:get("placelitem.range")) or 4
 			local px, py, pz = pos.x, pos.y, pos.z
 			local placed = 0
