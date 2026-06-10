@@ -72,41 +72,21 @@ core.interact(action, pointed_thing)    -- Perform interaction
 
 ```lua
 core.get_objects_inside_radius(pos, radius) -> {ObjectRef,...}
-core.get_inventory(location) -> Inventory     -- "current_player" or nodemeta:"x,y,z"
-core.get_item_def(itemstring) -> table
-core.get_node_def(nodename) -> table
-core.drop_selected_item()
-core.set_keypress(key_setting, pressed)       -- Simulate keypress
-core.make_screenshot()
-core.send_respawn()
-core.disconnect()
-core.send_damage(damage)                      -- Damage yourself
-```
 
-### Item Utilities
-
-```lua
-core.find_item(item, min_i, max_i) -> idx     -- Find item in inventory
-core.switch_to_item(item) -> bool             -- Switch hotbar to matching item
-core.parse_pos(param) -> pos                  -- Parse coords with ~ support
-core.parse_relative_pos(param) -> pos         -- Parse relative coords
-core.get_nearby_objects(radius) -> {ObjectRef,...}
-```
-
-### Info
-
-```lua
-core.get_server_info() -> { address, ip, port, protocol_version }
-core.get_privilege_list() -> { privname = true, ... }
-core.get_csm_restrictions() -> flags
-core.gettext(text) -> string
-core.get_language() -> string
-```
-
----
-
-2. ClientObjectRef
-==================
+core.create_client_entity(pos, properties) -> ObjectRef
+    Create a client-only entity (GenericCAO) without server involvement.
+    pos: v3f position in BS units (e.g. {x=0.5, y=1.5, z=0.5}).
+    properties: table with ObjectProperties fields (visual, textures, node, etc.)
+    Returns an ObjectRef with the full API (set_properties, remove, etc.).
+    The entity is visible only to the local player and does not interact
+    with the server. Use obj:remove() to delete it.
+    Example:
+        local e = core.create_client_entity({x=10.5, y=20.5, z=30.5}, {
+            visual = "node",
+            node = { name = "mcl_core:stone" },
+            is_visible = true,
+        })
+        -- later: e:remove()
 
 Returned by `core.get_objects_inside_radius()`, `core.localplayer:get_object()`,
 and `core.get_nearby_objects()`.

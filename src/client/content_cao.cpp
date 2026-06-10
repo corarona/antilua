@@ -965,6 +965,12 @@ void GenericCAO::updateNametag()
 	}
 }
 
+void GenericCAO::setPos(v3f pos)
+{
+	m_position = pos;
+	pos_translator.init(pos);
+}
+
 void GenericCAO::updateNodePos()
 {
 	if (getParent() != NULL)

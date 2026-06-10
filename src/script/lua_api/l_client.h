@@ -156,6 +156,9 @@ private:
 	// read_file(path)
 	static int l_read_file(lua_State *L);
 
+	// create_client_entity(pos, properties)
+	static int l_create_client_entity(lua_State *L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 	static void InitializeSSCSM(lua_State *L, int top);

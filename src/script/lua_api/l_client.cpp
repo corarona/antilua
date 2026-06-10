@@ -730,6 +730,44 @@ int ModApiClient::l_read_file(lua_State *L)
 	return 2;
 }
 
+// create_client_entity(pos, properties)
+int ModApiClient::l_create_client_entity(lua_State *L)
+{
+	Client *client = getClient(L);
+	ClientEnvironment &env = client->getEnv();
+
+	v3f pos = checkFloatPos(L, 1);
+
+	auto obj = std::make_unique<GenericCAO>(client, &env);
+	GenericCAO *raw_obj = obj.get();
+
+	raw_obj->setPos(pos);
+
+	u16 id = env.addActiveObject(std::move(obj));
+	if (id == 0)
+		return 0;
+
+	if (lua_istable(L, 2)) {
+		if (GenericCAO *gcao = env.getGenericCAO(id)) {
+			ObjectProperties prop = gcao->getProperties();
+			read_object_properties(L, 2, nullptr, &prop, client->idef());
+			gcao->setProperties(prop);
+		}
+	}
+
+	ClientObjectRef::create(L, (s16)id);
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "object_refs");
+	if (lua_istable(L, -1)) {
+		lua_pushvalue(L, -3);
+		lua_rawseti(L, -2, id);
+	}
+	lua_pop(L, 2);
+
+	return 1;
+}
+
 // read_schematic(schematic, options)
 int ModApiClient::l_read_schematic(lua_State *L)
 {
@@ -1138,6 +1176,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(read_schematic);
 	API_FCT(serialize_schematic);
 	API_FCT(read_file);
+	API_FCT(create_client_entity);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)

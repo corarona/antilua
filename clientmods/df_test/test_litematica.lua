@@ -120,4 +120,8 @@ function test_litematica(T)
 		T.assert(v ~= nil)
 		T.assert(tonumber(v) == 16)
 	end)
+
+	T.run("core.create_client_entity exists", function()
+		T.assert(type(core.create_client_entity) == "function")
+	end)
 end

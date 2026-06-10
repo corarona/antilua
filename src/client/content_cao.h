@@ -291,6 +291,8 @@ public:
 
 	void updateNodePos();
 
+	void setPos(v3f pos);
+
 	void step(float dtime, ClientEnvironment *env) override;
 
 	void updateTextureAnim();
