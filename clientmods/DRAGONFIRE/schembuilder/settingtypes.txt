@@ -1,3 +1,5 @@
 placelitem (PlaceLiteM) bool false
 placelitem.range (Placement range) int 4 1 20
 schembuilder_output (Schematic data) string
+schembuilder_resume_pos (Resume position) string
+schembuilder_resume_param (Resume schematic param) string

@@ -246,50 +246,82 @@ ws.rg("PlaceLiteM", {
 
 
 
+local function do_schembuild(param)
+	if param == "" then
+		return false, "Need an argument to load"
+	end
+	local pos = vector.round(core.localplayer:get_pos())
+	local value
+
+	-- file:<path> — load an MTS file from disk
+	if param:match("^file:") then
+		local filepath = param:sub(6)
+		local ok, data = pcall(core.read_file, filepath)
+		if not ok or not data then
+			return false, "File not found: " .. filepath
+		end
+		local ok2, schem = pcall(core.read_schematic, data, {})
+		if not ok2 or not schem or not schem.data then
+			return false, "Failed to parse MTS file"
+		end
+		clear_supply_chests()
+		place_nodes = {}
+		for _, entry in ipairs(schem.data) do
+			if entry.name == "air" or entry.prob == 0 then goto skip_file end
+			local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name}
+			table.insert(place_nodes, node)
+			add_preview_if_needed(node, node.name)
+			::skip_file::
+		end
+		ws.notify("Loaded " .. #place_nodes .. " nodes from " .. filepath, ws.NOTIFY_INFO)
+		core.after(0.1, update_hud)
+		return true, nil, param
+	end
+
+	if param == "$" then
+		value = core.settings:get("schembuilder_output") or "{}"
+	else
+		value = param
+	end
+	local count = load_schematic_nodes(value, pos)
+	if not count then
+		return false, "Failed to load schematic"
+	end
+	return true, nil, param
+end
+
 core.register_chatcommand("schembuild", {
-		description = "Load schematic. $ for schembuilder_output setting, file:<path> for MTS file from disk.",
+	description = "Load schematic. $ for schembuilder_output setting, file:<path> for MTS file from disk.",
 	func = function(param)
-		if param == "" then
-			return false, "Need an argument to load"
+		local ok, err, save_param = do_schembuild(param)
+		if ok then
+			core.settings:set("schembuilder_resume_pos",
+				vector.round(core.localplayer:get_pos()).x .. "," ..
+				vector.round(core.localplayer:get_pos()).y .. "," ..
+				vector.round(core.localplayer:get_pos()).z)
+			core.settings:set("schembuilder_resume_param", save_param or param)
 		end
-		local pos = vector.round(core.localplayer:get_pos())
-		local value
+		return ok, err
+	end,
+})
 
-		-- file:<path> — load an MTS file from disk
-		if param:match("^file:") then
-			local filepath = param:sub(6)
-			local ok, data = pcall(core.read_file, filepath)
-			if not ok or not data then
-				return false, "File not found: " .. filepath
-			end
-			local ok2, schem = pcall(core.read_schematic, data, {})
-			if not ok2 or not schem or not schem.data then
-				return false, "Failed to parse MTS file"
-			end
-			clear_supply_chests()
-			place_nodes = {}
-			for _, entry in ipairs(schem.data) do
-				if entry.name == "air" or entry.prob == 0 then goto skip_file end
-				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name}
-				table.insert(place_nodes, node)
-				add_preview_if_needed(node, node.name)
-				::skip_file::
-			end
-			ws.notify("Loaded " .. #place_nodes .. " nodes from " .. filepath, ws.NOTIFY_INFO)
-			core.after(0.1, update_hud)
-			return true
+core.register_chatcommand("schemresume", {
+	description = "Resume the last schematic build: teleports to saved position and reloads the schematic",
+	func = function(param)
+		local saved_pos = core.settings:get("schembuilder_resume_pos")
+		local saved_param = core.settings:get("schembuilder_resume_param")
+		if not saved_pos or not saved_param then
+			return false, "No saved schematic to resume"
 		end
-
-		if param == "$" then
-			value = core.settings:get("schembuilder_output") or "{}"
-		else
-			value = param
+		local px, py, pz = saved_pos:match("([^,]+),([^,]+),([^,]+)")
+		if not px then
+			return false, "Invalid saved position: " .. saved_pos
 		end
-		local count = load_schematic_nodes(value, pos)
-		if not count then
-			return false, "Failed to load schematic"
-		end
-		return true
+		core.localplayer:set_pos({x = tonumber(px), y = tonumber(py), z = tonumber(pz)})
+		core.after(0.3, function()
+			do_schembuild(saved_param)
+		end)
+		return true, "Teleporting to saved position and resuming schematic build"
 	end,
 })
 

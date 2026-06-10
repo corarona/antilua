@@ -124,4 +124,18 @@ function test_schembuilder(T)
 	T.run("core.create_client_entity exists", function()
 		T.assert(type(core.create_client_entity) == "function")
 	end)
+
+	T.run("/schemresume chat command registered", function()
+		T.assert(type(core.registered_chatcommands["schemresume"]) == "table")
+	end)
+
+	T.run("schembuilder_resume_pos can be set", function()
+		core.settings:set("schembuilder_resume_pos", "1,2,3")
+		T.assert(core.settings:get("schembuilder_resume_pos") == "1,2,3")
+	end)
+
+	T.run("schembuilder_resume_param can be set", function()
+		core.settings:set("schembuilder_resume_param", "file:test.mts")
+		T.assert(core.settings:get("schembuilder_resume_param") == "file:test.mts")
+	end)
 end
