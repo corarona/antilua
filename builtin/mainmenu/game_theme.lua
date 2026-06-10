@@ -107,6 +107,23 @@ function mm_game_theme.set_engine_single(identifier)
 		end
 	end
 
+	local files = core.get_dir_list(defaulttexturedir, false)
+	local n = 0
+	for i = 1, #files do
+		local filename = "menu_" .. identifier .. "-" .. i .. ".png"
+		if table.indexof(files, filename) == -1 then
+			n = i - 1
+			break
+		end
+	end
+	if n > 0 then
+		local num = math.random(1, n)
+		local path = defaulttexturedir .. DIR_DELIM .. "menu_" .. identifier .. "-" .. num .. ".png"
+		if core.set_background(identifier, path) then
+			return true
+		end
+	end
+
 	local path = defaulttexturedir .. DIR_DELIM .. "menu_" .. identifier .. ".png"
 	if core.set_background(identifier, path) then
 		return true
