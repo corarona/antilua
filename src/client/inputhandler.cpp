@@ -9,6 +9,7 @@
 #include "inputhandler.h"
 #include "gui/mainmenumanager.h"
 #include "gui/touchcontrols.h"
+#include "gui/cheatMenu.h"
 #include "hud_element.h"
 #include "log_internal.h"
 #include "client/renderingengine.h"
@@ -275,6 +276,16 @@ bool MyEventReceiver::OnEvent(const SEvent &event)
 	if (isMenuActive()) {
 		if (g_touchcontrols)
 			g_touchcontrols->setVisible(false);
+		// When cheat layer is active, intercept the cheat menu toggle key
+		// so it routes through normal key tracking instead of reaching the formspec.
+		if (g_cheat_layer_active && event.EventType == EET_KEY_INPUT_EVENT) {
+			KeyPress keyCode(event.KeyInput);
+			auto it = keysListenedFor.find(keyCode);
+			if (it != keysListenedFor.end() && it->second == KeyType::TOGGLE_CHEAT_MENU) {
+				setKeyDown(keyCode, event.KeyInput.PressedDown);
+				return true;
+			}
+		}
 		return g_menumgr.preprocessEvent(event);
 	}
 

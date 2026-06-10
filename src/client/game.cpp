@@ -1599,6 +1599,7 @@ void Game::processKeyInput()
 				m_cheat_menu->onLayerClosed();
 		}
 		cheat_key_was_down = cheat_key_down;
+		g_cheat_layer_active = m_cheat_layer_active;
 	}
 }
 
@@ -1858,6 +1859,7 @@ void Game::toggleCheatLayer()
 {
 	m_game_ui->toggleCheatMenu();
 	m_cheat_layer_active = m_game_ui->m_flags.show_cheat_menu;
+	g_cheat_layer_active = m_cheat_layer_active;
 	auto *cur = device->getCursorControl();
 	if (cur)
 		cur->setVisible(m_cheat_layer_active);
@@ -3875,26 +3877,16 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
 			input->isKeyDown(KeyType::DIG));
 	}
 
+	g_cheat_menu = this->m_cheat_menu;
+	g_cheat_layer_active = this->m_cheat_layer_active;
+	g_show_minimal_debug = this->m_game_ui->m_flags.show_minimal_debug;
 	this->m_rendering_engine->draw_scene(sky_color, this->m_game_ui->m_flags.show_hud,
 			draw_wield_tool, draw_crosshair);
 
 	/*
-		Cheat menu
+		Cheat menu HUD indicators (drawn after formspecs — non-overlapping corner text)
 	*/
-	if (this->m_cheat_layer_active) {
-		v2u32 ss = this->driver->getScreenSize();
-		// Skip darkening when a formspec is active (formspec drawn by GUI
-		// layer before this point; its own bgcolor handles the background)
-		if (!isMenuActive())
-			this->driver->draw2DRectangle(video::SColor(140, 0, 0, 0),
-				core::rect<s32>(0, 0, ss.X, ss.Y));
-		this->m_cheat_menu->drawPanels(this->driver,
-			this->input->getMousePos(),
-			this->m_game_ui->m_flags.show_minimal_debug);
-	}
-	if (this->m_cheat_menu)
-		this->m_cheat_menu->drawPinned(this->driver, this->input->getMousePos());
-	if (g_settings->getBool("cheat_hud"))
+	if (this->m_cheat_menu && g_settings->getBool("cheat_hud"))
 		this->m_cheat_menu->drawHUD(this->driver, this->runData.time_from_last_punch);
 
 	/*

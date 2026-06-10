@@ -23,9 +23,11 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "porting.h"
 #include "cheatMenu.h"
 #include "settings.h"
-#include <cstddef>
-#include <algorithm>
-#include <cstdlib>
+
+CheatMenu *g_cheat_menu = nullptr;
+bool g_cheat_layer_active = false;
+bool g_show_minimal_debug = false;
+
 
 static bool point_in_rect(s32 px, s32 py, s32 x, s32 y, s32 w, s32 h)
 {

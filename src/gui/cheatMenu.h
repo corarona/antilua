@@ -31,6 +31,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <string>
 #include <vector>
 
+extern class CheatMenu *g_cheat_menu;
+extern bool g_cheat_layer_active;
+extern bool g_show_minimal_debug;
+
 #define CHEAT_MENU_GET_SCRIPTPTR                                                         \
 	ClientScripting *script = m_client->getScript();                                 \
 	if (!script || !script->m_cheats_loaded)                                         \

@@ -19,6 +19,8 @@
 #include <IGUIEnvironment.h>
 #include "map.h"
 #include "nodedef.h"
+#include "gui/cheatMenu.h"
+#include "gui/mainmenumanager.h"
 #include <vector>
 
 /// Draw3D pipeline step
@@ -239,6 +241,23 @@ void DrawHUD::run(PipelineContext &context)
 
 	if (context.show_hud) {
 		context.client->getCamera()->drawNametags();
+	}
+
+	// Draw cheat menu panels before formspecs so formspecs render on top
+	if (g_cheat_menu) {
+		video::IVideoDriver *driver = context.device->getVideoDriver();
+		v2s32 mouse_pos = context.device->getCursorControl()->getPosition();
+
+		if (g_cheat_layer_active) {
+			if (!isMenuActive()) {
+				v2u32 ss = driver->getScreenSize();
+				driver->draw2DRectangle(video::SColor(140, 0, 0, 0),
+					core::rect<s32>(0, 0, ss.X, ss.Y));
+			}
+			g_cheat_menu->drawPanels(driver, mouse_pos,
+				g_show_minimal_debug);
+		}
+		g_cheat_menu->drawPinned(driver, mouse_pos);
 	}
 
 	context.device->getGUIEnvironment()->drawAll();
