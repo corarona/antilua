@@ -152,8 +152,8 @@ local function update_hud()
 		table.insert(lines, s.count .. " X " .. s.name)
 		total = total + s.count
 	end
-	if #sorted > 15 then
-		table.insert(lines, "... +" .. (#sorted - 15) .. " more")
+	if #sorted > 45 then
+		table.insert(lines, "... +" .. (#sorted - 45) .. " more")
 	end
 	table.insert(lines, "Total: " .. total)
 
