@@ -2,6 +2,19 @@ local modpath = core.get_modpath(core.get_current_modname())
 
 local schembuilder = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
 local place_nodes = {}
+local supply_chests = {}
+
+local function chest_key(pos)
+	return math.floor(pos.x) .. "," .. math.floor(pos.y) .. "," .. math.floor(pos.z)
+end
+
+local function clear_supply_chests()
+	supply_chests = {}
+end
+
+local function add_supply_chest(pos)
+	supply_chests[chest_key(pos)] = {x = math.floor(pos.x), y = math.floor(pos.y), z = math.floor(pos.z)}
+end
 
 local function deserialize_workaround(content)
 	local nodes, err = core.deserialize(content, true)
@@ -88,6 +101,7 @@ local function load_schematic_nodes(value, pos)
 			end
 			count = #nodes
 			if count > 0 then
+				clear_supply_chests()
 				place_nodes = nodes
 				for _, n in ipairs(nodes) do add_preview_if_needed(n, n.name) end
 				ws.notify("Loaded " .. count .. " nodes", ws.NOTIFY_INFO)
@@ -100,6 +114,7 @@ local function load_schematic_nodes(value, pos)
 	-- Try WorldEdit string format (old format)
 	local we_nodes = load_schematic(value)
 	if we_nodes then
+		clear_supply_chests()
 		place_nodes = {}
 		local ox, oy, oz = pos.x, pos.y, pos.z
 		for _, entry in ipairs(we_nodes) do
@@ -251,6 +266,7 @@ core.register_chatcommand("schembuild", {
 			if not ok2 or not schem or not schem.data then
 				return false, "Failed to parse MTS file"
 			end
+			clear_supply_chests()
 			place_nodes = {}
 			for _, entry in ipairs(schem.data) do
 				if entry.name == "air" or entry.prob == 0 then goto skip_file end
@@ -429,9 +445,10 @@ if sbots and sbots.register_bot then
 		},
 		find_pos = function(self, pos)
 			if #place_nodes == 0 then return end
-			local closest_dist_sq
 			local px, py, pz = pos.x, pos.y, pos.z
 			self._current_entry = nil
+			local closest_dist_sq
+
 			for _, entry in ipairs(place_nodes) do
 				if entry.name == "air" then goto skip_find end
 				if not has_item(entry.name) then goto skip_find end
@@ -446,14 +463,36 @@ if sbots and sbots.register_bot then
 				::skip_find::
 			end
 			if self._current_entry then
+				self._is_supply_target = nil
 				return vector.new(
 					self._current_entry.x,
 					self._current_entry.y,
 					self._current_entry.z
 				)
 			end
+
+			-- No buildable nodes found, try nearest supply chest
+			local closest_key, closest_dist_sq2
+			for key, cpos in pairs(supply_chests) do
+				local dx = cpos.x - px
+				local dy = cpos.y - py
+				local dz = cpos.z - pz
+				local dist_sq = dx*dx + dy*dy + dz*dz
+				if not closest_dist_sq2 or dist_sq < closest_dist_sq2 then
+					closest_dist_sq2 = dist_sq
+					closest_key = key
+				end
+			end
+			if closest_key then
+				self._current_entry = supply_chests[closest_key]
+				self._is_supply_target = true
+				return supply_chests[closest_key]
+			end
 		end,
 		update_pos = function(self, pos)
+			if self._is_supply_target then
+				return self._current_entry
+			end
 			if self._current_entry then
 				local found = false
 				for _, e in ipairs(place_nodes) do
@@ -466,11 +505,32 @@ if sbots and sbots.register_bot then
 					return self._current_entry
 				end
 			end
+			self._is_supply_target = nil
 			self._current_entry = nil
 			return self:find_pos(pos)
 		end,
 		do_pos = function(self, pos)
 			if not self._current_entry then return true end
+
+			if self._is_supply_target then
+				self._is_supply_target = nil
+				self._current_entry = nil
+				local items = {}
+				local seen = {}
+				for _, entry in ipairs(place_nodes) do
+					if entry.name ~= "air" and entry.name ~= "ignore" and not seen[entry.name] then
+						seen[entry.name] = true
+						table.insert(items, entry.name)
+					end
+				end
+				if #items > 0 then
+					local range = tonumber(core.settings:get("schematic_looter.range")) or 5
+					ws.loot_list(items, range, 64)
+				end
+				self.target_pos = nil
+				return true
+			end
+
 			local cooldown = tonumber(core.settings:get("schembuilderbot.place_cooldown")) or 0.1
 			if self._last_place_time and os.clock() - self._last_place_time < cooldown then
 				return false
@@ -553,6 +613,16 @@ ws.rg("SchematicLooter", {
 		if #items == 0 then return end
 		local range = tonumber(core.settings:get("schematic_looter.range")) or 5
 		local max_per = tonumber(core.settings:get("schematic_looter.max_per_scan")) or 16
+
+		if core.localplayer then
+			local pos = core.localplayer:get_pos()
+			local minp = vector.offset(pos, -range, -range, -range)
+			local maxp = vector.offset(pos, range, range, range)
+			for _, cpos in ipairs(core.find_nodes_with_meta(minp, maxp)) do
+				add_supply_chest(cpos)
+			end
+		end
+
 		ws.loot_list(items, range, max_per)
 	end,
 	cheat_settings = {
