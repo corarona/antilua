@@ -144,13 +144,12 @@ local function update_hud()
 		table.insert(sorted, {name = name, count = count})
 	end
 	table.sort(sorted, function(a, b) return a.count > b.count end)
-	-- Truncate to top 15
+	-- Truncate to top 45
 	local lines = {"Missing:"}
 	local total = 0
-	for i = 1, math.min(#sorted, 15) do
+	for i = 1, math.min(#sorted, 45) do
 		local s = sorted[i]
-		local short = s.name:match("[^:]+$") or s.name
-		table.insert(lines, short .. ": " .. s.count)
+		table.insert(lines, s.count .. " X " .. s.name)
 		total = total + s.count
 	end
 	if #sorted > 15 then
@@ -166,7 +165,7 @@ local function update_hud()
 		hud_id = core.localplayer:hud_add({
 			hud_elem_type = "text",
 			direction = 0,
-			position = {x = 0.8, y = 0.40},
+			position = {x = 0.85, y = 0.05},
 			alignment = {x = 1, y = 1},
 			offset = {x = 0, y = 0},
 			number = 0x00FF00,
