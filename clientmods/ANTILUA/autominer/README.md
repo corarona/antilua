@@ -1,22 +1,23 @@
-# mclminer
+# AutoMiner
 
-Automated mining bot for mcl worlds. Finds the nearest target node (from `nlist.selected`), teleports to it step-by-step avoiding lava, and includes a lava panic system. Depends on `nlist` for node-type selection.
+Automated mining bot. Finds the nearest target node (selected via `nlist`), teleports to it step-by-step using rhythmic teleport while avoiding lava, and includes a lava panic system. Depends on `nlist` for node-type selection and `rhythmtp` for movement.
 
 ## Player usage
 
-- **Cheat:** `Mclminer` (category Bots, setting `mclminer`)
-- Automatically enables `autoeat` and `dighead` on start.
+- **Cheat:** `AutoMiner` (category Bots, setting `autominer`)
+- Automatically enables `autoeat` on start.
 - **Settings:**
-  - `mclminer.tp_step` (number, default 3.8) — teleport step distance
-  - `mclminer.min_hp` (number, default 15) — minimum HP to operate
-  - `mclminer.lava_range` (number, default 10) — safe distance from lava
-  - `mclminer.search_range` (number, default 50) — node search radius
+  - `autominer.search_range` (int, default 50) — node search radius
+  - `autominer.tp_step` (float, default 3.8) — teleport step distance
+  - `autominer.min_hp` (int, default 15) — minimum HP to continue
+  - `autominer.lava_range` (int, default 10) — safe distance from lava
+  - `autominer.lava_nodes` (string) — comma-separated lava node names
 
 ## Cheats
 
-| Cheat | Setting | Description |
-|-------|---------|-------------|
-| Mclminer | `mclminer` | Automated mining bot — finds nearest target node, teleports step-by-step avoiding lava, includes lava panic |
+| Cheat | Category | Setting | Description |
+|-------|----------|---------|-------------|
+| AutoMiner | Bots | `autominer` | Automated mining bot — finds nearest target node via nlist, teleports step-by-step avoiding lava, includes lava panic |
 
 ## API
 

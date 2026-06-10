@@ -659,9 +659,11 @@ Schematic preview and placement tool. Loads MTS schematics as colored particle o
 
 ## Cheats
 
-| Cheat | Setting | Description |
-|-------|---------|-------------|
-| PlaceLiteM | `placelitem` | Place loaded schematic nodes within a 4-block radius around the player |
+| Cheat | Category | Setting | Description |
+|-------|----------|---------|-------------|
+| PlaceLiteM | Place | `placelitem` | Place loaded nodes within range |
+| SchemBuilderBot | Bots | `schembuilderbot` | Walk-to-and-place bot |
+| SchematicLooter | Inventory | `schematic_looter` | Loot materials from nearby containers |
 ]],
   ["lua_async"] = [[
 # lua_async
@@ -1182,10 +1184,10 @@ None. HUD utility — no cheats registered.
   ["wasplib"] = [[
 # wasplib
 
-Core utility library for DragonfireClient client-side mods. Provides the `ws`
+Core utility library for Antilua client-side mods. Provides the `ws`
 namespace with coordinate math, inventory manipulation, combat helpers, tool
 optimization, world interaction (placement/digging), waypoint HUD, and a
-global hack registration system (`ws.rg`). All other DRAGONFIRE mods depend
+global hack registration system (`ws.rg`). All other ANTILUA mods depend
 on wasplib.
 
 ## Player usage

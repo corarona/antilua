@@ -1,6 +1,6 @@
 # help — Centralized Help System for Antilua Mods
 
-Scans all README.md files in the DRAGONFIRE modpack, populates cheat descriptions
+Scans all README.md files in the ANTILUA modpack, populates cheat descriptions
 on registered cheat definitions, and provides a formspec-based help browser.
 
 ## Player usage

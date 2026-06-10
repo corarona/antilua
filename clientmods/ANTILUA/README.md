@@ -41,7 +41,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 | Mod | Description |
 |-----|-------------|
 | **autoevade** | Auto-teleport away from projectiles (arrows, potions, shulker bullets). |
-| **killaura** | Killaura, Mobaura, ForceField, AirHead. Nlist-based targeting. |
+| **killaura** | Killaura + Mobaura with target mode selection (players, mobs, all). Nlist-based friend/enemy system. |
 | **witherbot** | Boss combat bots (ObsBot, PlBot, CrystalBot, etc.), SafeAura, SelKillaura, EvadeWither. |
 
 ### World building / Digging

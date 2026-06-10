@@ -3,7 +3,7 @@
 Core utility library for Antilua client-side mods. Provides the `ws`
 namespace with coordinate math, inventory manipulation, combat helpers, tool
 optimization, world interaction (placement/digging), waypoint HUD, and a
-global hack registration system (`ws.rg`). All other DRAGONFIRE mods depend
+global hack registration system (`ws.rg`). All other ANTILUA mods depend
 on wasplib.
 
 ## Player usage
