@@ -303,6 +303,17 @@ core.register_chatcommand("schembuild", {
 				vector.round(core.localplayer:get_pos()).y .. "," ..
 				vector.round(core.localplayer:get_pos()).z)
 			core.settings:set("schembuilder_resume_param", save_param or param)
+			if core.global_exists("poi") then
+				local name
+				if param:match("^file:") then
+					name = param:gsub("^file:", ""):match("([^/\\]+)$")
+				else
+					name = "Schematic"
+				end
+				local pos = vector.round(core.localplayer:get_pos())
+				poi.set_waypoint(pos, name)
+				poi.set_group(name, "schembuilder")
+			end
 		end
 		return ok, err
 	end,
