@@ -113,10 +113,8 @@ local function build_formspec()
 	local af = core.al_formspec
 	local friends = nlist and nlist.get("friends") or {}
 	local enemies = nlist and nlist.get("enemies") or {}
-	local sb = af.new()
+	local sb = af.cheat_form_begin("size[10,8.5]")
 	sb:add(
-		"size[10,8.5]",
-		af.bgcolor("#000000", true),
 		af.label(0.3, 0, "Friends (not attacked)"),
 		af.textlist(0.3, 0.5, 4.4, 3, "friend_entries", friends),
 		af.field(0.3, 3.8, 7, 0.8, "friend_input", "", ""),

@@ -99,7 +99,7 @@ function core.show_cheat_settings_form(setting, use_auto)
 		local fs = def.get_formspec(setting)
 		if fs then
 			core.show_formspec("cheat_settings:" .. setting .. ":custom",
-				"formspec_version[10]no_prepend[]bgcolor[#1a1a1a;true]" .. fs)
+				"formspec_version[10]" .. fs)
 			return
 		end
 	end

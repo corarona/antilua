@@ -175,10 +175,8 @@ ws.rg('NlEdMode', { category = 'Misc', setting = 'nlist_edmode',
 			if name == sl then sel_idx = i break end
 		end
 
-		local sb = af.new()
+		local sb = af.cheat_form_begin("size[10,11]")
 		sb:add(
-			"size[10,11]",
-			af.bgcolor("#000000", true),
 			af.label(0.3, 0, "List: " .. sl .. " [" .. mode_name() .. "]"),
 			af.textlist(0.3, 0.5, 9.4, 5.5, "entries", entries),
 			af.dropdown(5.5, 0.5, 4.2, "list_select", lists, sel_idx),

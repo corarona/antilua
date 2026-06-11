@@ -36,9 +36,21 @@ function al_formspec.begin(...)
 	local sb = al_formspec.new()
 	sb:add(
 		"formspec_version[6]",
-		"no_prepend[]",
-		"bgcolor[" .. al_formspec.BG_COLOR .. ";true]",
 		...
+	)
+	sb:add(
+		"no_prepend[]",
+		"bgcolor[" .. al_formspec.BG_COLOR .. ";true]"
+	)
+	return sb
+end
+
+function al_formspec.cheat_form_begin(size_str)
+	local sb = al_formspec.new()
+	sb:add(
+		size_str,
+		"no_prepend[]",
+		al_formspec.bgcolor(al_formspec.BG_COLOR, true)
 	)
 	return sb
 end
