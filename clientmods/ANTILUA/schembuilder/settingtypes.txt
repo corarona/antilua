@@ -3,3 +3,6 @@ placelitem.range (Placement range) int 4 1 20
 schembuilder_output (Schematic data) string
 schembuilder_resume_pos (Resume position) string
 schembuilder_resume_param (Resume schematic param) string
+schembuilderbot.strategy (Placement strategy) enum closest closest,layer
+schembuilderbot.filter_mode (Filter mode) enum all all,include,exclude
+schembuilderbot.filter_list (nlist name for filter) string schembuilder

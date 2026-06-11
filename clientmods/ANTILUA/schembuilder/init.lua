@@ -4,6 +4,36 @@ local schembuilder = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
 local place_nodes = {}
 local supply_chests = {}
 
+local storage
+if type(core.get_mod_storage) == "function" then
+	local ok, mod = pcall(core.get_mod_storage, "schembuilder")
+	if ok then storage = mod end
+end
+
+local function save_job()
+	if not storage then return end
+	local data = core.write_json(place_nodes)
+	storage:set_string("job_data", data or "[]")
+end
+
+local function load_job()
+	if not storage then return false end
+	local data = storage:get_string("job_data")
+	if data and data ~= "" then
+		local ok, nodes = pcall(core.parse_json, data)
+		if ok and type(nodes) == "table" and #nodes > 0 then
+			place_nodes = nodes
+			return true
+		end
+	end
+	return false
+end
+
+local function clear_job()
+	if not storage then return end
+	storage:set_string("job_data", "")
+end
+
 local function chest_key(pos)
 	return math.floor(pos.x) .. "," .. math.floor(pos.y) .. "," .. math.floor(pos.z)
 end
@@ -134,11 +164,32 @@ local function load_schematic_nodes(value, pos)
 	return nil
 end
 
+local function format_per_item(count)
+	local sh_size = 27 * 64
+	local shulkers = math.floor(count / sh_size)
+	local after_sh = count % sh_size
+	local stacks = math.floor(after_sh / 64)
+	local items = after_sh % 64
+
+	local parts = {}
+	if shulkers > 0 then
+		table.insert(parts, shulkers .. "sh")
+	end
+	if stacks > 0 then
+		table.insert(parts, stacks .. "s")
+	end
+	if items > 0 or #parts == 0 then
+		table.insert(parts, items .. "i")
+	end
+	return table.concat(parts, ", ")
+end
+
 local hud_id = nil
 
 local function update_hud()
 	if not core.localplayer then return end
 	if #place_nodes == 0 then
+		clear_job()
 		if hud_id then
 			core.localplayer:hud_remove(hud_id)
 			hud_id = nil
@@ -164,7 +215,7 @@ local function update_hud()
 	local total = 0
 	for i = 1, math.min(#sorted, 45) do
 		local s = sorted[i]
-		table.insert(lines, s.count .. " X " .. s.name)
+		table.insert(lines, format_per_item(s.count) .. " X " .. s.name)
 		total = total + s.count
 	end
 	if #sorted > 45 then
@@ -228,6 +279,7 @@ ws.rg("PlaceLiteM", {
 		end
 		if changed then
 			update_hud()
+			save_job()
 		end
 	end,
 	on_start = function(self)
@@ -482,6 +534,21 @@ if sbots and sbots.register_bot then
 		return _item_cache[name] or false
 	end
 
+	local function is_node_allowed(name)
+		local mode = core.settings:get("schembuilderbot.filter_mode") or "all"
+		if mode == "all" then return true end
+		if not nlist then return true end
+		local list_name = core.settings:get("schembuilderbot.filter_list") or "schembuilder"
+		local items = nlist.get(list_name)
+		if not items then return true end
+		for _, item in ipairs(items) do
+			if item == name then
+				return mode == "include"
+			end
+		end
+		return mode == "exclude"
+	end
+
 	sbots.register_bot("SchemBuilderBot", {
 		moving_target = true,
 		stand_waiting = true,
@@ -489,26 +556,65 @@ if sbots and sbots.register_bot then
 		cheat_settings = {
 			place_cooldown = { type = "number", default = 0.1, min = 0, max = 5 },
 			batch_size = { type = "number", default = 8, min = 1, max = 64 },
+			strategy = { type = "string", default = "closest" },
+			filter_mode = { type = "string", default = "all" },
+			filter_list = { type = "string", default = "schembuilder" },
 		},
 		find_pos = function(self, pos)
 			if #place_nodes == 0 then return end
 			local px, py, pz = pos.x, pos.y, pos.z
 			self._current_entry = nil
-			local closest_dist_sq
 
-			for _, entry in ipairs(place_nodes) do
-				if entry.name == "air" then goto skip_find end
-				if not has_item(entry.name) then goto skip_find end
-				local dx = entry.x - px
-				local dy = entry.y - py
-				local dz = entry.z - pz
-				local dist_sq = dx*dx + dy*dy + dz*dz
-				if not closest_dist_sq or dist_sq < closest_dist_sq then
-					closest_dist_sq = dist_sq
-					self._current_entry = entry
+			local strategy = core.settings:get("schembuilderbot.strategy") or "closest"
+
+			if strategy == "layer" then
+				-- Group placeable nodes by Y level, pick lowest layer first
+				local by_y = {}
+				for i, entry in ipairs(place_nodes) do
+					if entry.name ~= "air" and has_item(entry.name) and is_node_allowed(entry.name) then
+						local y = entry.y
+						by_y[y] = by_y[y] or {}
+						table.insert(by_y[y], {index = i, entry = entry})
+					end
 				end
-				::skip_find::
+				local ys = {}
+				for y, _ in pairs(by_y) do
+					table.insert(ys, y)
+				end
+				table.sort(ys)
+				if #ys > 0 then
+					local target_y = ys[1]
+					local best_dist_sq
+					for _, item in ipairs(by_y[target_y]) do
+						local dx = item.entry.x - px
+						local dy = item.entry.y - py
+						local dz = item.entry.z - pz
+						local dist_sq = dx*dx + dy*dy + dz*dz
+						if not best_dist_sq or dist_sq < best_dist_sq then
+							best_dist_sq = dist_sq
+							self._current_entry = item.entry
+						end
+					end
+				end
+			else
+				local closest_dist_sq
+
+				for _, entry in ipairs(place_nodes) do
+					if entry.name == "air" then goto skip_find end
+					if not has_item(entry.name) then goto skip_find end
+					if not is_node_allowed(entry.name) then goto skip_find end
+					local dx = entry.x - px
+					local dy = entry.y - py
+					local dz = entry.z - pz
+					local dist_sq = dx*dx + dy*dy + dz*dz
+					if not closest_dist_sq or dist_sq < closest_dist_sq then
+						closest_dist_sq = dist_sq
+						self._current_entry = entry
+					end
+					::skip_find::
+				end
 			end
+
 			if self._current_entry then
 				self._is_supply_target = nil
 				return vector.new(
@@ -584,6 +690,7 @@ if sbots and sbots.register_bot then
 			end
 			local batch = tonumber(core.settings:get("schembuilderbot.batch_size")) or 8
 			local range = tonumber(core.settings:get("placelitem.range")) or 4
+			local strategy = core.settings:get("schembuilderbot.strategy") or "closest"
 			local px, py, pz = pos.x, pos.y, pos.z
 			local placed = 0
 
@@ -605,7 +712,7 @@ if sbots and sbots.register_bot then
 				for i = #place_nodes, 1, -1 do
 					if placed >= batch then break end
 					local entry = place_nodes[i]
-					if entry.name ~= "air" then
+					if entry.name ~= "air" and is_node_allowed(entry.name) and (strategy ~= "layer" or entry.y <= py) then
 						local dx = entry.x - px
 						local dy = entry.y - py
 						local dz = entry.z - pz
@@ -621,6 +728,7 @@ if sbots and sbots.register_bot then
 
 			self.target_pos = nil
 			update_hud()
+			save_job()
 			return true
 		end,
 		do_step = function(self, dtime)
@@ -677,3 +785,34 @@ ws.rg("SchematicLooter", {
 		max_per_scan = { type = "number", default = 16, min = 1, max = 64 },
 	},
 })
+
+core.register_chatcommand("schemclear", {
+	description = "Clear the current schematic build and saved job data",
+	func = function(param)
+		place_nodes = {}
+		clear_supply_chests()
+		clear_job()
+		if hud_id then
+			core.localplayer:hud_remove(hud_id)
+			hud_id = nil
+		end
+		ws.notify("Schematic build cleared", ws.NOTIFY_INFO)
+		return true
+	end,
+})
+
+-- Restore saved job on init and reconnect
+local function restore_job()
+	if load_job() and #place_nodes > 0 then
+		for _, n in ipairs(place_nodes) do
+			add_preview_if_needed(n, n.name)
+		end
+		core.after(0.1, update_hud)
+	end
+end
+
+restore_job()
+
+core.register_on_connect(function()
+	restore_job()
+end)

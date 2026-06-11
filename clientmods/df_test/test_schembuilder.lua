@@ -138,4 +138,42 @@ function test_schembuilder(T)
 		core.settings:set("schembuilder_resume_param", "file:test.mts")
 		T.assert(core.settings:get("schembuilder_resume_param") == "file:test.mts")
 	end)
+
+	T.run("schembuilderbot.strategy setting exists", function()
+		local v = core.settings:get("schembuilderbot.strategy")
+		T.assert(v ~= nil, "strategy setting is nil")
+	end)
+
+	T.run("schembuilderbot.strategy can be set to layer then restored to closest", function()
+		core.settings:set("schembuilderbot.strategy", "layer")
+		local v = core.settings:get("schembuilderbot.strategy")
+		T.assert(v == "layer", "expected 'layer', got " .. tostring(v))
+		core.settings:set("schembuilderbot.strategy", "closest")
+		v = core.settings:get("schembuilderbot.strategy")
+		T.assert(v == "closest", "expected 'closest', got " .. tostring(v))
+	end)
+
+	T.run("schembuilderbot.filter_mode setting exists", function()
+		local v = core.settings:get("schembuilderbot.filter_mode")
+		T.assert(v ~= nil, "filter_mode is nil")
+	end)
+
+	T.run("schembuilderbot.filter_mode default is all", function()
+		local v = core.settings:get("schembuilderbot.filter_mode")
+		T.assert(v == "all", "expected 'all', got " .. tostring(v))
+	end)
+
+	T.run("schembuilderbot.filter_list setting exists", function()
+		local v = core.settings:get("schembuilderbot.filter_list")
+		T.assert(v ~= nil, "filter_list is nil")
+	end)
+
+	T.run("schembuilderbot.filter_list default is schembuilder", function()
+		local v = core.settings:get("schembuilderbot.filter_list")
+		T.assert(v == "schembuilder", "expected 'schembuilder', got " .. tostring(v))
+	end)
+
+	T.run("/schemclear chat command registered", function()
+		T.assert(type(core.registered_chatcommands["schemclear"]) == "table")
+	end)
 end
