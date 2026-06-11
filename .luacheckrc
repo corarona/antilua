@@ -109,3 +109,32 @@ files["builtin/common/tests"] = {
 		"assert",
 	},
 }
+
+-- Antilua client mods
+clientmods/ANTILUA/wasplib/init.lua
+clientmods/ANTILUA/wasplib/*.lua
+clientmods/ANTILUA/**/init.lua
+clientmods/al_test/init.lua
+clientmods/al_test/*.lua
+
+std = {
+    read_globals = {
+        -- Engine globals
+        "core", "minetest", "dump", "vector", "ItemStack",
+        "VoxelArea", "VoxelManip", "Settings",
+        -- Antilua client-side globals
+        "core.localplayer", "core.camera",
+        "core.show_cheat_settings_form",
+        "core.create_client_entity",
+        "core.register_on_receiving_raw_packet",
+        "core.register_on_sending_raw_packet",
+        "core.send_raw_packet",
+        "core.override_item",
+        "core.read_schematic", "core.serialize_schematic",
+        -- wasplib globals
+        "ws",
+        -- Other mod globals
+        "nlist", "sbots", "poi", "tps_client",
+    },
+    globals = false,
+}

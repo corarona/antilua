@@ -46,7 +46,7 @@ Prefer `-j3` on 4-core machines (keep one core free).
 
 ```sh
 # C++ unit tests (requires -DBUILD_UNITTESTS=TRUE, which is the default)
-./bin/luanti --run-unittests
+./bin/antilua --run-unittests
 
 # Integration tests (Antilua client-side features)
 # Requires xvfb-run or Xvfb for headless display.
@@ -136,7 +136,7 @@ Adds an `enable_shaders` toggle (`Settings → Enable shaders`) that falls back 
 - Day/night uses CPU vertex color updates (slower)
 - VBOs and FBOs unavailable
 
-**Testing:** `./bin/luanti --run-unittests` — all 50 modules must pass.
+**Testing:** `./bin/antilua --run-unittests` — all 50 modules must pass.
 
 ## Key Directories
 

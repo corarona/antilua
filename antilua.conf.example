@@ -3804,3 +3804,84 @@
 #    type: bool
 # show_advanced = false
 
+
+#
+# Antilua-specific Settings
+#
+# The following settings are specific to the Antilua fork and
+# control client-side cheat features, bot mods, and UI behavior.
+#
+
+## Cheat Toggles (Movement)
+# freecam (Free Camera) bool false
+# autojump (Auto Jump) bool false
+# airjump (Air Jump) bool false
+# spider (Spider/Climb Walls) bool false
+# jetpack (Jetpack) bool false
+# jesus (Walk on Liquids) bool false
+# no_slow (No Slowdown) bool false
+# antislip (Anti-Slip on Ice) bool false
+# continuous_forward (Auto Forward) bool false
+
+## Cheat Toggles (Combat)
+# killaura (Killaura) bool false
+# antiknockback (Anti-Knockback) bool false
+# autohit (Auto Hit) bool false
+# spamclick (Fast Hit) bool false
+
+## Cheat Toggles (Visual/Render)
+# xray (X-Ray Vision) bool false
+# fullbright (Fullbright) bool false
+# enable_entity_esp (Entity Hitboxes) bool false
+# enable_entity_tracers (Entity Tracers) bool false
+# enable_player_esp (Player Hitboxes) bool false
+# enable_player_tracers (Player Tracers) bool false
+# enable_entity_wallhack (Entity Wallhack) bool false
+# enable_player_wallhack (Player Wallhack) bool false
+# cheat_hud (Cheat HUD Overlay) bool false
+# no_hurt_cam (No Hurt Camera) bool false
+# no_night (Bright Night) bool false
+# coords (Show Coordinates) bool false
+
+## Cheat Toggles (Interact)
+# fastdig (Fast Digging) bool false
+# fastplace (Fast Placing) bool false
+# autodig (Auto Dig) bool false
+# autoplace (Auto Place) bool false
+# instant_break (Instant Break) bool false
+# reach (Extended Reach) bool false
+# point_liquids (Point at Liquids) bool false
+# dont_point_nodes (Through Walls) bool false
+
+## Cheat Toggles (Player/Exploit)
+# priv_bypass (Bypass Privilege Checks) bool false
+# entity_speed (Entity Speed) bool false
+# prevent_natural_damage (No Fall Damage) bool false
+# no_force_rotate (No Forced Rotation) bool false
+# autorespawn (Auto Respawn) bool false
+
+## Cheat Menu Appearance
+# cheat_menu_font (Cheat Menu Font) string DroidSansFallbackFull
+# cheat_menu_bg_color (Cheat Menu Background Color) string #333333
+# cheat_menu_bg_color_alpha (Cheat Menu Background Opacity) int 200
+# cheat_menu_font_color (Cheat Menu Font Color) string #dddddd
+# cheat_menu_selected_font_color (Cheat Menu Selected Font Color) string #ffffff
+
+## Keybindings (Antilua-specific)
+# keymap_toggle_cheat_menu (Toggle Cheat Menu) key KEY_TAB
+# keymap_toggle_freecam (Toggle Freecam) key KEY_KEY_G
+# keymap_toggle_killaura (Toggle Killaura) key KEY_KEY_X
+# keymap_toggle_scaffold (Toggle Scaffold) key KEY_KEY_Y
+# keymap_enderchest (Open Ender Chest) key KEY_KEY_H
+# keymap_select_up (Cheat Menu Up) key KEY_UP
+# keymap_select_down (Cheat Menu Down) key KEY_DOWN
+# keymap_select_confirm (Cheat Menu Confirm) key KEY_RETURN
+
+## Bot Mod Toggles
+# autoeat (Auto Eat) bool false
+# autotool (Auto Tool) bool false
+# fishbot (Fishing Bot) bool false
+# autominer (Auto Miner) bool false
+# farmtool (Farming Tool) bool false
+# witherbot (Wither Fighting Bot) bool false
+
