@@ -2,4 +2,5 @@ local builtin_shared = ...
 
 local make_registration = builtin_shared.make_registration
 
-core.registered_on_formspec_input, core.register_on_formspec_input = make_registration()
+-- Use local registration to avoid overwriting client-side formspec handlers
+local pause_formspec_table, pause_register_formspec = make_registration()
