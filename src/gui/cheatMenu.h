@@ -32,6 +32,11 @@ extern bool g_show_minimal_debug;
 	if (!script || !script->m_cheats_loaded)                                         \
 		return;
 
+#define CHEAT_MENU_GET_SCRIPTPTR_RET(retval)                                             \
+	ClientScripting *script = m_client->getScript();                                 \
+	if (!script || !script->m_cheats_loaded)                                         \
+		return retval;
+
 class CheatMenu : public PanelOverlay
 {
 public:

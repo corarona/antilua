@@ -1561,15 +1561,20 @@ void Game::processKeyInput()
 	} else if (wasKeyDown(KeyType::QUICKTUNE_DEC)) {
 		quicktune->dec();
 	} else if (wasKeyDown(KeyType::SELECT_UP)) {
-		m_cheat_menu->selectUp();
+		if (m_cheat_menu)
+			m_cheat_menu->selectUp();
 	} else if (wasKeyDown(KeyType::SELECT_DOWN)) {
-		m_cheat_menu->selectDown();
+		if (m_cheat_menu)
+			m_cheat_menu->selectDown();
 	} else if (wasKeyDown(KeyType::SELECT_LEFT)) {
-		m_cheat_menu->selectLeft();
+		if (m_cheat_menu)
+			m_cheat_menu->selectLeft();
 	} else if (wasKeyDown(KeyType::SELECT_RIGHT)) {
-		m_cheat_menu->selectRight();
+		if (m_cheat_menu)
+			m_cheat_menu->selectRight();
 	} else if (wasKeyPressed(KeyType::SELECT_CONFIRM)) {
-		m_cheat_menu->selectConfirm();
+		if (m_cheat_menu)
+			m_cheat_menu->selectConfirm();
 	}
 
 	if (!isKeyDown(KeyType::JUMP) && runData.reset_jump_timer) {
