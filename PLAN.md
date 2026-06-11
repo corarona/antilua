@@ -1,14 +1,14 @@
-# DRAGONFIRE Modpack: Clean & Polish Plan
+# ANTILUA Modpack: Clean & Polish Plan
 
 ## Goal
-Restructure all old-clientmods into a single `DRAGONFIRE` modpack, split wasplib
+Restructure all old-clientmods into the `ANTILUA` modpack, split wasplib
 into subfiles, extract useful features from emicor into focused mods, and add
 integration tests.
 
 ## Modpack Structure
 
 ```
-old-clientmods/DRAGONFIRE/
+clientmods/ANTILUA/
 ├── modpack.conf
 ├── wasplib/              # Restructured: init.lua + subfiles
 ├── nlist/                # Kept as-is (minor polish)

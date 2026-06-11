@@ -1,4 +1,4 @@
--- Tests for DragonfireClient API registrations
+-- Tests for Antilua API registrations
 
 function test_api_registration_no_player(T)
 	T.run("core.settings exists", function()

@@ -66,7 +66,7 @@ function mm_game_theme.set_game(gamedetails)
 
 	core.set_topleft_text(gamedetails.name)
 
-	-- Dragonfire: don't override background with game-specific one
+	-- Antilua: don't override background with game-specific one
 	core.set_clouds(false)
 
 	mm_game_theme.clear_single("header")

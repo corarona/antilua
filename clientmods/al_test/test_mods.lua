@@ -1,4 +1,4 @@
--- Tests for restructured DragonfireClient mods (dig, place, inv_open, autocraft, wasplib additions)
+-- Tests for restructured Antilua mods (dig, place, inv_open, autocraft, wasplib additions)
 
 ------------------------------------------------------------------------------
 -- wasplib: constraint system

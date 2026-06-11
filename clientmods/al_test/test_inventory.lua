@@ -1,4 +1,4 @@
--- Tests for DragonfireClient InventoryAction API
+-- Tests for Antilua InventoryAction API
 
 function test_inventory_action_no_player(T)
 	T.run("InventoryAction constructor works", function()

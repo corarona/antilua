@@ -109,10 +109,10 @@ them unless `priv_bypass` is active.
 | Client-side mod VFS | Virtual filesystem for loading mods from memory | ✅ |
 | Key rebinding dialog | In-game GUI for rebinding keys | ✅ |
 
-## DRAGONFIRE Modpack (client-side mods)
+## ANTILUA Modpack (client-side mods)
 
-All Dragonfire client mods are consolidated into the `DRAGONFIRE` modpack
-at `old-clientmods/DRAGONFIRE/`. Core mods:
+All Antilua client mods are consolidated into the `ANTILUA` modpack
+at `clientmods/ANTILUA/`. Core mods:
 
 | Mod | Description | Status |
 |-----|-------------|--------|

@@ -1,4 +1,4 @@
--- Tests for DragonfireClient Lua callbacks
+-- Tests for Antilua Lua callbacks
 
 function test_callback_registration(T)
 	T.run("register_on_death exists and accepts callbacks", function()

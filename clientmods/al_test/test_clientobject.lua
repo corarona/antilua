@@ -1,4 +1,4 @@
--- Tests for DragonfireClient ClientObjectRef API
+-- Tests for Antilua ClientObjectRef API
 -- All deferred until core.localplayer is available
 
 function test_clientobject_ref(T)

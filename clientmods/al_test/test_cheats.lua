@@ -1,4 +1,4 @@
--- Tests for DragonfireClient cheat features
+-- Tests for Antilua cheat features
 
 function test_cheat_settings(T)
 	-- Verify all expected cheat settings exist

@@ -101,7 +101,7 @@ dofile(modpath .. "/test_schembuilder.lua")
 -- Run API/registration tests at mod load time
 core.register_on_mods_loaded(function()
 	local t0 = core.get_us_time()
-	core.log("action", "[AL_TEST] Starting DragonfireClient integration tests")
+	core.log("action", "[AL_TEST] Starting Antilua integration tests")
 
 	test_cheat_settings(al_test)
 	test_callback_registration(al_test)
