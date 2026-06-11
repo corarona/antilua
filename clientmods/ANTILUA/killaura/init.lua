@@ -198,7 +198,7 @@ ws.rg("Killaura", {
 
 core.register_on_formspec_input(function(formname, fields)
 	if formname ~= "cheat_settings:killaura:custom" then return end
-	if fields.btn_done or not next(fields) then return end
+	if fields.btn_done or fields.quit or not next(fields) then return end
 
 	if not nlist then
 		core.log("warning", "[killaura] nlist not available for friend/enemy management")

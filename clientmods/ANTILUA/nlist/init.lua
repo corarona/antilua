@@ -198,7 +198,7 @@ ws.rg('NlEdMode', { category = 'Misc', setting = 'nlist_edmode',
 
 core.register_on_formspec_input(function(formname, fields)
 	if formname ~= "cheat_settings:nlist_edmode:custom" then return end
-	if fields.btn_done or not next(fields) then return end
+	if fields.btn_done or fields.quit or not next(fields) then return end
 
 	if fields.list_select and fields.list_select ~= "" then
 		nlist.select(fields.list_select)
