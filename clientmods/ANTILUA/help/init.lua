@@ -103,3 +103,49 @@ end
 
 -- Populate descriptions after all mods load
 core.register_on_mods_loaded(populate_descriptions)
+
+-- Keybind reference
+local keybind_list = {
+	{"Toggle Cheat Menu",   "keymap_toggle_cheat_menu", "TAB"},
+	{"Toggle Killaura",     "keymap_toggle_killaura",  "X"},
+	{"Toggle Freecam",      "keymap_toggle_freecam",   "G"},
+	{"Toggle Scaffold",     "keymap_toggle_scaffold",  "Y"},
+	{"Ender Chest",         "keymap_enderchest",       "H"},
+	{"Cheat Menu Up",       "keymap_select_up",        "Up Arrow"},
+	{"Cheat Menu Down",     "keymap_select_down",      "Down Arrow"},
+	{"Cheat Menu Left",     "keymap_select_left",      "Left Arrow"},
+	{"Cheat Menu Right",    "keymap_select_right",     "Right Arrow"},
+	{"Cheat Menu Confirm",  "keymap_select_confirm",   "Return"},
+}
+
+local function show_keybinds()
+	local fs = "formspec_version[4]size[10,10,true]"
+	fs = fs .. "label[0,0;Key Bindings]"
+	fs = fs .. "label[0,0.8;Action]"
+	fs = fs .. "label[5,0.8;Current Key]"
+	fs = fs .. "box[0,1;10,0.05;#ffffff30]"
+	local y = 1.2
+	for _, entry in ipairs(keybind_list) do
+		local label, setting, default = table.unpack(entry)
+		local current = core.settings:get(setting) or default
+		local formatted = current:gsub("^KEY_", ""):gsub("^SYSTEM_SCANCODE_", "SCANCODE_"):gsub("_", " ")
+		fs = fs .. "label[0," .. y .. ";" .. core.formspec_escape(label) .. "]"
+		fs = fs .. "label[5," .. y .. ";" .. core.formspec_escape(formatted) .. "]"
+		y = y + 0.7
+	end
+	fs = fs .. "button[3.5," .. (y + 0.3) .. ";3,0.8;__close;Close]"
+	core.show_formspec("help:keybinds", fs)
+end
+
+if core.register_cheat then
+	core.register_cheat("Keybinds", {
+		category = "Misc",
+		func = show_keybinds,
+	})
+end
+
+core.register_on_formspec_input(function(formname, fields)
+	if formname == "help:keybinds" and fields.__close then
+		return
+	end
+end)

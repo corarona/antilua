@@ -77,3 +77,16 @@ function core.override_item(name, redefinition)
 	end
 	core.register_item_raw(itemdef)
 end
+
+-- First-run tutorial
+core.register_on_mods_loaded(function()
+	if core.settings:get("antilua_onboarded") == nil then
+		core.settings:set("antilua_onboarded", "true")
+		core.after(3, function()
+			core.show_toast(
+				"Antilua loaded. Press TAB for the cheat menu. "
+				.. "Configure keybinds in Settings > Key Bindings.",
+				"info")
+		end)
+	end
+end)
