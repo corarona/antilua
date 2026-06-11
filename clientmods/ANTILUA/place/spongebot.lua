@@ -123,18 +123,5 @@ local function chat(msg)
 	end
 end
 
-core.register_on_receiving_chat_message(function(message)
-	if not is_spongebot then return end
-	if message:find("greeferdude Left$") then
-		chat(" I AM TEH GREEFADOOD HEET MA EVAL PROPER GANDER! WE ARE TEH SOLDIRS OFF ANACRY WE AR TOTALY NOD KINDAGARDN (WE ALRDY PRESKOOL). WE DO NOT FROGIV! EXCEPT UZ!")
-	elseif message:find("^<greeferdude>") then
-		if math.random(20) == 1 then
-			chat("WE ARE TEH SOLDIRS OFF ANACRY WE AR TOTALY NOD KINDAGARDN (WE ALRDY PRESKOOL). WE DO NOT FROGIV! EXCEPT UZ!")
-		end
-	elseif message:find("^Burrowing_Owl Joined$") then
-		chat("Hi!")
-	elseif message:find("^Burrowing_Owl Left$") then
-		chat("Another satisfied customer!")
-	end
-end)
+-- (spongebot chat responses removed for public release)
 
