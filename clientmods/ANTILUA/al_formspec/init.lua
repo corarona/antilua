@@ -10,14 +10,15 @@ al_formspec.YELLOW = "#ffff44"
 local sb_meta = {}
 
 function sb_meta:add(...)
-	for _, v in ipairs({...}) do
+	for i = 1, select("#", ...) do
+		local v = select(i, ...)
 		if v ~= nil then
 			if type(v) == "table" then
 				for _, w in ipairs(v) do
 					table.insert(self, w)
 				end
 			else
-				table.insert(self, v)
+				table.insert(self, tostring(v))
 			end
 		end
 	end
