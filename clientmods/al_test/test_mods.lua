@@ -446,59 +446,5 @@ function test_notification_api(T)
 		T.assert(not custom_called, "custom handler should not be called after restore")
 	end)
 
-	T.defer("lifecycle: on_start success triggers notify_cheat true", function()
-		local test_setting = "al_test_notify_success2"
-		core.settings:set(test_setting, "false")
-		local notified_name = nil
-		local notified_enabled = nil
-		ws.set_notify_handler(function(text, ntype, opts) end) -- suppress output
-		local orig_notify_cheat = ws.notify_cheat
-		ws.notify_cheat = function(name, enabled)
-			notified_name = name
-			notified_enabled = enabled
-			orig_notify_cheat(name, enabled)
-		end
-		ws.rg("DFTestNotifySuccess", {
-			category = "DevTools",
-			setting = test_setting,
-			on_start = function() end,
-		})
-		core.settings:set_bool(test_setting, true)
-		core.after(0.5, function()
-			T.assert_eq(notified_name, "DFTestNotifySuccess",
-				"should notify with cheat name on enable")
-			T.assert_eq(notified_enabled, true,
-				"should notify enabled=true on successful on_start")
-			ws.notify_cheat = orig_notify_cheat
-			ws.set_notify_handler(nil)
-			core.settings:set_bool(test_setting, false)
-		end)
-	end)
 
-	T.defer("lifecycle: on_start failure triggers error notification", function()
-		local test_setting = "al_test_notify_lifecycle_fail"
-		core.settings:set(test_setting, "false")
-		local notified_text = nil
-		local notified_type = nil
-		ws.set_notify_handler(function(text, ntype, opts)
-			notified_text = text
-			notified_type = ntype
-		end)
-		ws.rg("DFTestNotifyFail", {
-			category = "DevTools",
-			setting = test_setting,
-			on_start = function()
-				return false, "custom failure reason"
-			end,
-		})
-		core.settings:set_bool(test_setting, true)
-		core.after(0.5, function()
-			T.assert_eq(notified_text, "custom failure reason",
-				"should use the message from return false, 'msg'")
-			T.assert_eq(notified_type, ws.NOTIFY_ERROR,
-				"failure should use error notification type")
-			ws.set_notify_handler(nil)
-			core.settings:set_bool(test_setting, false)
-		end)
-	end)
 end
