@@ -201,9 +201,16 @@ int ModApiParticlesLocal::l_delete_particlespawner(lua_State *L)
 	return 0;
 }
 
+int ModApiParticlesLocal::l_clear_all_particles(lua_State *L)
+{
+	getClient(L)->getParticleManager()->clearAll();
+	return 0;
+}
+
 void ModApiParticlesLocal::Initialize(lua_State *L, int top)
 {
 	API_FCT(add_particle);
 	API_FCT(add_particlespawner);
 	API_FCT(delete_particlespawner);
+	API_FCT(clear_all_particles);
 }

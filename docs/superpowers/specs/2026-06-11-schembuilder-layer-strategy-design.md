@@ -43,7 +43,7 @@ are sufficient.
 |------|--------|
 | `clientmods/ANTILUA/schembuilder/settingtypes.txt` | Add `schembuilderbot.strategy` string setting |
 | `clientmods/ANTILUA/schembuilder/init.lua` | Branch in `find_pos` and `do_pos` on `self._strategy` |
-| `clientmods/df_test/test_schembuilder.lua` | Add tests for layer strategy |
+| `clientmods/al_test/test_schembuilder.lua` | Add tests for layer strategy |
 
 ### Tests
 

@@ -7,8 +7,8 @@
 ### Task 1: Write integration tests
 
 **Files:**
-- Create: `clientmods/df_test/test_fishbot.lua`
-- Modify: `clientmods/df_test/init.lua`
+- Create: `clientmods/al_test/test_fishbot.lua`
+- Modify: `clientmods/al_test/init.lua`
 
 Add tests for:
 - `core.settings:get("fishbot")` — cheat setting exists with default

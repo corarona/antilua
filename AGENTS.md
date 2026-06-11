@@ -51,14 +51,14 @@ Prefer `-j3` on 4-core machines (keep one core free).
 # Integration tests (Antilua client-side features)
 # Requires xvfb-run or Xvfb for headless display.
 # Lua-only changes don't need a rebuild — just re-run.
-./util/ci/run_df_tests.sh
+./util/ci/run_al_tests.sh
 
 # Lua lint (see .github/workflows/lua.yml)
 ```
 
-The integration test mod lives at `clientmods/df_test/` and runs automatically
+The integration test mod lives at `clientmods/al_test/` and runs automatically
 on the devtest game. A server coordinator mod is at
-`games/devtest/mods/df_test_server/`. Tests report `[DF_TEST] PASS/FAIL/SKIP`.
+`games/devtest/mods/al_test_server/`. Tests report `[AL_TEST] PASS/FAIL/SKIP`.
 Features not yet ported from DF are marked `SKIP (not ported)` — see
 `DF_MISSING.md` for details.
 
@@ -68,9 +68,16 @@ are deferred until the player joins the world, so results appear in two batches.
 Always run the integration test after any C++ or Lua change to verify
 nothing is broken:
 ```sh
-./util/ci/run_df_tests.sh
+./util/ci/run_al_tests.sh
 ```
 Requires `xvfb-run` (from the `xvfb` package) for headless display.
+
+For interactive testing on the active X server (requires i3 and xprintidle):
+```sh
+./util/start_test.sh
+```
+Opens the test world with `--go` on workspace 11. If idle >10 min, runs
+headless and reports results instead.
 
 ## Code conventions
 
@@ -229,7 +236,7 @@ The following opcodes are **blacklisted** from `send_raw_packet`: `TOSERVER_INIT
 | `src/client/client.cpp` | Hook sites in `ProcessData()` and `Send()`; `Client::interceptIncomingPacket()` and `Client::interceptOutgoingPacket()` |
 | `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_send_raw_packet` Lua binding |
 | `builtin/client/register_df.lua` | Callback table registrations |
-| `clientmods/df_test/test_raw_packet.lua` | Integration tests |
+| `clientmods/al_test/test_raw_packet.lua` | Integration tests |
 
 ## Client-Side Item Override
 
@@ -294,7 +301,7 @@ The `data` array has `size.x * size.y * size.z` entries in Z/Y/X order. Each ent
 |------|---------|
 | `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_read_schematic`, `l_serialize_schematic` |
 | `clientmods/ANTILUA/schembuilder/init.lua` | Schematic builder: load MTS, preview as particles, place via PlaceLiteM/SchemBuilderBot, auto-loot materials |
-| `clientmods/df_test/test_schembuilder.lua` | Integration tests for schembuilder features |
+| `clientmods/al_test/test_schembuilder.lua` | Integration tests for schembuilder features |
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
 - **EDT_OPENGL** (`irr/src/COpenGLDriver.cpp`): Legacy driver with full fixed-function pipeline (material renderers, `glTexEnv`, `GL_ALPHA_TEST`, client-side vertex arrays). Compiles only when `_IRR_COMPILE_WITH_OPENGL_` is defined (always on for Luanti).

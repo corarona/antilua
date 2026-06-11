@@ -99,7 +99,7 @@ A new strategy (strip mine, branch mine, vein mine) replaces just this function.
 
 ### Component 7: tests
 
-New `clientmods/df_test/test_autominer.lua`:
+New `clientmods/al_test/test_autominer.lua`:
 
 - `rhythmtp` API exists (is_moving, get_target, stop, go_to, go_forward)
 - `core.settings:get("autominer")` returns a value (cheat registered)
@@ -127,7 +127,7 @@ New `clientmods/df_test/test_autominer.lua`:
 | `DRAGONFIRE/README.md` | Table entry update |
 | `help/readmes.lua` | Regenerate mclminer → autominer entry |
 | `PLAN.md` | Update sidebar refs |
-| `clientmods/df_test/test_autominer.lua` | New tests |
+| `clientmods/al_test/test_autominer.lua` | New tests |
 
 ### Not changed
 

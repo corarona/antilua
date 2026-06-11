@@ -3,8 +3,8 @@
 # Requires xvfb-run (from xvfb package) or Xephyr
 #
 # Usage:
-#   ./util/ci/run_df_tests.sh               # run with default world
-#   ./util/ci/run_df_tests.sh --world NAME   # use specific world
+#   ./util/ci/run_al_tests.sh               # run with default world
+#   ./util/ci/run_al_tests.sh --world NAME   # use specific world
 
 WORLD="${2:-test_df}"
 
@@ -51,17 +51,17 @@ fi
 echo "=== Test Results ==="
 
 # Parse results from log output
-PASS=$(grep -c '\[DF_TEST\] PASS:' "$OUTFILE" || true)
-FAIL=$(grep -c '\[DF_TEST\] FAIL:' "$OUTFILE" || true)
-SKIP=$(grep -c '\[DF_TEST\] SKIP:' "$OUTFILE" || true)
-KNOWN=$(grep -c '\[DF_TEST\] PASS (unexpected):' "$OUTFILE" || true)
+PASS=$(grep -c '\[AL_TEST\] PASS:' "$OUTFILE" || true)
+FAIL=$(grep -c '\[AL_TEST\] FAIL:' "$OUTFILE" || true)
+SKIP=$(grep -c '\[AL_TEST\] SKIP:' "$OUTFILE" || true)
+KNOWN=$(grep -c '\[AL_TEST\] PASS (unexpected):' "$OUTFILE" || true)
 
 echo "Passed: $PASS  Failed: $FAIL  Skipped (not ported): $SKIP"
 echo ""
 
 if [ "$FAIL" -gt 0 ]; then
 	echo "FAILING TESTS:"
-	grep '\[DF_TEST\] FAIL:' "$OUTFILE" || true
+	grep '\[AL_TEST\] FAIL:' "$OUTFILE" || true
 	echo ""
 fi
 

@@ -115,5 +115,5 @@ Each gets `mod.conf`, `init.lua`, and depends on `wasplib`.
 - Remove blockmaker, teamchat, autodupe, digtool, nodebot, emicor
 
 ### Tests
-- Integration tests in `clientmods/df_test/` for each new mod
-- Run `./util/ci/run_df_tests.sh` after each phase
+- Integration tests in `clientmods/al_test/` for each new mod
+- Run `./util/ci/run_al_tests.sh` after each phase

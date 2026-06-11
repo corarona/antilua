@@ -262,8 +262,8 @@ Remove: `litematica_file`, `litematica_node_names`, `litematica_texture_names`.
 ### Component 4: integration tests
 
 **Files:**
-- Create: `clientmods/df_test/test_litematica.lua`
-- Modify: `clientmods/df_test/init.lua`
+- Create: `clientmods/al_test/test_litematica.lua`
+- Modify: `clientmods/al_test/init.lua`
 
 Tests:
 - `core.parse_mts` exists and is a function
@@ -287,5 +287,5 @@ Tests:
 | `litematica/settingtypes.txt` | Add placelitem settings, remove unused |
 | `litematica/README.md` | Document new features |
 | `help/readmes.lua` | Sync |
-| `clientmods/df_test/test_litematica.lua` | New tests |
-| `clientmods/df_test/init.lua` | Add dofile + test call |
+| `clientmods/al_test/test_litematica.lua` | New tests |
+| `clientmods/al_test/init.lua` | Add dofile + test call |

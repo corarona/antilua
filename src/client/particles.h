@@ -240,6 +240,8 @@ public:
 		return m_next_particle_spawner_id++;
 	}
 
+	void clearAll();
+
 protected:
 	static bool getNodeParticleParams(Client *client, const MapNode &n,
 		ParticleParameters &p, video::ITexture **texture, v2f &texpos,
@@ -256,8 +258,6 @@ private:
 	void stepParticles(float dtime);
 	void stepSpawners(float dtime);
 	void stepBuffers(float dtime);
-
-	void clearAll();
 
 	std::vector<std::unique_ptr<Particle>> m_particles;
 	std::unordered_map<u64, std::unique_ptr<ParticleSpawner>> m_particle_spawners;

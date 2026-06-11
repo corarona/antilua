@@ -129,13 +129,13 @@ and `PLAN.md` for the modpack restructuring plan.
 
 ## Lua API Additions
 
-See `src/script/lua_api/` and `clientmods/df_test/` for the full list of
+See `src/script/lua_api/` and `clientmods/al_test/` for the full list of
 client-side Lua API additions ported from Dragonfire. Also see `doc/df_csm_api.md`
 for the complete reference.
 
 ## Test Coverage
 
-Integration tests live in `clientmods/df_test/`. Run with:
+Integration tests live in `clientmods/al_test/`. Run with:
 ```
-./util/ci/run_df_tests.sh
+./util/ci/run_al_tests.sh
 ```

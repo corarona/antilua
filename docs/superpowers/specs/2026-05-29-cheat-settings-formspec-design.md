@@ -108,7 +108,7 @@ For cheats with custom formspecs (e.g., nlist's textlist editor):
 
 ## Testing
 
-Existing integration tests in `clientmods/df_test/test_cheats.lua` verify that
+Existing integration tests in `clientmods/al_test/test_cheats.lua` verify that
 all cheat settings exist and toggle correctly via `core.settings`. These should
 continue to pass. The formspec system itself is tested via the existing formspec
 API tests in `test_api.lua` and `test_callbacks.lua`.

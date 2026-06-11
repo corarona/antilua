@@ -10,18 +10,66 @@ if type(core.get_mod_storage) == "function" then
 	if ok then storage = mod end
 end
 
-local function save_job()
-	if not storage then return end
-	local data = core.write_json(place_nodes)
-	storage:set_string("job_data", data or "[]")
+local current_build_id = nil
+
+local function get_server_id()
+	local info = core.get_server_info()
+	if info then
+		return info.address .. ":" .. info.port
+	end
+	return "localhost:30000"
 end
 
-local function load_job()
+local function build_index_key()
+	return "idx_" .. get_server_id()
+end
+
+local function build_data_key(id)
+	return "build_" .. id
+end
+
+local function get_build_index()
+	if not storage then return {} end
+	local data = storage:get_string(build_index_key())
+	if data and data ~= "" then
+		local ok, idx = pcall(core.parse_json, data)
+		if ok and type(idx) == "table" then
+			return idx
+		end
+	end
+	return {}
+end
+
+local function save_build_index(idx)
+	if not storage then return end
+	storage:set_string(build_index_key(), core.write_json(idx) or "[]")
+end
+
+local function gen_build_id()
+	return os.time() .. "_" .. math.random(10000, 99999)
+end
+
+local function save_job()
+	if not storage or not current_build_id then return end
+	local data = core.write_json(place_nodes)
+	storage:set_string(build_data_key(current_build_id), data or "[]")
+	local idx = get_build_index()
+	for _, entry in ipairs(idx) do
+		if entry.id == current_build_id then
+			entry.remaining = #place_nodes
+			break
+		end
+	end
+	save_build_index(idx)
+end
+
+local function load_build(id)
 	if not storage then return false end
-	local data = storage:get_string("job_data")
+	local data = storage:get_string(build_data_key(id))
 	if data and data ~= "" then
 		local ok, nodes = pcall(core.parse_json, data)
 		if ok and type(nodes) == "table" and #nodes > 0 then
+			current_build_id = id
 			place_nodes = nodes
 			return true
 		end
@@ -29,9 +77,56 @@ local function load_job()
 	return false
 end
 
-local function clear_job()
+local function load_job()
+	if not storage then return false end
+	local idx = get_build_index()
+	if #idx == 0 then return false end
+	return load_build(idx[1].id)
+end
+
+local function delete_build(id)
 	if not storage then return end
-	storage:set_string("job_data", "")
+	storage:set_string(build_data_key(id), "")
+	local idx = get_build_index()
+	for i = #idx, 1, -1 do
+		if idx[i].id == id then
+			table.remove(idx, i)
+			break
+		end
+	end
+	save_build_index(idx)
+	if current_build_id == id then
+		current_build_id = nil
+	end
+end
+
+local function clear_job()
+	if current_build_id then
+		delete_build(current_build_id)
+	end
+end
+
+local function create_build(source, name)
+	if not storage then return end
+	local id = gen_build_id()
+	local data = core.write_json(place_nodes)
+	storage:set_string(build_data_key(id), data or "[]")
+	local idx = get_build_index()
+	table.insert(idx, {
+		id = id,
+		name = name,
+		source = source,
+		count = #place_nodes,
+		remaining = #place_nodes,
+	})
+	save_build_index(idx)
+	current_build_id = id
+end
+
+local function get_build_name(param)
+	local name = param:match("^file:(.+)") or param
+	name = name:match("([^/\\]+)%.?[^.]*$") or name
+	return name
 end
 
 local function chest_key(pos)
@@ -240,6 +335,65 @@ local function update_hud()
 	end
 end
 
+-- Schematic browser formspec
+local function show_browser_form(tab)
+	tab = tab or 0
+	local sid = get_server_id()
+	local fs = "formspec_version[10]size[10,10]" ..
+		"tabheader[0,0;tabs;Browse Schematics,Saved Builds;" .. (tab + 1) .. "]" ..
+		"button[8,9;2,0.8;close;Close]"
+
+	if tab == 0 then
+		local schem_path
+		if type(core.get_modpath_real) == "function" then
+			schem_path = core.get_modpath_real("schembuilder") .. "/schematics"
+		else
+			schem_path = modpath .. "/schematics"
+		end
+		local files = core.get_dir_list(schem_path, false) or {}
+		local schems = {}
+		for _, f in ipairs(files) do
+			if f:match("%.mts$") then
+				table.insert(schems, core.formspec_escape(f))
+			end
+		end
+		if #schems == 0 then
+			fs = fs .. "label[0,1;No .mts schematics found in schematics/]"
+		else
+			fs = fs .. "label[0,0.6;Available schematics:]" ..
+				"textlist[0,1;10,7;schem_list;" .. table.concat(schems, ",") .. ";0]" ..
+				"button[0,8.5;4,0.8;schem_load;Load]"
+		end
+	else
+		local idx = get_build_index()
+		if #idx == 0 then
+			fs = fs .. "label[0,1;No saved builds for " .. core.formspec_escape(sid) .. "]"
+		else
+			local entries = {}
+			for _, entry in ipairs(idx) do
+				table.insert(entries, core.formspec_escape(entry.name .. " (" .. entry.remaining .. "/" .. entry.count .. ")"))
+			end
+			fs = fs .. "label[0,0.6;Saved builds for " .. core.formspec_escape(sid) .. ":]" ..
+				"textlist[0,1;10,5;build_list;" .. table.concat(entries, ",") .. ";0]" ..
+				"button[0,6.5;2.4,0.8;build_load;Load]" ..
+				"button[2.5,6.5;2.4,0.8;build_restart;Restart]" ..
+				"button[5,6.5;2.4,0.8;build_delete;Delete]" ..
+				"button[7.5,6.5;2.4,0.8;build_clear_particles;Clear Particles]"
+		end
+	end
+
+	core.show_formspec("schembuilder:browser", fs)
+end
+
+local function parse_list_event(event)
+	if not event then return nil end
+	local parts = event:split(":")
+	if #parts == 2 then
+		return tonumber(parts[2])
+	end
+	return tonumber(event)
+end
+
 ws.rg("PlaceLiteM", {
 	category = "Place",
 	setting = "placelitem",
@@ -345,6 +499,145 @@ local function do_schembuild(param, use_pos)
 	return true, nil, param
 end
 
+local _selected_schem = nil
+local _selected_build = nil
+
+local function load_schematic_by_index(event_idx)
+	if not event_idx then return end
+	local schem_path2
+	if type(core.get_modpath_real) == "function" then
+		schem_path2 = core.get_modpath_real("schembuilder") .. "/schematics"
+	else
+		schem_path2 = modpath .. "/schematics"
+	end
+	local files = core.get_dir_list(schem_path2, false) or {}
+	local schems = {}
+	for _, f in ipairs(files) do
+		if f:match("%.mts$") then
+			table.insert(schems, f)
+		end
+	end
+	local selected = schems[event_idx]
+	if selected then
+		local real_modpath
+		if type(core.get_modpath_real) == "function" then
+			real_modpath = core.get_modpath_real("schembuilder")
+		else
+			real_modpath = modpath
+		end
+		local param = "file:" .. real_modpath .. "/schematics/" .. selected
+		local ok, err, sparam = do_schembuild(param)
+		if ok then
+			create_build(sparam or param, selected)
+		end
+		core.close_formspec("schembuilder:browser")
+	end
+end
+
+core.register_on_formspec_input(function(formname, fields)
+	if formname ~= "schembuilder:browser" then return end
+
+	if fields.quit then return end
+
+	if fields.close then
+		_selected_schem = nil
+		_selected_build = nil
+		core.close_formspec("schembuilder:browser")
+		return
+	end
+
+	if fields.tabs then
+		_selected_schem = nil
+		_selected_build = nil
+		show_browser_form(tonumber(fields.tabs) - 1)
+		return
+	end
+
+	-- Track textlist selections
+	if fields.schem_list then
+		local idx = parse_list_event(fields.schem_list)
+		if idx then
+			_selected_schem = idx
+			if fields.schem_list:match("^DCL:") then
+				load_schematic_by_index(idx)
+				return
+			end
+		end
+	end
+
+	if fields.build_list then
+		local idx = parse_list_event(fields.build_list)
+		if idx then
+			_selected_build = idx
+		end
+	end
+
+	-- Tab 0: Load schematic button
+	if fields.schem_load and _selected_schem then
+		load_schematic_by_index(_selected_schem)
+		return
+	end
+
+	-- Tab 1: Build actions
+	if fields.build_load or fields.build_restart or fields.build_delete or fields.build_clear_particles then
+		if not _selected_build then return end
+		local idx = get_build_index()
+		local entry = idx[_selected_build]
+		if not entry then return end
+
+		if fields.build_load then
+			clear_supply_chests()
+			if load_build(entry.id) then
+				for _, n in ipairs(place_nodes) do
+					add_preview_if_needed(n, n.name)
+				end
+				core.after(0.1, update_hud)
+				ws.notify("Loaded build: " .. entry.name, ws.NOTIFY_INFO)
+			end
+			core.close_formspec("schembuilder:browser")
+		elseif fields.build_restart then
+			local ok, err, sparam = do_schembuild(entry.source)
+			if ok then
+				delete_build(entry.id)
+				create_build(sparam or entry.source, entry.name)
+				core.after(0.1, update_hud)
+				ws.notify("Restarted build: " .. entry.name, ws.NOTIFY_INFO)
+			end
+			core.close_formspec("schembuilder:browser")
+		elseif fields.build_clear_particles then
+			if type(core.clear_all_particles) == "function" then
+				core.clear_all_particles()
+			end
+			if hud_id then
+				core.localplayer:hud_remove(hud_id)
+				hud_id = nil
+			end
+			ws.notify("Cleared particles", ws.NOTIFY_INFO)
+			core.close_formspec("schembuilder:browser")
+		elseif fields.build_delete then
+			place_nodes = {}
+			clear_supply_chests()
+			if hud_id then
+				core.localplayer:hud_remove(hud_id)
+				hud_id = nil
+			end
+			delete_build(entry.id)
+			ws.notify("Deleted build: " .. entry.name, ws.NOTIFY_INFO)
+			_selected_build = nil
+			show_browser_form(1)
+		end
+		return
+	end
+end)
+
+core.register_chatcommand("schembrowse", {
+	description = "Open the schematic browser GUI",
+	func = function(param)
+		show_browser_form(0)
+		return true
+	end,
+})
+
 core.register_chatcommand("schembuild", {
 	description = "Load schematic. $ for schembuilder_output setting, file:<path> for MTS file from disk.",
 	func = function(param)
@@ -355,13 +648,17 @@ core.register_chatcommand("schembuild", {
 				vector.round(core.localplayer:get_pos()).y .. "," ..
 				vector.round(core.localplayer:get_pos()).z)
 			core.settings:set("schembuilder_resume_param", save_param or param)
+			local name
+			if param:match("^file:") then
+				name = param:gsub("^file:", ""):match("([^/\\]+)$") or "Schematic"
+			else
+				name = "Schematic"
+			end
+			if current_build_id then
+				delete_build(current_build_id)
+			end
+			create_build(save_param or param, name)
 			if core.global_exists("poi") then
-				local name
-				if param:match("^file:") then
-					name = param:gsub("^file:", ""):match("([^/\\]+)$")
-				else
-					name = "Schematic"
-				end
 				local pos = vector.round(core.localplayer:get_pos())
 				poi.set_waypoint(pos, name)
 				poi.set_group(name, "schembuilder")
@@ -549,6 +846,214 @@ if sbots and sbots.register_bot then
 		return mode == "exclude"
 	end
 
+	local strategies = {}
+	local function register_strategy(name, impl)
+		strategies[name] = impl
+	end
+
+	register_strategy("closest", {
+		find_target = function(nodes, pos, has_item, is_allowed)
+			local px, py, pz = pos.x, pos.y, pos.z
+			local best_idx, best_dist_sq
+			for i, entry in ipairs(nodes) do
+				if entry.name ~= "air" and has_item(entry.name) and is_allowed(entry.name) then
+					local dx = entry.x - px
+					local dy = entry.y - py
+					local dz = entry.z - pz
+					local dist_sq = dx*dx + dy*dy + dz*dz
+					if not best_dist_sq or dist_sq < best_dist_sq then
+						best_dist_sq = dist_sq
+						best_idx = i
+					end
+				end
+			end
+			return best_idx
+		end,
+	})
+
+	register_strategy("layer", {
+		find_target = function(nodes, pos, has_item, is_allowed)
+			local px, py, pz = pos.x, pos.y, pos.z
+			local by_y = {}
+			for i, entry in ipairs(nodes) do
+				if entry.name ~= "air" and has_item(entry.name) and is_allowed(entry.name) then
+					local y = entry.y
+					by_y[y] = by_y[y] or {}
+					table.insert(by_y[y], {index = i, entry = entry})
+				end
+			end
+			local ys = {}
+			for y, _ in pairs(by_y) do
+				table.insert(ys, y)
+			end
+			table.sort(ys)
+			if #ys == 0 then return nil end
+			local target_y = ys[1]
+			local best_idx, best_dist_sq
+			for _, item in ipairs(by_y[target_y]) do
+				local dx = item.entry.x - px
+				local dy = item.entry.y - py
+				local dz = item.entry.z - pz
+				local dist_sq = dx*dx + dy*dy + dz*dz
+				if not best_dist_sq or dist_sq < best_dist_sq then
+					best_dist_sq = dist_sq
+					best_idx = item.index
+				end
+			end
+			return best_idx
+		end,
+		max_batch_y = function(pos) return pos.y end,
+		get_needed_items = function(nodes, state)
+			if not state or not state.target then return nil end
+			local target_y = state.target.y
+			local seen = {}
+			local items = {}
+			for _, entry in ipairs(nodes) do
+				if entry.y == target_y and entry.name ~= "air" and entry.name ~= "ignore" and not seen[entry.name] then
+					seen[entry.name] = true
+					table.insert(items, entry.name)
+				end
+			end
+			return items
+		end,
+	})
+
+	register_strategy("top_to_bottom", {
+		find_target = function(nodes, pos, has_item, is_allowed)
+			local px, py, pz = pos.x, pos.y, pos.z
+			local by_y = {}
+			for i, entry in ipairs(nodes) do
+				if entry.name ~= "air" and has_item(entry.name) and is_allowed(entry.name) then
+					local y = entry.y
+					by_y[y] = by_y[y] or {}
+					table.insert(by_y[y], {index = i, entry = entry})
+				end
+			end
+			local ys = {}
+			for y, _ in pairs(by_y) do
+				table.insert(ys, y)
+			end
+			table.sort(ys, function(a, b) return a > b end)
+			if #ys == 0 then return nil end
+			local target_y = ys[1]
+			local best_idx, best_dist_sq
+			for _, item in ipairs(by_y[target_y]) do
+				local dx = item.entry.x - px
+				local dy = item.entry.y - py
+				local dz = item.entry.z - pz
+				local dist_sq = dx*dx + dy*dy + dz*dz
+				if not best_dist_sq or dist_sq < best_dist_sq then
+					best_dist_sq = dist_sq
+					best_idx = item.index
+				end
+			end
+			return best_idx
+		end,
+		max_batch_y = function(pos) return pos.y end,
+		get_needed_items = function(nodes, state)
+			if not state or not state.target then return nil end
+			local target_y = state.target.y
+			local seen = {}
+			local items = {}
+			for _, entry in ipairs(nodes) do
+				if entry.y == target_y and entry.name ~= "air" and entry.name ~= "ignore" and not seen[entry.name] then
+					seen[entry.name] = true
+					table.insert(items, entry.name)
+				end
+			end
+			return items
+		end,
+	})
+
+	register_strategy("column", {
+		find_target = function(nodes, pos, has_item, is_allowed)
+			local px, py, pz = pos.x, pos.y, pos.z
+			local by_col = {}
+			for i, entry in ipairs(nodes) do
+				if entry.name ~= "air" and has_item(entry.name) and is_allowed(entry.name) then
+					local key = entry.x .. "," .. entry.z
+					by_col[key] = by_col[key] or {}
+					table.insert(by_col[key], {index = i, entry = entry})
+				end
+			end
+			local best_col, best_dist_sq
+			for _, col in pairs(by_col) do
+				local e = col[1].entry
+				local dx = e.x - px
+				local dz = e.z - pz
+				local dist_sq = dx*dx + dz*dz
+				if not best_dist_sq or dist_sq < best_dist_sq then
+					best_dist_sq = dist_sq
+					best_col = col
+				end
+			end
+			if not best_col then return nil end
+			local best_idx, best_y
+			for _, item in ipairs(best_col) do
+				if not best_y or item.entry.y < best_y then
+					best_y = item.entry.y
+					best_idx = item.index
+				end
+			end
+			return best_idx
+		end,
+		get_needed_items = function(nodes, state)
+			if not state or not state.target then return nil end
+			local key = state.target.x .. "," .. state.target.z
+			local seen = {}
+			local items = {}
+			for _, entry in ipairs(nodes) do
+				local ek = entry.x .. "," .. entry.z
+				if ek == key and entry.name ~= "air" and entry.name ~= "ignore" and not seen[entry.name] then
+					seen[entry.name] = true
+					table.insert(items, entry.name)
+				end
+			end
+			return items
+		end,
+	})
+
+	register_strategy("by_material", {
+		find_target = function(nodes, pos, has_item, is_allowed)
+			local px, py, pz = pos.x, pos.y, pos.z
+			local by_name = {}
+			for i, entry in ipairs(nodes) do
+				if entry.name ~= "air" and has_item(entry.name) and is_allowed(entry.name) then
+					local n = entry.name
+					by_name[n] = by_name[n] or {}
+					table.insert(by_name[n], {index = i, entry = entry})
+				end
+			end
+			local best_group, best_count
+			for _, group in pairs(by_name) do
+				if not best_count or #group > best_count then
+					best_count = #group
+					best_group = group
+				end
+			end
+			if not best_group then return nil end
+			local best_idx, best_dist_sq
+			for _, item in ipairs(best_group) do
+				local dx = item.entry.x - px
+				local dy = item.entry.y - py
+				local dz = item.entry.z - pz
+				local dist_sq = dx*dx + dy*dy + dz*dz
+				if not best_dist_sq or dist_sq < best_dist_sq then
+					best_dist_sq = dist_sq
+					best_idx = item.index
+				end
+			end
+			return best_idx
+		end,
+		batch_filter = function(entry, state)
+			return entry.name == state.target.name
+		end,
+		get_needed_items = function(nodes, state)
+			if not state or not state.target then return nil end
+			return {state.target.name}
+		end,
+	})
+
 	sbots.register_bot("SchemBuilderBot", {
 		moving_target = true,
 		stand_waiting = true,
@@ -564,58 +1069,18 @@ if sbots and sbots.register_bot then
 			if #place_nodes == 0 then return end
 			local px, py, pz = pos.x, pos.y, pos.z
 			self._current_entry = nil
+			self._strat_state = nil
 
-			local strategy = core.settings:get("schembuilderbot.strategy") or "closest"
+			local name = core.settings:get("schembuilderbot.strategy") or "closest"
+			local strat = strategies[name] or strategies.closest
 
-			if strategy == "layer" then
-				-- Group placeable nodes by Y level, pick lowest layer first
-				local by_y = {}
-				for i, entry in ipairs(place_nodes) do
-					if entry.name ~= "air" and has_item(entry.name) and is_node_allowed(entry.name) then
-						local y = entry.y
-						by_y[y] = by_y[y] or {}
-						table.insert(by_y[y], {index = i, entry = entry})
-					end
-				end
-				local ys = {}
-				for y, _ in pairs(by_y) do
-					table.insert(ys, y)
-				end
-				table.sort(ys)
-				if #ys > 0 then
-					local target_y = ys[1]
-					local best_dist_sq
-					for _, item in ipairs(by_y[target_y]) do
-						local dx = item.entry.x - px
-						local dy = item.entry.y - py
-						local dz = item.entry.z - pz
-						local dist_sq = dx*dx + dy*dy + dz*dz
-						if not best_dist_sq or dist_sq < best_dist_sq then
-							best_dist_sq = dist_sq
-							self._current_entry = item.entry
-						end
-					end
-				end
-			else
-				local closest_dist_sq
-
-				for _, entry in ipairs(place_nodes) do
-					if entry.name == "air" then goto skip_find end
-					if not has_item(entry.name) then goto skip_find end
-					if not is_node_allowed(entry.name) then goto skip_find end
-					local dx = entry.x - px
-					local dy = entry.y - py
-					local dz = entry.z - pz
-					local dist_sq = dx*dx + dy*dy + dz*dz
-					if not closest_dist_sq or dist_sq < closest_dist_sq then
-						closest_dist_sq = dist_sq
-						self._current_entry = entry
-					end
-					::skip_find::
-				end
-			end
-
-			if self._current_entry then
+			local idx = strat.find_target(place_nodes, pos, has_item, is_node_allowed)
+			if idx then
+				self._current_entry = place_nodes[idx]
+				self._strat_state = {
+					target = place_nodes[idx],
+					max_batch_y = strat.max_batch_y and strat.max_batch_y(pos),
+				}
 				self._is_supply_target = nil
 				return vector.new(
 					self._current_entry.x,
@@ -668,12 +1133,20 @@ if sbots and sbots.register_bot then
 			if self._is_supply_target then
 				self._is_supply_target = nil
 				self._current_entry = nil
-				local items = {}
-				local seen = {}
-				for _, entry in ipairs(place_nodes) do
-					if entry.name ~= "air" and entry.name ~= "ignore" and not seen[entry.name] then
-						seen[entry.name] = true
-						table.insert(items, entry.name)
+				local items
+				local strat_name = core.settings:get("schembuilderbot.strategy") or "closest"
+				local strat = strategies[strat_name] or strategies.closest
+				if strat.get_needed_items then
+					items = strat.get_needed_items(place_nodes, self._strat_state)
+				end
+				if not items then
+					items = {}
+					local seen = {}
+					for _, entry in ipairs(place_nodes) do
+						if entry.name ~= "air" and entry.name ~= "ignore" and not seen[entry.name] then
+							seen[entry.name] = true
+							table.insert(items, entry.name)
+						end
 					end
 				end
 				if #items > 0 then
@@ -690,36 +1163,56 @@ if sbots and sbots.register_bot then
 			end
 			local batch = tonumber(core.settings:get("schembuilderbot.batch_size")) or 8
 			local range = tonumber(core.settings:get("placelitem.range")) or 4
-			local strategy = core.settings:get("schembuilderbot.strategy") or "closest"
+			local strat_name = core.settings:get("schembuilderbot.strategy") or "closest"
+			local strat = strategies[strat_name] or strategies.closest
 			local px, py, pz = pos.x, pos.y, pos.z
 			local placed = 0
 
 			-- Place the primary target first
-			if ws.place(self._current_entry, self._current_entry.name) then
+			local target_entry = self._current_entry
+			if ws.place(target_entry, target_entry.name) then
 				self._last_place_time = os.clock()
 				for i = #place_nodes, 1, -1 do
-					if place_nodes[i] == self._current_entry then
+					if place_nodes[i] == target_entry then
 						table.remove(place_nodes, i)
 						break
 					end
 				end
 				placed = 1
+			else
+				local node = core.get_node_or_nil(target_entry)
+				if node and node.name == target_entry.name then
+					for i = #place_nodes, 1, -1 do
+						if place_nodes[i] == target_entry then
+							table.remove(place_nodes, i)
+							break
+						end
+					end
+				end
 			end
 			self._current_entry = nil
 
 			-- Also place nearby nodes in the same tick
 			if placed > 0 and #place_nodes > 0 then
+				local max_y = self._strat_state and self._strat_state.max_batch_y
 				for i = #place_nodes, 1, -1 do
 					if placed >= batch then break end
 					local entry = place_nodes[i]
-					if entry.name ~= "air" and is_node_allowed(entry.name) and (strategy ~= "layer" or entry.y <= py) then
-						local dx = entry.x - px
-						local dy = entry.y - py
-						local dz = entry.z - pz
-						if dx*dx + dy*dy + dz*dz <= range*range then
-							if ws.place(entry, entry.name) then
-								table.remove(place_nodes, i)
-								placed = placed + 1
+					if entry.name ~= "air" and (not max_y or entry.y <= max_y) and is_node_allowed(entry.name) then
+						if not strat.batch_filter or strat.batch_filter(entry, self._strat_state) then
+							local dx = entry.x - px
+							local dy = entry.y - py
+							local dz = entry.z - pz
+							if dx*dx + dy*dy + dz*dz <= range*range then
+								if ws.place(entry, entry.name) then
+									table.remove(place_nodes, i)
+									placed = placed + 1
+								else
+									local node = core.get_node_or_nil(entry)
+									if node and node.name == entry.name then
+										table.remove(place_nodes, i)
+									end
+								end
 							end
 						end
 					end

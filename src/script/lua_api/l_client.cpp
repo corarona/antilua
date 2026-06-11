@@ -42,6 +42,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "map.h"
 #include "filesys.h"
 #include "util/string.h"
+#include "content/mods.h"
 #include "nodedef.h"
 #include "client/keycode.h"
 #include "client/clientmap.h"
@@ -95,6 +96,20 @@ int ModApiClient::l_get_modpath(lua_State *L)
 	// Client mods use a virtual filesystem, see Client::scanModSubfolder()
 	std::string path = modname + ":";
 	lua_pushstring(L, path.c_str());
+	return 1;
+}
+
+// get_modpath_real(modname)
+int ModApiClient::l_get_modpath_real(lua_State *L)
+{
+	std::string modname = readParam<std::string>(L, 1);
+	Client *client = getClient(L);
+	const ModSpec *mod = client->getModSpec(modname);
+	if (mod) {
+		lua_pushstring(L, mod->path.c_str());
+	} else {
+		lua_pushnil(L);
+	}
 	return 1;
 }
 
@@ -730,6 +745,30 @@ int ModApiClient::l_read_file(lua_State *L)
 	return 2;
 }
 
+// get_dir_list(path, is_dir)
+int ModApiClient::l_get_dir_list(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	const char *path = luaL_checkstring(L, 1);
+	if (std::string(path).find("..") != std::string::npos) {
+		lua_pushnil(L);
+		lua_pushstring(L, "Path traversal denied");
+		return 1;
+	}
+	bool list_all = !lua_isboolean(L, 2);
+	bool list_dirs = readParam<bool>(L, 2);
+	std::vector<fs::DirListNode> list = fs::GetDirListing(path);
+	int index = 0;
+	lua_newtable(L);
+	for (const fs::DirListNode &dln : list) {
+		if (list_all || list_dirs == dln.dir) {
+			lua_pushstring(L, dln.name.c_str());
+			lua_rawseti(L, -2, ++index);
+		}
+	}
+	return 1;
+}
+
 // create_client_entity(pos, properties)
 int ModApiClient::l_create_client_entity(lua_State *L)
 {
@@ -1141,6 +1180,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
 	API_FCT(get_modpath);
+	API_FCT(get_modpath_real);
 	API_FCT(print);
 	API_FCT(display_chat_message);
 	API_FCT(show_toast);
@@ -1179,6 +1219,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(read_schematic);
 	API_FCT(serialize_schematic);
 	API_FCT(read_file);
+	API_FCT(get_dir_list);
 	API_FCT(create_client_entity);
 }
 
@@ -1186,6 +1227,7 @@ void ModApiClient::InitializeSSCSM(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
 	API_FCT(get_modpath);
+	API_FCT(get_modpath_real);
 	API_FCT(print);
 	API_FCT(get_builtin_path);
 }

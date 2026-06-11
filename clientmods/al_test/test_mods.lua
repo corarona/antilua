@@ -254,7 +254,7 @@ end
 function test_ws_rg_lifecycle(T)
 	T.defer("ws.rg lifecycle: on_start fires on toggle on", function()
 		local fired = { start = false, step = false, stop = false, done = false }
-		local test_setting = "df_test_rg_lifecycle"
+		local test_setting = "al_test_rg_lifecycle"
 		core.settings:set(test_setting, "false")
 		ws.rg("DFTestLifecycle", {
 			category = "DevTools",
@@ -447,7 +447,7 @@ function test_notification_api(T)
 	end)
 
 	T.defer("lifecycle: on_start success triggers notify_cheat true", function()
-		local test_setting = "df_test_notify_lifecycle_success"
+		local test_setting = "al_test_notify_lifecycle_success"
 		core.settings:set(test_setting, "false")
 		local notified_name = nil
 		local notified_enabled = nil
@@ -476,7 +476,7 @@ function test_notification_api(T)
 	end)
 
 	T.defer("lifecycle: on_start failure triggers error notification", function()
-		local test_setting = "df_test_notify_lifecycle_fail"
+		local test_setting = "al_test_notify_lifecycle_fail"
 		core.settings:set(test_setting, "false")
 		local notified_text = nil
 		local notified_type = nil

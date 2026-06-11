@@ -150,7 +150,7 @@ refs, inventory actions, and a virtual mod filesystem. See
 
 ```sh
 # Requires xvfb-run (from the xvfb package) for headless display
-./util/ci/run_df_tests.sh
+./util/ci/run_al_tests.sh
 ```
 
 All 145+ integration tests pass (0 failures, 0 skipped).

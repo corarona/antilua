@@ -221,7 +221,7 @@ private:
 
 ## Testing
 
-- Unit tests in `clientmods/df_test/` for `ws.notify()` behavior
+- Unit tests in `clientmods/al_test/` for `ws.notify()` behavior
 - Integration test verifying toast appears on cheat toggle
 - Verify `ws.set_notify_handler()` override works
 - Verify `return false, "reason"` produces error notification

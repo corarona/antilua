@@ -560,8 +560,8 @@ Expected: clean compile, no errors
 ### Task 6: Add test for show_cheat_settings_form
 
 **Files:**
-- Modify: `clientmods/df_test/test_cheats.lua`
-- Test: run with `./util/ci/run_df_tests.sh`
+- Modify: `clientmods/al_test/test_cheats.lua`
+- Test: run with `./util/ci/run_al_tests.sh`
 
 - [ ] **Step 1: Add test verifying show_cheat_settings_form can be called**
 
@@ -584,7 +584,7 @@ Expected: clean compile, no errors
 - [ ] **Step 2: Run integration tests**
 
 ```bash
-./util/ci/run_df_tests.sh
+./util/ci/run_al_tests.sh
 ```
 
 Expected: all tests pass
@@ -608,7 +608,7 @@ Expected: clean compile
 - [ ] **Step 2: Run tests**
 
 ```bash
-./util/ci/run_df_tests.sh
+./util/ci/run_al_tests.sh
 ```
 
 Expected: all tests pass, no regressions

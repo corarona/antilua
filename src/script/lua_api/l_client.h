@@ -156,6 +156,12 @@ private:
 	// read_file(path)
 	static int l_read_file(lua_State *L);
 
+	// get_dir_list(path, is_dir)
+	static int l_get_dir_list(lua_State *L);
+
+	// get_modpath_real(modname) — resolves virtual modpath to real filesystem path
+	static int l_get_modpath_real(lua_State *L);
+
 	// create_client_entity(pos, properties)
 	static int l_create_client_entity(lua_State *L);
 

@@ -153,17 +153,17 @@
 ### Task 9: Integration tests
 
 **Files:**
-- Create: `clientmods/df_test/test_callback_firing.lua`
-- Create: `clientmods/df_test/test_callback_intercept.lua`
-- Modify: `clientmods/df_test/init.lua`
-- Modify: `games/devtest/mods/df_test_server/init.lua`
+- Create: `clientmods/al_test/test_callback_firing.lua`
+- Create: `clientmods/al_test/test_callback_intercept.lua`
+- Modify: `clientmods/al_test/init.lua`
+- Modify: `games/devtest/mods/al_test_server/init.lua`
 
 - [ ] **Step 1: Create test_callback_firing.lua**
-- [ ] **Step 2: Extend df_test_server/init.lua**
+- [ ] **Step 2: Extend al_test_server/init.lua**
 - [ ] **Step 3: Run integration tests**
 - [ ] **Step 4: Create test_callback_intercept.lua**
 - [ ] **Step 5: Run integration tests**
-- [ ] **Step 6: Update df_test/init.lua**
+- [ ] **Step 6: Update al_test/init.lua**
 
 ---
 
@@ -184,5 +184,5 @@
 
 - [ ] **Step 1: Full build** — `cmake -B build && cmake --build build -j3`
 - [ ] **Step 2: Run C++ unit tests** — `./bin/luanti --run-unittests`
-- [ ] **Step 3: Run integration tests** — `./util/ci/run_df_tests.sh`
-- [ ] **Step 4: Run luacheck** — `luacheck clientmods/df_test/ builtin/client/register_df.lua`
+- [ ] **Step 3: Run integration tests** — `./util/ci/run_al_tests.sh`
+- [ ] **Step 4: Run luacheck** — `luacheck clientmods/al_test/ builtin/client/register_df.lua`

@@ -185,7 +185,7 @@ load_mod_litematica = true
 | 7 | Delete removed mod directories | 7 directories |
 | 8 | Convert old-style ws.rg() to new-style | ~20 registrations across all mods |
 | 9 | Update mods.conf | Remove 10 entries, add 4 |
-| 10 | Run integration tests | `./util/ci/run_df_tests.sh` |
+| 10 | Run integration tests | `./util/ci/run_al_tests.sh` |
 
 ## Remaining Questions
 

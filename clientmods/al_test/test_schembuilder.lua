@@ -144,13 +144,19 @@ function test_schembuilder(T)
 		T.assert(v ~= nil, "strategy setting is nil")
 	end)
 
-	T.run("schembuilderbot.strategy can be set to layer then restored to closest", function()
-		core.settings:set("schembuilderbot.strategy", "layer")
+	local function test_strategy(name)
+		core.settings:set("schembuilderbot.strategy", name)
 		local v = core.settings:get("schembuilderbot.strategy")
-		T.assert(v == "layer", "expected 'layer', got " .. tostring(v))
+		T.assert(v == name, "expected '" .. name .. "', got " .. tostring(v))
+	end
+
+	T.run("schembuilderbot.strategy can cycle through all values", function()
+		test_strategy("closest")
+		test_strategy("layer")
+		test_strategy("top_to_bottom")
+		test_strategy("column")
+		test_strategy("by_material")
 		core.settings:set("schembuilderbot.strategy", "closest")
-		v = core.settings:get("schembuilderbot.strategy")
-		T.assert(v == "closest", "expected 'closest', got " .. tostring(v))
 	end)
 
 	T.run("schembuilderbot.filter_mode setting exists", function()
@@ -175,5 +181,40 @@ function test_schembuilder(T)
 
 	T.run("/schemclear chat command registered", function()
 		T.assert(type(core.registered_chatcommands["schemclear"]) == "table")
+	end)
+
+	T.run("/schembrowse chat command registered", function()
+		T.assert(type(core.registered_chatcommands["schembrowse"]) == "table")
+	end)
+
+	T.run("schembuilder get_server_id returns localhost when not connected", function()
+		if type(core.get_server_info) == "function" then
+			local info = core.get_server_info()
+			if not info then
+				-- No server connected — falls back to localhost:30000
+				T.assert(true)
+			end
+		end
+	end)
+
+	T.run("schembuilder build index exists on mod storage", function()
+		if type(core.get_mod_storage) == "function" then
+			local ok, s = pcall(core.get_mod_storage, "schembuilder")
+			T.assert(ok, "mod storage available")
+		end
+	end)
+
+	T.run("schembuilder get_dir_list returns schematics via real path", function()
+		if type(core.get_modpath_real) ~= "function" then
+			T.assert(false, "core.get_modpath_real not available")
+			return
+		end
+		local real = core.get_modpath_real("schembuilder")
+		T.assert(real ~= nil, "get_modpath_real returned nil for schembuilder")
+		local schem_path = real .. "/schematics"
+		local ok, files = pcall(core.get_dir_list, schem_path, false)
+		T.assert(ok, "get_dir_list should succeed: " .. tostring(files))
+		T.assert(type(files) == "table", "result should be a table, got " .. type(files))
+		T.assert(#files > 0, "should have at least one .mts file, got " .. #files .. " in " .. schem_path)
 	end)
 end

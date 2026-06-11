@@ -96,7 +96,7 @@ dofile(minetest.get_modpath("wasplib") .. "/notification.lua")
 
 - [ ] **Step 3: Run integration tests to verify no regressions**
 
-Run: `./util/ci/run_df_tests.sh`
+Run: `./util/ci/run_al_tests.sh`
 Expected: All existing tests PASS (no behavior change yet, notification.lua is loaded but unused)
 
 ---
@@ -144,7 +144,7 @@ end
 
 - [ ] **Step 2: Run integration tests to verify lifecycle**
 
-Run: `./util/ci/run_df_tests.sh`
+Run: `./util/ci/run_al_tests.sh`
 Expected: All tests PASS including lifecycle tests (notification calls will invoke default handler which calls `core.display_chat_message` — no crash)
 
 ---
@@ -489,7 +489,7 @@ Expected: Compiles without errors
 
 - [ ] **Step 2: Run integration tests**
 
-Run: `./util/ci/run_df_tests.sh`
+Run: `./util/ci/run_al_tests.sh`
 Expected: All tests PASS
 
 ---
@@ -636,7 +636,7 @@ Convert all `ws.dcm(...)` calls to `ws.notify(..., {toast=false})` with appropri
 ### Task 19: Write integration tests
 
 **Files:**
-- Modify: `clientmods/df_test/test_df_mods.lua`
+- Modify: `clientmods/al_test/test_df_mods.lua`
 
 - [ ] **Step 1: Add notification API tests**
 
@@ -651,7 +651,7 @@ Add tests for:
 -- Test notification API (requires wasplib)
 if ws and ws.notify then
 	local test_notify = function(name, fn)
-		core.df_test_assert(name, fn)
+		core.al_test_assert(name, fn)
 	end
 
 	test_notify("ws.notify() calls handler", function()
@@ -707,7 +707,7 @@ Expected: Compiles with no errors
 
 - [ ] **Step 2: Run integration tests**
 
-Run: `./util/ci/run_df_tests.sh`
+Run: `./util/ci/run_al_tests.sh`
 Expected: All tests PASS
 
 - [ ] **Step 3: Run C++ unit tests**
@@ -745,4 +745,4 @@ Expected: All unit tests PASS
 - `clientmods/DRAGONFIRE/nlist/init.lua` — migrate ws.dcm
 - `clientmods/DRAGONFIRE/poi/init.lua` — migrate ws.dcm
 - `clientmods/DRAGONFIRE/devtools/init.lua` — migrate ws.dcm
-- `clientmods/df_test/test_df_mods.lua` — notification API tests
+- `clientmods/al_test/test_df_mods.lua` — notification API tests

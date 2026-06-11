@@ -372,13 +372,16 @@ ToastManager *Client::getToastManager()
 
 const std::vector<ModSpec>& Client::getMods() const
 {
-	static std::vector<ModSpec> client_modspec_temp;
-	return client_modspec_temp;
+	return m_mods;
 }
 
 const ModSpec* Client::getModSpec(const std::string &modname) const
 {
-	return NULL;
+	for (const auto &mod : m_mods) {
+		if (mod.name == modname)
+			return &mod;
+	}
+	return nullptr;
 }
 
 void Client::Stop()
