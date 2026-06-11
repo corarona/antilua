@@ -1,5 +1,5 @@
 -- Antilua-specific chat commands.
--- Loaded after chatcommands.lua — keeps DF additions separate from upstream.
+-- Antilua-specific additions.
 
 core.register_chatcommand("say", {
 	description = "Send raw text",

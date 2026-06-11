@@ -469,12 +469,12 @@ function settingtypes.parse_config_file(read_all, parse_mods)
 		file:close()
 	end
 
-	-- Load Dragonfire-specific setting type definitions
+	-- Load Antilua-specific setting type definitions
 	do
-		local df_path = core.get_builtin_path() .. "settingtypes_df.txt"
-		local file = io.open(df_path, "r")
+		local al_path = core.get_builtin_path() .. "settingtypes_al.txt"
+		local file = io.open(al_path, "r")
 		if file then
-			parse_single_file(file, df_path, read_all, settings, 0, true)
+			parse_single_file(file, al_path, read_all, settings, 0, true)
 			file:close()
 		end
 	end
