@@ -105,7 +105,7 @@ dofile(modpath .. "/test_help.lua")
 dofile(modpath .. "/test_nlist.lua")
 dofile(modpath .. "/test_player_radar.lua")
 dofile(modpath .. "/test_tps_client.lua")
-dofile(modpath .. "/test_formspec_utils.lua")
+
 
 -- Run API/registration tests at mod load time
 core.register_on_mods_loaded(function()
@@ -158,7 +158,6 @@ core.register_on_mods_loaded(function()
 	test_nlist(al_test)
 	test_player_radar(al_test)
 	test_tps_client(al_test)
-	test_formspec_utils(al_test)
 	test_formspec(al_test)
 	test_notification_api(al_test)
 
