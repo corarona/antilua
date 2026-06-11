@@ -909,7 +909,9 @@ if sbots and sbots.register_bot then
 			local seen = {}
 			local items = {}
 			for _, entry in ipairs(nodes) do
-				if entry.y == target_y and entry.name ~= "air" and entry.name ~= "ignore" and not seen[entry.name] then
+				if entry.y >= target_y and entry.y <= target_y + 2
+					and entry.name ~= "air" and entry.name ~= "ignore"
+					and not seen[entry.name] then
 					seen[entry.name] = true
 					table.insert(items, entry.name)
 				end
@@ -1077,16 +1079,18 @@ if sbots and sbots.register_bot then
 			local idx = strat.find_target(place_nodes, pos, has_item, is_node_allowed)
 			if idx then
 				self._current_entry = place_nodes[idx]
+				local target = place_nodes[idx]
 				self._strat_state = {
-					target = place_nodes[idx],
+					target = target,
 					max_batch_y = strat.max_batch_y and strat.max_batch_y(pos),
 				}
 				self._is_supply_target = nil
-				return vector.new(
-					self._current_entry.x,
-					self._current_entry.y,
-					self._current_entry.z
-				)
+				-- Layer strategy: stand 3 above target, place 3 layers at once
+				if name == "layer" then
+					self._strat_state.max_batch_y = target.y + 2
+					return vector.new(target.x, target.y + 3, target.z)
+				end
+				return vector.new(target.x, target.y, target.z)
 			end
 
 			-- No buildable nodes found, try nearest supply chest
