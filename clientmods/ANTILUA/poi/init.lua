@@ -322,15 +322,15 @@ local function get_unique_groups()
 end
 
 function poi.display_formspec()
+	local af = core.al_formspec
 	local raw_wps = poi.getwps()
-	local parts = {}
+	local sb = af.begin("size[13.5,10]")
 
-	table.insert(parts, "formspec_version[4]")
-	table.insert(parts, "size[13.5,10]")
-	table.insert(parts, "no_prepend[]")
-	table.insert(parts, "background9[1,1;1,1;blank.png;true;7]")
-	table.insert(parts, "bgcolor[#000000AA;false]")
-	table.insert(parts, "label[0.25,0.5;Waypoint list]")
+	sb:add(
+		"background9[1,1;1,1;blank.png;true;7]",
+		af.bgcolor("#000000AA", false),
+		af.label(0.25, 0.5, "Waypoint list")
+	)
 
 	-- Group filter dropdown
 	local groups = get_unique_groups()
@@ -342,7 +342,7 @@ function poi.display_formspec()
 	for i, g in ipairs(filter_items) do
 		if g == filter_group then filter_sel = i end
 	end
-	table.insert(parts, "dropdown[3,0.25;2.5,0.5;group_filter;" .. table.concat(filter_items, ",") .. ";" .. filter_sel .. ";true]")
+	sb:add(af.dropdown(3, 0.25, 2.5, "group_filter", filter_items, filter_sel))
 
 	-- Filter waypoints by group
 	local waypoints = raw_wps
@@ -374,10 +374,8 @@ function poi.display_formspec()
 				entry = entry .. " (" .. math.floor(d) .. "m)"
 			end
 		end
-		table.insert(tl_entries, "##" .. core.formspec_escape(entry))
+		table.insert(tl_entries, "##" .. af.escape(entry))
 	end
-	local tl = "textlist[0.25,0.75;8.5,6;wp_list;"
-	tl = tl .. table.concat(tl_entries, ",")
 	local sel = 1
 	if not selected_name and #waypoints > 0 then
 		selected_name = waypoints[1]
@@ -385,21 +383,22 @@ function poi.display_formspec()
 	for id, name in ipairs(waypoints) do
 		if name == selected_name then sel = id end
 	end
-	tl = tl .. ";" .. sel .. "]"
-	table.insert(parts, tl)
+	sb:add("textlist[0.25,0.75;8.5,6;wp_list;" .. table.concat(tl_entries, ",") .. ";" .. sel .. "]")
 
 	-- Screenshot thumbnail (right side)
 	if selected_name then
 		local ss = get_screenshot(selected_name)
 		if ss then
-			table.insert(parts, "image[9.25,0.75;3.5,2.5;" .. ss .. "]")
+			sb:add(af.image(9.25, 0.75, 3.5, 2.5, ss))
 		end
 	end
 
 	-- Action buttons
 	local sort_label = sort_by_distance and "Dist" or "A-Z"
-	table.insert(parts, "button[0.5,7.5;1,0.5;sort_toggle;" .. sort_label .. "]")
-	table.insert(parts, "button_exit[1.7,7.5;1,0.5;display;Show]")
+	sb:add(
+		af.button(0.5, 7.5, 1, 0.5, "sort_toggle", sort_label),
+		af.button_exit(1.7, 7.5, 1, 0.5, "display", "Show")
+	)
 
 	-- Color dropdown (only when a waypoint is selected)
 	if selected_name then
@@ -413,28 +412,28 @@ function poi.display_formspec()
 		for _, c in ipairs(WP_COLORS) do
 			table.insert(color_names, c.name)
 		end
-		table.insert(parts, "dropdown[3,7.5;1.8,0.5;wp_color;" .. table.concat(color_names, ",") .. ";" .. sel_idx .. ";true]")
+		sb:add(af.dropdown(3, 7.5, 1.8, "wp_color", color_names, sel_idx))
 	end
 
-	table.insert(parts, "button[9,7.5;1.3,0.5;rename;Rename]")
-	table.insert(parts, "button[10.5,7.5;1.3,0.5;delete;Delete]")
+	sb:add(
+		af.button(9, 7.5, 1.3, 0.5, "rename", "Rename"),
+		af.button(10.5, 7.5, 1.3, 0.5, "delete", "Delete")
+	)
 
-	-- Waypoint position label
+	-- Waypoint position label and group field
 	if selected_name then
 		local pos = poi.get_waypoint(selected_name)
 		if pos then
-			local label = "Waypoint position: "
-				.. core.formspec_escape(pos.x .. ", " .. pos.y .. ", " .. pos.z)
-			table.insert(parts, "label[0.25,7.25;" .. label .. "]")
+			sb:add(af.label(0.25, 7.25, "Waypoint position: " .. pos.x .. ", " .. pos.y .. ", " .. pos.z))
 		end
 		local cur_group = poi.get_group(selected_name)
-		table.insert(parts, "field[5,7.25;3.5,0.5;wp_group;Group;" .. core.formspec_escape(cur_group) .. "]")
+		sb:add(af.field(5, 7.25, 3.5, 0.5, "wp_group", "Group", cur_group))
 	end
 
 	-- Transport buttons
 	local sp, y = 0.5, 8.25
 	for _, v in ipairs(poi.registered_transports) do
-		table.insert(parts, "button_exit[" .. sp .. "," .. y .. ";1,0.5;" .. v.name .. ";" .. v.name .. "]")
+		sb:add(af.button_exit(sp, y, 1, 0.5, v.name, v.name))
 		sp = sp + 1
 		if sp > 10 then
 			y = y + 0.75
@@ -442,7 +441,7 @@ function poi.display_formspec()
 		end
 	end
 
-	return core.show_formspec("poi-csm", table.concat(parts))
+	return core.show_formspec("poi-csm", sb:get())
 end
 
 --
@@ -468,28 +467,28 @@ end)
 --
 
 local function show_rename_fs(name)
-	return core.show_formspec("poi-csm", table.concat({
-		"formspec_version[4]",
-		"size[6,3]",
-		"no_prepend[]",
-		"bgcolor[#000000AA;false]",
-		"label[0.35,0.2;Rename waypoint]",
-		"field[0.3,1.3;6,1;new_name;New name;" .. core.formspec_escape(name) .. "]",
-		"button[0,2;3,1;cancel;Cancel]",
-		"button[3,2;3,1;rename_confirm;Rename]",
-	}))
+	local af = core.al_formspec
+	local sb = af.begin("size[6,3]")
+	sb:add(
+		af.bgcolor("#000000AA", false),
+		af.label(0.35, 0.2, "Rename waypoint"),
+		af.field(0.3, 1.3, 6, 1, "new_name", "New name", name),
+		af.button(0, 2, 3, 1, "cancel", "Cancel"),
+		af.button(3, 2, 3, 1, "rename_confirm", "Rename")
+	)
+	return core.show_formspec("poi-csm", sb:get())
 end
 
 local function show_delete_fs(name)
-	return core.show_formspec("poi-csm", table.concat({
-		"formspec_version[4]",
-		"size[6,2]",
-		"no_prepend[]",
-		"bgcolor[#000000AA;false]",
-		"label[0.35,0.25;Are you sure you want to delete \"" .. name .. "\"?]",
-		"button[0,1;3,1;cancel;Cancel]",
-		"button[3,1;3,1;delete_confirm;Delete]",
-	}))
+	local af = core.al_formspec
+	local sb = af.begin("size[6,2]")
+	sb:add(
+		af.bgcolor("#000000AA", false),
+		af.label(0.35, 0.25, [[Are you sure you want to delete "]] .. name .. [["?]]),
+		af.button(0, 1, 3, 1, "cancel", "Cancel"),
+		af.button(3, 1, 3, 1, "delete_confirm", "Delete")
+	)
+	return core.show_formspec("poi-csm", sb:get())
 end
 
 core.register_on_formspec_input(function(formname, fields)
