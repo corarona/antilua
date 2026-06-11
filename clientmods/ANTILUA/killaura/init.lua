@@ -1,4 +1,4 @@
-killaura = {
+local killaura = {
 	hph = 1,
 	hit_y = -0.1,
 }
@@ -19,13 +19,17 @@ function killaura.punch_object(obj)
 end
 
 local function not_in_friendlist(obj)
+	if not nlist then return true end
 	local friends = nlist.get("friends")
+	if not friends then return true end
 	return table.indexof(friends, obj:get_name()) == -1
 		and table.indexof(friends, obj:get_properties().nametag) == -1
 end
 
 local function in_enemylist(obj)
+	if not nlist then return false end
 	local enemies = nlist.get("enemies")
+	if not enemies then return false end
 	return table.indexof(enemies, obj:get_name()) ~= -1
 		or table.indexof(enemies, obj:get_properties().nametag) ~= -1
 end
@@ -34,7 +38,8 @@ local function is_mob(obj)
 	local p = obj and obj:get_properties()
 	local r = obj and obj:get_rotation()
 	local m = p and p.mesh
-	return p and r and r.z == 0 and m and (m:find("mobs_mc") or m:find("extra_mobs"))
+	return p and r and r.z == 0 and m
+		and (m:find("mobs_mc") or m:find("extra_mobs"))
 end
 
 local function hit_objects(radius, check)
@@ -42,7 +47,7 @@ local function hit_objects(radius, check)
 	local lp = pl:get_pos()
 	local rt = false
 	for _, obj in pairs(core.get_objects_inside_radius(lp, radius)) do
-		if not check or (check and check(obj)) then
+		if not check or check(obj) then
 			killaura.punch_object(obj)
 			rt = true
 		end
@@ -71,6 +76,37 @@ local function make_filter(mode)
 	end
 end
 
+local function build_formspec()
+	local function esc(t)
+		local out = {}
+		for _, v in ipairs(t) do
+			table.insert(out, core.formspec_escape(v))
+		end
+		return table.concat(out, ",")
+	end
+
+	local friends = nlist and nlist.get("friends") or {}
+	local enemies = nlist and nlist.get("enemies") or {}
+	local f_str = #friends > 0 and esc(friends) or " "
+	local e_str = #enemies > 0 and esc(enemies) or " "
+
+	local fs = "size[10,8.5]"
+	fs = fs .. "bgcolor[#000000;true]"
+	fs = fs .. "label[0.3,0;Friends (not attacked)]"
+	fs = fs .. "textlist[0.3,0.5;4.4,3;friend_entries;" .. f_str .. ";1]"
+	fs = fs .. "field[0.3,3.8;7,0.8;friend_input;;]"
+	fs = fs .. "button[7.4,3.8;1.2,0.8;btn_add_friend;Add]"
+	fs = fs .. "button[8.7,3.8;1.2,0.8;btn_rm_friend;Rem]"
+	fs = fs .. "label[5.3,0;Enemies (always attacked)]"
+	fs = fs .. "textlist[5.3,0.5;4.4,3;enemy_entries;" .. e_str .. ";1]"
+	fs = fs .. "field[5.3,3.8;7,0.8;enemy_input;;]"
+	fs = fs .. "button[7.4,3.8;1.2,0.8;btn_add_enemy;Add]"
+	fs = fs .. "button[8.7,3.8;1.2,0.8;btn_rm_enemy;Rem]"
+	fs = fs .. "label[0.3,4.8;Tip: click a name in the list to remove it]"
+	fs = fs .. "button_exit[8.5,7.5;1.3,0.8;btn_done;Done]"
+	return fs
+end
+
 ws.rg("Killaura", {
 	category = "Combat",
 	setting = "killaura",
@@ -79,7 +115,7 @@ ws.rg("Killaura", {
 		if not mode or mode == "" then mode = "players_enemies" end
 		local filter = make_filter(mode)
 		if filter then
-			hit_objects(tonumber(core.settings:get("killaura.range")) or 10, filter)
+			hit_objects(killaura.get("range"), filter)
 		end
 	end,
 	cheat_settings = {
@@ -92,41 +128,17 @@ ws.rg("Killaura", {
 			values = {"players_enemies", "players_all", "mobs", "all"},
 		},
 	},
-	get_formspec = function(setting)
-		local function esc(t)
-			local out = {}
-			for _, v in ipairs(t) do
-				table.insert(out, core.formspec_escape(v))
-			end
-			return table.concat(out, ",")
-		end
-
-		local friends = nlist.get("friends")
-		local enemies = nlist.get("enemies")
-		local f_str = #friends > 0 and esc(friends) or " "
-		local e_str = #enemies > 0 and esc(enemies) or " "
-
-		local fs = "size[10,8.5]"
-		fs = fs .. "bgcolor[#000000;true]"
-		fs = fs .. "label[0.3,0;Friends (not attacked)]"
-		fs = fs .. "textlist[0.3,0.5;4.4,3;friend_entries;" .. f_str .. ";1]"
-		fs = fs .. "field[0.3,3.8;7,0.8;friend_input;;]"
-		fs = fs .. "button[7.4,3.8;1.2,0.8;btn_add_friend;Add]"
-		fs = fs .. "button[8.7,3.8;1.2,0.8;btn_rm_friend;Rem]"
-		fs = fs .. "label[5.3,0;Enemies (always attacked)]"
-		fs = fs .. "textlist[5.3,0.5;4.4,3;enemy_entries;" .. e_str .. ";1]"
-		fs = fs .. "field[5.3,3.8;7,0.8;enemy_input;;]"
-		fs = fs .. "button[7.4,3.8;1.2,0.8;btn_add_enemy;Add]"
-		fs = fs .. "button[8.7,3.8;1.2,0.8;btn_rm_enemy;Rem]"
-		fs = fs .. "label[0.3,4.8;Tip: click a name in the list to remove it]"
-		fs = fs .. "button_exit[8.5,7.5;1.3,0.8;btn_done;Done]"
-		return fs
-	end,
+	get_formspec = build_formspec,
 })
 
 core.register_on_formspec_input(function(formname, fields)
 	if formname ~= "cheat_settings:killaura:custom" then return end
 	if fields.btn_done or not next(fields) then return end
+
+	if not nlist then
+		core.log("warning", "[killaura] nlist not available for friend/enemy management")
+		return
+	end
 
 	if fields.btn_add_friend and fields.friend_input and fields.friend_input ~= "" then
 		nlist.add("friends", fields.friend_input)
@@ -142,4 +154,8 @@ core.register_on_formspec_input(function(formname, fields)
 	end
 end)
 
-core.register_list_command("friend", "Configure Friend List (friends are not attacked by Killaura)", "friendlist")
+-- Public API for external mods
+killaura = {
+	get = killaura.get,
+	punch_object = killaura.punch_object,
+}
