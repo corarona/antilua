@@ -42,17 +42,50 @@ local function is_mob(obj)
 		and (m:find("mobs_mc") or m:find("extra_mobs"))
 end
 
-local function hit_objects(radius, check)
+local function get_target_name(obj)
+	if obj:is_player() then
+		return obj:get_name()
+	end
+	local props = obj:get_properties()
+	return (props and props.nametag) or "mob"
+end
+
+local function make_hp_bar(hp, max_hp)
+	local segments = 10
+	local filled = math.max(0, math.min(math.floor((hp / math.max(max_hp, 1)) * segments), segments))
+	local bar = {}
+	for i = 1, segments do
+		bar[i] = i <= filled and "█" or "░"
+	end
+	return table.concat(bar)
+end
+
+local function get_hp_color(hp, max_hp)
+	local ratio = hp / math.max(max_hp, 1)
+	if ratio > 0.6 then
+		return 0xFFCCFFCC
+	elseif ratio > 0.3 then
+		return 0xFFFFFF88
+	end
+	return 0xFFFF8888
+end
+
+local function hit_objects(radius, filter)
 	local pl = core.localplayer
 	local lp = pl:get_pos()
-	local rt = false
+	local closest_obj = nil
+	local closest_dist = math.huge
 	for _, obj in pairs(core.get_objects_inside_radius(lp, radius)) do
-		if not check or check(obj) then
+		if not filter or filter(obj) then
 			killaura.punch_object(obj)
-			rt = true
+			local dist = vector.distance(lp, obj:get_pos())
+			if dist < closest_dist then
+				closest_obj = obj
+				closest_dist = dist
+			end
 		end
 	end
-	return rt
+	return closest_obj
 end
 
 local function make_filter(mode)
@@ -107,15 +140,56 @@ local function build_formspec()
 	return fs
 end
 
+local function update_target_hud(closest)
+	if not killaura.hud_id then return end
+	if not closest then
+		core.localplayer:hud_change(killaura.hud_id, "text", "")
+		return
+	end
+
+	local name = get_target_name(closest)
+	if #name > 16 then name = name:sub(1, 14) .. ".." end
+	local hp = closest:get_hp() or 0
+	local props = closest:get_properties()
+	local max_hp = (props and props.hp_max) or 20
+	local dist = vector.distance(core.localplayer:get_pos(), closest:get_pos())
+	local hp_bar = make_hp_bar(hp, max_hp)
+	local color = get_hp_color(hp, max_hp)
+	local text = string.format("► %s   ♥ %d/%d   %s   %.1fm", name, hp, max_hp, hp_bar, dist)
+
+	core.localplayer:hud_change(killaura.hud_id, "number", color)
+	core.localplayer:hud_change(killaura.hud_id, "text", text)
+end
+
 ws.rg("Killaura", {
 	category = "Combat",
 	setting = "killaura",
+	on_start = function(self)
+		if not core.localplayer then return false end
+		killaura.hud_id = core.localplayer:hud_add({
+			hud_elem_type = "text",
+			position = {x = 1, y = 0.28},
+			alignment = {x = -1, y = 0},
+			offset = {x = -10, y = 0},
+			number = 0xFFCCCCCC,
+			scale = {x = 1.5, y = 1.5},
+		})
+		return true
+	end,
 	on_step = function(self, dtime)
 		local mode = core.settings:get("killaura.target_mode")
 		if not mode or mode == "" then mode = "players_enemies" end
 		local filter = make_filter(mode)
+		local closest = nil
 		if filter then
-			hit_objects(killaura.get("range"), filter)
+			closest = hit_objects(killaura.get("range"), filter)
+		end
+		update_target_hud(closest)
+	end,
+	on_stop = function(self)
+		if killaura.hud_id then
+			core.localplayer:hud_remove(killaura.hud_id)
+			killaura.hud_id = nil
 		end
 	end,
 	cheat_settings = {
@@ -155,7 +229,7 @@ core.register_on_formspec_input(function(formname, fields)
 end)
 
 -- Public API for external mods
-killaura = {
+_G.killaura = {
 	get = killaura.get,
 	punch_object = killaura.punch_object,
 }
