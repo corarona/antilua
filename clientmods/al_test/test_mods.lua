@@ -447,7 +447,7 @@ function test_notification_api(T)
 	end)
 
 	T.defer("lifecycle: on_start success triggers notify_cheat true", function()
-		local test_setting = "al_test_notify_lifecycle_success"
+		local test_setting = "al_test_notify_success2"
 		core.settings:set(test_setting, "false")
 		local notified_name = nil
 		local notified_enabled = nil

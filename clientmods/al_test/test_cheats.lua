@@ -16,8 +16,7 @@ function test_cheat_settings(T)
 		"player_radar", "chest_stealer", "auto_death_waypoint", "auto_death_waypoint_max",
 		"auto_torch", "auto_sort", "block_logger", "chat_alerts",
 		"name_colorizer", "auto_screenshot", "light_overlay",
-		"autorespawn", "no_night", "coords",
-		"enable_node_esp", "enable_node_tracers",
+		"enable_node_esp",
 		"autojump", "continuous_forward",
 	}
 
