@@ -69,8 +69,8 @@ static bool detect_touch()
 #endif
 }
 
-// Dragonfire-specific default settings (kept separate to reduce merge conflicts)
-static void set_df_default_settings()
+// Antilua-specific default settings (kept separate to reduce merge conflicts)
+static void set_al_default_settings()
 {
 	Settings *settings = Settings::getLayer(SL_DEFAULTS);
 
@@ -694,5 +694,5 @@ void set_default_settings()
 	// Tablets >= 6.0 use non-Android defaults for these settings
 #endif
 
-	set_df_default_settings();
+	set_al_default_settings();
 }
