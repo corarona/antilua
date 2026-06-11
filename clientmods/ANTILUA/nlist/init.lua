@@ -162,6 +162,7 @@ ws.rg('NlEdMode', { category = 'Misc', setting = 'nlist_edmode',
 	on_start = function(self) end,
 	on_stop = function(self) nlist.hide() end,
 	get_formspec = function(setting)
+		local af = core.al_formspec
 		local entries = nlist.get(sl)
 		local lists = nlist.get_lists()
 		if not table.indexof(lists, sl) then
@@ -169,38 +170,31 @@ ws.rg('NlEdMode', { category = 'Misc', setting = 'nlist_edmode',
 		end
 		table.sort(lists)
 
-		local function esc_list(t)
-			local out = {}
-			for _, v in ipairs(t) do
-				table.insert(out, core.formspec_escape(v))
-			end
-			return table.concat(out, ",")
-		end
-
-		local entries_str = #entries > 0 and esc_list(entries) or " "
-
 		local sel_idx = 1
 		for i, name in ipairs(lists) do
 			if name == sl then sel_idx = i break end
 		end
 
-		local fs = "size[10,11]"
-		fs = fs .. "bgcolor[#000000;true]"
-		fs = fs .. "label[0.3,0;List: " .. core.formspec_escape(sl) .. " [" .. mode_name() .. "]]"
-		fs = fs .. "textlist[0.3,0.5;9.4,5.5;entries;" .. entries_str .. ";1]"
-		fs = fs .. "dropdown[5.5,0.5;4.2;list_select;" .. esc_list(lists) .. ";" .. sel_idx .. "]"
-		fs = fs .. "label[5.5,1.7;Select list]"
-		fs = fs .. "button[5.5,2.2;2,0.8;btn_addlist;+ New]"
-		fs = fs .. "button[7.6,2.2;2,0.8;btn_rmlist;- Delete]"
-		fs = fs .. "button[5.5,3.2;4.2,0.8;btn_rename;Rename]"
-		fs = fs .. "field[0.3,6.3;7,0.8;rename_input;;]"
-		fs = fs .. "label[0.3,7.3;Item (or select from list to remove)]"
-		fs = fs .. "field[0.3,7.8;7,0.8;item_input;;]"
-		fs = fs .. "button[7.4,7.8;1.2,0.8;btn_addentry;Add]"
-		fs = fs .. "button[8.7,7.8;1.2,0.8;btn_rmentry;Rem]"
-		fs = fs .. "button[0.3,9;2,0.8;btn_clear;Clear all]"
-		fs = fs .. "button_exit[8.5,10;1.3,0.8;btn_done;Done]"
-		return fs
+		local sb = af.new()
+		sb:add(
+			"size[10,11]",
+			af.bgcolor("#000000", true),
+			af.label(0.3, 0, "List: " .. sl .. " [" .. mode_name() .. "]"),
+			af.textlist(0.3, 0.5, 9.4, 5.5, "entries", entries),
+			af.dropdown(5.5, 0.5, 4.2, "list_select", lists, sel_idx),
+			af.label(5.5, 1.7, "Select list"),
+			af.button(5.5, 2.2, 2, 0.8, "btn_addlist", "+ New"),
+			af.button(7.6, 2.2, 2, 0.8, "btn_rmlist", "- Delete"),
+			af.button(5.5, 3.2, 4.2, 0.8, "btn_rename", "Rename"),
+			af.field(0.3, 6.3, 7, 0.8, "rename_input", "", ""),
+			af.label(0.3, 7.3, "Item (or select from list to remove)"),
+			af.field(0.3, 7.8, 7, 0.8, "item_input", "", ""),
+			af.button(7.4, 7.8, 1.2, 0.8, "btn_addentry", "Add"),
+			af.button(8.7, 7.8, 1.2, 0.8, "btn_rmentry", "Rem"),
+			af.button(0.3, 9, 2, 0.8, "btn_clear", "Clear all"),
+			af.button_exit(8.5, 10, 1.3, 0.8, "btn_done", "Done")
+		)
+		return sb:get()
 	end,
 })
 

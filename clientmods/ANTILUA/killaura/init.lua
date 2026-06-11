@@ -110,34 +110,27 @@ local function make_filter(mode)
 end
 
 local function build_formspec()
-	local function esc(t)
-		local out = {}
-		for _, v in ipairs(t) do
-			table.insert(out, core.formspec_escape(v))
-		end
-		return table.concat(out, ",")
-	end
-
+	local af = core.al_formspec
 	local friends = nlist and nlist.get("friends") or {}
 	local enemies = nlist and nlist.get("enemies") or {}
-	local f_str = #friends > 0 and esc(friends) or " "
-	local e_str = #enemies > 0 and esc(enemies) or " "
-
-	local fs = "size[10,8.5]"
-	fs = fs .. "bgcolor[#000000;true]"
-	fs = fs .. "label[0.3,0;Friends (not attacked)]"
-	fs = fs .. "textlist[0.3,0.5;4.4,3;friend_entries;" .. f_str .. ";1]"
-	fs = fs .. "field[0.3,3.8;7,0.8;friend_input;;]"
-	fs = fs .. "button[7.4,3.8;1.2,0.8;btn_add_friend;Add]"
-	fs = fs .. "button[8.7,3.8;1.2,0.8;btn_rm_friend;Rem]"
-	fs = fs .. "label[5.3,0;Enemies (always attacked)]"
-	fs = fs .. "textlist[5.3,0.5;4.4,3;enemy_entries;" .. e_str .. ";1]"
-	fs = fs .. "field[5.3,3.8;7,0.8;enemy_input;;]"
-	fs = fs .. "button[7.4,3.8;1.2,0.8;btn_add_enemy;Add]"
-	fs = fs .. "button[8.7,3.8;1.2,0.8;btn_rm_enemy;Rem]"
-	fs = fs .. "label[0.3,4.8;Tip: click a name in the list to remove it]"
-	fs = fs .. "button_exit[8.5,7.5;1.3,0.8;btn_done;Done]"
-	return fs
+	local sb = af.new()
+	sb:add(
+		"size[10,8.5]",
+		af.bgcolor("#000000", true),
+		af.label(0.3, 0, "Friends (not attacked)"),
+		af.textlist(0.3, 0.5, 4.4, 3, "friend_entries", friends),
+		af.field(0.3, 3.8, 7, 0.8, "friend_input", "", ""),
+		af.button(7.4, 3.8, 1.2, 0.8, "btn_add_friend", "Add"),
+		af.button(8.7, 3.8, 1.2, 0.8, "btn_rm_friend", "Rem"),
+		af.label(5.3, 0, "Enemies (always attacked)"),
+		af.textlist(5.3, 0.5, 4.4, 3, "enemy_entries", enemies),
+		af.field(5.3, 3.8, 7, 0.8, "enemy_input", "", ""),
+		af.button(7.4, 3.8, 1.2, 0.8, "btn_add_enemy", "Add"),
+		af.button(8.7, 3.8, 1.2, 0.8, "btn_rm_enemy", "Rem"),
+		af.label(0.3, 4.8, "Tip: click a name in the list to remove it"),
+		af.button_exit(8.5, 7.5, 1.3, 0.8, "btn_done", "Done")
+	)
+	return sb:get()
 end
 
 local function update_target_hud(closest)
@@ -226,6 +219,7 @@ core.register_on_formspec_input(function(formname, fields)
 	if fields.btn_rm_enemy and fields.enemy_input and fields.enemy_input ~= "" then
 		nlist.remove("enemies", fields.enemy_input)
 	end
+	core.show_cheat_settings_form("killaura")
 end)
 
 -- Public API for external mods
