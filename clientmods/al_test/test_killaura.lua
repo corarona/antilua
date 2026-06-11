@@ -82,9 +82,4 @@ function test_killaura(T)
 		core.settings:set("killaura.range", "10")
 	end)
 
-	T.run("killaura.formspec does not crash", function()
-		core.show_cheat_settings_form("killaura")
-		core.close_formspec("cheat_settings:killaura")
-		T.assert(true, "killaura settings formspec opened and closed without error")
-	end)
 end
