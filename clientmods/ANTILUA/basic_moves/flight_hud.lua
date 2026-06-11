@@ -43,7 +43,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 
 		-- Horizon background
 		self._hud_bg = core.localplayer:hud_add({
-			hud_elem_type = "image", position = {x = 1, y = 1},
+			type = "image", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
 			offset = {x = -262, y = -309},
 			scale = {x = 2, y = 2},
@@ -52,7 +52,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 
 		-- Indicator line centered on the horizon image
 		self._hud_line = core.localplayer:hud_add({
-			hud_elem_type = "image", position = {x = 1, y = 1},
+			type = "image", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
 			offset = {x = -247, y = -294},
 			scale = {x = S, y = S},
@@ -62,7 +62,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 
 		-- Pitch/Roll numeric text (centered above horizon image)
 		self._hud_pitch = core.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 1, y = 1},
+			type = "text", position = {x = 1, y = 1},
 			alignment = {x = 0.5, y = 1},
 			offset = {x = -174, y = -340},
 			number = 0xFF66AAFF, text = ""
@@ -70,7 +70,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 
 		-- Target info (above pitch/roll)
 		self._hud_target = core.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 1, y = 1},
+			type = "text", position = {x = 1, y = 1},
 			alignment = {x = 0.5, y = 1},
 			offset = {x = -174, y = -400},
 			number = 0xFF88FF88, text = ""
@@ -78,14 +78,14 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 
 		-- Altitude bar
 		self._hud_alt_bar = core.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 1, y = 1},
+			type = "text", position = {x = 1, y = 1},
 			alignment = {x = 0.5, y = 1},
 			offset = {x = -15, y = -290},
 			number = 0xFF88FF88, text = ""
 		})
 		-- Y: value right under the bar
 		self._hud_alt = core.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 1, y = 1},
+			type = "text", position = {x = 1, y = 1},
 			alignment = {x = 0.5, y = 1},
 			offset = {x = -30, y = -50},
 			number = 0xFF88FF88, text = ""
@@ -93,13 +93,13 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 
 		-- Speed bar (below altitude, same x)
 		self._hud_speed = core.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 1, y = 1},
+			type = "text", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
 			offset = {x = -200, y = -50},
 			number = 0xFFFFCC66, text = ""
 		})
 		self._hud_speed_bar = core.localplayer:hud_add({
-			hud_elem_type = "text", position = {x = 1, y = 1},
+			type = "text", position = {x = 1, y = 1},
 			alignment = {x = 1, y = 1},
 			offset = {x = -200, y = -38},
 			number = 0xFFAAAAAA, text = ""

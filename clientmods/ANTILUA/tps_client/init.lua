@@ -19,7 +19,7 @@ core.register_on_modchannel_message(function(channel_name, sender, message)
 			core.localplayer:hud_change(hud, "text", message)
 		else
 			hud = core.localplayer:hud_add({
-				hud_elem_type = "text",
+				type = "text",
 				position = {x = 1, y = 1},
 				alignment = {x = -1, y = -1},
 				offset = {x = -25, y = -25},
@@ -27,7 +27,7 @@ core.register_on_modchannel_message(function(channel_name, sender, message)
 				number = 0xFFFFFF,
 			})
 			ping_hud = core.localplayer:hud_add({
-				hud_elem_type = "text",
+				type = "text",
 				position = {x = 1, y = 1},
 				alignment = {x = -1, y = -1},
 				offset = {x = -50, y = -25},

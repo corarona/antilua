@@ -14,7 +14,7 @@ end
 function ws.display_wp(pos, name)
 	local ix = #ws.displayed_wps + 1
 	ws.displayed_wps[ix] = core.localplayer:hud_add({
-		hud_elem_type = 'waypoint',
+		type = 'waypoint',
 		name = name,
 		text = name,
 		number = 0x00ff00,

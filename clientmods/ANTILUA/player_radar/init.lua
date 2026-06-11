@@ -96,7 +96,7 @@ local function update_radar()
 		core.localplayer:hud_change(hud_id, "text", text)
 	else
 		hud_id = core.localplayer:hud_add({
-			hud_elem_type = "text",
+			type = "text",
 			position = {x = 0.5, y = 0.05},
 			alignment = {x = 1, y = 0},
 			offset = {x = 0, y = 0},
@@ -173,7 +173,7 @@ local function update_light_overlay()
 		core.localplayer:hud_change(light_hud_id, "text", text)
 	else
 		light_hud_id = core.localplayer:hud_add({
-			hud_elem_type = "text",
+			type = "text",
 			position = {x = 0.5, y = 0.09},
 			alignment = {x = 1, y = 0},
 			offset = {x = 0, y = 0},

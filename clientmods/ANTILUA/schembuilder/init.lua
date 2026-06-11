@@ -324,7 +324,7 @@ local function update_hud()
 		core.localplayer:hud_change(hud_id, "text", text)
 	else
 		hud_id = core.localplayer:hud_add({
-			hud_elem_type = "text",
+			type = "text",
 			direction = 0,
 			position = {x = 0.85, y = 0.05},
 			alignment = {x = 1, y = 1},

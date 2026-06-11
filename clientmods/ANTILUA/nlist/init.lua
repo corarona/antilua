@@ -135,7 +135,7 @@ function nlist.set_nled_hud(ttext)
 		core.localplayer:hud_change(nled_hud, 'text', dtext)
 	else
 		nled_hud = core.localplayer:hud_add({
-			hud_elem_type = 'text',
+			type = 'text',
 			name = "Nodelist",
 			text = dtext,
 			number = 0x00ff00,

@@ -1,4 +1,4 @@
--- help: centralized help system for DragonfireClient client mods
+-- help: centralized help system for Antilua client mods
 -- Reads README.md files, populates cheat descriptions, shows full READMEs in formspec.
 
 local md_parser = dofile(core.get_modpath(core.get_current_modname()) .. "/md_parser.lua")

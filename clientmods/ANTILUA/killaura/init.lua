@@ -160,7 +160,7 @@ ws.rg("Killaura", {
 	on_start = function(self)
 		if not core.localplayer then return false end
 		killaura.hud_id = core.localplayer:hud_add({
-			hud_elem_type = "text",
+			type = "text",
 			position = {x = 1, y = 0.28},
 			alignment = {x = -1, y = 0},
 			offset = {x = -10, y = 0},

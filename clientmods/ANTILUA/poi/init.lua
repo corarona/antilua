@@ -170,7 +170,7 @@ function poi.set_hud_wp(pos, title)
 		core.localplayer:hud_change(shown_huds[title], "number", color)
 	else
 		hud_wp = core.localplayer:hud_add({
-			hud_elem_type = "waypoint",
+			type = "waypoint",
 			name = title,
 			text = "m",
 			number = color,

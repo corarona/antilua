@@ -1,5 +1,5 @@
 -- Antilua-specific callback registrations and utilities.
--- Loaded after register.lua — keeps DF additions separate from upstream.
+-- Loaded after register.lua — Antilua-specific callback registrations.
 
 local getinfo = debug.getinfo
 local function make_al_registration()
