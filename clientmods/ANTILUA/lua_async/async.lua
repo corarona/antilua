@@ -191,17 +191,15 @@ function async.Async()
 			end)
 		end
 	end
-	self.single_task = function(func, callback)
-		self.create_worker(function()
-			local pass_arg = func()
-			if p ~= nil then
-				pass_arg = p
+	self.single_task = function(func, callback, ...)
+		local ok, pass_arg = pcall(func, ...)
+		if ok and callback then
+			if pass_arg ~= nil then
+				callback(pass_arg)
+			else
+				callback()
 			end
-			if task_func.callback then
-				task_func.callback(pass_arg)
-			end
-			return
-		end)
+		end
 	end
 	return self
 end

@@ -33,6 +33,9 @@ local function is_in_world(pos)
 	return not (math.abs(pos.x) > playable_limit or math.abs(pos.y) > playable_limit or math.abs(pos.z) > playable_limit)
 end
 
+local function adjust_pos_to_biome_limits(pos, biome_id)
+	return vector.new(pos)
+end
 
 local function find_biome(pos, biomes)
 	pos = vector.round(pos)

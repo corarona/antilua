@@ -24,8 +24,8 @@ local seeds = {
 	["mcl_farming:pumpkin_face"] = "mcl_farming:pumpkin_seeds",
 	["mcl_farming:melon"] = "mcl_farming:melon_seeds",
 	["mcl_farming:beetroot"] = "mcl_farming:beetroot_seeds",
-	["farming:cotton"] = "farming:seed_wheat",
-	["farming:wheat"] = "farming:seed_cotton",
+	["farming:cotton"] = "farming:seed_cotton",
+	["farming:wheat"] = "farming:seed_wheat",
 }
 
 local water = {
@@ -157,7 +157,10 @@ sbots.register_bot("FarmBot", {
 		return nds[1]
 	end,
 	do_pos = function(self, pos)
-		table.shuffle(seed_items)
+		for d = #seed_items, 2, -1 do
+			local j = math.random(d)
+			seed_items[d], seed_items[j] = seed_items[j], seed_items[d]
+		end
 		for _, v in pairs(find_soil(pos, 4)) do
 			ws.place(v:offset(0, 1, 0), seed_items)
 		end

@@ -1,7 +1,12 @@
 poi = {}
 local storage = core.get_mod_storage("poi")
-local info = core.get_server_info()
-local stprefix = "POI-" .. info.address .. "-"
+local stprefix = "POI-"
+core.register_on_connect(function()
+	local info = core.get_server_info()
+	if info and info.address then
+		stprefix = "POI-" .. info.address .. ":"
+	end
+end)
 
 local DISTANCE_NEAR = 256
 
@@ -518,7 +523,7 @@ core.register_on_formspec_input(function(formname, fields)
 	-- Transport buttons
 	for _, v in ipairs(poi.registered_transports) do
 		if fields[v.name] then
-			if v.func(poi.get_waypoint(name), name) then
+			if not v.func(poi.get_waypoint(name), name) then
 				ws.notify("Error with " .. v.name, ws.NOTIFY_ERROR)
 			end
 			return true

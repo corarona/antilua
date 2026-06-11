@@ -246,13 +246,19 @@ ws.rg("BlockSources", {
 		local lp = ws.dircoord(0, 0, 0)
 		local targets = {}
 		if block_water then
-			table.insert_all(targets, {"mcl_core:water_source", "mcl_core:water_flowing"})
+			for _, v in ipairs({"mcl_core:water_source", "mcl_core:water_flowing"}) do
+				table.insert(targets, v)
+			end
 		end
 		if block_lava then
-			table.insert_all(targets, {"mcl_core:lava_source", "mcl_core:lava_flowing"})
+			for _, v in ipairs({"mcl_core:lava_source", "mcl_core:lava_flowing"}) do
+				table.insert(targets, v)
+			end
 		end
 		if block_nether_lava then
-			table.insert_all(targets, {"mcl_nether:nether_lava_source", "mcl_nether:nether_lava_flowing"})
+			for _, v in ipairs({"mcl_nether:nether_lava_source", "mcl_nether:nether_lava_flowing"}) do
+				table.insert(targets, v)
+			end
 		end
 		if #targets == 0 then return end
 		local positions = core.find_nodes_near(lp, 5, targets, true)

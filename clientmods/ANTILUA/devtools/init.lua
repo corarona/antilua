@@ -19,7 +19,7 @@ end
 local function dumpmetaat(pos)
 	local meta = core.get_meta(pos)
 	dump_to_chat(meta:to_table())
-	core.log(dump(arg))
+	core.log(dump(meta:to_table()))
 end
 
 local function dumpdefat(pos)

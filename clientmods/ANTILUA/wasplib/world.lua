@@ -283,24 +283,66 @@ end
 core.register_cheat("MakeBlocks", { category = "Inventory", func = ws.make_blocks })
 
 -- Inventory dump via quint (extracted from emicor)
-function ws.invdump(src, dst)
-	local lp = ws.dircoord(0, 0, 0)
-	if type(src) ~= 'table' then
-		src = {location = ws.invparse(src), inventory = "main"}
-	end
-	if type(dst) ~= 'table' then
-		dst = {location = ws.invparse(dst), inventory = "main"}
+if quint then
+	function ws.invdump(src, dst)
+		local lp = ws.dircoord(0, 0, 0)
+		if type(src) ~= 'table' then
+			src = {location = ws.invparse(src), inventory = "main"}
+		end
+		if type(dst) ~= 'table' then
+			dst = {location = ws.invparse(dst), inventory = "main"}
+		end
+
+		local srcbounds = {min = 0, max = 0}
+		if src.location == "current_player" then
+			srcbounds.min = 10
+		end
+
+		local q = quint.invaction_new()
+		local rt = quint.invaction_dump(q, src, dst, srcbounds)
+		quint.invaction_apply(q)
+		return rt
 	end
 
-	local srcbounds = {min = 0, max = 0}
-	if src.location == "current_player" then
-		srcbounds.min = 10
+	function ws.invtoec()
+		local src = {location = "current_player", inventory = "main"}
+		local dst = {location = "current_player", inventory = "enderchest"}
+		local srcbounds = {min = 10, max = 0}
+		local q = quint.invaction_new()
+		local rt = quint.invaction_dump(q, src, dst, srcbounds)
+		quint.invaction_apply(q)
+		src = {location = "current_player", inventory = "armor"}
+		local qq = quint.invaction_new()
+		local rtt = quint.invaction_dump(qq, src, dst)
+		quint.invaction_apply(qq)
 	end
 
-	local q = quint.invaction_new()
-	local rt = quint.invaction_dump(q, src, dst, srcbounds)
-	quint.invaction_apply(q)
-	return rt
+	function ws.ectoinv()
+		local src = {location = "current_player", inventory = "enderchest"}
+		local dst = {location = "current_player", inventory = "main"}
+		local srcbounds = {min = 0, max = 0}
+		local dstbounds = {min = 10, max = 0}
+		local q = quint.invaction_new()
+		local rt = quint.invaction_dump(q, src, dst, srcbounds, dstbounds)
+		quint.invaction_apply(q)
+		local ainv = core.get_inventory('current_player').armor
+		local plinv = core.get_inventory('current_player').main
+		for k, v in ipairs(plinv) do
+			if v:get_name():find("helmet") then
+				ws.move_stack("current_player", "main", k, "current_player", "armor", 2)
+			elseif v:get_name():find("chestplate") then
+				ws.move_stack("current_player", "main", k, "current_player", "armor", 3)
+			elseif v:get_name():find("leggings") then
+				ws.move_stack("current_player", "main", k, "current_player", "armor", 4)
+			elseif v:get_name():find("boots") then
+				ws.move_stack("current_player", "main", k, "current_player", "armor", 5)
+			end
+		end
+	end
+else
+	function ws.invdump() ws.notify("quint mod required") end
+	function ws.invtoec() ws.notify("quint mod required") end
+	function ws.ectoinv() ws.notify("quint mod required") end
 end
 
 function ws.dumpto()
@@ -396,38 +438,4 @@ end
 core.register_cheat('IceBreaker', { category = 'Dig', setting = 'icebreaker' })
 
 -- Inventory to/from ender chest (extracted from emicor)
-function ws.invtoec()
-	local src = {location = "current_player", inventory = "main"}
-	local dst = {location = "current_player", inventory = "enderchest"}
-	local srcbounds = {min = 10, max = 0}
-	local q = quint.invaction_new()
-	local rt = quint.invaction_dump(q, src, dst, srcbounds)
-	quint.invaction_apply(q)
-	src = {location = "current_player", inventory = "armor"}
-	local qq = quint.invaction_new()
-	local rtt = quint.invaction_dump(qq, src, dst)
-	quint.invaction_apply(qq)
-end
-
-function ws.ectoinv()
-	local src = {location = "current_player", inventory = "enderchest"}
-	local dst = {location = "current_player", inventory = "main"}
-	local srcbounds = {min = 0, max = 0}
-	local dstbounds = {min = 10, max = 0}
-	local q = quint.invaction_new()
-	local rt = quint.invaction_dump(q, src, dst, srcbounds, dstbounds)
-	quint.invaction_apply(q)
-	local ainv = core.get_inventory('current_player').armor
-	local plinv = core.get_inventory('current_player').main
-	for k, v in ipairs(plinv) do
-		if v:get_name():find("helmet") then
-			ws.move_stack("current_player", "main", k, "current_player", "armor", 2)
-		elseif v:get_name():find("chestplate") then
-			ws.move_stack("current_player", "main", k, "current_player", "armor", 3)
-		elseif v:get_name():find("leggings") then
-			ws.move_stack("current_player", "main", k, "current_player", "armor", 4)
-		elseif v:get_name():find("boots") then
-			ws.move_stack("current_player", "main", k, "current_player", "armor", 5)
-		end
-	end
-end
+-- moved into quint guard above
