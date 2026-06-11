@@ -99,7 +99,7 @@ function core.show_cheat_settings_form(setting, use_auto)
 		local fs = def.get_formspec(setting)
 		if fs then
 			core.show_formspec("cheat_settings:" .. setting .. ":custom",
-				"formspec_version[10]" .. fs)
+				"formspec_version[10]no_prepend[]bgcolor[#1a1a1a;true]" .. fs)
 			return
 		end
 	end
@@ -115,7 +115,7 @@ function core.show_cheat_settings_form(setting, use_auto)
 	table.sort(keys)
 
 	local fs = "formspec_version[10]size[5," .. (2 + #keys + 0.5) .. ",true]"
-	fs = fs .. "padding[0.5,0.5]no_prepend[]bgcolor[#000000;true]"
+	fs = fs .. "padding[0.5,0.5]no_prepend[]bgcolor[#1a1a1a;true]"
 	fs = fs .. "label[0,0.3;" .. core.formspec_escape(def.name) .. " Settings]"
 	local y = 1
 	for _, key in ipairs(keys) do
