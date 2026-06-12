@@ -27,7 +27,9 @@ Table of Contents
 13. Session Detach / Reattach
 14. The `ws.*` Library (wasplib, ANTILUA modpack)
 15. Globalhack System (wasplib)
-16. Particle System
+16. Notification System (wasplib)
+17. Constraint System (wasplib)
+18. Particle System
 
 ---
 
@@ -72,12 +74,53 @@ core.place_node(pos)                    -- Place wielded item at pos
 core.dig_node(pos)                      -- Dig node at pos
 core.get_pointed_thing() -> table       -- Raycast result
 core.interact(action, pointed_thing)    -- Perform interaction
+core.find_nodes_near(pos, radius, nodenames, search_center) -> {pos,...}
+    -- Find nodes matching names within radius, expanding outward by shell
+```
+
+### Utilities
+
+```lua
+core.print(text)                                    -- Print to console
+core.show_toast(text, type)                         -- Show toast notification (type: "info", etc.)
+core.get_language() -> locale, lang_code            -- System locale and language code
+core.gettext(text) -> string                        -- Gettext translation
+core.read_file(path) -> content                     -- Read file from disk (blocks ".." traversal)
+core.get_dir_list(path, is_dir) -> {name,...}        -- List directory contents
+core.get_modpath_real(modname) -> string             -- Resolve virtual mod path to real path
+core.get_server_info() -> table                     -- {address, ip, port, protocol_version}
+core.get_item_def(itemstring) -> table               -- Item definition
+core.get_node_def(nodename) -> table                 -- Node definition
+core.get_privilege_list() -> {string,...}            -- Available privileges
+core.get_csm_restrictions() -> {string,...}          -- CSM restriction flags
+core.make_screenshot() -> filename                   -- Take screenshot, returns basename
+```
+
+### Sound
+
+```lua
+core.sound_play(spec, params) -> handle
+core.sound_stop(handle)
+core.sound_fade(handle, step, gain)
 ```
 
 ### Player
 
 ```lua
 core.get_objects_inside_radius(pos, radius) -> {ObjectRef,...}
+core.get_wielded_item() -> ItemStack
+core.get_inventory(location) -> InventoryRef
+    -- Access inventory by location string (e.g. "current_player")
+core.send_damage(damage)                   -- Send fake damage to server
+core.send_respawn()                        -- Send respawn request
+core.disconnect()                          -- Exit to main menu
+core.set_keypress(key_setting, pressed) -> bool
+    -- Simulate pressing/releasing a key binding
+core.drop_selected_item()                  -- Drop currently wielded item stack
+core.send_inventory_fields(formname, fields)
+    -- Send inventory form fields to server (requires open form)
+core.send_nodemeta_fields(pos, formname, fields)
+    -- Send nodemeta form fields to server
 
 core.create_client_entity(pos, properties) -> ObjectRef
     Create a client-only entity (GenericCAO) without server involvement.
@@ -97,6 +140,11 @@ core.create_client_entity(pos, properties) -> ObjectRef
 Returned by `core.get_objects_inside_radius()`, `core.localplayer:get_object()`,
 and `core.get_nearby_objects()`.
 
+---
+
+2. ClientObjectRef (LocalPlayer & entities)
+===========================================
+
 ### LocalPlayer (`core.localplayer:*`)
 
 ```lua
@@ -115,6 +163,10 @@ and `core.get_nearby_objects()`.
 :get_wielded_item() -> ItemStack
 :get_breath() -> int
 :get_hotbar_size() -> int
+:get_last_pos() -> pos
+:get_last_velocity() -> v3f
+:get_last_look_horizontal() -> degrees
+:get_last_look_vertical() -> degrees
 
 :is_attached() -> bool
 :is_touching_ground() -> bool
@@ -143,6 +195,8 @@ and `core.get_nearby_objects()`.
 
 ### Generic ObjectRef
 
+Methods available on entity/ObjectRef references:
+
 ```lua
 :get_pos() -> pos
 :get_velocity() -> v3f
@@ -151,12 +205,14 @@ and `core.get_nearby_objects()`.
 :is_player() -> bool
 :is_local_player() -> bool
 :get_name() -> string
-:get_nametag() -> string            -- Deprecated
-:get_item_textures() -> string      -- Deprecated
+:get_attach() -> ObjectRef           -- Parent entity (or nil)
+:get_max_hp() -> int                 -- Deprecated, use get_properties().hp_max
+:get_nametag() -> string             -- Deprecated, use get_properties().nametag
+:get_item_textures() -> string       -- Deprecated, use get_properties().textures
 :get_properties() -> table
-:set_properties(table)              -- Client-side only
-:get_hp() -> int
-:punch()                            -- Attack entity
+:set_properties(table)               -- Client-side only
+:get_hp() -> int                     -- NOTE: currently always returns 0 (stub)
+:punch()                             -- Attack entity
 :rightclick()
 :remove()
 ```
@@ -199,7 +255,7 @@ the message. Return a string to replace the message with a modified version
 core.register_on_death(func())
 core.register_on_connect(func())
 core.register_on_disconnect(func())
-core.register_on_recieve_physics_override(func(movement))
+core.register_on_receive_physics_override(func(movement))
 core.register_on_detached_inventory_update(func(name, keep))
 core.register_on_privileges_changed(func(privs))
 core.register_on_breath_changed(func(breath))
@@ -212,7 +268,7 @@ core.register_on_post_step(func(dtime))
 - **`on_death`**: Called when the player dies (death screen shown).
 - **`on_connect`**: Called when the client successfully connects and joins the world.
 - **`on_disconnect`**: Called when the client begins disconnecting from the server.
-- **`on_recieve_physics_override`**: Called when server sends movement/physics parameters.
+- **`on_receive_physics_override`**: Called when server sends movement/physics parameters.
   `movement` table: `{acceleration_default, acceleration_air, acceleration_fast, speed_walk, speed_crouch, speed_fast, speed_climb, speed_jump, liquid_fluidity, liquid_fluidity_smooth, liquid_sink, gravity}`.
 - **`on_detached_inventory_update`**: Called when a detached inventory is updated or removed.
   `name` is the inventory name, `keep` is true for updates, false for removal.
@@ -350,17 +406,15 @@ When called from a Lua mod, the third parameter is the setting name (a string)
 or a function. The cheat menu displays the category/name and toggles the
 corresponding setting.
 
-### Built-in Cheat Categories & Cheats
+### Built-in Cheat Categories & Cheats (engine-level)
 
 | Category | Cheat | Setting | Effect |
 |----------|-------|---------|--------|
 | **Combat** | AntiKnockback | `antiknockback` | No knockback |
 | | AttachmentFloat | `float_above_parent` | Float above mounts |
 | | AutoHit | `autohit` | Auto-attack entities |
-| | Killaura | `killaura` | Attack all entities in range (dedicated key X) |
-| | Scaffold | `scaffold` | Auto-place beneath feet (dedicated key Y) |
 | **Movement** | Freecam | `freecam` | Detached camera |
-| | Freelook | `freelook` | Mouse-look without holding a button |
+| | Freelook | `freelook` | Mouse-look without holding |
 | | AutoForward | `continuous_forward` | Auto-run |
 | | PitchMove | `pitch_move` | Move in look direction |
 | | AutoJump | `autojump` | Auto-jump obstacles |
@@ -377,13 +431,12 @@ corresponding setting.
 | | NoHurtCam | `no_hurt_cam` | No damage screen shake |
 | | CheatHUD | `cheat_hud` | Active cheats overlay |
 | | EntityHitboxes | `enable_entity_esp` | Entity wireframe hitboxes |
-| | EntityWallhack | `enable_entity_wallhack` | Through-walls entity ESP with occlusion tinting |
+| | EntityWallhack | `enable_entity_wallhack` | Through-walls entity ESP |
 | | EntityTracers | `enable_entity_tracers` | Entity tracer lines |
 | | PlayerHitboxes | `enable_player_esp` | Player wireframe hitboxes |
-| | PlayerWallhack | `enable_player_wallhack` | Through-walls player ESP with occlusion tinting |
+| | PlayerWallhack | `enable_player_wallhack` | Through-walls player ESP |
 | | PlayerTracers | `enable_player_tracers` | Player tracer lines |
-| | NodeESP | `enable_node_esp` | Node bounding-box highlights |
-| | NodeTracers | `enable_node_tracers` | Tracer lines to filtered nodes |
+| | NodeESP | `enable_node_esp` | Node bounding-box highlights (stub, no C++ rendering) |
 | **Interact** | FastDig | `fastdig` | Faster digging |
 | | FastPlace | `fastplace` | Faster placement |
 | | AutoDig | `autodig` | Auto-dig nearest |
@@ -395,8 +448,61 @@ corresponding setting.
 | | Reach | `reach` | Extended interaction range |
 | | PointLiquids | `point_liquids` | Select liquid nodes |
 | | PrivBypass | `priv_bypass` | Bypass privilege checks |
-| | AutoRespawn | `autorespawn` | Auto-respawn on death |
 | | ThroughWalls | `dont_point_nodes` | Don't auto-point nodes |
+
+Cheats can be toggled via the cheat menu (default `TAB`) or by setting the
+corresponding setting to `"true"` / `"false"`.
+
+### Mod-Registered Categories & Cheats
+
+Additional cheats registered by client-side mods (ANTILUA modpack):
+
+| Category | Cheat | Setting | Provided by |
+|----------|-------|---------|-------------|
+| **Combat** | Killaura | `killaura` | `killaura` mod (key X) |
+| **Movement** | AutoFsprint | `autoforwardsprint` | `basic_moves` mod |
+| | RhythmTP | `rhythmtp` | `rhythmtp` mod |
+| **Render** | AlwaysDay | `always_day` | `always_day` mod |
+| | CleanHUD | `clean_hud` | `clean_hud` mod |
+| | StripChatColors | `strip_chat_colors` | `wasplib` |
+| | EntityLogger | `entity_logger` | `event_logger` mod |
+| | WorldObserver | `world_observer` | `event_logger` mod |
+| | MovementDisplay | `movement_display` | `event_logger` mod |
+| | POIShowNames | `poi_shownames` | `poi` mod |
+| **Player** | AutoRespawn | `autorespawn` | Engine (Lua builtin) |
+| | InvSaver | `invsaver` | `invsaver` mod |
+| | HeadSaver | `headsaver` | `wasplib` |
+| | LockView | `lockview` | `wasplib` |
+| | DeathWaypoints | `auto_death_waypoint` | `poi` mod |
+| | AutoScreenshot | `auto_screenshot` | `poi` mod |
+| | DeathTP | `death_tp` | `poi` mod |
+| | BreathAlert | `breath_alert` | `event_logger` mod |
+| **Place** | MultiScaff (Scaffold) | `scaffold` | `place` mod (key Y) |
+| | Reap | `farmtool_reap` | `farmtool` mod |
+| | AutoTorch | `auto_torch` | `inventory` mod |
+| **Inventory** | AutoRefill | `autorefill` | `inventory` mod |
+| | AutoEject | `autoeject` | `inventory` mod |
+| | ChestStealer | `chest_stealer` | `inventory` mod |
+| | PunchInv | `punchinv` | `inventory` mod |
+| | AutoSort | (function) | `inventory` mod |
+| | AutoBlock | `autoblock` | `inventory` mod |
+| | AutoTool | `autotool` | `wasplib` |
+| **Dig** | DigCustom | `digcustom` | `dig` mod |
+| | IceBreaker | `icebreaker` | `wasplib` |
+| **Interact** | FormspecBlocker | `formspec_blocker` | `al_formspec` mod |
+| **Player** | Autocraft | `autocraft` | `autocraft` mod |
+| | AutoEat | `autoeat` | `autoeat` mod |
+| **DevTools** | ItemMeta/PointedMeta/PosMeta | (functions) | `devtools` mod |
+| | Run DTE | (function) | `dte` mod |
+| | FindVoidAir | `fvair` | `devtools` mod |
+| **Info** | BlockLogger | `block_logger` | `event_logger` mod |
+| | BlockStats | (function) | `event_logger` mod |
+| **Social** | ChatAlerts | `chat_alerts` | `session_logger` mod |
+| | NameColorizer | `name_colorizer` | `session_logger` mod |
+| **Misc** | POIs | (function) | `poi` mod |
+| | Help | (function) | `help` mod |
+| | Keybinds | (function) | `help` mod |
+| **Bots** | (various) | (various) | `sbots` mod |
 
 Cheats can be toggled via the cheat menu (default `TAB`) or by setting the
 corresponding setting to `"true"` / `"false"`.
@@ -464,20 +570,27 @@ These settings exist only in Antilua. Set via `core.settings:set()`,
 
 ### Cheat Menu Styling
 
+Colors use RGB tuple format `(R, G, B)`.
+
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `cheat_menu_font` | `""` | Font face |
-| `cheat_menu_bg_color` | `#222222` | Background color |
-| `cheat_menu_bg_color_alpha` | `200` | Background opacity |
-| `cheat_menu_active_bg_color` | `#444444` | Active item bg |
-| `cheat_menu_active_bg_color_alpha` | `200` | Active item opacity |
-| `cheat_menu_font_color` | `#ffffff` | Font color |
-| `cheat_menu_font_color_alpha` | `255` | Font opacity |
-| `cheat_menu_selected_font_color` | `#ffcc00` | Selected item color |
-| `cheat_menu_selected_font_color_alpha` | `255` | Selected opacity |
-| `cheat_menu_head_height` | `30` | Header height |
-| `cheat_menu_entry_height` | `25` | Entry height |
-| `cheat_menu_entry_width` | `25` | Entry width |
+| `cheat_menu_font` | `"FM_Standard"` | Font face |
+| `cheat_menu_bg_color` | `(4, 4, 8)` | Background color |
+| `cheat_menu_bg_color_alpha` | `190` | Background opacity |
+| `cheat_menu_active_bg_color` | `(0, 0, 0)` | Active item bg |
+| `cheat_menu_active_bg_color_alpha` | `210` | Active item opacity |
+| `cheat_menu_font_color` | `(0, 255, 0)` | Font color |
+| `cheat_menu_font_color_alpha` | `195` | Font opacity |
+| `cheat_menu_selected_font_color` | `(255, 255, 255)` | Selected item color |
+| `cheat_menu_selected_font_color_alpha` | `235` | Selected opacity |
+| `cheat_menu_head_height` | `50` | Header height |
+| `cheat_menu_entry_height` | `35` | Entry height |
+| `cheat_menu_entry_width` | `200` | Entry width |
+| `cheat_menu_panel_bg` | `(30, 30, 45)` | Panel background color |
+| `cheat_menu_title_bg` | `(50, 50, 75)` | Title bar background |
+| `cheat_menu_border` | `(10, 10, 10)` | Border color |
+| `cheat_menu_item_bg` | `(45, 45, 55)` | Item background |
+| `cheat_menu_item_bg_alt` | `(45, 45, 65)` | Alternate item background |
 
 ---
 
@@ -509,21 +622,19 @@ pipeline step in `DrawTracersAndESP`.
 
 - `enable_entity_esp` — Draws wireframe hitboxes around all entities
 - `enable_entity_tracers` — Draws lines from camera to each entity
-- `enable_entity_wallhack` — Through-walls entity boxes: visible entities in green, occluded in red
+- `enable_entity_wallhack` — Through-walls entity boxes (ECFN_ALWAYS depth test; no color distinction)
 - `enable_player_esp` — Draws wireframe hitboxes around other players
 - `enable_player_tracers` — Draws lines from camera to each player
-- `enable_player_wallhack` — Through-walls player boxes: visible in green, occluded in red
-- `entity_esp_color` / `player_esp_color` — RGB triple for line color
-- `entity_wallhack_visible_color` / `entity_wallhack_occluded_color` — RGB for wallhack tint states
-- `player_wallhack_visible_color` / `player_wallhack_occluded_color` — RGB for wallhack tint states
+- `enable_player_wallhack` — Through-walls player boxes (ECFN_ALWAYS depth test; no color distinction)
+- `entity_esp_color` / `player_esp_color` — RGB tuple for ESP line color
 
 ### Implementation Notes
 
 - The tracer origin is `camera_node_position + (look_dir * 0.2 * BS)`,
   NOT `camera:getPosition()` (which maps incorrectly in view space).
 - Boxes use `draw3DBox` and lines use `draw3DLine`.
-- Node ESP/Tracers highlight or draw lines to nodes matching the filter
-  in `node_esp_nodes` (comma-separated node name list).
+- `enable_node_esp` (node bounding-box highlights) exists as a setting but has
+  no C++ rendering implementation (stub). Filter list: `node_esp_nodes`.
 
 ---
 
@@ -572,6 +683,8 @@ local mts_data = core.serialize_schematic(schem_table, format, options)
 ```
 
 The data array follows the same Z/Y/X order as the server-side API.
+Each entry also includes `{x, y, z}` position fields indicating the node's
+coordinates within the schematic.
 
 ---
 
@@ -615,8 +728,12 @@ The client can detach (hide its window, run headlessly) and later reattach.
 ================================
 
 The `ws` global namespace is provided by the `wasplib` mod (part of the
-`DRAGONFIRE` modpack). Load order: settings → coord → inventory → tools →
+`ANTILUA` modpack). Load order: settings → coord → inventory → tools →
 world → combat → waypoints.
+
+Additionally, `core.switch_to_item(item)` is a global alias for
+`ws.switch_to_item(item)`, and `core.register_cheat_description(name, category, setting, description)`
+is a compat shim that stores descriptions on cheat definitions.
 
 ### Settings (`ws.*`)
 
@@ -670,6 +787,12 @@ ws.inv_get_space([item])                 -- Available stack space
 ws.switch_inv_or_echest(name, max, h)    -- Try inv then ender chest
 ws.invparse(location)                    -- Parse inv location string
 ws.invpos(pos)                           -- Nodepos → "nodemeta:x,y,z"
+ws.move_stack(from_loc, from_list, from_idx, to_loc, to_list, to_idx, [count])
+                                         -- Move items between inventories
+ws.cheat_setting(self, key, default)     -- Read numeric cheat sub-setting
+ws.register_keypress_cheat(setting, desc, category, keyname, [condition])
+                                         -- Register key-hold cheat
+ws.hud_set(id, stat, data)              -- Nil-safe HUD change wrapper
 ```
 
 ### Tools (`ws.tools.*`)
@@ -677,6 +800,7 @@ ws.invpos(pos)                           -- Nodepos → "nodemeta:x,y,z"
 ```lua
 ws.get_digtime(nodename)                 -- Best dig time for node
 ws.select_best_tool(pos_or_nodename)     -- Switch to best tool
+ws.find_best_tool(nodename) -> idx, time -- Find fastest-digging tool
 ```
 
 ### World Interaction (`ws.world.*`)
@@ -712,6 +836,7 @@ ws.loot()                                -- Take from pointed chest
 ws.icebreaker()                          -- Dig ice in range
 ws.invtoec()                             -- Dump inv to ender chest
 ws.ectoinv()                             -- Restore inv from ender chest
+ws.loot_list(items, range, max_per_scan) -- Loot matching items from nearby containers
 ```
 
 ### Combat
@@ -749,21 +874,31 @@ ws.registered_globalhacks = {}            -- All registered hack functions
 ### Templates
 
 ```lua
-ws.globalhacktemplate(setting, func, funcstart, funcstop, daughters, delay)
-    -- Creates a handler function that:
-    --   * Checks `minetest.settings:get_bool(setting)` each step
-    --   * Calls funcstart() on activation (if it returns false)
-    --   * Calls func(dtime) each step while active
-    --   * Calls funcstop() on deactivation
-    --   * Toggles daughter settings via ws.set_bool_bulk
-    --   * Rate-limited by `delay` (default 0.2s)
+ws.globalhacktemplate(def)
+    -- Creates a handler function from a def table:
+    --   def = {
+    --     setting   = "my_setting",        -- Setting to check
+    --     on_step   = function(self, dtime) end,  -- Each step while active
+    --     on_start  = function(self) end,         -- On activation (return false to allow)
+    --     on_stop   = function(self) end,         -- On deactivation
+    --     daughters = {"dependent_setting", ...}, -- Settings to toggle
+    --     delay     = 0.2,                        -- Rate limit
+    --     name      = "MyCheat",                  -- Display name (optional)
+    --   }
+    -- The handler checks `core.settings:get_bool(def.setting)` each step,
+    -- calls on_start on activation, on_step each step while active,
+    -- on_stop on deactivation, and toggles daughter settings.
 
 ws.register_globalhack(func)
     -- Appends func to ws.registered_globalhacks
 
 ws.register_globalhacktemplate(name, category, setting, func, funcstart, funcstop, daughters, delay)
-    -- Combinator: creates template + registers hack + registers cheat
+    -- Combinator (positional-arg style): creates template + registers hack + registers cheat
     -- (via minetest.register_cheat and the cheat menu)
+
+ws.register_globalhacktemplate(name, def_table)
+    -- Combinator (def-table style): same as above but with a def table
+    -- that can include cheat_settings and get_formspec fields.
 
 ws.rg = ws.register_globalhacktemplate  -- Shorthand
 
@@ -776,7 +911,7 @@ ws.on_connect(func)
     -- (polls via minetest.after)
 ```
 
-### Example
+### Example (positional-arg style)
 
 ```lua
 ws.rg("MyCheat", "MyCategory", "my_cheat", function()
@@ -790,12 +925,84 @@ end, function()
 end, {"dependent_setting"}, 0.1)
 ```
 
+### Example (def-table style with settings form)
+
+```lua
+ws.rg("Killaura", {
+    category = "Combat",
+    setting = "killaura",
+    on_step = function(self, dtime)
+        -- attack logic
+    end,
+    on_start = function(self) end,
+    on_stop = function(self) end,
+    daughters = {},
+    delay = 0.1,
+    cheat_settings = {
+        { key = "range",      label = "Range",      type = "number", default = 4 },
+        { key = "hph",        label = "HP threshold", type = "number", default = 20 },
+    },
+    get_formspec = function(self)
+        return "label[0,0;Custom settings UI]"
+    end,
+})
+```
+
 ---
 
-16. Particle System
+16. Notification System (wasplib)
+==================================
+
+The notification system provides chat and toast notifications via `ws.*`:
+
+```lua
+ws.NOTIFY_INFO = "info"                  -- Notification type constants
+ws.NOTIFY_SUCCESS = "success"
+ws.NOTIFY_WARNING = "warning"
+ws.NOTIFY_ERROR = "error"
+
+ws.notify(text, [ntype], [opts])         -- Send notification (chat + optional toast)
+    -- ntype: one of ws.NOTIFY_* constants (default INFO)
+    -- opts: optional table with fields like { toast = true/false }
+
+ws.notify_cheat(cheat_name, enabled)     -- Show cheat toggle notification (toast)
+
+ws.set_notify_handler(handler)           -- Override notification handler
+    -- handler: function(text, ntype, opts) or nil to restore default
+```
+
+---
+
+17. Constraint System (wasplib)
+================================
+
+The constraint system limits world interactions to a defined region:
+
+```lua
+ws.constraint_pos1                       -- Region corner 1
+ws.constraint_pos2                       -- Region corner 2
+
+ws.set_pos1([pos])                       -- Set constraint position 1 (defaults to current pos)
+ws.set_pos2([pos])                       -- Set constraint position 2 (defaults to current pos)
+ws.reset_constraints()                   -- Clear both positions and their HUD waypoints
+ws.inside_constraints(pos) -> bool       -- Check if pos is inside constraints (true if not fully set)
+
+ws.place_if_needed(items, pos, [place])  -- Place items at pos if not already present
+ws.dig_if_able(pos)                      -- Dig node at pos if inside constraints
+
+ws.get_nodes_per_tick() -> int           -- Read ws_nodes_per_tick setting (default 8)
+ws.get_slot(inv, [filter])               -- Find first slot matching optional filter
+ws.get_itemslot_bg_v4(x, y, w, h, [margin])
+                                         -- Generate formspec item slot background images
+```
+
+---
+
+18. Particle System
 ===================
 
-Client-side particle API (no server required):
+Client-side particle API (no server required). Uses tween table format — fields
+accept either a single value or `{min=..., max=...}` for random range:
 
 ```lua
 core.add_particle({
@@ -809,33 +1016,50 @@ core.add_particle({
     object_collision = false,
     vertical = false,
     texture = "particle.png",
-    playername = nil,
     glow = 0,
+    -- Optional fields:
+    drag = {x=0, y=0, z=0},             -- Air resistance
+    jitter = {x=0, y=0, z=0},           -- Random position jitter
+    bounce = 0,                          -- Bounce factor on collision
+    animation = { tile_w=1, tile_h=1, frame_length=0.2, frame_count=1 },
+    node = { name = "...", param2 = 0 }, -- Node-based visual
+    node_tile = 0,                       -- Texture tile index for node visual
 })
 
 core.add_particlespawner({
     amount = 1,
     time = 0,
-    minpos = {x=0, y=0, z=0},
-    maxpos = {x=0, y=0, z=0},
-    minvel = {x=0, y=0, z=0},
-    maxvel = {x=0, y=0, z=0},
-    minacc = {x=0, y=0, z=0},
-    maxacc = {x=0, y=0, z=0},
-    minexptime = 1,
-    maxexptime = 1,
-    minsize = 1,
-    maxsize = 1,
+    pos = {x=0, y=0, z=0},              -- Tween: single or {min=..., max=...}
+    vel = {x=0, y=0, z=0},              -- Velocity (tween)
+    acc = {x=0, y=0, z=0},              -- Acceleration (tween)
+    size = 1,                            -- Size (tween)
+    exptime = 1,                         -- Expiration time (tween)
     collisiondetection = false,
     collision_removal = false,
     object_collision = false,
     vertical = false,
     texture = "particle.png",
-    playername = nil,
     glow = 0,
+    -- Optional fields (all tweenable):
+    drag = {x=0, y=0, z=0},             -- Air resistance
+    jitter = {x=0, y=0, z=0},           -- Random position jitter
+    bounce = 0,                          -- Bounce factor on collision
+    radius = 0,                          -- Spawn radius (tween)
+    texpool = {"tex1.png", "tex2.png"},  -- Random texture pool
+    animation = { tile_w=1, tile_h=1, frame_length=0.2, frame_count=1 },
+    node = { name = "...", param2 = 0 }, -- Node-based visual
+    node_tile = 0,                       -- Texture tile index
+    attractor = {
+        kind = "point",                  -- "point", "linear", or "radial"
+        strength = 1.0,
+        origin = {x=0, y=0, z=0},       -- or origin_attached = object_ref
+        direction = {x=0, y=0, z=0},    -- for linear attractors
+        die_on_contact = false,
+    },
 }) -> id
 
 core.delete_particlespawner(id)
+core.clear_all_particles()               -- Remove all particles and spawners
 ```
 
 ---
