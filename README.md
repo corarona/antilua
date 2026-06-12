@@ -44,12 +44,12 @@ Antilua adds features directly in the C++ engine layer — no mods or
 games required. All are toggleable via the **Cheat Menu** (default key: `TAB`)
 or by setting their corresponding settings.
 
-### Movement Cheats
+### Movement
 
 | Feature | Setting | Description |
 |---------|---------|-------------|
 | Freecam | `freecam` | Detached camera — fly through the world while the player stays |
-| AutoJump | `autojump` | Automatically hop over obstacles |
+| Freelook | `freelook` | Mouse-look without holding a button |
 | AirJump | `airjump` | Jump in mid-air |
 | Spider | `spider` | Climb any walkable wall |
 | JetPack | `jetpack` | Fly upward with the jump key |
@@ -63,23 +63,27 @@ or by setting their corresponding settings.
 |---------|---------|-------------|
 | AntiKnockback | `antiknockback` | No knockback from attacks |
 | AttachmentFloat | `float_above_parent` | Float above boats/minecarts |
+| AutoHit | `autohit` | Auto-attack nearby entities |
+| Killaura | `killaura` | Attack all entities in range (special cheat, see Key Bindings) |
+| Scaffold | `scaffold` | Auto-place blocks beneath your feet (special cheat, see Key Bindings) |
 
-### Visual / Render
+### Render
 
 | Feature | Setting | Description |
 |---------|---------|-------------|
 | X-Ray | `xray` | See through terrain; only specified nodes are visible |
 | Fullbright | `fullbright` | Maximum light at all times |
+| NoHurtCam | `no_hurt_cam` | Disable damage red flash |
+| CheatHUD | `cheat_hud` | Overlay showing which cheats are active |
+| HUDBypass | `hud_flags_bypass` | Override server HUD flags |
 | Entity Hitboxes | `enable_entity_esp` | Wireframe boxes around entities through walls |
 | Entity Tracers | `enable_entity_tracers` | Lines from camera to each entity |
+| Entity Wallhack | `enable_entity_wallhack` | Entity meshes rendered through walls |
 | Player Hitboxes | `enable_player_esp` | Wireframe boxes around other players through walls |
 | Player Tracers | `enable_player_tracers` | Lines from camera to each player |
-| Entity Wallhack | `enable_entity_wallhack` | Entity meshes rendered through walls (occluded only) |
-| Player Wallhack | `enable_player_wallhack` | Player meshes rendered through walls (occluded only) |
-| Cheat HUD | `cheat_hud` | Overlay showing which cheats are active |
-| Coordinates | `coords` | In-world position display |
-| Bright Night | `no_night` | Always daytime |
-| No Hurt Cam | `no_hurt_cam` | Disable damage red flash |
+| Player Wallhack | `enable_player_wallhack` | Player meshes rendered through walls |
+| NodeESP | `enable_node_esp` | Highlighted node bounding boxes |
+| NodeTracers | `enable_node_tracers` | Lines from camera to specified nodes |
 
 ### Interact
 
@@ -90,26 +94,19 @@ or by setting their corresponding settings.
 | Auto Dig | `autodig` | Auto-dig the nearest node |
 | Auto Place | `autoplace` | Auto-place blocks |
 | Instant Break | `instant_break` | One-click node breaking |
-| Fast Hit | `spamclick` | High-speed auto-clicking |
-| Auto Hit | `autohit` | Auto-attack nearby entities |
-
-### Exploit
-
-| Feature | Setting | Description |
-|---------|---------|-------------|
-| Entity Speed | `entity_speed` | Entities move at full player speed |
-| Priv Bypass | `priv_bypass` | Bypass fly/fast/noclip privilege checks |
+| FastHit | `spamclick` | High-speed auto-clicking |
 
 ### Player
 
 | Feature | Setting | Description |
 |---------|---------|-------------|
-| No Fall Damage | `prevent_natural_damage` | Negate fall/fire/lava damage |
-| No Force Rotate | `no_force_rotate` | Prevent server-forced rotation |
-| Extended Reach | `reach` | Longer interaction range |
-| Auto Respawn | `autorespawn` | Auto-respawn on death |
-| Point Liquids | `point_liquids` | Target/select liquid nodes |
-| Through Walls | `dont_point_nodes` | Don't auto-select any node |
+| NoFallDamage | `prevent_natural_damage` | Negate fall/fire/lava damage |
+| NoForceRotate | `no_force_rotate` | Prevent server-forced rotation |
+| Reach | `reach` | Longer interaction range |
+| AutoRespawn | `autorespawn` | Auto-respawn on death |
+| PointLiquids | `point_liquids` | Target/select liquid nodes |
+| ThroughWalls | `dont_point_nodes` | Don't auto-select any node |
+| PrivBypass | `priv_bypass` | Bypass fly/fast/noclip privilege checks |
 
 ### Cheat Layer Panel System
 
@@ -124,7 +121,8 @@ detachable child panel with individual cheat toggles. Panels can be:
 - **Reset** to default position via the `[R]` button
 
 Cheats show `[x] Name` when enabled, `[ ] Name` when disabled. Click to toggle.
-A `>` suffix indicates the cheat has additional settings (right-arrow or click to open).
+A `>` suffix indicates the cheat has additional settings (right-arrow or click
+to open a settings formspec with sliders, dropdowns, and fields).
 
 ### Key Bindings
 
@@ -137,6 +135,11 @@ A `>` suffix indicates the cheat has additional settings (right-arrow or click t
 | H | Open Ender Chest |
 | Arrow keys | Navigate keyboard-focused panel |
 | F | Confirm/toggle selected cheat |
+
+**Killaura** (`X`) automatically attacks all reachable hostile entities within
+range. Configure range via the killaura settings panel (arrow into `killaura`
+in the cheat menu). **Scaffold** (`Y`) places a block under your feet each step
+— useful for bridging. Both are special cheats with dedicated key toggles.
 
 ### Lua API (client-side modding)
 

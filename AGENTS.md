@@ -9,16 +9,9 @@ open-source voxel game engine with client-side enhancements.
 - `origin` — antilua fork on Codeberg
 - `ws` — waspsaliva (related fork)
 
-The project is currently being rebased onto `luanti/master` on the `df-rebased`
+The project is being actively rebased onto `luanti/master` on the `df-rebased`
 branch, splitting the old single-branch DF history (~199 commits) into clean
 feature commits.
-
-## Current work: Modpack restructuring
-
-See `PLAN.md` for the full plan. All old-clientmods are being consolidated into
-the `ANTILUA` modpack. The `wasplib` mod is being split into subfiles, and
-useful features from `emicor` are being extracted into focused mods. Integration
-tests are being written for each new mod.
 
 ## Build
 Building can take a long time. Always use long timeouts( > 30 minutes!)
@@ -154,6 +147,8 @@ Adds an `enable_shaders` toggle (`Settings → Enable shaders`) that falls back 
 | `src/server/` | Server-specific code |
 | `src/script/` | Lua scripting integration (API bindings, callbacks) |
 | `src/gui/` | GUI elements (formspec, menus, HUD) |
+| `src/client/pipe_lua.h/cpp` | Named pipe IPC for client-side Lua execution |
+| `src/client/session.h/cpp` | Detach/reattach session file management |
 | `irr/` | IrrlichtMt renderer (bundled) |
 | `lib/` | Third-party libs (tiniergltf, catch2, sha256) |
 | `builtin/` | Builtin Lua scripts (client, server, mainmenu) |
@@ -183,6 +178,27 @@ Adds an `enable_shaders` toggle (`Settings → Enable shaders`) that falls back 
   field on cheat defs can provide custom formspec-based settings pages.
 - `.clang-tidy` checks are configured as warnings-as-errors for performance items
 - The `vcpkg.json` exists but is not the primary dependency manager on Linux
+
+## Session Detach / Reattach
+
+The client can detach (hide its SDL window, run headlessly) and reattach from
+the terminal. Implemented via `RenderingEngine::setDetached()` which hides the
+SDL window and writes a JSON session file (`$XDG_RUNTIME_DIR/antilua/session`)
+with PID and pipe_lua path. Reattach uses `ClientLuaPipe::sendCommand()` to
+write `core.reattach()` to the detached session's FIFO.
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `src/client/session.h/cpp` | Session file read/write/isLive/remove |
+| `src/client/renderingengine.h/cpp` | `setDetached()` — hide window, write/remove session |
+| `src/client/pipe_lua.h/cpp` | `sendCommand()` static method for reattach IPC |
+| `src/client/game_formspec.cpp` | "Detach" button on pause menu |
+| `src/script/lua_api/l_client.h/cpp` | `core.detach()` and `core.reattach()` Lua bindings |
+| `src/main.cpp` | `--attach`, `--forcenew` CLI option handling |
+| `irr/include/IrrlichtDevice.h` | `setWindowVisible()` / `isWindowVisible()` virtual |
+| `irr/src/CIrrDeviceSDL.h/cpp` | `SDL_HideWindow()` / `SDL_ShowWindow()` implementations |
 
 
 ## Raw Packet API
@@ -229,7 +245,7 @@ The following opcodes are **blacklisted** from `send_raw_packet`: `TOSERVER_INIT
 
 - **Hook sites**: `Client::ProcessData()` for incoming via `Client::interceptIncomingPacket()`, `Client::Send()` for outgoing via `Client::interceptOutgoingPacket()` — both at `src/client/client.cpp`
 - **Script bridge**: `AlClientHooks` namespace (`src/client/al_hooks.h/cpp`) → `AlScriptApi` (`src/script/cpp_api/al/al_callbacks.h/cpp`) → Lua callbacks
-- **Callback tables**: `registered_on_receiving_raw_packet` and `registered_on_sending_raw_packet` registered in `builtin/client/register_df.lua`
+- **Callback tables**: `registered_on_receiving_raw_packet` and `registered_on_sending_raw_packet` registered in `builtin/client/register_al.lua`
 - **Payload encoding**: Lua receives/sends raw byte strings (can contain null bytes). Use `string.byte`, `string.char`, `string.sub` in Lua for structured access.
 - **Return value semantics**: Return `false`/`nil` to passthrough, `true` to drop, or a string to replace the payload in-place. Single-byte `0x01` payloads are not mistaken for "drop" — the drop signal is a boolean `true`.
 
@@ -242,7 +258,7 @@ The following opcodes are **blacklisted** from `send_raw_packet`: `TOSERVER_INIT
 | `src/client/al_hooks.h/cpp` | `AlClientHooks` bridge functions; also defines `RawPacketHookResult` struct |
 | `src/client/client.cpp` | Hook sites in `ProcessData()` and `Send()`; `Client::interceptIncomingPacket()` and `Client::interceptOutgoingPacket()` |
 | `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_send_raw_packet` Lua binding |
-| `builtin/client/register_df.lua` | Callback table registrations |
+| `builtin/client/register_al.lua` | Antilua-specific callback table registrations |
 | `clientmods/al_test/test_raw_packet.lua` | Integration tests |
 
 ## Client-Side Item Override
@@ -259,7 +275,7 @@ core.override_item(name, redefinition)
 
 ### Safety
 
-Attempting to redefine `name` or `type` fields raises a Lua error. Defined in `builtin/client/register_df.lua`.
+Attempting to redefine `name` or `type` fields raises a Lua error. Defined in `builtin/client/register_al.lua`.
 
 ---
 
@@ -353,6 +369,8 @@ Response file format: first line is `ok` or `error`, followed by the result.
 | `src/client/client.h` | `m_pipe_lua` member on `Client` |
 | `src/client/client.cpp` | Init in `loadMods()`, poll in `step()` |
 | `src/defaultsettings.cpp` | `pipe_lua_enable`, `pipe_lua_path` defaults |
+
+## OpenGL Drivers
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
 - **EDT_OPENGL** (`irr/src/COpenGLDriver.cpp`): Legacy driver with full fixed-function pipeline (material renderers, `glTexEnv`, `GL_ALPHA_TEST`, client-side vertex arrays). Compiles only when `_IRR_COMPILE_WITH_OPENGL_` is defined (always on for Luanti).
