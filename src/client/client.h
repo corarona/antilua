@@ -47,6 +47,7 @@ class ParticleManager;
 class RenderingEngine;
 class ToastManager;
 class SingleMediaDownloader;
+class ClientLuaPipe;
 class ClientScripting;
 class SSCSMController;
 struct ChatMessage;
@@ -617,6 +618,9 @@ private:
 
 	// DragonfireClient: toast notifications
 	std::unique_ptr<ToastManager> m_toast_manager;
+
+	// Client Lua pipe for external IPC
+	std::unique_ptr<ClientLuaPipe> m_pipe_lua;
 
 	// The number of blocks the client will combine for mesh generation.
 	MeshGrid m_mesh_grid;

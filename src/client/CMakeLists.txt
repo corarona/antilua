@@ -47,6 +47,7 @@ set(client_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/clientobject.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/clouds.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/al_hooks.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/pipe_lua.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/content_cao.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/content_cso.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/content_mapblock.cpp

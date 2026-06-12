@@ -153,6 +153,10 @@ static void set_al_default_settings()
 	settings->setDefault("keymap_select_left", "KEY_LEFT");
 	settings->setDefault("keymap_select_right", "KEY_RIGHT");
 	settings->setDefault("keymap_select_confirm", "SYSTEM_SCANCODE_40");
+
+	// Client Lua pipe
+	settings->setDefault("pipe_lua_enable", "false");
+	settings->setDefault("pipe_lua_path", "/tmp/antilua_lua");
 }
 
 void set_default_settings()

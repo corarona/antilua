@@ -72,6 +72,13 @@ nothing is broken:
 ```
 Requires `xvfb-run` (from the `xvfb` package) for headless display.
 
+For the Client Lua Pipe feature (named pipe IPC):
+```sh
+./util/ci/test_pipe_lua.sh
+```
+This spawns the game headless with `pipe_lua_enable=true`, writes Lua
+expressions to the FIFO, reads responses, and verifies results.
+
 For interactive testing on the active X server (requires i3 and xprintidle):
 ```sh
 ./util/start_test.sh
@@ -302,6 +309,50 @@ The `data` array has `size.x * size.y * size.z` entries in Z/Y/X order. Each ent
 | `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_read_schematic`, `l_serialize_schematic` |
 | `clientmods/ANTILUA/schembuilder/init.lua` | Schematic builder: load MTS, preview as particles, place via PlaceLiteM/SchemBuilderBot, auto-loot materials |
 | `clientmods/al_test/test_schembuilder.lua` | Integration tests for schembuilder features |
+
+---
+
+## Client Lua Pipe
+
+An optional named pipe (FIFO) for sending Lua code to the client and receiving
+results. Controlled by the `pipe_lua_enable` setting (default `false`).
+
+### Usage
+
+```sh
+# Enable in settings (minetest.conf or via core.settings):
+#   pipe_lua_enable = true
+#   pipe_lua_path = /tmp/antilua_lua
+
+# Send a Lua expression to execute:
+echo '{"code":"return core.localplayer:get_pos()", "file":"/tmp/resp"}' > /tmp/antilua_lua
+
+# Read the result:
+cat /tmp/resp
+# ok
+# {x=100, y=20, z=-30}
+```
+
+### Protocol
+
+Requests are JSON lines (one per line, terminated by `\n`) written to the FIFO:
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `code` | Yes | Lua code to execute in the shared client scripting state |
+| `file` | No | Response file path (default: `/tmp/antilua_lua_response`) |
+
+Response file format: first line is `ok` or `error`, followed by the result.
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `src/client/pipe_lua.h` | `ClientLuaPipe` class declaration |
+| `src/client/pipe_lua.cpp` | FIFO management, Lua execution, response writing |
+| `src/client/client.h` | `m_pipe_lua` member on `Client` |
+| `src/client/client.cpp` | Init in `loadMods()`, poll in `step()` |
+| `src/defaultsettings.cpp` | `pipe_lua_enable`, `pipe_lua_path` defaults |
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
 - **EDT_OPENGL** (`irr/src/COpenGLDriver.cpp`): Legacy driver with full fixed-function pipeline (material renderers, `glTexEnv`, `GL_ALPHA_TEST`, client-side vertex arrays). Compiles only when `_IRR_COMPILE_WITH_OPENGL_` is defined (always on for Luanti).

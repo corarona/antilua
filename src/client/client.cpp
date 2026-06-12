@@ -18,6 +18,7 @@
 #include "client/texturepaths.h"
 #include "client/texturesource.h"
 #include "client/al_hooks.h"
+#include "client/pipe_lua.h"
 #include "camera.h"
 #include "filesys.h"
 #include "game.h"
@@ -342,6 +343,12 @@ void Client::loadMods()
 	// Run a callback when mods are loaded
 	m_script->on_mods_loaded();
 
+	// Start the Lua pipe if enabled
+	if (g_settings->getBool("pipe_lua_enable")) {
+		m_pipe_lua = std::make_unique<ClientLuaPipe>(this,
+			g_settings->get("pipe_lua_path"));
+	}
+
 	// Create objects if they're ready
 	if (m_state == LC_Ready)
 		m_script->on_client_ready(m_env.getLocalPlayer());
@@ -478,6 +485,9 @@ void Client::step(float dtime)
 		dtime = DTIME_LIMIT;
 
 	AlClientHooks::on_pre_step(this, dtime);
+
+	if (m_pipe_lua)
+		m_pipe_lua->process();
 
 	m_animation_time = fmodf(m_animation_time + dtime, 60.0f);
 
