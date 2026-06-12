@@ -165,6 +165,12 @@ private:
 	// create_client_entity(pos, properties)
 	static int l_create_client_entity(lua_State *L);
 
+	// detach()
+	static int l_detach(lua_State *L);
+
+	// reattach()
+	static int l_reattach(lua_State *L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 	static void InitializeSSCSM(lua_State *L, int top);

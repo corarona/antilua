@@ -21,6 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "l_client.h"
 #include "chatmessage.h"
 #include "script/scripting_client.h"
+#include "client/renderingengine.h"
+#include "client/session.h"
 #include "itemdef.h"
 #include "client/client.h"
 #include "client/clientevent.h"
@@ -1176,6 +1178,24 @@ int ModApiClient::l_send_raw_packet(lua_State *L)
 	return 0;
 }
 
+// detach()
+int ModApiClient::l_detach(lua_State *L)
+{
+	RenderingEngine *re = RenderingEngine::get();
+	if (re)
+		re->setDetached(true);
+	return 0;
+}
+
+// reattach()
+int ModApiClient::l_reattach(lua_State *L)
+{
+	RenderingEngine *re = RenderingEngine::get();
+	if (re)
+		re->setDetached(false);
+	return 0;
+}
+
 void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
@@ -1221,6 +1241,8 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(read_file);
 	API_FCT(get_dir_list);
 	API_FCT(create_client_entity);
+	API_FCT(detach);
+	API_FCT(reattach);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)

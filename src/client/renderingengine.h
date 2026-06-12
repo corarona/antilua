@@ -112,6 +112,11 @@ public:
 		return m_device->getSceneManager();
 	}
 
+	static RenderingEngine *get()
+	{
+		return s_singleton;
+	}
+
 	static IrrlichtDevice *get_raw_device()
 	{
 		sanity_check(s_singleton && s_singleton->m_device);
@@ -134,6 +139,9 @@ public:
 
 	void initialize(Client *client, Hud *hud);
 	void finalize();
+
+	bool isDetached() const { return m_detached; }
+	void setDetached(bool v);
 
 	bool run()
 	{
@@ -170,5 +178,6 @@ private:
 	IrrlichtDevice *m_device = nullptr;
 	video::IVideoDriver *driver;
 	MyEventReceiver *m_receiver = nullptr;
+	bool m_detached = false;
 	static RenderingEngine *s_singleton;
 };

@@ -72,6 +72,9 @@ public:
 	//! Sets if the window should be resizable in windowed mode.
 	void setResizable(bool resize = false) override;
 
+	//! Show or hide the window.
+	void setWindowVisible(bool visible) override;
+
 	//! Minimizes the window.
 	void minimizeWindow() override;
 

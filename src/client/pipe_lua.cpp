@@ -157,3 +157,24 @@ void ClientLuaPipe::processLine(const std::string &line)
 
 	writeResult(response_file, true, oss.str());
 }
+
+bool ClientLuaPipe::sendCommand(const std::string &pipe_path,
+	const std::string &code, const std::string &response_file)
+{
+	Json::Value root;
+	root["code"] = code;
+	if (!response_file.empty())
+		root["file"] = response_file;
+
+	Json::StreamWriterBuilder builder;
+	builder["indentation"] = "";
+	std::string json = Json::writeString(builder, root) + "\n";
+
+	int fd = open(pipe_path.c_str(), O_WRONLY | O_NONBLOCK);
+	if (fd < 0)
+		return false;
+
+	ssize_t written = write(fd, json.data(), json.size());
+	close(fd);
+	return written == (ssize_t)json.size();
+}

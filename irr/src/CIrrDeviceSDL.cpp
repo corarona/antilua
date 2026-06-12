@@ -1447,9 +1447,31 @@ bool CIrrDeviceSDL::setFullscreen(bool fullscreen)
 	return success;
 }
 
+void CIrrDeviceSDL::setWindowVisible(bool visible)
+{
+	if (!Window)
+		return;
+	if (visible)
+		SDL_ShowWindow(Window);
+	else
+		SDL_HideWindow(Window);
+}
+
 bool CIrrDeviceSDL::isWindowVisible() const
 {
-	return !IsInBackground;
+	if (IsInBackground)
+		return false;
+	if (Window) {
+		u64 flags = SDL_GetWindowFlags(Window);
+#ifdef _IRR_USE_SDL3_
+		if (flags & SDL_WINDOW_HIDDEN)
+			return false;
+#else
+		if (!(flags & SDL_WINDOW_SHOWN))
+			return false;
+#endif
+	}
+	return true;
 }
 
 //! Checks if the Irrlicht device supports touch events.

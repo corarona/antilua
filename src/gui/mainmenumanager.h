@@ -138,6 +138,11 @@ public:
 		settings_requested = true;
 	}
 
+	void detach()
+	{
+		detach_requested = true;
+	}
+
 	void disconnect() override
 	{
 		disconnect_requested = true;
@@ -163,6 +168,7 @@ public:
 		show_open_url_dialog = url;
 	}
 
+	bool detach_requested = false;
 	bool disconnect_requested = false;
 	bool settings_requested = false;
 	bool changepassword_requested = false;

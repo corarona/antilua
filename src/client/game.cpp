@@ -52,6 +52,7 @@
 #include <ICameraSceneNode.h>
 #include "util/tracy_wrapper.h"
 #include "item_visuals_manager.h"
+#include "session.h"
 
 #if USE_SOUND
 	#include "client/sound/sound_openal.h"
@@ -637,6 +638,9 @@ void Game::run()
 
 void Game::shutdown()
 {
+	// Clean up session file if we were detached
+	session::remove();
+
 	// Delete text and menus first
 	m_game_ui->clearText();
 	m_game_formspec.reset();

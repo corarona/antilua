@@ -113,6 +113,11 @@ struct HardcodedPauseFormspecHandler : public TextDest
 			g_gamecallback->changePassword();
 			return;
 		}
+
+		if (fields.find("btn_detach") != fields.end()) {
+			g_gamecallback->detach();
+			return;
+		}
 	}
 };
 
@@ -405,6 +410,9 @@ void GameFormSpec::showPauseMenu()
 #endif
 #endif
 
+	os		<< "button_exit[4," << (ypos++) << ";3,0.5;btn_detach;"
+		// TRANSLATORS: Pause menu button
+		<< strgettext("Detach") << "]";
 	os		<< "button_exit[4," << (ypos++) << ";3,0.5;btn_exit_menu;"
 		// TRANSLATORS: Pause menu button, try to keep the translation short
 		<< strgettext("Exit to Menu") << "]";
@@ -530,6 +538,11 @@ void GameFormSpec::disableDebugView()
 bool GameFormSpec::handleCallbacks()
 {
 	auto texture_src = m_client->getTextureSource();
+
+	if (g_gamecallback->detach_requested) {
+		g_gamecallback->detach_requested = false;
+		m_rendering_engine->setDetached(true);
+	}
 
 	if (g_gamecallback->disconnect_requested) {
 		g_gamecallback->disconnect_requested = false;

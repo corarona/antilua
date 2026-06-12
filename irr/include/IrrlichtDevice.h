@@ -186,6 +186,10 @@ public:
 	\return True on success. */
 	virtual bool setFullscreen(bool fullscreen) { return false; }
 
+	//! Show or hide the window. Only works on SDL.
+	/** \param visible True to show, false to hide. */
+	virtual void setWindowVisible(bool visible) { (void)visible; }
+
 	//! Checks if the window could possibly be visible.
 	/** If this returns false, you should not do any rendering. */
 	virtual bool isWindowVisible() const { return true; };
