@@ -39,6 +39,7 @@ function sbots.register_bot(name, def)
 			if bot.stage == 0 then
 				bot.target_pos = bot:find_pos(lp)
 				if bot.target_pos then
+					bot.target_pos.y = bot.target_pos.y + 2
 					bot.stage = 1
 				elseif bot.orig_pos and vector.distance(lp, bot.orig_pos) > bot.landing_distance then
 					core.settings:set_bool("continuous_forward", false)

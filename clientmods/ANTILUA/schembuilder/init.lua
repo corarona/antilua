@@ -1085,10 +1085,11 @@ if sbots and sbots.register_bot then
 					max_batch_y = strat.max_batch_y and strat.max_batch_y(pos),
 				}
 				self._is_supply_target = nil
-				-- Layer strategy: stand 3 above target, place 3 layers at once
+				-- Layer strategy: sbots adds +2 generically, we add +1 more so bot stands
+				-- 3 above the lowest layer and places 3 layers (target_y .. target_y+2)
 				if name == "layer" then
 					self._strat_state.max_batch_y = target.y + 2
-					return vector.new(target.x, target.y + 3, target.z)
+					return vector.new(target.x, target.y + 1, target.z)
 				end
 				return vector.new(target.x, target.y, target.z)
 			end
