@@ -25,6 +25,8 @@
 #include "filesys.h"
 #include "irrlicht_changes/static_text.h"
 #include "irr_ptr.h"
+#include "session.h"
+#include "settings.h"
 
 RenderingEngine *RenderingEngine::s_singleton = nullptr;
 
@@ -396,6 +398,25 @@ void RenderingEngine::initialize(Client *client, Hud *hud)
 {
 	const std::string &draw_mode = g_settings->get("3d_mode");
 	core.reset(createRenderingCore(draw_mode, m_device, client, hud));
+}
+
+void RenderingEngine::setDetached(bool v)
+{
+	m_detached = v;
+	m_device->setWindowVisible(!v);
+	if (v) {
+		// Only write the pipe path if the feature is actually enabled,
+		// otherwise --attach can't send core.reattach().
+		std::string pipe_path;
+		if (g_settings->getBool("pipe_lua_enable")) {
+			pipe_path = g_settings->get("pipe_lua_path");
+			if (pipe_path.empty())
+				pipe_path = "/tmp/antilua_lua";
+		}
+		session::write(getpid(), pipe_path);
+	} else {
+		session::remove();
+	}
 }
 
 void RenderingEngine::finalize()

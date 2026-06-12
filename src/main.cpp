@@ -35,6 +35,8 @@
 #endif
 #if CHECK_CLIENT_BUILD()
 #include "client/clientlauncher.h"
+#include "client/pipe_lua.h"
+#include "client/session.h"
 #endif
 #if BUILD_UNITTESTS
 #include "test/test.h"
@@ -262,6 +264,65 @@ int main(int argc, char *argv[])
 #endif
 	}
 
+#if CHECK_CLIENT_BUILD()
+	if (cmd_args.getFlag("attach")) {
+		porting::attachOrCreateConsole();
+
+		auto info = session::read();
+		if (info.pid <= 0) {
+			errorstream << "No detached session found." << std::endl;
+			return 1;
+		}
+
+		if (kill((pid_t)info.pid, 0) != 0) {
+			errorstream << "Detached session (PID " << info.pid
+				<< ") is no longer running." << std::endl;
+			session::remove();
+			return 1;
+		}
+
+		if (info.pipe_lua_path.empty()) {
+			errorstream << "Detached session (PID " << info.pid
+				<< ") has no pipe_lua channel." << std::endl;
+			return 1;
+		}
+
+		if (!ClientLuaPipe::sendCommand(info.pipe_lua_path,
+				"core.reattach()", ""))
+		{
+			errorstream << "Failed to send reattach command to session (PID "
+				<< info.pid << ")." << std::endl;
+			return 1;
+		}
+
+		std::cout << "Reattached to Antilua session (PID "
+			<< info.pid << ")." << std::endl;
+		return 0;
+	}
+
+	if (!cmd_args.getFlag("forcenew")) {
+		if (session::isLive()) {
+			auto info = session::read();
+			porting::attachOrCreateConsole();
+			if (info.pipe_lua_path.empty()) {
+				errorstream << "A detached Antilua session is already running (PID "
+					<< info.pid << "), but was detached without pipe_lua_enable.\n"
+					<< "Use --forcenew to start a new instance, or restart with "
+					"pipe_lua_enable=true to enable reattach."
+					<< std::endl;
+			} else {
+				errorstream << "A detached Antilua session is already running (PID "
+					<< info.pid << ").\n"
+					<< "Use --attach to reattach or --forcenew to start a new instance."
+					<< std::endl;
+			}
+			return 1;
+		}
+		// Clean up stale session file if PID is dead
+		session::remove();
+	}
+#endif
+
 	GameParams game_params;
 #if !CHECK_CLIENT_BUILD()
 	porting::attachOrCreateConsole();
@@ -434,6 +495,10 @@ static void set_allowed_options(OptionList *allowed_options)
 			_("Set password from contents of file"))));
 	allowed_options->insert(std::make_pair("go", ValueSpec(VALUETYPE_FLAG,
 			_("Skip main menu, go directly in-game"))));
+	allowed_options->insert(std::make_pair("attach", ValueSpec(VALUETYPE_FLAG,
+			_("Re-attach to a detached client session"))));
+	allowed_options->insert(std::make_pair("forcenew", ValueSpec(VALUETYPE_FLAG,
+			_("Start a new instance even if a detached session exists"))));
 	allowed_options->insert(std::make_pair("console", ValueSpec(VALUETYPE_FLAG,
 			_("Start with the console open (Windows only)"))));
 #endif
