@@ -145,7 +145,7 @@ in the cheat menu). **Scaffold** (`Y`) places a block under your feet each step
 
 Antilua extends the client-side Lua API with callbacks, object
 refs, inventory actions, and a virtual mod filesystem. See
-`doc/df_csm_api.md` for the full reference.
+`doc/al_csm_api.md` for the full reference.
 
 ---
 

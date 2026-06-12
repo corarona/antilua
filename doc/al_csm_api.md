@@ -1,10 +1,11 @@
-Antilua CSM API Reference
-===================================
+Antilua Client-Side Modding API
+===============================
 
 This document describes all client-side modding (CSM) API features added by
-Antilua — features not present in upstream Antilua. These extend the
+Antilua — features not present in upstream Luanti. These extend the
 `core.*` API, add new Lua callbacks, a cheat menu system, settings, rendering
-extensions, and the `ws.*` utility library (wasplib).
+extensions, the `ws.*` utility library (wasplib, in the ANTILUA modpack),
+client-side schematic support, and a named pipe IPC interface.
 
 ---
 
@@ -19,9 +20,14 @@ Table of Contents
 6. Custom Settings
 7. Key Bindings
 8. Rendering: ESP & Tracers
-9. The `ws.*` Library (wasplib)
-10. Globalhack System
-11. Particle System
+9. Raw Packet API
+10. Client-Side Item Override
+11. Schematic API
+12. Client Lua Pipe
+13. Session Detach / Reattach
+14. The `ws.*` Library (wasplib, ANTILUA modpack)
+15. Globalhack System (wasplib)
+16. Particle System
 
 ---
 
@@ -327,12 +333,11 @@ core.registered_chatcommands["name"] = {
 Cheats are registered in the `core.cheats` table, organized by category:
 
 ```lua
-core.cheats["Combat"]["AntiKnockback"]  = "antiknockback"
-core.cheats["Movement"]["JetPack"]      = "jetpack"
-core.cheats["Render"]["Xray"]           = "xray"
-core.cheats["Interact"]["FastDig"]      = "fastdig"
-core.cheats["Player"]["Reach"]          = "reach"
-core.cheats["Exploit"]["EntitySpeed"]   = "entity_speed"
+core.cheats["Combat"]["AntiKnockback"]   = "antiknockback"
+core.cheats["Movement"]["JetPack"]       = "jetpack"
+core.cheats["Render"]["Xray"]            = "xray"
+core.cheats["Interact"]["FastDig"]       = "fastdig"
+core.cheats["Player"]["Reach"]           = "reach"
 ```
 
 ### Registration
@@ -351,7 +356,11 @@ corresponding setting.
 |----------|-------|---------|--------|
 | **Combat** | AntiKnockback | `antiknockback` | No knockback |
 | | AttachmentFloat | `float_above_parent` | Float above mounts |
+| | AutoHit | `autohit` | Auto-attack entities |
+| | Killaura | `killaura` | Attack all entities in range (dedicated key X) |
+| | Scaffold | `scaffold` | Auto-place beneath feet (dedicated key Y) |
 | **Movement** | Freecam | `freecam` | Detached camera |
+| | Freelook | `freelook` | Mouse-look without holding a button |
 | | AutoForward | `continuous_forward` | Auto-run |
 | | PitchMove | `pitch_move` | Move in look direction |
 | | AutoJump | `autojump` | Auto-jump obstacles |
@@ -361,12 +370,11 @@ corresponding setting.
 | | AntiSlip | `antislip` | No ice slipping |
 | | AirJump | `airjump` | Jump in mid-air |
 | | Spider | `spider` | Climb walls |
+| | EntitySpeed | `entity_speed` | Entities at player speed |
 | **Render** | Xray | `xray` | See through terrain |
 | | Fullbright | `fullbright` | Always max light |
 | | HUDBypass | `hud_flags_bypass` | Ignore server HUD flags |
 | | NoHurtCam | `no_hurt_cam` | No damage screen shake |
-| | BrightNight | `no_night` | Always daytime |
-| | Coords | `coords` | Position HUD |
 | | CheatHUD | `cheat_hud` | Active cheats overlay |
 | | EntityHitboxes | `enable_entity_esp` | Entity wireframe hitboxes |
 | | EntityWallhack | `enable_entity_wallhack` | Through-walls entity ESP with occlusion tinting |
@@ -374,15 +382,14 @@ corresponding setting.
 | | PlayerHitboxes | `enable_player_esp` | Player wireframe hitboxes |
 | | PlayerWallhack | `enable_player_wallhack` | Through-walls player ESP with occlusion tinting |
 | | PlayerTracers | `enable_player_tracers` | Player tracer lines |
-| | NodeESP | `enable_node_esp` | *planned* |
-| | NodeTracers | `enable_node_tracers` | *planned* |
+| | NodeESP | `enable_node_esp` | Node bounding-box highlights |
+| | NodeTracers | `enable_node_tracers` | Tracer lines to filtered nodes |
 | **Interact** | FastDig | `fastdig` | Faster digging |
 | | FastPlace | `fastplace` | Faster placement |
 | | AutoDig | `autodig` | Auto-dig nearest |
 | | AutoPlace | `autoplace` | Auto-place blocks |
 | | InstantBreak | `instant_break` | One-hit break |
 | | FastHit | `spamclick` | Auto-click |
-| | AutoHit | `autohit` | Auto-hit entities |
 | **Player** | NoFallDamage | `prevent_natural_damage` | No environmental damage |
 | | NoForceRotate | `no_force_rotate` | No forced rotation |
 | | Reach | `reach` | Extended interaction range |
@@ -390,7 +397,6 @@ corresponding setting.
 | | PrivBypass | `priv_bypass` | Bypass privilege checks |
 | | AutoRespawn | `autorespawn` | Auto-respawn on death |
 | | ThroughWalls | `dont_point_nodes` | Don't auto-point nodes |
-| **Exploit** | EntitySpeed | `entity_speed` | Entities at player speed |
 
 Cheats can be toggled via the cheat menu (default `TAB`) or by setting the
 corresponding setting to `"true"` / `"false"`.
@@ -420,8 +426,6 @@ These settings exist only in Antilua. Set via `core.settings:set()`,
 | `fastplace` | `false` | Faster placement |
 | `autoplace` | `false` | Auto-place blocks |
 | `instant_break` | `false` | Instant node breaking |
-| `no_night` | `false` | Always daytime |
-| `coords` | `false` | Show position HUD |
 | `point_liquids` | `false` | Point/select liquids |
 | `spamclick` | `false` | Fast auto-clicking |
 | `no_force_rotate` | `false` | Prevent forced rotation |
@@ -518,12 +522,96 @@ pipeline step in `DrawTracersAndESP`.
 - The tracer origin is `camera_node_position + (look_dir * 0.2 * BS)`,
   NOT `camera:getPosition()` (which maps incorrectly in view space).
 - Boxes use `draw3DBox` and lines use `draw3DLine`.
-- Node ESP/Tracers (`enable_node_esp`, `enable_node_tracers`) are declared
-  but not yet implemented in the C++ render pipeline.
+- Node ESP/Tracers highlight or draw lines to nodes matching the filter
+  in `node_esp_nodes` (comma-separated node name list).
 
 ---
 
-9. The `ws.*` Library (wasplib)
+9. Raw Packet API
+=================
+
+See AGENTS.md for the full raw packet API documentation. Key functions:
+
+```lua
+core.send_raw_packet(command, payload)
+core.register_on_receiving_raw_packet(func(command_id, payload) -> nil|true|string)
+core.register_on_sending_raw_packet(func(command_id, payload) -> nil|true|string)
+```
+
+Constant tables `core.TOCLIENT` and `core.TOSERVER` map opcode names to
+numeric IDs. Certain init-phase opcodes are blacklisted.
+
+---
+
+10. Client-Side Item Override
+============================
+
+```lua
+core.override_item(name, redefinition)
+```
+
+Modify item/node definitions client-side. The `name` and `type` fields in the
+redefinition table are rejected (raises a Lua error). Mirrors the server-side
+`minetest.override_item()`.
+
+---
+
+11. Schematic API (Client-Side)
+==============================
+
+Deserialize/serialize MTS schematics client-side:
+
+```lua
+-- Read an MTS schematic from raw binary data
+local schem = core.read_schematic(mts_binary_data, options)
+-- Returns: { size = {x,y,z}, yslice_prob = {...}, data = {{name, prob, param2, force_place}, ...} }
+
+-- Serialize a schematic table to MTS binary format
+local mts_data = core.serialize_schematic(schem_table, format, options)
+-- format: "mts" (default) or "lua"
+```
+
+The data array follows the same Z/Y/X order as the server-side API.
+
+---
+
+12. Client Lua Pipe
+==================
+
+An optional named pipe (FIFO) for sending Lua code to the client and receiving
+results. Controlled by the `pipe_lua_enable` setting.
+
+Write a JSON line to the FIFO at `pipe_lua_path` (default `/tmp/antilua_lua`):
+
+```json
+{"code":"return core.localplayer:get_pos()", "file":"/tmp/resp"}
+```
+
+Response file format:
+```
+ok
+{result}
+```
+
+On error, the first line is `error` followed by the error message.
+
+---
+
+13. Session Detach / Reattach
+============================
+
+The client can detach (hide its window, run headlessly) and later reattach.
+
+- **Detach**: `core.detach()` or the "Detach" button in the pause menu.
+  The game loop continues (physics, network, Lua) but rendering is suspended.
+  A session file is written to `$XDG_RUNTIME_DIR/antilua/session`.
+- **Reattach**: Run `antilua --attach` from the terminal. Requires
+  `pipe_lua_enable = true` — the reattach command is sent via the Lua pipe.
+- **Start fresh**: `antilua --forcenew` bypasses the session check.
+
+---
+
+14. The `ws.*` Library (wasplib, ANTILUA modpack)
 ================================
 
 The `ws` global namespace is provided by the `wasplib` mod (part of the
@@ -646,7 +734,7 @@ ws.clear_wps()                           -- Clear all
 
 ---
 
-10. Globalhack System
+15. Globalhack System (wasplib)
 =====================
 
 The globalhack system provides a framework for toggleable cheat features that
@@ -704,7 +792,7 @@ end, {"dependent_setting"}, 0.1)
 
 ---
 
-11. Particle System
+16. Particle System
 ===================
 
 Client-side particle API (no server required):
@@ -755,5 +843,5 @@ core.delete_particlespawner(id)
 License
 -------
 
-This documentation applies to Antilua, a fork of Antilua (formerly
-Antilua). See `LICENSE.txt` in the repository root for the full license.
+This documentation applies to Antilua, a fork of Luanti (formerly Minetest).
+See `LICENSE.txt` in the repository root for the full license.

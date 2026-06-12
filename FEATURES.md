@@ -124,13 +124,13 @@ at `clientmods/ANTILUA/`. Core mods:
 | `walls` | Wall/ceiling/platform builder | ✅ |
 | `autoevade` | Dodge projectiles automatically | ✅ |
 
-See `doc/df_csm_api.md` for the full Antilua-specific CSM API reference,
+See `doc/al_csm_api.md` for the full Antilua-specific CSM API reference,
 and `PLAN.md` for the modpack restructuring plan.
 
 ## Lua API Additions
 
 See `src/script/lua_api/` and `clientmods/al_test/` for the full list of
-client-side Lua API additions ported from Dragonfire. Also see `doc/df_csm_api.md`
+client-side Lua API additions ported from Dragonfire. Also see `doc/al_csm_api.md`
 for the complete reference.
 
 ## Test Coverage
