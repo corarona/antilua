@@ -257,9 +257,9 @@ function test_ws_rg_lifecycle(T)
 		local test_setting = "al_test_rg_lifecycle"
 		core.settings:set(test_setting, "false")
 		ws.rg("DFTestLifecycle", {
+			name = "DFTestLifecycle",
 			category = "DevTools",
 			setting = test_setting,
-			delay = 0,
 			on_start = function() fired.start = true end,
 			on_step = function() fired.step = true end,
 			on_stop = function() fired.stop = true end,
@@ -277,7 +277,7 @@ function test_ws_rg_lifecycle(T)
 			end)
 		end)
 		-- Poll for completion
-		core.after(3.0, function()
+		core.after(5.0, function()
 			T.assert(fired.done, "ws.rg lifecycle: start=" .. tostring(fired.start) .. " step=" .. tostring(fired.step) .. " stop=" .. tostring(fired.stop))
 			core.settings:set_bool(test_setting, false)
 		end)

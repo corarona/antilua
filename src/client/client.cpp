@@ -1160,6 +1160,7 @@ bool Client::interceptIncomingPacket(NetworkPacket *pkt)
 		return false;
 	if (!result.payload.empty() && result.payload != payload)
 		pkt->setPayload(result.payload);
+	pkt->seek(0);
 	return true;
 }
 
@@ -1178,6 +1179,7 @@ bool Client::interceptOutgoingPacket(NetworkPacket *pkt)
 		return false;
 	if (!result.payload.empty() && result.payload != payload)
 		pkt->setPayload(result.payload);
+	pkt->seek(0);
 	return true;
 }
 
