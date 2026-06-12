@@ -53,6 +53,57 @@ movement_strategies.client_tp = {
 	end,
 }
 
+movement_strategies.sprint = {
+	requires_movement = true,
+	on_step = function(bot, lp)
+		ws.aim(bot.target_pos)
+		core.settings:set_bool("continuous_forward", true)
+		core.set_keypress("special1", true)
+	end,
+}
+
+movement_strategies.patrol = {
+	requires_movement = true,
+	on_find = function(bot, lp)
+		if bot._patrol_waypoints == nil then
+			bot._patrol_idx = 0
+			bot._patrol_waypoints = {}
+			local wp_str = bot._setting and core.settings:get(bot._setting .. ".patrol_waypoints") or ""
+			for name in wp_str:gmatch("[^,]+") do
+				local t = name:match("^%s*(.-)%s*$")
+				if t and #t > 0 then
+					table.insert(bot._patrol_waypoints, t)
+				end
+			end
+		end
+		if #bot._patrol_waypoints == 0 then
+			ws.notify("No patrol waypoints configured.", ws.NOTIFY_WARNING)
+			return
+		end
+		bot._patrol_idx = bot._patrol_idx + 1
+		if bot._patrol_idx > #bot._patrol_waypoints then
+			local cycle = core.settings:get_bool(bot._setting .. ".patrol_cycle")
+			if cycle ~= false then
+				bot._patrol_idx = 1
+			else
+				core.settings:set_bool(bot._setting, false)
+				return
+			end
+		end
+		local wp_name = bot._patrol_waypoints[bot._patrol_idx]
+		local wp_pos = poi and poi.get_waypoint(wp_name)
+		if not wp_pos then
+			ws.notify("Patrol waypoint '" .. wp_name .. "' not found.", ws.NOTIFY_WARNING)
+			return
+		end
+		return wp_pos
+	end,
+	on_step = function(bot, lp)
+		ws.aim(bot.target_pos)
+		core.settings:set_bool("continuous_forward", true)
+	end,
+}
+
 local bot_class = {
 	find_pos = function(self, pos) end,
 	do_pos = function(self, pos) end,
@@ -96,9 +147,12 @@ function sbots.register_bot(name, def)
 	bot_settings.movement = {
 		type = "enum",
 		default = def.movement or "walk",
-		values = {"walk", "teleport", "server_tp", "client_tp", "stationary"},
+		values = {"walk", "teleport", "server_tp", "client_tp", "stationary", "sprint", "patrol"},
 	}
+	bot_settings.patrol_waypoints = { type = "string", default = "" }
+	bot_settings.patrol_cycle = { type = "bool", default = true }
 
+	def._setting = tn:lower()
 	registered_bots[tn] = def
 
 	ws.rg(name, {
@@ -110,7 +164,11 @@ function sbots.register_bot(name, def)
 			local strategy = movement_strategies[bot.movement] or movement_strategies.walk
 			local lp = core.localplayer:get_pos()
 			if bot.stage == 0 then
-				bot.target_pos = bot:find_pos(lp)
+				if strategy.on_find then
+					bot.target_pos = strategy.on_find(bot, lp)
+				else
+					bot.target_pos = bot:find_pos(lp)
+				end
 				if bot.target_pos then
 					bot.stage = 1
 				elseif bot.orig_pos and vector.distance(lp, bot.orig_pos) > bot.landing_distance then
@@ -160,6 +218,8 @@ function sbots.register_bot(name, def)
 			bot.orig_pos = core.localplayer:get_pos()
 			bot.target_pos = nil
 			bot.stage = 0
+			bot._patrol_waypoints = nil
+			bot._patrol_idx = nil
 			if strategy.requires_movement then
 				bot._saved_pitch_move = core.settings:get_bool("pitch_move")
 				bot._saved_free_move = core.settings:get_bool("free_move")

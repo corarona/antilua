@@ -53,6 +53,24 @@ ws.rg("Autopilot", {
 		if mode == "2d_aim" then
 			autofly.tpos = vector.new(target.x, lp.y, target.z)
 			dst = vector.distance(lp, autofly.tpos)
+		elseif mode == "hover" then
+			-- Find terrain below and maintain altitude
+			local below = ws.dircoord(0, -1, 0)
+			for check_y = 2, 100 do
+				local check = {x = below.x, y = lp.y - check_y, z = below.z}
+				local nd = core.get_node_or_nil(check)
+				if nd and nd.name ~= "air" then
+					local target_y = check.y + alt
+					if lp.y < target_y - 0.5 then
+						core.localplayer:set_pos(vector.add(lp, {x=0, y=0.3, z=0}))
+					elseif lp.y > target_y + 0.5 then
+						core.localplayer:set_pos(vector.add(lp, {x=0, y=-0.3, z=0}))
+					end
+					break
+				end
+			end
+			autofly.tpos = vector.new(target.x, lp.y, target.z)
+			dst = vector.distance(lp, autofly.tpos)
 		elseif mode == "nether" then
 			autofly.tpos = vector.new(target.x / 8, lp.y, target.z / 8)
 			dst = vector.distance(lp, autofly.tpos)
@@ -90,7 +108,7 @@ ws.rg("Autopilot", {
 		end
 
 		-- Altitude hold: maintain height above ground
-		if alt_hold and mode ~= "3d_velocity" then
+		if alt_hold and mode ~= "3d_velocity" and mode ~= "hover" then
 			local below = ws.dircoord(0, -1, 0)
 			for check_y = 2, alt do
 				local check = {x = below.x, y = lp.y - check_y, z = below.z}
@@ -157,6 +175,11 @@ ws.rg("Autopilot", {
 			core.localplayer:set_physics_override({ gravity = 0, speed = speed })
 		end
 
+		if mode == "hover" then
+			core.settings:set_bool("continuous_forward", true)
+			core.settings:set_bool("pitch_move", true)
+		end
+
 		if mode ~= "2d_aim" then
 			poi.display(autofly.tpos, poi.last_name)
 		end
@@ -171,7 +194,7 @@ ws.rg("Autopilot", {
 	end,
 	daughters = {"continuous_forward", "pitch_move", "flight_hud", "freelook"},
 	cheat_settings = {
-		mode = { type = "string", default = "3d_aim" },
+		mode = { type = "enum", default = "3d_aim", values = {"3d_aim", "2d_aim", "3d_velocity", "nether", "follow", "hover"} },
 		landing_distance = { type = "number", default = 15, min = 1, max = 100 },
 		speed = { type = "number", default = 1.0, min = 0.1, max = 10 },
 		altitude_hold = { type = "bool", default = false },
