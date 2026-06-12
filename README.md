@@ -146,14 +146,68 @@ refs, inventory actions, and a virtual mod filesystem. See
 
 ---
 
+## Debugging and Automation
+
+### Client Lua Pipe
+
+An optional named pipe (FIFO) for sending Lua code to the client
+and receiving results. Controlled by the `pipe_lua_enable` setting
+(default: `false`).
+
+**Protocol:** Write a single JSON line to the pipe at `pipe_lua_path`
+(default `/tmp/antilua_lua`):
+
+```json
+{"code":"return core.localplayer:get_pos()", "file":"/tmp/resp"}
+```
+
+The response is written to the file specified in `file` (or
+`/tmp/antilua_lua_response` if omitted):
+
+```
+ok
+{x=100, y=20, z=-30}
+```
+
+On error, the first line is `error` followed by the error message.
+
+Usage examples:
+```sh
+# One-off expression
+echo '{"code":"return 1+1","file":"/tmp/resp"}' > /tmp/antilua_lua
+cat /tmp/resp
+# ok
+# 2
+```
+
+### Session Detach / Reattach
+
+The client can **detach** (hide its window and run headlessly, keeping
+the network connection and Lua state alive) and later **reattach** from
+the terminal — analogous to `tmux`/`screen` for the game.
+
+- **Detach:** Press the "Detach" button in the pause menu, or call
+  `core.detach()` from Lua. The game loop continues (physics, network,
+  Lua) but rendering is suspended.
+- **Reattach:** Run `antilua --attach` from the terminal. Requires
+  `pipe_lua_enable = true` — the reattach command is sent via the
+  Lua pipe. The window reappears and rendering resumes.
+- **Start fresh:** Run `antilua --forcenew` to bypass the session
+  check and start a new instance even if a detached session exists.
+
+---
+
 ## Integration Tests
 
 ```sh
-# Requires xvfb-run (from the xvfb package) for headless display
+# Full test suite (requires xvfb-run for headless display)
 ./util/ci/run_al_tests.sh
+
+# Client Lua Pipe test (named pipe IPC)
+./util/ci/test_pipe_lua.sh
 ```
 
-All 145+ integration tests pass (0 failures, 0 skipped).
+370+ tests pass (0 failures, 0 skipped).
 
 ---
 
