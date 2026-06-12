@@ -153,44 +153,96 @@ void PanelOverlay::drawPinned(video::IVideoDriver *driver, v2s32 mouse_pos)
 
 void PanelOverlay::autoTilePanels(v2u32 screen_size)
 {
-	s32 panel_w = m_entry_width + 20;
-	s32 cols = std::max(1, (s32)((screen_size.X - 20) / panel_w));
-	s32 x = 10, y = 60, row_max_h = 0;
+	s32 margin = 10;
 
-	for (size_t i = 0; i < m_panels.size(); i++) {
-		m_panels[i].h = m_panels[i].title_h + getPanelContentHeight(m_panels[i]);
-		m_panels[i].x = x;
-		m_panels[i].y = y;
-		row_max_h = std::max(row_max_h, m_panels[i].h);
-		x += panel_w + m_gap;
-		if ((i + 1) % cols == 0) {
-			x = 10;
-			y += row_max_h + m_gap;
-			row_max_h = 0;
+	for (auto &panel : m_panels)
+		panel.h = panel.title_h + getPanelContentHeight(panel);
+
+	std::vector<bool> placed(m_panels.size(), false);
+
+	auto overlaps = [&](size_t idx, s32 tx, s32 ty) -> bool {
+		for (size_t j = 0; j < m_panels.size(); j++) {
+			if (!placed[j] || j == idx) continue;
+			auto &p = m_panels[j];
+			if (tx + m_panels[idx].w > p.x && tx < p.x + p.w &&
+					ty + m_panels[idx].h > p.y && ty < p.y + p.h)
+				return true;
 		}
-	}
+		return false;
+	};
 
+	// Pass 1: Place pinned panels unconditionally at saved positions
 	for (size_t i = 0; i < m_panels.size(); i++) {
 		OverlayPanel saved;
 		saved.id = m_panels[i].id;
 		loadPanelPosition(saved);
-		if (saved.x == 0 && saved.y == 0)
-			continue;
-		bool overlaps = false;
-		for (size_t j = 0; j < m_panels.size(); j++) {
-			if (i == j) continue;
-			auto &op = m_panels[j];
-			if (saved.x + m_panels[i].w > op.x && saved.x < op.x + op.w &&
-					saved.y + m_panels[i].h > op.y && saved.y < op.y + op.h) {
-				overlaps = true;
-				break;
-			}
-		}
-		if (!overlaps) {
+		if (saved.pinned) {
 			m_panels[i].x = saved.x;
 			m_panels[i].y = saved.y;
+			m_panels[i].pinned = true;
 			m_panels[i].detached = true;
+			placed[i] = true;
 		}
+	}
+
+	// Pass 2: Place unpinned panels using edge-snapping packer
+	for (size_t i = 0; i < m_panels.size(); i++) {
+		if (placed[i])
+			continue;
+
+		s32 px = margin, py = 60;
+		bool found = false;
+
+		// Try saved position first (only if no overlap)
+		OverlayPanel saved;
+		saved.id = m_panels[i].id;
+		loadPanelPosition(saved);
+		if ((saved.x != 0 || saved.y != 0) && !overlaps(i, saved.x, saved.y)) {
+			px = saved.x;
+			py = saved.y;
+			found = true;
+		}
+
+		// Edge-snapping pack: scan candidate positions derived from placed panel edges
+		if (!found) {
+			std::vector<s32> ys = {60};
+			for (size_t j = 0; j < m_panels.size(); j++) {
+				if (!placed[j]) continue;
+				s32 by = m_panels[j].y + m_panels[j].h + m_gap;
+				if (by + m_panels[i].h <= (s32)screen_size.Y)
+					ys.push_back(by);
+			}
+			std::sort(ys.begin(), ys.end());
+
+			for (auto cy : ys) {
+				std::vector<s32> xs = {margin};
+				for (size_t j = 0; j < m_panels.size(); j++) {
+					if (!placed[j]) continue;
+					auto &p = m_panels[j];
+					if (cy < p.y + p.h && cy + m_panels[i].h > p.y) {
+						s32 rx = p.x + p.w + m_gap;
+						if (rx + m_panels[i].w <= (s32)screen_size.X - margin)
+							xs.push_back(rx);
+					}
+				}
+				std::sort(xs.begin(), xs.end());
+
+				for (auto cx : xs) {
+					if (!overlaps(i, cx, cy)) {
+						px = cx;
+						py = cy;
+						found = true;
+						break;
+					}
+				}
+				if (found) break;
+			}
+		}
+
+		m_panels[i].x = px;
+		m_panels[i].y = py;
+		m_panels[i].detached = false;
+		placed[i] = true;
 	}
 }
 

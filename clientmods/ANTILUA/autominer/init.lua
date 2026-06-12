@@ -2,9 +2,7 @@
 -- Finds nearest target node from nlist, jump-teleports toward it via rhythmtp,
 -- digs the node before teleporting to its position (avoids noclip damage).
 
-local autominer_tgt
 local lava_nodes_list
-local pickup_wait = false
 
 local function parse_lava_nodes()
 	local s = core.settings:get("autominer.lava_nodes")
@@ -29,19 +27,6 @@ local function lavapanic()
 	end
 end
 
-local function find_nearest_target(pos, search_range)
-	local nds = core.find_nodes_near(pos, search_range, nlist.get(nlist.selected), true)
-	if not nds or #nds == 0 then
-		return nil
-	end
-	table.sort(nds, function(a, b) return vector.distance(pos, a) < vector.distance(pos, b) end)
-	for _, p in ipairs(nds) do
-		if pos_ok(p) then
-			return p
-		end
-	end
-end
-
 local function get_reach()
 	local reach = core.settings:get("reach")
 	if reach then
@@ -51,13 +36,12 @@ local function get_reach()
 end
 
 sbots.register_bot("AutoMiner", {
+	movement = "teleport",
 	find_pos = function(self, pos)
 		parse_lava_nodes()
 		local search_range = tonumber(core.settings:get("autominer.search_range")) or 50
-		autominer_tgt = find_nearest_target(pos, search_range)
-		if autominer_tgt then
-			return autominer_tgt
-		end
+		self.target = sbots.find_nearest(pos, search_range, nlist.get(nlist.selected), pos_ok)
+		return self.target
 	end,
 	do_pos = function(self, pos)
 		return true
@@ -71,7 +55,7 @@ sbots.register_bot("AutoMiner", {
 		if hp < min_hp then return end
 
 		-- After digging: wait until all dropped items are picked up
-		if pickup_wait then
+		if self.pickup_wait then
 			local objects = core.get_objects_inside_radius(lp, 4)
 			local has_items = false
 			for _, obj in ipairs(objects) do
@@ -86,12 +70,12 @@ sbots.register_bot("AutoMiner", {
 			if has_items then
 				return
 			end
-			pickup_wait = false
+			self.pickup_wait = false
 			self.stage = 0
 			return
 		end
 
-		if autominer_tgt then
+		if self.target then
 			-- Entity proximity check
 			local its = core.get_objects_inside_radius(lp, 2)
 			for _, o in pairs(its) do
@@ -102,34 +86,32 @@ sbots.register_bot("AutoMiner", {
 			end
 
 			-- Target still exists?
-			local n = core.get_node_or_nil(autominer_tgt)
+			local n = core.get_node_or_nil(self.target)
 			if n and n.name == "air" then
-				autominer_tgt = nil
+				self.target = nil
 				self.stage = 0
 				return
 			end
 
-			local dist = vector.distance(lp, autominer_tgt)
+			local dist = vector.distance(lp, self.target)
 			local reach = get_reach()
 
 			if dist <= reach then
 				-- Dig first, then teleport below so head is in the air pocket
-				local tpos = autominer_tgt
+				local tpos = self.target
 				ws.dig(tpos)
 				core.localplayer:set_pos(vector.offset(tpos, 0, -1, 0))
-				autominer_tgt = nil
-				pickup_wait = true
-			elseif not rhythmtp.is_moving() then
-				ws.aim(autominer_tgt)
-				rhythmtp.go_to(vector.offset(autominer_tgt, 0, -1, 0))
+				self.target = nil
+				self.pickup_wait = true
 			end
+			-- Movement (stage 1) is handled by the sbots teleport strategy
 		end
 	end,
 	on_activate = function(self)
 		core.settings:set_bool("autoeat", true)
 		core.settings:set_bool("dighead", true)
 		parse_lava_nodes()
-		autominer_tgt = nil
+		self.target = nil
 	end,
 	landing_distance = 0,
 	stand_waiting = false,

@@ -1,8 +1,4 @@
-local sb_state = 0
-local sb_target = nil
-local sb_startpos
 local is_spongebot = false
-math.randomseed(os.clock())
 
 local function override_prediction(enable)
 	for k, v in pairs(core.registered_items) do
@@ -18,26 +14,6 @@ ws.on_connect(function()
 	end
 end)
 
-local function find_closest(ndnames, range)
-	range = range or ws.range
-	local lp = ws.dircoord(0, 0, 0)
-	local nds = core.find_nodes_near(lp, range, ndnames, true)
-	local odst = 100
-	local rt = nil
-	for _, v in ipairs(nds) do
-		local dst = vector.distance(lp, v)
-		if dst < odst and v.y > 1 then odst = dst rt = v end
-	end
-	if not rt then
-		core.settings:set_bool("continuous_forward", false)
-		if core.sound_play then
-			core.sound_play("mcl_bells_bell_stroke", { pitch = 1.5, gain = 1.5 })
-		end
-		core.settings:set_bool("spongebot", false)
-	end
-	return rt, odst
-end
-
 local function checknode(pos)
 	if pos then
 		local tn = core.get_node_or_nil(pos)
@@ -45,57 +21,68 @@ local function checknode(pos)
 	end
 end
 
-ws.rg("SpongeBot", { category = "Bots", setting = "spongebot",
-	on_step = function(self)
-		local dst = 200
-		local lp = core.localplayer:get_pos()
-		if sb_state == 0 then
-			sb_target, dst = find_closest({"mcl_core:water_source"}, 50)
-			if checknode(sb_target) then
-				local blk = core.find_nodes_in_area(
-					ws.dircoord(0, -1, 0), ws.dircoord(1, 2, 0),
-					{'mcl_core:bedrock', 'mcl_core:obsidian'})
-				if blk and #blk > 0 then
-					core.localplayer:set_pos(ws.dircoord(math.random(-1, 1), 2, math.random(-1, 1)))
-				end
-				sb_state = 1
-				return
-			end
-		elseif sb_state == 1 then
-			ws.aim(sb_target)
-			if not checknode(sb_target) then
-				sb_state = 0
-				return
+sbots.register_bot("SpongeBot", {
+	find_pos = function(self, pos)
+		local lp = ws.dircoord(0, 0, 0)
+		local nds = core.find_nodes_near(lp, 50, {"mcl_core:water_source"}, true)
+		local closest, min_dst
+		for _, v in ipairs(nds) do
+			local dst = vector.distance(lp, v)
+			if dst < (min_dst or math.huge) and v.y > 1 then
+				closest = v
+				min_dst = dst
 			end
 		end
-		if sb_target and vector.distance(lp, sb_target) < 1 then
-			core.settings:set_bool("continuous_forward", false)
-			ws.dig(sb_target)
-		else
+		if not closest then
+			if core.sound_play then
+				core.sound_play("mcl_bells_bell_stroke", { pitch = 1.5, gain = 1.5 })
+			end
+			return nil
+		end
+		return closest
+	end,
+	do_pos = function(self, pos)
+		if checknode(self.target_pos) then
+			ws.dig(self.target_pos)
+		end
+		return true
+	end,
+	do_step = function(self, dtime)
+		-- Keep moving while searching or approaching target
+		if self.stage ~= 2 then
 			core.settings:set_bool("continuous_forward", true)
 		end
+		-- Bedrock/obsidian check: teleport out if stuck
+		local blk = core.find_nodes_in_area(
+			ws.dircoord(0, -1, 0), ws.dircoord(1, 2, 0),
+			{'mcl_core:bedrock', 'mcl_core:obsidian'})
+		if blk and #blk > 0 then
+			core.localplayer:set_pos(ws.dircoord(math.random(-1, 1), 2, math.random(-1, 1)))
+		end
+		-- Check if target still exists
+		if self.stage == 1 and self.target_pos and not checknode(self.target_pos) then
+			self.stage = 0
+		end
 	end,
-	on_start = function(self)
-		sb_state = 0
-		sb_target = nil
+	on_activate = function(self)
 		math.randomseed(os.clock())
-		sb_startpos = core.localplayer:get_pos()
 		override_prediction(true)
-		core.settings:set_bool("pitch_move", true)
-		core.settings:set_bool("free_move", true)
 		core.settings:set_bool("autosponge", true)
 		core.settings:set_bool("autoclog", true)
 		core.settings:set_bool("autoeat", true)
 	end,
-	on_stop = function(self)
+	on_deactivate = function(self)
 		override_prediction(false)
-		core.settings:set_bool("pitch_move", false)
 	end,
+	landing_distance = 1,
+	stand_waiting = false,
 	cheat_settings = {
 		search_range = { type = "number", default = 50, min = 5, max = 200 },
 		travel_range = { type = "number", default = 200, min = 10, max = 500 },
 	},
 })
+
+
 
 ws.rg("Autosponge", { category = "Place", setting = "autosponge",
 	on_step = function(self)

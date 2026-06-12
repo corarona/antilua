@@ -114,7 +114,19 @@ function core.show_cheat_settings_form(setting, use_auto)
 	end
 	table.sort(keys)
 
-	local fs = "formspec_version[10]size[5," .. (2 + #keys + 0.5) .. ",true]"
+	-- Calculate form height: each dropdown row is taller (label + dropdown)
+	local form_h = 2
+	for _, key in ipairs(keys) do
+		local spec = def.cheat_settings[key]
+		if (spec.type == "string" and spec.options) or (spec.type == "enum" and spec.values) then
+			form_h = form_h + 1.5
+		else
+			form_h = form_h + 1.1
+		end
+	end
+	form_h = form_h + 1.3
+
+	local fs = "formspec_version[10]size[5," .. form_h .. ",true]"
 	fs = fs .. "padding[0.5,0.5]no_prepend[]bgcolor[#1a1a1a;true]"
 	fs = fs .. "label[0,0.3;" .. core.formspec_escape(def.name) .. " Settings]"
 	local y = 1
@@ -124,22 +136,27 @@ function core.show_cheat_settings_form(setting, use_auto)
 		if spec.type == "bool" then
 			fs = fs .. "checkbox[0.3," .. y .. ";" .. full .. ";" .. key .. ";"
 				.. (core.settings:get_bool(full) and "true" or "false") .. "]"
+			y = y + 1.1
 		elseif spec.type == "number" then
 			fs = fs .. "field[0.3," .. y .. ";4.4,0.8;" .. full .. ";" .. key .. ";"
 				.. (core.settings:get(full) or tostring(spec.default)) .. "]"
-		elseif spec.type == "string" and spec.options then
+			y = y + 1.1
+		elseif (spec.type == "string" and spec.options) or (spec.type == "enum" and spec.values) then
+			local items = spec.options or spec.values
 			local current = core.settings:get(full) or tostring(spec.default)
 			local selected = 1
-			for i, opt in ipairs(spec.options) do
+			for i, opt in ipairs(items) do
 				if opt == current then selected = i; break end
 			end
-			fs = fs .. "dropdown[0.3," .. y .. ";4.4,0.8;" .. full .. ";"
-				.. table.concat(spec.options, ",") .. ";" .. selected .. "]"
+			fs = fs .. "label[0.3," .. y .. ";" .. core.formspec_escape(key) .. "]"
+			fs = fs .. "dropdown[0.3," .. (y + 0.35) .. ";4.4,0.7;" .. full .. ";"
+				.. table.concat(items, ",") .. ";" .. selected .. "]"
+			y = y + 1.5
 		else
 			fs = fs .. "field[0.3," .. y .. ";4.4,0.8;" .. full .. ";"
 				.. key .. ";" .. (core.settings:get(full) or tostring(spec.default)) .. "]"
+			y = y + 1.1
 		end
-		y = y + 1.1
 	end
 	fs = fs .. "button_exit[1.5," .. (y + 0.3) .. ";2,0.8;;Save]"
 
@@ -167,12 +184,22 @@ core.register_on_formspec_input(function(formname, fields)
 	end
 	local def = core.cheat_defs[setting]
 	if not def or not def.cheat_settings then return end
-	for key, spec in pairs(def.cheat_settings) do
-		local full = setting .. "." .. key
-		if spec.type == "bool" then
-			core.settings:set_bool(full, fields[full] == "true")
-		elseif fields[full] then
-			core.settings:set(full, fields[full])
+	local changed = false
+	for full, value in pairs(fields) do
+		if full:find("^" .. setting .. "%.") == 1 then
+			local key = full:sub(#setting + 2)
+			local spec = def.cheat_settings[key]
+			if spec then
+				if spec.type == "bool" then
+					core.settings:set_bool(full, value == "true")
+				else
+					core.settings:set(full, value)
+				end
+				changed = true
+			end
 		end
+	end
+	if changed then
+		core.settings:write()
 	end
 end)

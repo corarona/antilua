@@ -1,6 +1,3 @@
-local fb_state = 0
-local fb_obpos = vector.new(0, 0, 0)
-
 local function get_bobber_pos(range)
 	local lp = core.localplayer:get_pos()
 	local obs = core.get_objects_inside_radius(lp, range)
@@ -16,6 +13,7 @@ local function get_bobber_pos(range)
 end
 
 sbots.register_bot("FishBot", {
+	movement = "stationary",
 	find_pos = function(self, pos)
 		return nil
 	end,
@@ -23,6 +21,9 @@ sbots.register_bot("FishBot", {
 		return true
 	end,
 	do_step = function(self, dtime)
+		self.state = self.state or 0
+		self.obpos = self.obpos or vector.new(0, 0, 0)
+
 		local rod = "mcl_fishing:fishing_rod_enchanted"
 		if not ws.switch_to_item(rod) then
 			ws.switch_to_item("mcl_fishing:fishing_rod")
@@ -31,50 +32,50 @@ sbots.register_bot("FishBot", {
 		local bobber_range = tonumber(core.settings:get("fishbot.bobber_range")) or 10
 		local bpos = get_bobber_pos(bobber_range)
 		if not bpos then
-			fb_state = 0
+			self.state = 0
 			return
 		end
-		if fb_state == 0 then
+		if self.state == 0 then
 			core.interact("activate", {type="nothing"})
-			fb_state = 1
-		elseif fb_state == 1 then
-			if vector.distance(bpos, fb_obpos) == 0 then
-				fb_state = 2
+			self.state = 1
+		elseif self.state == 1 then
+			if vector.distance(bpos, self.obpos) == 0 then
+				self.state = 2
 			end
-		elseif fb_state == 2 then
+		elseif self.state == 2 then
 			local nd = core.get_node_or_nil(vector.add(bpos, vector.new(0, -0.5, 0)))
-			if vector.distance(bpos, fb_obpos) > 0 then
+			if vector.distance(bpos, self.obpos) > 0 then
 				core.after(0.1, function()
 					core.interact("activate", {type="nothing"})
 				end)
-				fb_state = 3
+				self.state = 3
 			end
 			if nd and nd.name ~= "mcl_core:water_source" then
-				fb_state = 0
+				self.state = 0
 			end
-		elseif fb_state == 3 then
+		elseif self.state == 3 then
 			if not get_bobber_pos(bobber_range) then
-				fb_state = 0
+				self.state = 0
 			end
 		end
 		if bpos then
-			fb_obpos = bpos
+			self.obpos = bpos
 		end
 	end,
 	on_activate = function(self)
 		if ws.game ~= "mineclone" then
 			ws.notify("Fishbot only works on mineclone/ia", ws.NOTIFY_ERROR)
-			return false
+			return true
 		end
 		if not ws.switch_to_item("mcl_fishing:fishing_rod_enchanted")
 				and not ws.switch_to_item("mcl_fishing:fishing_rod") then
 			ws.notify("Put a fishing rod in the hotbar", ws.NOTIFY_WARNING)
-			return false
+			return true
 		end
-		fb_state = 0
+		self.state = 0
 	end,
 	on_deactivate = function(self)
-		fb_state = 0
+		self.state = 0
 	end,
 	stand_waiting = true,
 	delay = 0.2,

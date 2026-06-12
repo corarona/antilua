@@ -1,5 +1,58 @@
 sbots = {}
 
+local movement_strategies = {}
+
+movement_strategies.walk = {
+	requires_movement = true,
+	on_step = function(bot, lp)
+		ws.aim(bot.target_pos)
+		core.settings:set_bool("continuous_forward", true)
+	end,
+}
+
+movement_strategies.teleport = {
+	requires_movement = true,
+	on_step = function(bot, lp)
+		ws.aim(bot.target_pos)
+		core.settings:set_bool("continuous_forward", false)
+		if not rhythmtp.is_moving() then
+			rhythmtp.go_to(bot.target_pos)
+		end
+	end,
+}
+
+movement_strategies.stationary = {
+	requires_movement = false,
+	on_step = function(bot, lp)
+		bot.stage = 2
+	end,
+}
+
+movement_strategies.server_tp = {
+	requires_movement = true,
+	on_step = function(bot, lp)
+		ws.aim(bot.target_pos)
+		core.settings:set_bool("continuous_forward", false)
+		local now = os.clock()
+		if not bot._tp_cooldown or now - bot._tp_cooldown > 0.3 then
+			bot._tp_cooldown = now
+			local p = bot.target_pos
+			core.send_chat_message(
+				"/teleport " .. math.floor(p.x) .. "," .. math.floor(p.y) .. "," .. math.floor(p.z))
+		end
+	end,
+}
+
+movement_strategies.client_tp = {
+	requires_movement = true,
+	on_step = function(bot, lp)
+		ws.aim(bot.target_pos)
+		core.settings:set_bool("continuous_forward", false)
+		core.localplayer:set_pos(bot.target_pos)
+		bot.stage = 2
+	end,
+}
+
 local bot_class = {
 	find_pos = function(self, pos) end,
 	do_pos = function(self, pos) end,
@@ -10,11 +63,25 @@ local bot_class = {
 	moving_target = false,
 	stand_waiting = false,
 	target_pos = nil,
+	movement = "walk",
 }
 
-local bot_class_meta = { __index = bot_class }
-
 local registered_bots = {}
+
+-- Find the nearest node matching a list of names within range, sorted by distance.
+-- Optional filter(pos): return true to accept, false to skip.
+function sbots.find_nearest(pos, node_names, range, filter)
+	local nds = core.find_nodes_near(pos, range, node_names, true)
+	if not nds or #nds == 0 then return end
+	table.sort(nds, function(a, b) return vector.distance(pos, a) < vector.distance(pos, b) end)
+	if filter then
+		for _, p in ipairs(nds) do
+			if filter(p) then return p end
+		end
+		return
+	end
+	return nds[1]
+end
 
 function sbots.register_bot(name, def)
 	for k, v in pairs(bot_class) do
@@ -26,15 +93,21 @@ function sbots.register_bot(name, def)
 
 	local bot_settings = def.cheat_settings or {}
 	bot_settings.allow_cobot = { type = "bool", default = false }
+	bot_settings.movement = {
+		type = "enum",
+		default = def.movement or "walk",
+		values = {"walk", "teleport", "server_tp", "client_tp", "stationary"},
+	}
 
 	registered_bots[tn] = def
 
 	ws.rg(name, {
 		category = "Bots",
 		setting = tn:lower(),
-		on_step = function(self, dtime)
+		on_step = function(_, dtime)
 			local bot = registered_bots[tn]
 			if not bot then return end
+			local strategy = movement_strategies[bot.movement] or movement_strategies.walk
 			local lp = core.localplayer:get_pos()
 			if bot.stage == 0 then
 				bot.target_pos = bot:find_pos(lp)
@@ -51,9 +124,9 @@ function sbots.register_bot(name, def)
 				end
 			elseif bot.stage == 1 then
 				if not bot.target_pos then return end
-				ws.aim(bot.target_pos)
-				core.settings:set_bool("continuous_forward", true)
-				if vector.distance(lp, bot.target_pos) < bot.landing_distance then
+				strategy.on_step(bot, lp)
+				if strategy.requires_movement and
+						vector.distance(lp, bot.target_pos) < bot.landing_distance then
 					bot.stage = 2
 				end
 			elseif bot.stage == 2 then
@@ -78,12 +151,21 @@ function sbots.register_bot(name, def)
 					return true
 				end
 			end
+			local mov_val = core.settings:get(tn:lower() .. ".movement")
+			if mov_val and movement_strategies[mov_val] then
+				bot.movement = mov_val
+			end
+			local strategy = movement_strategies[bot.movement] or movement_strategies.walk
 			bot.active = true
 			bot.orig_pos = core.localplayer:get_pos()
 			bot.target_pos = nil
 			bot.stage = 0
-			core.settings:set_bool("pitch_move", true)
-			core.settings:set_bool("free_move", true)
+			if strategy.requires_movement then
+				bot._saved_pitch_move = core.settings:get_bool("pitch_move")
+				bot._saved_free_move = core.settings:get_bool("free_move")
+				core.settings:set_bool("pitch_move", true)
+				core.settings:set_bool("free_move", true)
+			end
 			if bot.on_activate then
 				return bot.on_activate(bot)
 			end
@@ -91,9 +173,13 @@ function sbots.register_bot(name, def)
 		on_stop = function(self)
 			local bot = registered_bots[tn]
 			if not bot then return end
+			local strategy = movement_strategies[bot.movement] or movement_strategies.walk
 			bot.active = false
 			core.settings:set_bool("continuous_forward", false)
-			core.settings:set_bool("pitch_move", false)
+			if strategy.requires_movement then
+				core.settings:set_bool("pitch_move", bot._saved_pitch_move ~= nil and bot._saved_pitch_move or false)
+				core.settings:set_bool("free_move", bot._saved_free_move ~= nil and bot._saved_free_move or false)
+			end
 			if bot.on_deactivate then
 				return bot.on_deactivate(bot)
 			end
@@ -107,10 +193,7 @@ end
 if nlist then
 	sbots.register_bot("listDigBot", {
 		find_pos = function(self, pos)
-			local nds = core.find_nodes_near(pos, 60, nlist.get(nlist.selected))
-			if not nds or #nds == 0 then return end
-			table.sort(nds, function(a, b) return vector.distance(pos, a) < vector.distance(pos, b) end)
-			return nds[1]
+			return sbots.find_nearest(pos, 60, nlist.get(nlist.selected))
 		end,
 		do_pos = function(self, pos)
 			local nn = core.find_nodes_near(pos, 1, nlist.get(nlist.selected), true)

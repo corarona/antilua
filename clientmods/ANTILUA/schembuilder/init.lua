@@ -1063,7 +1063,7 @@ if sbots and sbots.register_bot then
 		cheat_settings = {
 			place_cooldown = { type = "number", default = 0.1, min = 0, max = 5 },
 			batch_size = { type = "number", default = 8, min = 1, max = 64 },
-			strategy = { type = "string", default = "closest" },
+			place_strategy = { type = "enum", default = "closest", values = {"closest", "layer", "top_to_bottom", "column", "by_material"} },
 			filter_mode = { type = "string", default = "all" },
 			filter_list = { type = "string", default = "schembuilder" },
 		},
@@ -1073,7 +1073,7 @@ if sbots and sbots.register_bot then
 			self._current_entry = nil
 			self._strat_state = nil
 
-			local name = core.settings:get("schembuilderbot.strategy") or "closest"
+			local name = core.settings:get("schembuilderbot.place_strategy") or "closest"
 			local strat = strategies[name] or strategies.closest
 
 			local idx = strat.find_target(place_nodes, pos, has_item, is_node_allowed)
@@ -1138,7 +1138,7 @@ if sbots and sbots.register_bot then
 				self._is_supply_target = nil
 				self._current_entry = nil
 				local items
-				local strat_name = core.settings:get("schembuilderbot.strategy") or "closest"
+				local strat_name = core.settings:get("schembuilderbot.place_strategy") or "closest"
 				local strat = strategies[strat_name] or strategies.closest
 				if strat.get_needed_items then
 					items = strat.get_needed_items(place_nodes, self._strat_state)
@@ -1167,7 +1167,7 @@ if sbots and sbots.register_bot then
 			end
 			local batch = tonumber(core.settings:get("schembuilderbot.batch_size")) or 8
 			local range = tonumber(core.settings:get("placelitem.range")) or 4
-			local strat_name = core.settings:get("schembuilderbot.strategy") or "closest"
+			local strat_name = core.settings:get("schembuilderbot.place_strategy") or "closest"
 			local strat = strategies[strat_name] or strategies.closest
 			local px, py, pz = pos.x, pos.y, pos.z
 			local placed = 0

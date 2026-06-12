@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "settings.h"
 #include "util/string.h"
 #include <algorithm>
+#include <set>
 
 CheatMenu *g_cheat_menu = nullptr;
 bool g_cheat_layer_active = false;
@@ -237,6 +238,24 @@ void CheatMenu::onLayerClosed()
 	m_drag_panel = -1;
 	m_categories_initialized = false;
 	savePanelPositions();
+
+	// Purge stale saved positions for category panels that no longer exist
+	{
+		std::set<std::string> valid_ids;
+		for (auto &panel : m_panels) {
+			if (isCatPanel(panel))
+				valid_ids.insert(panel.id);
+		}
+		auto names = g_settings->getNames();
+		for (const auto &name : names) {
+			if (name.compare(0, 10, "panel_pos_") == 0) {
+				std::string id = name.substr(10);
+				if (id.compare(0, 5, "_cat_") == 0 && !valid_ids.count(id))
+					g_settings->remove(name);
+			}
+		}
+	}
+
 	for (s32 i = (s32)m_panels.size() - 1; i >= 0; i--)
 		if (isCatPanel(m_panels[i]) && !m_panels[i].pinned)
 			m_panels.erase(m_panels.begin() + i);

@@ -187,7 +187,7 @@ ws.rg("HeadSaver", {
 -- lockview (merged)
 ------------------------------------------------------------------------------
 ws.rg("LockView", {
-	category = "Bots",
+	category = "Player",
 	setting = "lockview",
 	on_step = function(self)
 		if self.pitch and self.yaw then

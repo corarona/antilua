@@ -139,24 +139,27 @@ function test_schembuilder(T)
 		T.assert(core.settings:get("schembuilder_resume_param") == "file:test.mts")
 	end)
 
-	T.run("schembuilderbot.strategy setting exists", function()
-		local v = core.settings:get("schembuilderbot.strategy")
+	T.run("schembuilderbot.place_strategy setting exists", function()
+		local v = core.settings:get("schembuilderbot.place_strategy")
 		T.assert(v ~= nil, "strategy setting is nil")
 	end)
 
 	local function test_strategy(name)
-		core.settings:set("schembuilderbot.strategy", name)
-		local v = core.settings:get("schembuilderbot.strategy")
+		core.settings:set("schembuilderbot.place_strategy", name)
+		local v = core.settings:get("schembuilderbot.place_strategy")
 		T.assert(v == name, "expected '" .. name .. "', got " .. tostring(v))
 	end
 
-	T.run("schembuilderbot.strategy can cycle through all values", function()
+	T.run("schembuilderbot.place_strategy can cycle through all values", function()
+		local orig = core.settings:get("schembuilderbot.place_strategy")
 		test_strategy("closest")
 		test_strategy("layer")
 		test_strategy("top_to_bottom")
 		test_strategy("column")
 		test_strategy("by_material")
-		core.settings:set("schembuilderbot.strategy", "closest")
+		if orig then
+			core.settings:set("schembuilderbot.place_strategy", orig)
+		end
 	end)
 
 	T.run("schembuilderbot.filter_mode setting exists", function()
