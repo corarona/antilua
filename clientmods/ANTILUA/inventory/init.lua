@@ -161,9 +161,10 @@ local function show_list_fs(param, ll, tab)
 	local inv = core.get_inventory("player:" .. name)
 	local theme_bg = core.settings:get("theme_bg") or "#121212"
 
-	local fs = "formspec_version[6]size[11.75,12.425]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
+	local form_h = (tab == 0) and "12.425" or "13.5"
+	local fs = "formspec_version[6]size[11.75," .. form_h .. "]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
 		"tabheader[0,0;inv_tabs;Inventories,Nearby;" .. (tab + 1) .. "]" ..
-		"button[10.5,11.5;1,0.8;close;Close]"
+		"button[10.5," .. (tab == 0 and "11.5" or "12.5") .. ";1,0.8;close;Close]"
 
 	if tab == 0 then
 		-- Tab 0: Player inventories (existing)
@@ -254,26 +255,50 @@ local function show_list_fs(param, ll, tab)
 						if k == chosen_list then list_idx = idx2; break end
 					end
 
+					local node_name = core.get_node_or_nil(selected_node)
+					node_name = node_name and node_name.name or "unknown"
 					fs = fs ..
-						"label[6.375,0.375;Node: " .. core.formspec_escape(core.get_node_or_nil(selected_node).name) .. "]" ..
-						"dropdown[6.375,1;3,1;nearby_list;" ..
+						"label[6.375,0.375;" .. core.formspec_escape(node_name) .. "]" ..
+						"label[6.375,0.75;" .. spos .. "]" ..
+						"dropdown[6.375,1.5;3,1;nearby_list;" ..
 							table.concat(list_keys, ",") .. ";" .. list_idx .. "]"
 
-					-- Show slots for the chosen list
+					-- Show items as text
 					local list_data = ninv[chosen_list]
 					if list_data then
-						local lx, ly = 0, 1
-						for _ in pairs(list_data) do
-							if lx < 8 then lx = lx + 1 elseif ly < 4 then ly = ly + 1 end
+						local lines = {}
+						local slots = 0
+						for _ in pairs(list_data) do slots = slots + 1 end
+						local shown = 0
+						for si, stack in ipairs(list_data) do
+							if shown >= 54 then
+								table.insert(lines, "... and " .. (slots - 54) .. " more")
+								break
+							end
+							shown = shown + 1
+							if stack and not stack:is_empty() then
+								table.insert(lines, string.format("[%d] %s x%d", si, stack:get_name(), stack:get_count()))
+							else
+								table.insert(lines, string.format("[%d] (empty)", si))
+							end
 						end
-						if lx == 0 then lx = 1 end
-						fs = fs ..
-							ws.get_itemslot_bg_v4(6.375, 2.5, lx, ly) ..
-							"list[nodemeta:" .. spos .. ";" .. chosen_list .. ";6.375,2.5;" .. lx .. "," .. ly .. ";]"
+						if slots > 54 then
+							table.insert(lines, "... and " .. (slots - 54) .. " more")
+						end
+						local text = table.concat(lines, ",")
+						fs = fs .. "textlist[6.375,2.5;5,4;nearby_items;" .. core.formspec_escape(text) .. ";0]"
 					end
 				end
 			end
 		end
+
+		-- Player inventory at the bottom
+		fs = fs ..
+			"label[0.375,8.5;Your Inventory]" ..
+			ws.get_itemslot_bg_v4(0.375, 9, 9, 3) ..
+			"list[current_player;main;0.375,9;9,3;9]" ..
+			ws.get_itemslot_bg_v4(0.375, 12.05, 9, 1) ..
+			"list[current_player;main;0.375,12.05;9,1;]"
 	end
 
 	core.show_formspec("inv_list", fs)
