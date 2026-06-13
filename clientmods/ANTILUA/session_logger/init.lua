@@ -134,3 +134,26 @@ core.register_cheat("NameColorizer", {
 	setting = "name_colorizer",
 	description = "Colorize player names in chat",
 })
+
+--
+-- Join/Leave toast notifications
+--
+
+core.register_on_receiving_chat_message(function(message)
+	local stripped = core.strip_colors(message)
+	if stripped:find("^%*%*%* .+ joined the game%.?$") then
+		local name = stripped:match("^%*%*%* (.+) joined")
+		if name then
+			core.show_toast(name .. " joined", "info")
+			return true
+		end
+	end
+	if stripped:find("^%*%*%* .+ left the game") then
+		local name = stripped:match("^%*%*%* (.+) left")
+		if name then
+			core.show_toast(name .. " left", "info")
+			return true
+		end
+	end
+	return nil
+end)
