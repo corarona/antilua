@@ -214,7 +214,7 @@ local function rm_item(list, input, tl_field, items)
 	end
 end
 
-local function add_rm_handler(list, input_field, tl_field, items)
+local function add_rm_handler(fields, list, input_field, tl_field, items)
 	local input = fields[input_field]
 	local tl_val = fields[tl_field]
 	if fields["btn_add_" .. list] and input and input ~= "" then
@@ -244,8 +244,8 @@ core.register_on_formspec_input(function(formname, fields)
 		local name = textlist_selected(fields.enemy_entries, enemies)
 		if name then nlist.remove("enemies", name) end
 	else
-		add_rm_handler("friend", "friend_input", "friend_entries", friends)
-		add_rm_handler("enemy", "enemy_input", "enemy_entries", enemies)
+		add_rm_handler(fields, "friend", "friend_input", "friend_entries", friends)
+		add_rm_handler(fields, "enemy", "enemy_input", "enemy_entries", enemies)
 	end
 
 	core.show_cheat_settings_form("killaura")
