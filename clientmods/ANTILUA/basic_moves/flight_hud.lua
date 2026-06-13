@@ -37,6 +37,24 @@ end
 
 local S = 2.5
 
+-- Compass labels (yaw 0 = +Z = North)
+local compass_labels = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"}
+
+local function compass_string(yaw)
+	local idx = math.floor((yaw + 22.5) / 45) % 8
+	local parts = {}
+	for i = -2, 2 do
+		local di = (idx + i + 8) % 8
+		local label = compass_labels[di + 1]
+		if i == 0 then
+			table.insert(parts, "[" .. label .. "]")
+		else
+			table.insert(parts, label)
+		end
+	end
+	return table.concat(parts, " │ ")
+end
+
 ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 	on_start = function(self)
 		if not core.localplayer then return true end
@@ -59,6 +77,15 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 			text = "horizon_indicator.png"
 		})
 		self._last_roll_tex = nil
+
+		-- Compass strip through horizon center
+		self._hud_compass = core.localplayer:hud_add({
+			type = "text", position = {x = 1, y = 1},
+			alignment = {x = 0.5, y = 0.5},
+			offset = {x = -177, y = -177},
+			number = 0xFFFFF0,
+			text = "",
+		})
 
 		-- Pitch/Roll numeric text (centered above horizon image)
 		self._hud_pitch = core.localplayer:hud_add({
@@ -134,6 +161,9 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		end
 		set(self._hud_pitch, "text", string.format("Pitch: %.0f  Roll: %.0f", pitch, roll))
 
+		-- Compass: heading strip through horizon center
+		set(self._hud_compass, "text", compass_string(lp:get_yaw()))
+
 		-- Target info: coords + ETA from poi (shown above pitch/roll)
 		if poi.target and poi.eta then
 			local ttext = ""
@@ -177,7 +207,8 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 	on_stop = function(self)
 		if not core.localplayer then return end
 		for _, id in ipairs{
-			self._hud_bg, self._hud_line, self._hud_pitch,
+			self._hud_bg, self._hud_line, self._hud_compass,
+			self._hud_pitch,
 			self._hud_alt, self._hud_alt_bar,
 			self._hud_speed, self._hud_speed_bar,
 			self._hud_target,
