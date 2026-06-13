@@ -1,11 +1,18 @@
-local al_formspec = {}
-
-al_formspec.BG_COLOR = "#1a1a1a"
-al_formspec.TEXT_COLOR = "#cccccc"
-al_formspec.ACCENT = "#ff8800"
-al_formspec.RED = "#ff4444"
-al_formspec.GREEN = "#44ff44"
-al_formspec.YELLOW = "#ffff44"
+local al_formspec = setmetatable({}, { __index = function(_, key)
+	local theme_map = {
+		BG_COLOR   = { "theme_bg", "#121212" },
+		TEXT_COLOR = { "theme_text", "#00cc00" },
+		ACCENT     = { "theme_accent", "#ff8800" },
+		RED        = { "theme_bad", "#ff4444" },
+		GREEN      = { "theme_good", "#44ff44" },
+		YELLOW     = { "theme_warning", "#ffff44" },
+	}
+	local entry = theme_map[key]
+	if entry then
+		return core.settings:get(entry[1]) or entry[2]
+	end
+	return nil
+end})
 
 local sb_meta = {}
 
@@ -35,7 +42,7 @@ end
 function al_formspec.begin(...)
 	local sb = al_formspec.new()
 	sb:add(
-		"formspec_version[6]",
+		"formspec_version[10]",
 		...
 	)
 	sb:add(

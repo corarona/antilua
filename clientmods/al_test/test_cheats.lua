@@ -27,12 +27,14 @@ function test_cheat_settings(T)
 		end)
 	end
 
-	-- Verify cheat menu settings
+	-- Verify theme and cheat menu settings
 	local menu_settings = {
-		"cheat_menu_font", "cheat_menu_bg_color", "cheat_menu_bg_color_alpha",
-		"cheat_menu_active_bg_color", "cheat_menu_active_bg_color_alpha",
-		"cheat_menu_font_color", "cheat_menu_font_color_alpha",
-		"cheat_menu_selected_font_color", "cheat_menu_selected_font_color_alpha",
+		"theme_bg", "theme_bg_alpha", "theme_text", "theme_text_alpha",
+		"theme_active_bg", "theme_selected_text",
+		"theme_panel_bg", "theme_title_bg", "theme_border",
+		"theme_item_bg", "theme_item_bg_alt",
+		"theme_good", "theme_bad", "theme_warning", "theme_info",
+		"cheat_menu_font",
 		"cheat_menu_head_height", "cheat_menu_entry_height", "cheat_menu_entry_width",
 	}
 

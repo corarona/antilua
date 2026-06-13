@@ -88,21 +88,21 @@ void PanelOverlay::drawPanelChrome(video::IVideoDriver *driver,
 
 	s32 pin_x = x + w - 56;
 	panel.hover_pin = pointInRect(mouse_pos.X, mouse_pos.Y, pin_x, y, 16, panel.title_h);
-	driver->draw2DRectangle(panel.hover_pin ? video::SColor(200, 100, 100, 100) : video::SColor(180, 60, 60, 80),
+	driver->draw2DRectangle(panel.hover_pin ? m_item_bg : m_panel_bg,
 		core::rect<s32>(pin_x, y, pin_x + 16, y + panel.title_h));
 	drawText(panel.pinned ? "P" : "p", pin_x + 3, y + 4,
-		panel.pinned ? video::SColor(255, 255, 200, 50) : m_font_color);
+		panel.pinned ? m_selected_font_color : m_font_color);
 
 	s32 fw = 16;
 	s32 fx = pin_x - fw;
 	panel.hover_focus = pointInRect(mouse_pos.X, mouse_pos.Y, fx, y, fw, panel.title_h);
-	driver->draw2DRectangle(panel.hover_focus ? video::SColor(200, 100, 100, 100) : video::SColor(180, 60, 60, 80),
+	driver->draw2DRectangle(panel.hover_focus ? m_item_bg : m_panel_bg,
 		core::rect<s32>(fx, y, fx + fw, y + panel.title_h));
 	drawText(panel.keyboard_focus ? "K" : "k", fx + 3, y + 4,
-		panel.keyboard_focus ? video::SColor(255, 100, 255, 100) : m_font_color);
+		panel.keyboard_focus ? m_selected_font_color : m_font_color);
 
 	s32 rsx = fx - 16;
-	driver->draw2DRectangle(video::SColor(180, 60, 60, 80), core::rect<s32>(rsx, y, rsx + 16, y + panel.title_h));
+	driver->draw2DRectangle(m_panel_bg, core::rect<s32>(rsx, y, rsx + 16, y + panel.title_h));
 	drawText("R", rsx + 3, y + 4, m_font_color);
 
 	panel.hover_title = pointInRect(mouse_pos.X, mouse_pos.Y, x, y, w, panel.title_h);

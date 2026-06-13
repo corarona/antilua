@@ -32,28 +32,29 @@ bool g_show_minimal_debug = false;
 
 static bool isCatPanel(const OverlayPanel &p) { return p.id.find("_cat_") == 0; }
 
+static video::SColor parseHexColor(const std::string &hex, u32 alpha = 255)
+{
+	if (hex.empty())
+		return video::SColor(alpha, 0, 0, 0);
+	size_t pos = (hex[0] == '#') ? 1 : 0;
+	if (hex.size() - pos < 6)
+		return video::SColor(alpha, 0, 0, 0);
+	u32 val = std::stoul(hex.substr(pos, 6), nullptr, 16);
+	return video::SColor(alpha, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF);
+}
+
 CheatMenu::CheatMenu(Client *client) : PanelOverlay(), m_client(client)
 {
 	FontMode fontMode = fontStringToEnum(g_settings->get("cheat_menu_font"));
 
-	auto bg = g_settings->getV3F("cheat_menu_bg_color").value_or(v3f());
-	auto abg = g_settings->getV3F("cheat_menu_active_bg_color").value_or(v3f());
-	auto fc = g_settings->getV3F("cheat_menu_font_color").value_or(v3f());
-	auto sfc = g_settings->getV3F("cheat_menu_selected_font_color").value_or(v3f());
-	auto pbg = g_settings->getV3F("cheat_menu_panel_bg").value_or(v3f(30, 30, 45));
-	auto tbg = g_settings->getV3F("cheat_menu_title_bg").value_or(v3f(50, 50, 75));
-	auto bdr = g_settings->getV3F("cheat_menu_border").value_or(v3f(70, 70, 100));
-	auto ibg = g_settings->getV3F("cheat_menu_item_bg").value_or(v3f(55, 55, 75));
-
-	m_bg_color = video::SColor(g_settings->getU32("cheat_menu_bg_color_alpha"), bg.X, bg.Y, bg.Z);
-	m_active_bg_color = video::SColor(g_settings->getU32("cheat_menu_active_bg_color_alpha"), abg.X, abg.Y, abg.Z);
-	m_font_color = video::SColor(g_settings->getU32("cheat_menu_font_color_alpha"), fc.X, fc.Y, fc.Z);
-	m_selected_font_color = video::SColor(g_settings->getU32("cheat_menu_selected_font_color_alpha"), sfc.X, sfc.Y, sfc.Z);
-
-	m_panel_bg = video::SColor(230, pbg.X, pbg.Y, pbg.Z);
-	m_title_bg = video::SColor(230, tbg.X, tbg.Y, tbg.Z);
-	m_border_color = video::SColor(230, bdr.X, bdr.Y, bdr.Z);
-	m_item_bg = video::SColor(200, ibg.X, ibg.Y, ibg.Z);
+	m_bg_color = parseHexColor(g_settings->get("theme_bg"), g_settings->getU32("theme_bg_alpha"));
+	m_active_bg_color = parseHexColor(g_settings->get("theme_active_bg"), 210);
+	m_font_color = parseHexColor(g_settings->get("theme_text"), g_settings->getU32("theme_text_alpha"));
+	m_selected_font_color = parseHexColor(g_settings->get("theme_selected_text"));
+	m_panel_bg = parseHexColor(g_settings->get("theme_panel_bg"), 230);
+	m_title_bg = parseHexColor(g_settings->get("theme_title_bg"), 230);
+	m_border_color = parseHexColor(g_settings->get("theme_border"), 230);
+	m_item_bg = parseHexColor(g_settings->get("theme_item_bg"), 200);
 
 	m_head_height = g_settings->getU32("cheat_menu_head_height");
 	m_entry_height = g_settings->getU32("cheat_menu_entry_height");
@@ -133,7 +134,7 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 				if (m_hover_start == 0) m_hover_start = porting::getTimeMs();
 			}
 
-			video::SColor cbg = enabled ? video::SColor(200, 40, 60, 40) : video::SColor(180, 50, 50, 55);
+			video::SColor cbg = enabled ? m_active_bg_color : m_item_bg;
 			driver->draw2DRectangle(cbg, core::rect<s32>(content_x + 1, iy, content_x + content_w - 1, iy + m_entry_height));
 
 			std::string txt = enabled ? "[x] " : "[ ] ";
@@ -144,10 +145,10 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 			if (has_set) {
 				s32 sbx = content_x + content_w - 18;
 				bool hov = pointInRect(mouse_pos.X, mouse_pos.Y, sbx, iy, 16, m_entry_height);
-				video::SColor sbtn = hov ? video::SColor(200, 100, 120, 80) : video::SColor(180, 60, 60, 70);
+				video::SColor sbtn = hov ? m_active_bg_color : m_item_bg;
 				driver->draw2DRectangle(sbtn, core::rect<s32>(sbx, iy, sbx + 16, iy + m_entry_height));
 				drawText("\u2699", sbx + 3, iy + (m_entry_height - m_fontsize.Y) / 2,
-					video::SColor(255, 200, 200, 100));
+					m_selected_font_color);
 			}
 
 			iy += m_entry_height + m_gap;
@@ -197,9 +198,9 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 			if (ty + th > (s32)driver->getScreenSize().Height) ty = m_tooltip_y - th - 10;
 			if (ty < 0) ty = m_tooltip_y + 10;
 
-			driver->draw2DRectangle(video::SColor(230, 40, 40, 50),
+			driver->draw2DRectangle(m_panel_bg,
 				core::rect<s32>(tx, ty, tx + tw, ty + th));
-			drawText(wrapped, tx + 8, ty + 8, video::SColor(255, 220, 220, 220));
+			drawText(wrapped, tx + 8, ty + 8, m_font_color);
 		}
 	}
 }

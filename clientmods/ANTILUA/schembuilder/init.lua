@@ -339,7 +339,8 @@ end
 local function show_browser_form(tab)
 	tab = tab or 0
 	local sid = get_server_id()
-	local fs = "formspec_version[10]size[10,10]no_prepend[]bgcolor[#1a1a1a;true]" ..
+	local theme_bg = core.settings:get("theme_bg") or "#121212"
+	local fs = "formspec_version[10]size[10,10]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
 		"tabheader[0,0;tabs;Browse Schematics,Saved Builds;" .. (tab + 1) .. "]" ..
 		"button[8,9;2,0.8;close;Close]"
 

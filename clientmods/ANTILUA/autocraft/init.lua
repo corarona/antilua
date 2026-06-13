@@ -305,8 +305,9 @@ local function show_list()
 	end
 
 	local h = math.min(count, 12)
+	local theme_bg = core.settings:get("theme_bg") or "#121212"
 	local fs = "formspec_version[10]size[9," .. (2 + h) .. ",true]"
-	fs = fs .. "bgcolor[#000000;true]"
+	fs = fs .. "bgcolor[" .. theme_bg .. ";true]"
 	fs = fs .. "label[0,0;Known Recipes]"
 
 	local y = 0.6

@@ -77,24 +77,27 @@ static void set_al_default_settings()
 	// Backward compatibility with Minetest/Luanti
 	settings->setDefault("antilua_compat", "false");
 
-	// Cheat menu
+	// Theme (replaces cheat_menu_* color settings)
+	settings->setDefault("theme_bg", "#121212");
+	settings->setDefault("theme_bg_alpha", "191");
+	settings->setDefault("theme_panel_bg", "#1e1e2e");
+	settings->setDefault("theme_title_bg", "#32324b");
+	settings->setDefault("theme_border", "#0a0a0a");
+	settings->setDefault("theme_item_bg", "#2d2d37");
+	settings->setDefault("theme_item_bg_alt", "#2d2d41");
+	settings->setDefault("theme_active_bg", "#000000");
+	settings->setDefault("theme_text", "#00cc00");
+	settings->setDefault("theme_text_alpha", "255");
+	settings->setDefault("theme_selected_text", "#ffffff");
+	settings->setDefault("theme_good", "#44ff44");
+	settings->setDefault("theme_bad", "#ff4444");
+	settings->setDefault("theme_warning", "#ffff44");
+	settings->setDefault("theme_info", "#4488ff");
+	// Non-color cheat menu settings (kept for structural layout)
 	settings->setDefault("cheat_menu_font", "FM_Standard");
-	settings->setDefault("cheat_menu_bg_color", "(4, 4, 8)");
-	settings->setDefault("cheat_menu_bg_color_alpha", "190");
-	settings->setDefault("cheat_menu_active_bg_color", "(0, 0, 0)");
-	settings->setDefault("cheat_menu_active_bg_color_alpha", "210");
-	settings->setDefault("cheat_menu_font_color", "(0, 255, 0)");
-	settings->setDefault("cheat_menu_font_color_alpha", "195");
-	settings->setDefault("cheat_menu_selected_font_color", "(255, 255, 255)");
-	settings->setDefault("cheat_menu_selected_font_color_alpha", "235");
 	settings->setDefault("cheat_menu_head_height", "50");
 	settings->setDefault("cheat_menu_entry_height", "35");
 	settings->setDefault("cheat_menu_entry_width", "200");
-	settings->setDefault("cheat_menu_panel_bg", "(30, 30, 45)");
-	settings->setDefault("cheat_menu_title_bg", "(50, 50, 75)");
-	settings->setDefault("cheat_menu_border", "(10,10, 10)");
-	settings->setDefault("cheat_menu_item_bg", "(45, 45, 55)");
-	settings->setDefault("cheat_menu_item_bg_alt", "(45, 45, 65)");
 
 	// Cheat features
 	settings->setDefault("xray", "false");

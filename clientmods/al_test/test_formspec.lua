@@ -36,7 +36,8 @@ function test_formspec(T)
 		local s = result:get()
 		T.assert(s:find("no_prepend") ~= nil, "begin() should include no_prepend[]")
 		T.assert(s:find("bgcolor") ~= nil, "begin() should include bgcolor[]")
-		T.assert(s:find("#1a1a1a") ~= nil, "begin() should use dark bg color")
+		local theme_bg = core.settings:get("theme_bg") or "#121212"
+		T.assert(s:find(theme_bg) ~= nil, "begin() should use theme bg color (" .. theme_bg .. ")")
 		T.assert(s:find("formspec_version") ~= nil, "begin() should include formspec_version")
 	end)
 

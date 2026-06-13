@@ -328,7 +328,6 @@ function poi.display_formspec()
 
 	sb:add(
 		"background9[1,1;1,1;blank.png;true;7]",
-		af.bgcolor("#000000AA", false),
 		af.label(0.25, 0.5, "Waypoint list")
 	)
 
@@ -470,7 +469,6 @@ local function show_rename_fs(name)
 	local af = core.al_formspec
 	local sb = af.begin("size[6,3]")
 	sb:add(
-		af.bgcolor("#000000AA", false),
 		af.label(0.35, 0.2, "Rename waypoint"),
 		af.field(0.3, 1.3, 6, 1, "new_name", "New name", name),
 		af.button(0, 2, 3, 1, "cancel", "Cancel"),
@@ -483,7 +481,6 @@ local function show_delete_fs(name)
 	local af = core.al_formspec
 	local sb = af.begin("size[6,2]")
 	sb:add(
-		af.bgcolor("#000000AA", false),
 		af.label(0.35, 0.25, [[Are you sure you want to delete "]] .. name .. [["?]]),
 		af.button(0, 1, 3, 1, "cancel", "Cancel"),
 		af.button(3, 1, 3, 1, "delete_confirm", "Delete")

@@ -4,6 +4,7 @@
 #include "gui/toastManager.h"
 #include "client/fontengine.h"
 #include "irr_v2d.h"
+#include "settings.h"
 #include <IVideoDriver.h>
 #include <cmath>
 
@@ -60,19 +61,30 @@ void ToastManager::update(float dtime)
 	}
 }
 
+static video::SColor toastHex(const std::string &hex, u32 alpha = 200)
+{
+	if (hex.empty())
+		return video::SColor(alpha, 0, 0, 0);
+	size_t pos = (hex[0] == '#') ? 1 : 0;
+	if (hex.size() - pos < 6)
+		return video::SColor(alpha, 0, 0, 0);
+	u32 val = std::stoul(hex.substr(pos, 6), nullptr, 16);
+	return video::SColor(alpha, (val >> 16) & 0xFF, (val >> 8) & 0xFF, val & 0xFF);
+}
+
 video::SColor ToastManager::getBackgroundColor(ToastType type) const
 {
 	switch (type)
 	{
 	case ToastType::SUCCESS:
-		return video::SColor(200, 20, 60, 30);
+		return toastHex(g_settings->get("theme_good"));
 	case ToastType::WARNING:
-		return video::SColor(200, 60, 40, 10);
+		return toastHex(g_settings->get("theme_warning"));
 	case ToastType::ERROR:
-		return video::SColor(200, 60, 20, 20);
+		return toastHex(g_settings->get("theme_bad"));
 	case ToastType::INFO:
 	default:
-		return video::SColor(200, 30, 40, 60);
+		return toastHex(g_settings->get("theme_info"));
 	}
 }
 

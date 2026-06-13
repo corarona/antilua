@@ -127,7 +127,8 @@ function core.show_cheat_settings_form(setting, use_auto)
 	form_h = form_h + 1.3
 
 	local fs = "formspec_version[10]size[5," .. form_h .. ",true]"
-	fs = fs .. "padding[0.5,0.5]no_prepend[]bgcolor[#1a1a1a;true]"
+	local theme_bg = core.settings:get("theme_bg") or "#121212"
+	fs = fs .. "padding[0.5,0.5]no_prepend[]bgcolor[" .. theme_bg .. ";true]"
 	fs = fs .. "label[0,0.3;" .. core.formspec_escape(def.name) .. " Settings]"
 	local y = 1
 	for _, key in ipairs(keys) do
