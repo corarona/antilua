@@ -155,58 +155,127 @@ local function get_node_invs(pos)
 	return invs
 end
 
-local function show_list_fs(param, ll)
+local function show_list_fs(param, ll, tab)
+	tab = tab or 0
 	local name = core.localplayer:get_name()
 	local inv = core.get_inventory("player:" .. name)
-	local dlists = ""
-	local llists = ""
-	local i, j, idx, idxl = 1, 1, 1, 1
+	local theme_bg = core.settings:get("theme_bg") or "#121212"
 
-	for k in pairs(inv) do
-		if not param or param == "" then
-			param = k
+	local fs = "formspec_version[6]size[11.75,12.425]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
+		"tabheader[0,0;inv_tabs;Inventories,Nearby;" .. (tab + 1) .. "]" ..
+		"button[10.5,11.5;1,0.8;close;Close]"
+
+	if tab == 0 then
+		-- Tab 0: Player inventories (existing)
+		local dlists = ""
+		local i, idx = 1, 1
+
+		for k in pairs(inv) do
+			if not param or param == "" then
+				param = k
+			end
+			dlists = dlists .. k .. ","
+			if k == param then idx = i end
+			i = i + 1
 		end
-		dlists = dlists .. k .. ","
-		if k == param then idx = i end
-		i = i + 1
-	end
-	dlists = dlists:sub(1, -2)
+		dlists = dlists:sub(1, -2)
 
-	for _, v in pairs(get_node_invs(core.localplayer:get_pos())) do
-		local n = core.get_node_or_nil(v.pos)
-		if n then
-			if vector.equals(v.pos, ll) then idxl = j end
-			llists = llists .. n.name .. ","
-			j = j + 1
+		if not inv[param] then
+			return false, "List doesn't exist"
+		end
+
+		local x, y = 0, 1
+		for _ in pairs(inv[param]) do
+			if x < 9 then x = x + 1 elseif y < 3 then y = y + 1 end
+		end
+
+		fs = fs ..
+			"label[0.375,0.375;Show Inv List]" ..
+			"dropdown[8,0.175;3,1;select_list;" .. dlists .. ";" .. idx .. "]" ..
+			ws.get_itemslot_bg_v4(0.375, 1.75, x, y) ..
+			"list[current_player;" .. param .. ";0.375,1.75;" .. x .. "," .. y .. ";]" ..
+			"label[0.375,6.7;Inventory]" ..
+			ws.get_itemslot_bg_v4(0.375, 7.1, 9, 3) ..
+			"list[current_player;main;0.375,7.1;9,3;9]" ..
+			ws.get_itemslot_bg_v4(0.375, 11.05, 9, 1) ..
+			"list[current_player;main;0.375,11.05;9,1;]" ..
+			"listring[current_player;" .. param .. "]" ..
+			"listring[current_player;main]"
+	else
+		-- Tab 1: Nearby node inventories
+		local pos = core.localplayer and core.localplayer:get_pos()
+		local range = 6
+		local minp = vector.offset(pos, -range, -range, -range)
+		local maxp = vector.offset(pos, range, range, range)
+		local nodes = core.find_nodes_with_meta(minp, maxp) or {}
+		local selected_node = ll
+
+		-- Build node list
+		local node_entries = {}
+		local sel_idx = 1
+		for id, p in ipairs(nodes) do
+			local n = core.get_node_or_nil(p)
+			if n then
+				local label = n.name .. " (" .. p.x .. "," .. p.y .. "," .. p.z .. ")"
+				table.insert(node_entries, core.formspec_escape(label))
+				if selected_node and vector.equals(p, selected_node) then
+					sel_idx = id
+					selected_node = p
+				end
+			end
+		end
+		-- Default to first node if none selected
+		if not selected_node and #nodes > 0 then
+			selected_node = nodes[1]
+		end
+
+		fs = fs .. "label[0.375,0.375;Nearby inventory nodes]"
+
+		if #node_entries == 0 then
+			fs = fs .. "label[0.375,1.5;No inventory nodes nearby]"
+		else
+			fs = fs .. "textlist[0.375,1;5.5,7.5;nearby_nodes;" ..
+				table.concat(node_entries, ",") .. ";" .. sel_idx .. "]"
+
+			-- Inventory lists for selected node
+			if selected_node then
+				local spos = selected_node.x .. "," .. selected_node.y .. "," .. selected_node.z
+				local ninv = core.get_inventory("nodemeta:" .. spos)
+				if ninv then
+					local list_keys = {}
+					for k in pairs(ninv) do
+						table.insert(list_keys, k)
+					end
+					table.sort(list_keys)
+
+					local chosen_list = param or list_keys[1]
+					local list_idx = 1
+					for idx2, k in ipairs(list_keys) do
+						if k == chosen_list then list_idx = idx2; break end
+					end
+
+					fs = fs ..
+						"label[6.375,0.375;Node: " .. core.formspec_escape(core.get_node_or_nil(selected_node).name) .. "]" ..
+						"dropdown[6.375,1;3,1;nearby_list;" ..
+							table.concat(list_keys, ",") .. ";" .. list_idx .. "]"
+
+					-- Show slots for the chosen list
+					local list_data = ninv[chosen_list]
+					if list_data then
+						local lx, ly = 0, 1
+						for _ in pairs(list_data) do
+							if lx < 8 then lx = lx + 1 elseif ly < 4 then ly = ly + 1 end
+						end
+						if lx == 0 then lx = 1 end
+						fs = fs ..
+							ws.get_itemslot_bg_v4(6.375, 2.5, lx, ly) ..
+							"list[nodemeta:" .. spos .. ";" .. chosen_list .. ";6.375,2.5;" .. lx .. "," .. ly .. ";]"
+					end
+				end
+			end
 		end
 	end
-	llists = llists:sub(1, -2)
 
-	if not inv[param] then
-		return false, "List doesn't exist"
-	end
-
-	local x, y = 0, 1
-	for _ in pairs(inv[param]) do
-		if x < 9 then x = x + 1 elseif y < 3 then y = y + 1 end
-	end
-
-	local fs = table.concat({
-		"formspec_version[4]",
-		"size[11.75,12.425]",
-		"label[0.375,0.375;Show Inv List]",
-		"dropdown[8,0.175;3,1;select_list;" .. dlists .. ";" .. idx .. "]",
-		"dropdown[8,2.175;3,1;select_llist;" .. llists .. ";" .. idxl .. "]",
-		ws.get_itemslot_bg_v4(0.375, 1.75, x, y),
-		"list[current_player;" .. param .. ";0.375,1.75;" .. x .. "," .. y .. ";]",
-		"label[0.375,6.7;Inventory]",
-		ws.get_itemslot_bg_v4(0.375, 7.1, 9, 3),
-		"list[current_player;main;0.375,7.1;9,3;9]",
-		ws.get_itemslot_bg_v4(0.375, 11.05, 9, 1),
-		"list[current_player;main;0.375,11.05;9,1;]",
-		"listring[current_player;" .. param .. "]",
-		"listring[current_player;main]",
-	})
 	core.show_formspec("inv_list", fs)
 	return true
 end
@@ -225,11 +294,50 @@ end })
 
 core.register_on_formspec_input(function(formname, fields)
 	if formname == "inv_list" then
-		if fields.select_list then
-			show_list_fs(fields.select_list)
+		if fields.close then
+			core.close_formspec("inv_list")
+			return
 		end
-		if fields.select_llist then
-			show_list_fs(fields.select_list or "", fields.select_llist)
+
+		local tab = 0
+		if fields.inv_tabs then
+			tab = tonumber(fields.inv_tabs) - 1
+		end
+
+		if tab == 0 then
+			if fields.select_list then
+				show_list_fs(fields.select_list, nil, 0)
+				return
+			end
+			if fields.select_llist then
+				show_list_fs(fields.select_list or "", fields.select_llist, 0)
+				return
+			end
+		else
+			-- Tab 1: find the selected node from the textlist
+			local ll = nil
+			if fields.nearby_nodes then
+				local event = fields.nearby_nodes
+				local colon = event and event:find(":")
+				local idx = colon and tonumber(event:sub(colon + 1)) or tonumber(event or "0") or 0
+				local range = 6
+				local pos = core.localplayer and core.localplayer:get_pos()
+				local minp = vector.offset(pos, -range, -range, -range)
+				local maxp = vector.offset(pos, range, range, range)
+				local nodes = core.find_nodes_with_meta(minp, maxp) or {}
+				if idx > 0 and idx <= #nodes then
+					ll = nodes[idx]
+				end
+			end
+
+			local chosen_list = fields.nearby_list or nil
+			show_list_fs(chosen_list, ll, 1)
+			return
+		end
+
+		-- Tab switch without other field changes
+		if fields.inv_tabs then
+			show_list_fs(nil, nil, tab)
 		end
 	end
 end)
