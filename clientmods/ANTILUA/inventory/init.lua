@@ -155,6 +155,10 @@ local function get_node_invs(pos)
 	return invs
 end
 
+-- Persistent state for the Nearby tab
+local _sel_nearby_node  -- v3s16 of selected node, or nil
+local _sel_nearby_list  -- string name of selected list
+
 local function show_list_fs(param, ll, tab)
 	tab = tab or 0
 	local name = core.localplayer:get_name()
@@ -339,8 +343,7 @@ core.register_on_formspec_input(function(formname, fields)
 				return
 			end
 		else
-			-- Tab 1: find the selected node from the textlist
-			local ll = nil
+			-- Tab 1: update persistent selections from form fields
 			if fields.nearby_nodes then
 				local event = fields.nearby_nodes
 				local colon = event and event:find(":")
@@ -351,12 +354,27 @@ core.register_on_formspec_input(function(formname, fields)
 				local maxp = vector.offset(pos, range, range, range)
 				local nodes = core.find_nodes_with_meta(minp, maxp) or {}
 				if idx > 0 and idx <= #nodes then
-					ll = nodes[idx]
+					_sel_nearby_node = nodes[idx]
 				end
 			end
 
-			local chosen_list = fields.nearby_list or nil
-			show_list_fs(chosen_list, ll, 1)
+			if fields.nearby_list then
+				_sel_nearby_list = fields.nearby_list
+			end
+
+			-- Build nearby nodes list to find index of current selection
+			local range = 6
+			local ppos = core.localplayer and core.localplayer:get_pos()
+			local minp = vector.offset(ppos, -range, -range, -range)
+			local maxp = vector.offset(ppos, range, range, range)
+			local nodes = core.find_nodes_with_meta(minp, maxp) or {}
+
+			-- If no node selected yet, pick the first one
+			if not _sel_nearby_node and #nodes > 0 then
+				_sel_nearby_node = nodes[1]
+			end
+
+			show_list_fs(_sel_nearby_list, _sel_nearby_node, 1)
 			return
 		end
 
