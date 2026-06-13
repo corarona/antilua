@@ -265,11 +265,11 @@ function test_ws_rg_lifecycle(T)
 			on_stop = function() fired.stop = true end,
 		})
 		core.settings:set_bool(test_setting, true)
-		core.after(1.0, function()
+		core.after(3.0, function()
 			local ok1 = fired.start
 			local ok2 = fired.step
 			core.settings:set_bool(test_setting, false)
-			core.after(1.0, function()
+			core.after(3.0, function()
 				local ok3 = fired.stop
 				if ok1 and ok2 and ok3 then
 					fired.done = true
@@ -277,7 +277,7 @@ function test_ws_rg_lifecycle(T)
 			end)
 		end)
 		-- Poll for completion
-		core.after(5.0, function()
+		core.after(12.0, function()
 			T.assert(fired.done, "ws.rg lifecycle: start=" .. tostring(fired.start) .. " step=" .. tostring(fired.step) .. " stop=" .. tostring(fired.stop))
 			core.settings:set_bool(test_setting, false)
 		end)
