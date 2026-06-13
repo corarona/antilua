@@ -158,6 +158,7 @@ function sbots.register_bot(name, def)
 	ws.rg(name, {
 		category = "Bots",
 		setting = tn:lower(),
+		description = def.description,
 		on_step = function(_, dtime)
 			local bot = registered_bots[tn]
 			if not bot then return end
@@ -252,6 +253,7 @@ end
 
 if nlist then
 	sbots.register_bot("listDigBot", {
+		description = "Bot that digs nodes from a list",
 		find_pos = function(self, pos)
 			return sbots.find_nearest(pos, 60, nlist.get(nlist.selected))
 		end,

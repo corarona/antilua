@@ -24,4 +24,5 @@ end)
 if core.settings:get("invsaver") == nil then
 	core.settings:set("invsaver", "false")
 end
-core.register_cheat("InvSaver", { category = "Player", setting = "invsaver" })
+core.register_cheat("InvSaver", { category = "Player", setting = "invsaver",
+	description = "Save inventory on disconnect" })

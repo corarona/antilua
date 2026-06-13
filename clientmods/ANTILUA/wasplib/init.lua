@@ -178,6 +178,6 @@ core.register_chatcommand('givegear', {
 if ws.register_keypress_cheat then
 	ws.register_keypress_cheat("autosneak", "AutoSneak", "Movement", "sneak", function()
 		return core.localplayer:is_touching_ground()
-	end)
-	ws.register_keypress_cheat("autosprint", "AutoSprint", "Movement", "aux1")
+	end, "Automatically sneak when moving")
+	ws.register_keypress_cheat("autosprint", "AutoSprint", "Movement", "aux1", nil, "Automatically sprint when moving")
 end

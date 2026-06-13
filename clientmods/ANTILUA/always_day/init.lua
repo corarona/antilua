@@ -9,4 +9,5 @@ core.register_on_time_of_day(function(time, speed)
 	return 12000
 end)
 
-core.register_cheat("AlwaysDay", { category = "Render", setting = "always_day" })
+core.register_cheat("AlwaysDay", { category = "Render", setting = "always_day",
+	description = "Always show daytime lighting" })

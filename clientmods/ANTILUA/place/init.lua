@@ -53,10 +53,11 @@ function scaffold.template(setting, func, offset, funcstop)
 	end
 end
 
-function scaffold.register_template_scaffold(name, setting, func, offset, funcstop)
+function scaffold.register_template_scaffold(name, setting, func, offset, funcstop, description)
 	ws.rg(name, {
 		category = "Place",
 		setting = setting,
+		description = description,
 		on_step = scaffold.template(setting, func, offset),
 		on_stop = funcstop,
 	})
@@ -95,7 +96,7 @@ local function mscaffold(f)
 	end
 end
 
-ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold',
+ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "Build scaffold beneath you",
 	on_step = function(self, dtime)
 		if tps_client and tonumber(tps_client.ping) and tps_client.ping > (tps_client and tps_client.ping_tolerance or 0.5) then return end
 		mscaffold(0)
@@ -113,7 +114,7 @@ ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold',
 	},
 })
 
-ws.rg('MScaffModulo', { category = 'Place', setting = 'multiscaffm',
+ws.rg('MScaffModulo', { category = 'Place', setting = 'multiscaffm', description = "Scaffold with spaced placement",
 	on_step = function(self)
 		if not multiscaff_node then return end
 		ws.switch_to_item(multiscaff_node)
@@ -151,14 +152,14 @@ scaffold.register_template_scaffold("WallScaffold", "place_five_down", function(
 	scaffold.place_if_able(ws.dircoord(0, -3, 0))
 	scaffold.place_if_able(ws.dircoord(0, -4, 0))
 	scaffold.place_if_able(ws.dircoord(0, -5, 0))
-end)
+end, nil, nil, "Place wall scaffold below")
 
 
 scaffold.register_template_scaffold("headTriScaff", "place_three_wide_head", function(pos)
 	scaffold.place_if_able(ws.dircoord(0, 3, 0))
 	scaffold.place_if_able(ws.dircoord(0, 3, 1))
 	scaffold.place_if_able(ws.dircoord(0, 3, -1))
-end)
+end, nil, nil, "Place three-wide scaffold at head level")
 
 scaffold.register_template_scaffold("RandomScaff", "place_rnd", function()
 	local below=ws.dircoord(0,-1,0)
@@ -169,7 +170,7 @@ scaffold.register_template_scaffold("RandomScaff", "place_rnd", function()
 		scaffold.dig(below)
 		scaffold.place_if_needed(nl, below)
 	end
-end)
+end, nil, nil, "Place random block scaffold")
 
 
 
@@ -188,7 +189,7 @@ local function is_lantern(pos)
    return false
 end
 
-ws.rg("Highway", { category = "Place", setting = "highwaymaker",
+ws.rg("Highway", { category = "Place", setting = "highwaymaker", description = "Build a road beneath you",
 	on_step = function(self)
 		for i = -2, 2 do
 			mscaffold(i)
@@ -215,7 +216,7 @@ ws.rg("Highway", { category = "Place", setting = "highwaymaker",
 	delay = 0.05,
 })
 
-ws.rg("HighwayZ", { category = "Place", setting = "highwayz",
+ws.rg("HighwayZ", { category = "Place", setting = "highwayz", description = "Build a road along the Z axis",
 	on_step = function(self)
 		local npt = ws.get_nodes_per_tick()
 		local positions = {
@@ -237,6 +238,7 @@ ws.rg("HighwayZ", { category = "Place", setting = "highwayz",
 ws.rg("BlockSources", {
 	category = "Place",
 	setting = "block_sources",
+	description = "Block liquid sources while placing",
 	on_step = function(self)
 		local block_water = core.settings:get_bool(self.setting .. ".block_water", true)
 		local block_lava = core.settings:get_bool(self.setting .. ".block_lava", true)
@@ -284,7 +286,7 @@ ws.rg("BlockSources", {
 	},
 })
 
-ws.rg("PlaceOnTop", { category = "Place", setting = "place_on_top",
+ws.rg("PlaceOnTop", { category = "Place", setting = "place_on_top", description = "Place on top of pointed node",
 	on_step = function(self)
 		if not multiscaff_node then return end
 		local npt = ws.get_nodes_per_tick()
@@ -310,7 +312,7 @@ ws.rg("PlaceOnTop", { category = "Place", setting = "place_on_top",
 
 
 local lightblock = nil
-ws.rg("LanternTBM", { category = "Place", setting = "place_ltbm",
+ws.rg("LanternTBM", { category = "Place", setting = "place_ltbm", description = "Place lanterns on ceilings",
 	on_step = function(self)
 		local dir = ws.getdir()
 		local lp = vector.round(ws.dircoord(0, 0, 0))
@@ -342,6 +344,7 @@ local mossable = {
 ws.rg("AutoMoss", {
 	category = "Place",
 	setting = "automoss",
+	description = "Auto-place mossy variants of blocks",
 	on_step = function()
 		local p = core.localplayer:get_pos()
 		local pos1 = vector.offset(p, -4, -4, -4)

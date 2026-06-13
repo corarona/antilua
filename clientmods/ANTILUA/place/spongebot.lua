@@ -22,6 +22,7 @@ local function checknode(pos)
 end
 
 sbots.register_bot("SpongeBot", {
+	description = "Bot that removes water sources",
 	find_pos = function(self, pos)
 		local lp = ws.dircoord(0, 0, 0)
 		local nds = core.find_nodes_near(lp, 50, {"mcl_core:water_source"}, true)
@@ -84,7 +85,7 @@ sbots.register_bot("SpongeBot", {
 
 
 
-ws.rg("Autosponge", { category = "Place", setting = "autosponge",
+ws.rg("Autosponge", { category = "Place", setting = "autosponge", description = "Auto-sponge water sources",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 10
 		local water = core.find_node_near(core.localplayer:get_pos(), range, "mcl_core:water_source")

@@ -110,14 +110,7 @@ files["builtin/common/tests"] = {
 	},
 }
 
--- Antilua client mods
-clientmods/ANTILUA/wasplib/init.lua
-clientmods/ANTILUA/wasplib/*.lua
-clientmods/ANTILUA/**/init.lua
-clientmods/al_test/init.lua
-clientmods/al_test/*.lua
-
-std = {
+stds.al_client = {
     read_globals = {
         -- Engine globals
         "core", "minetest", "dump", "vector", "ItemStack",
@@ -136,5 +129,11 @@ std = {
         -- Other mod globals
         "nlist", "sbots", "poi", "tps_client",
     },
-    globals = false,
 }
+
+-- Antilua client mods
+files["clientmods/ANTILUA/wasplib/init.lua"] = { std = "+al_client" }
+files["clientmods/ANTILUA/wasplib/*.lua"] = { std = "+al_client" }
+files["clientmods/ANTILUA/**/init.lua"] = { std = "+al_client" }
+files["clientmods/al_test/init.lua"] = { std = "+al_client" }
+files["clientmods/al_test/*.lua"] = { std = "+al_client" }

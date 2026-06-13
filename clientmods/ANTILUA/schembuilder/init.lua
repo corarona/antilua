@@ -341,7 +341,7 @@ local function show_browser_form(tab)
 	local sid = get_server_id()
 	local theme_bg = core.settings:get("theme_bg") or "#121212"
 	local fs = "formspec_version[10]size[10,10]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
-		"tabheader[0,0;tabs;Browse Schematics,Saved Builds;" .. (tab + 1) .. "]" ..
+		"tabheader[0,0;tabs;Browse Schematics,Saved Builds,BlockExchange;" .. (tab + 1) .. "]" ..
 		"button[8,9;2,0.8;close;Close]"
 
 	if tab == 0 then
@@ -365,7 +365,7 @@ local function show_browser_form(tab)
 				"textlist[0,1;10,7;schem_list;" .. table.concat(schems, ",") .. ";0]" ..
 				"button[0,8.5;4,0.8;schem_load;Load]"
 		end
-	else
+	elseif tab == 1 then
 		local idx = get_build_index()
 		if #idx == 0 then
 			fs = fs .. "label[0,1;No saved builds for " .. core.formspec_escape(sid) .. "]"
@@ -380,6 +380,52 @@ local function show_browser_form(tab)
 				"button[2.5,6.5;2.4,0.8;build_restart;Restart]" ..
 				"button[5,6.5;2.4,0.8;build_delete;Delete]" ..
 				"button[7.5,6.5;2.4,0.8;build_clear_particles;Clear Particles]"
+		end
+	else
+		-- Tab 2: BlockExchange
+		local logged_in = blockexchange and blockexchange.logged_in
+		if logged_in then
+			fs = fs .. "label[0,0.6;Logged in as: " .. core.formspec_escape(blockexchange.username) .. "]" ..
+				"field[0,1.5;3.5,0.6;bx_user;;]" ..
+				"label[0,2.3;Username]" ..
+				"field[3.6,1.5;3.5,0.6;bx_name;;]" ..
+				"label[3.6,2.3;Schematic name]" ..
+				"button[7.2,1.5;2.5,0.6;bx_search;Search]"
+		else
+			fs = fs .. "label[0,1;Not logged in. Use .bx_login to connect.]"
+		end
+
+		-- Search results
+		local results = blockexchange and blockexchange.search_results or {}
+		if #results > 0 then
+			local entries = {}
+			for _, r in ipairs(results) do
+				local label = r.name .. " (" .. r.user_name .. ") [" .. r.size_x .. "x" .. r.size_y .. "x" .. r.size_z .. "]"
+				table.insert(entries, core.formspec_escape(label))
+			end
+			fs = fs .. "textlist[0,3;10,4.5;bx_results;" .. table.concat(entries, ",") .. ";0]"
+		end
+
+		-- Download button + status
+		if logged_in then
+			local status_text = _bx_status or ""
+			if status_text ~= "" then
+				fs = fs .. "label[0,8;" .. core.formspec_escape(status_text) .. "]"
+			end
+			fs = fs .. "button[0,7.5;3,0.8;bx_download;Download]"
+		end
+
+		-- Downloaded schematics
+		local downloads = blockexchange and blockexchange.get_downloaded_list and blockexchange.get_downloaded_list() or {}
+		if #downloads > 0 then
+			local entries = {}
+			for _, d in ipairs(downloads) do
+				table.insert(entries, core.formspec_escape(d.name .. " (" .. d.size_x .. "x" .. d.size_y .. "x" .. d.size_z .. ")"))
+			end
+			local y = results and results > 0 and 3 or 3
+			fs = fs .. "label[0,8.5;Downloads:]" ..
+				"textlist[0,9;8,1.5;bx_downloads;" .. table.concat(entries, ",") .. ";0]" ..
+				"button[8.2,9;1.6,0.8;bx_load_dl;Load]"
 		end
 	end
 
@@ -398,6 +444,7 @@ end
 ws.rg("PlaceLiteM", {
 	category = "Place",
 	setting = "placelitem",
+	description = "Place schematic from memory",
 	on_step = function(self, dtime)
 		if #place_nodes == 0 then
 			if hud_id then
@@ -502,6 +549,43 @@ end
 
 local _selected_schem = nil
 local _selected_build = nil
+local _bx_status = ""
+local _sel_bx_result = nil
+local _sel_bx_dl = nil
+
+local function load_bx_schematic(uid, name, mts_data)
+	local schem, err
+	if type(core.read_schematic) == "function" then
+		schem = core.read_schematic(mts_data, {})
+	else
+		ws.notify("core.read_schematic not available", ws.NOTIFY_ERROR)
+		return
+	end
+	if not schem or not schem.data then
+		ws.notify("Failed to parse BlockExchange schematic", ws.NOTIFY_ERROR)
+		return
+	end
+
+	local pos = core.localplayer and core.localplayer:get_pos() or { x = 0, y = 0, z = 0 }
+	pos = vector.round(pos)
+	pos = vector.add(pos, { x = 0, y = 2, z = 0 })
+
+	place_nodes = {}
+	for _, node in ipairs(schem.data) do
+		if node.name ~= "air" and node.prob and node.prob > 0 then
+			local wp = vector.add(pos, { x = node.x or 0, y = node.y or 0, z = node.z or 0 })
+			table.insert(place_nodes, { x = wp.x, y = wp.y, z = wp.z, name = node.name })
+		end
+	end
+
+	core.close_formspec("schembuilder:browser")
+	create_build(uid, name)
+	core.after(0.1, update_hud)
+	for _, n in ipairs(place_nodes) do
+		add_preview_if_needed(n, n.name)
+	end
+	ws.notify("Loaded: " .. name .. " (" .. #place_nodes .. " nodes)", ws.NOTIFY_SUCCESS)
+end
 
 local function load_schematic_by_index(event_idx)
 	if not event_idx then return end
@@ -571,6 +655,87 @@ core.register_on_formspec_input(function(formname, fields)
 		if idx then
 			_selected_build = idx
 		end
+	end
+
+	-- Tab 2: BlockExchange actions
+	if fields.tabs and tonumber(fields.tabs) == 3 then
+		_bx_status = ""
+	end
+
+	if fields.bx_search then
+		local user = fields.bx_user or ""
+		local name = fields.bx_name or ""
+		if user == "" or name == "" then
+			_bx_status = "Enter username and schematic name"
+			show_browser_form(2)
+			return
+		end
+		_bx_status = "Searching..."
+		show_browser_form(2)
+		if blockexchange and blockexchange.search then
+			blockexchange.search(user, name, function(results)
+				if results and #results > 0 then
+					_bx_status = "Found " .. #results .. " results"
+				else
+					_bx_status = "No results found"
+				end
+				show_browser_form(2)
+			end)
+		end
+		return
+	end
+
+	if fields.bx_results then
+		if fields.bx_results:match("^DCL:") then
+			_sel_bx_result = parse_list_event(fields.bx_results)
+		else
+			_sel_bx_result = parse_list_event(fields.bx_results)
+		end
+	end
+
+	if fields.bx_download and _sel_bx_result then
+		local results = blockexchange and blockexchange.search_results or {}
+		local entry = results[_sel_bx_result]
+		if entry then
+			_bx_status = "Downloading " .. entry.name .. "..."
+			show_browser_form(2)
+			if blockexchange and blockexchange.download then
+				blockexchange.download(entry.uid, entry.name, entry.size_x, entry.size_y, entry.size_z,
+					function(current, total)
+						_bx_status = "Downloading: " .. current .. "/" .. total .. " parts"
+						show_browser_form(2)
+					end,
+					function(ok, result)
+						if ok then
+							_bx_status = "Done! Saved as " .. result
+						else
+							_bx_status = "Error: " .. result
+						end
+						show_browser_form(2)
+					end
+				)
+			end
+		end
+		return
+	end
+
+	if fields.bx_load_dl and fields.bx_downloads then
+		local idx = parse_list_event(fields.bx_downloads)
+		if idx then
+			local downloads = blockexchange and blockexchange.get_downloaded_list and blockexchange.get_downloaded_list() or {}
+			local entry = downloads[idx]
+			if entry then
+				local mts = blockexchange and blockexchange.get_mts_data and blockexchange.get_mts_data(entry.uid)
+				if mts then
+					load_bx_schematic(entry.uid, entry.name, mts)
+				end
+			end
+		end
+		return
+	end
+
+	if fields.bx_load_dl_sel then
+		_sel_bx_dl = parse_list_event(fields.bx_downloads)
 	end
 
 	-- Tab 0: Load schematic button
@@ -1058,6 +1223,7 @@ if sbots and sbots.register_bot then
 	})
 
 	sbots.register_bot("SchemBuilderBot", {
+		description = "Bot that builds schematics",
 		moving_target = true,
 		stand_waiting = true,
 		landing_distance = 3,
@@ -1252,6 +1418,7 @@ end
 ws.rg("SchematicLooter", {
 	category = "Inventory",
 	setting = "schematic_looter",
+	description = "Auto-loot materials from schematics",
 	delay = 1,
 	on_step = function(self, dtime)
 		if #place_nodes == 0 then return end

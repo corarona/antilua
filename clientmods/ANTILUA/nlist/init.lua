@@ -158,6 +158,7 @@ core.register_on_punchnode(function(p, n)
 end)
 
 ws.rg('NlEdMode', { category = 'Misc', setting = 'nlist_edmode',
+	description = "Edit node list",
 	on_step = function(self) nlist.show_list(sl, true) end,
 	on_start = function(self) end,
 	on_stop = function(self) nlist.hide() end,

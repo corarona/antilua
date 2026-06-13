@@ -180,7 +180,8 @@ core.register_on_receiving_formspec(function(formname, formspec)
 	return nil
 end)
 
-core.register_cheat("FormspecBlocker", { category = "Interact", setting = "formspec_blocker" })
+core.register_cheat("FormspecBlocker", { category = "Interact", setting = "formspec_blocker",
+	description = "Block server formspecs from showing" })
 
 --
 -- Trash button injector (merged from formspec_utils)

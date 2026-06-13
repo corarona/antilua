@@ -374,6 +374,7 @@ if core.register_cheat then
 	core.register_cheat("Autocraft", {
 		category = "Player",
 		setting = SETTING,
+		description = "Auto-craft items from inventory",
 	})
 end
 

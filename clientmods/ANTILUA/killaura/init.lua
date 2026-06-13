@@ -164,6 +164,7 @@ end
 ws.rg("Killaura", {
 	category = "Combat",
 	setting = "killaura",
+	description = "Auto-attack all nearby entities",
 	on_start = function(self)
 		if not core.localplayer then return false end
 		killaura.hud_id = core.localplayer:hud_add({

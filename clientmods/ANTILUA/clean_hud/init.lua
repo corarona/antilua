@@ -9,4 +9,5 @@ core.register_on_hud_add(function(hud_def)
 	return true
 end)
 
-core.register_cheat("CleanHUD", { category = "Render", setting = "clean_hud" })
+core.register_cheat("CleanHUD", { category = "Render", setting = "clean_hud",
+	description = "Hide HUD elements for a clean view" })

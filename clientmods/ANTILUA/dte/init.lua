@@ -165,7 +165,9 @@ end
 on_startup()
 
 if core.register_cheat then
-	core.register_cheat("Run DTE", { category = "DevTools", func = function() run(load_lua()) end })
+	core.register_cheat("Run DTE", { category = "DevTools",
+		description = "Run Lua code via DTE",
+		func = function() run(load_lua()) end })
 end
 
 

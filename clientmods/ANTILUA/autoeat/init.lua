@@ -75,4 +75,5 @@ end
 
 core.after(3, find_hud)
 
-core.register_cheat("AutoEat", { category = "Player", setting = "autoeat" })
+core.register_cheat("AutoEat", { category = "Player", setting = "autoeat",
+	description = "Auto-eat food when hungry" })

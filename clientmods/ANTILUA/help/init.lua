@@ -93,6 +93,7 @@ if core.register_cheat then
 	core.register_cheat("Help", {
 		category = "Misc",
 		func = show_index,
+		description = "Open the cheat help index",
 	})
 	-- Also register a search command
 	core.register_chatcommand("help", {
@@ -141,6 +142,7 @@ if core.register_cheat then
 	core.register_cheat("Keybinds", {
 		category = "Misc",
 		func = show_keybinds,
+		description = "Show keybindings reference",
 	})
 end
 

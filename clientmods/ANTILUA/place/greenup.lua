@@ -1,6 +1,6 @@
 local greenup_node = "mcl_core:dirt_with_grass"
 
-ws.rg("PlaceOn", { category = "Place", setting = "placeon",
+ws.rg("PlaceOn", { category = "Place", setting = "placeon", description = "Place on top of pointed surface",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 4
 		local node = core.settings:get(self.setting .. ".node") or greenup_node
@@ -19,7 +19,7 @@ ws.rg("PlaceOn", { category = "Place", setting = "placeon",
 	},
 })
 
-ws.rg("TorchUp", { category = "Place", setting = "torchup",
+ws.rg("TorchUp", { category = "Place", setting = "torchup", description = "Place torches on walls and ceilings",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 4
 		local threshold = tonumber(core.settings:get(self.setting .. ".light_threshold")) or 8

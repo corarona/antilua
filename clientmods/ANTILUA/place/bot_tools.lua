@@ -1,4 +1,4 @@
-ws.rg("AutoCombatLog", { category = "Player", setting = "autoclog",
+ws.rg("AutoCombatLog", { category = "Player", setting = "autoclog", description = "Log combat data automatically",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".detect_range")) or 270
 		for _, pl in pairs(core.get_nearby_objects(range)) do

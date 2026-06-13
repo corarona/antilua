@@ -25,6 +25,7 @@ end
 ws.rg("Autopilot", {
 	category = "Movement",
 	setting = "autopilot",
+	description = "Automatic flight with obstacle avoidance",
 	on_step = function(self)
 		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
 		local landing = tonumber(core.settings:get(self.setting .. ".landing_distance")) or 15

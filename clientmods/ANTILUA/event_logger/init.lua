@@ -34,7 +34,8 @@ core.register_on_object_hp_change(function(id, hp)
 	storage:set_int(k("entity_hp_changes"), storage:get_int(k("entity_hp_changes")) + 1)
 end)
 
-core.register_cheat("EntityLogger", { category = "Render", setting = "entity_logger" })
+core.register_cheat("EntityLogger", { category = "Render", setting = "entity_logger",
+	description = "Log entity spawns and despawns" })
 
 --
 -- World observer
@@ -54,7 +55,8 @@ core.register_on_node_remove(function(pos)
 	ws.notify("Node removed at " .. core.pos_to_string(pos), ws.NOTIFY_INFO, {toast = false})
 end)
 
-core.register_cheat("WorldObserver", { category = "Render", setting = "world_observer" })
+core.register_cheat("WorldObserver", { category = "Render", setting = "world_observer",
+	description = "Observe and log world changes" })
 
 --
 -- Breath alert
@@ -69,7 +71,8 @@ core.register_on_breath_changed(function(breath)
 	end
 end)
 
-core.register_cheat("BreathAlert", { category = "Player", setting = "breath_alert" })
+core.register_cheat("BreathAlert", { category = "Player", setting = "breath_alert",
+	description = "Alert when running out of breath" })
 
 --
 -- Movement display
@@ -85,7 +88,8 @@ core.register_on_receive_physics_override(function(movement)
 		movement.gravity, movement.speed_climb))
 end)
 
-core.register_cheat("MovementDisplay", { category = "Render", setting = "movement_display" })
+core.register_cheat("MovementDisplay", { category = "Render", setting = "movement_display",
+	description = "Display movement info on screen" })
 
 --
 -- Block Logger (per-server persistent)
@@ -201,6 +205,8 @@ core.registered_chatcommands["blockstats"] = {
 	end,
 }
 
-core.register_cheat("BlockStats", { category = "Info", func = function()
+core.register_cheat("BlockStats", { category = "Info",
+	description = "Show block placement statistics",
+	func = function()
 	core.registered_chatcommands["blockstats"].func()
 end })

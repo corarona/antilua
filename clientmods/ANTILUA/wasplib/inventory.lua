@@ -208,7 +208,7 @@ function ws.cheat_setting(self, key, default)
 end
 
 --- Register a key-hold cheat: holds a key while the setting is true.
-function ws.register_keypress_cheat(setting, desc, category, keyname, condition)
+function ws.register_keypress_cheat(setting, desc, category, keyname, condition, description)
 	local was_active = false
 	core.register_globalstep(function()
 		if not core.localplayer then return end
@@ -220,7 +220,7 @@ function ws.register_keypress_cheat(setting, desc, category, keyname, condition)
 		end
 		was_active = is_active
 	end)
-	core.register_cheat(desc, { category = category, setting = setting })
+	core.register_cheat(desc, { category = category, setting = setting, description = description })
 end
 
 --- Nil-safe HUD change wrapper.

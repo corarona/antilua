@@ -1,4 +1,6 @@
-ws.rg("FindVoidAir","DevTools","fvair",function()
+ws.rg("FindVoidAir", { category = "DevTools", setting = "fvair",
+	description = "Find void air in the world",
+	on_step = function()
 	local pos = core.localplayer:get_pos()
 	local p1 = vector.offset(pos, -30, 0, -30)
 	local p2 = vector.offset(pos, 30, 0, 30)
@@ -9,7 +11,7 @@ ws.rg("FindVoidAir","DevTools","fvair",function()
 		ws.notify("Airpocket found at " .. core.pos_to_string(nds[1]), ws.NOTIFY_INFO, {toast=false})
 		ws.display_wp(nds[1], "airpocket")
 	end
-end)
+end })
 
 local function dump_to_chat(arg)
 	core.display_chat_message(dump(arg))
@@ -37,16 +39,24 @@ ws.on_connect(function()
 	end
 end)
 
-core.register_cheat("ItemMeta", { category = "DevTools", func = function()
+core.register_cheat("ItemMeta", { category = "DevTools",
+	description = "View and edit item metadata",
+	func = function()
 	local it = core.localplayer:get_wielded_item()
 	local meta = it:get_meta()
 	dump_to_chat(it:get_name())
 	dump_to_chat(meta:to_table())
 end})
 
-core.register_cheat("PointedMeta", { category = "DevTools", func = function() dumpmetaat(core.get_pointed_thing().under) end})
-core.register_cheat("PosMeta", { category = "DevTools", func = function() dumpmetaat(core.localplayer:get_pos()) end})
-core.register_cheat("PointedDef", { category = "DevTools", func = function() dumpdefat(core.get_pointed_thing().under) end})
+core.register_cheat("PointedMeta", { category = "DevTools",
+	description = "Show metadata of pointed node",
+	func = function() dumpmetaat(core.get_pointed_thing().under) end})
+core.register_cheat("PosMeta", { category = "DevTools",
+	description = "Show position metadata",
+	func = function() dumpmetaat(core.localplayer:get_pos()) end})
+core.register_cheat("PointedDef", { category = "DevTools",
+	description = "Show node definition of pointed node",
+	func = function() dumpdefat(core.get_pointed_thing().under) end})
 
 if core.register_on_receive_particlespawner then
 	core.register_on_receive_particlespawner(function(params)

@@ -137,6 +137,7 @@ if core.register_cheat then
 	core.register_cheat("RhythmTP", {
 		category = "Movement",
 		setting = SETTING,
+		description = "Rhythmic teleportation movement",
 		cheat_settings = {
 			budget = {
 				type = "number",

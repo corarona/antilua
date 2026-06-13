@@ -56,6 +56,7 @@ local function compass_string(yaw)
 end
 
 ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
+	description = "Show flight status HUD",
 	on_start = function(self)
 		if not core.localplayer then return true end
 

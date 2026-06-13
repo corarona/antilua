@@ -32,6 +32,7 @@ end
 ws.rg("DigHead", {
 	category = "Dig",
 	setting = "dighead",
+	description = "Dig in front of your head",
 	on_step = function()
 		ws.dig(ws.dircoord(0, 1, 0))
 	end,
@@ -40,6 +41,7 @@ ws.rg("DigHead", {
 ws.rg("Excavator", {
 	category = "Dig",
 	setting = "excavator",
+	description = "Dig a large excavation area",
 	on_step = function(self)
 		local mode = core.settings:get(self.setting .. ".mode") or "normal"
 		core.settings:set_bool("continuous_forward", true)
@@ -76,6 +78,7 @@ ws.rg("Excavator", {
 ws.rg("WallExcavator", {
 	category = "Dig",
 	setting = "wallexcavator",
+	description = "Excavate walls in a pattern",
 	on_step = function()
 		core.settings:set_bool("continuous_forward", true)
 		local lp = ws.dircoord(0, 0, 0)

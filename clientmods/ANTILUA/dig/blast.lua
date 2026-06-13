@@ -3,6 +3,7 @@
 ws.rg("Nuke", {
 	category = "Dig",
 	setting = "nuke",
+	description = "Create a large explosion",
 	on_step = function()
 		local npt = ws.get_nodes_per_tick()
 		local radius = tonumber(core.settings:get("nuke.radius")) or 4

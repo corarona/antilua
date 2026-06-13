@@ -1,54 +1,4 @@
-core.cheats = {
-	["Movement"] = {
-		["Freecam"] = "freecam",
-		["Freelook"] = "freelook",
-		["AutoForward"] = "continuous_forward",
-		["PitchMove"] = "pitch_move",
-		["AutoJump"] = "autojump",
-		["Jesus"] = "jesus",
-		["NoSlow"] = "no_slow",
-		["JetPack"] = "jetpack",
-		["AntiSlip"] = "antislip",
-		["AirJump"] = "airjump",
-		["Spider"] = "spider",
-		["EntitySpeed"] = "entity_speed",
-	},
-	["Combat"] = {
-		["AntiKnockback"] = "antiknockback",
-		["AttachmentFloat"] = "float_above_parent",
-		["AutoHit"] = "autohit",
-	},
-	["Render"] = {
-		["Xray"] = "xray",
-		["Fullbright"] = "fullbright",
-		["HUDBypass"] = "hud_flags_bypass",
-		["NoHurtCam"] = "no_hurt_cam",
-		["CheatHUD"] = "cheat_hud",
-		["EntityHitboxes"] = "enable_entity_esp",
-		["EntityWallhack"] = "enable_entity_wallhack",
-		["EntityTracers"] = "enable_entity_tracers",
-		["PlayerHitboxes"] = "enable_player_esp",
-		["PlayerWallhack"] = "enable_player_wallhack",
-		["PlayerTracers"] = "enable_player_tracers",
-		["NodeESP"] = "enable_node_esp",
-		["NodeTracers"] = "enable_node_tracers",
-	},
-	["Player"] = {
-		["FastDig"] = "fastdig",
-		["FastPlace"] = "fastplace",
-		["AutoDig"] = "autodig",
-		["AutoPlace"] = "autoplace",
-		["InstantBreak"] = "instant_break",
-		["FastHit"] = "spamclick",
-		["NoFallDamage"] = "prevent_natural_damage",
-		["NoForceRotate"] = "no_force_rotate",
-		["Reach"] = "reach",
-		["PointAll"] = "point_all",
-		["PrivBypass"] = "priv_bypass",
-		["AutoRespawn"] = "autorespawn",
-		["ThroughWalls"] = "dont_point_nodes",
-	},
-}
+core.cheats = {}
 
 core.cheat_defs = {}
 
@@ -89,6 +39,96 @@ function core.register_cheat(name, ...)
 
 	return def
 end
+
+-- Movement cheats
+core.register_cheat({ name = "Freecam", category = "Movement", setting = "freecam",
+	description = "Detach camera for free movement" })
+core.register_cheat({ name = "Freelook", category = "Movement", setting = "freelook",
+	description = "Look around freely while moving" })
+core.register_cheat({ name = "AutoForward", category = "Movement", setting = "continuous_forward",
+	description = "Automatically move forward" })
+core.register_cheat({ name = "PitchMove", category = "Movement", setting = "pitch_move",
+	description = "Move in the direction you are looking" })
+core.register_cheat({ name = "AutoJump", category = "Movement", setting = "autojump",
+	description = "Automatically jump when hitting obstacles" })
+core.register_cheat({ name = "Jesus", category = "Movement", setting = "jesus",
+	description = "Walk on liquids" })
+core.register_cheat({ name = "NoSlow", category = "Movement", setting = "no_slow",
+	description = "Prevent movement speed reduction" })
+core.register_cheat({ name = "JetPack", category = "Movement", setting = "jetpack",
+	description = "Fly upward by holding the jump key" })
+core.register_cheat({ name = "AntiSlip", category = "Movement", setting = "antislip",
+	description = "Prevent slipping on slippery surfaces" })
+core.register_cheat({ name = "AirJump", category = "Movement", setting = "airjump",
+	description = "Jump while in mid-air" })
+core.register_cheat({ name = "Spider", category = "Movement", setting = "spider",
+	description = "Climb walls like a spider" })
+core.register_cheat({ name = "EntitySpeed", category = "Movement", setting = "entity_speed",
+	description = "Increase entity movement speed" })
+
+-- Combat cheats
+core.register_cheat({ name = "AntiKnockback", category = "Combat", setting = "antiknockback",
+	description = "Prevent knockback from attacks" })
+core.register_cheat({ name = "AttachmentFloat", category = "Combat", setting = "float_above_parent",
+	description = "Float above attached parent" })
+core.register_cheat({ name = "AutoHit", category = "Combat", setting = "autohit",
+	description = "Automatically attack nearby entities" })
+
+-- Render cheats
+core.register_cheat({ name = "Xray", category = "Render", setting = "xray",
+	description = "See ores and nodes through walls" })
+core.register_cheat({ name = "Fullbright", category = "Render", setting = "fullbright",
+	description = "Brighten all surfaces for full visibility" })
+core.register_cheat({ name = "HUDBypass", category = "Render", setting = "hud_flags_bypass",
+	description = "Bypass HUD flags set by the server" })
+core.register_cheat({ name = "NoHurtCam", category = "Render", setting = "no_hurt_cam",
+	description = "Disable hurt camera effects" })
+core.register_cheat({ name = "CheatHUD", category = "Render", setting = "cheat_hud",
+	description = "Show active cheat indicators on screen" })
+core.register_cheat({ name = "EntityHitboxes", category = "Render", setting = "enable_entity_esp",
+	description = "Highlight entity hitboxes" })
+core.register_cheat({ name = "EntityWallhack", category = "Render", setting = "enable_entity_wallhack",
+	description = "See entities through walls" })
+core.register_cheat({ name = "EntityTracers", category = "Render", setting = "enable_entity_tracers",
+	description = "Draw tracer lines to entities" })
+core.register_cheat({ name = "PlayerHitboxes", category = "Render", setting = "enable_player_esp",
+	description = "Highlight player hitboxes" })
+core.register_cheat({ name = "PlayerWallhack", category = "Render", setting = "enable_player_wallhack",
+	description = "See players through walls" })
+core.register_cheat({ name = "PlayerTracers", category = "Render", setting = "enable_player_tracers",
+	description = "Draw tracer lines to players" })
+core.register_cheat({ name = "NodeESP", category = "Render", setting = "enable_node_esp",
+	description = "Highlight nodes through walls" })
+core.register_cheat({ name = "NodeTracers", category = "Render", setting = "enable_node_tracers",
+	description = "Draw tracer lines to selected nodes" })
+
+-- Player cheats
+core.register_cheat({ name = "FastDig", category = "Player", setting = "fastdig",
+	description = "Dig nodes faster" })
+core.register_cheat({ name = "FastPlace", category = "Player", setting = "fastplace",
+	description = "Place nodes faster" })
+core.register_cheat({ name = "AutoDig", category = "Player", setting = "autodig",
+	description = "Automatically dig pointed node" })
+core.register_cheat({ name = "AutoPlace", category = "Player", setting = "autoplace",
+	description = "Automatically place selected node" })
+core.register_cheat({ name = "InstantBreak", category = "Player", setting = "instant_break",
+	description = "Break nodes instantly" })
+core.register_cheat({ name = "FastHit", category = "Player", setting = "spamclick",
+	description = "Hit entities at maximum speed" })
+core.register_cheat({ name = "NoFallDamage", category = "Player", setting = "prevent_natural_damage",
+	description = "Prevent fall damage" })
+core.register_cheat({ name = "NoForceRotate", category = "Player", setting = "no_force_rotate",
+	description = "Prevent forced rotation by server" })
+core.register_cheat({ name = "Reach", category = "Player", setting = "reach",
+	description = "Extend interaction distance" })
+core.register_cheat({ name = "PointAll", category = "Player", setting = "point_all",
+	description = "Point at any reachable node or entity" })
+core.register_cheat({ name = "PrivBypass", category = "Player", setting = "priv_bypass",
+	description = "Bypass server privilege restrictions" })
+core.register_cheat({ name = "AutoRespawn", category = "Player", setting = "autorespawn",
+	description = "Automatically respawn on death" })
+core.register_cheat({ name = "ThroughWalls", category = "Player", setting = "dont_point_nodes",
+	description = "Point through walls at blocked nodes" })
 
 function core.show_cheat_settings_form(setting, use_auto)
 	local def = core.cheat_defs[setting]

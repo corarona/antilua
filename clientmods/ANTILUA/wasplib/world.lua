@@ -280,7 +280,7 @@ function ws.make_blocks()
 	ws.move_stack("current_player", "craft_result", 1, "current_player", "main", tslot)
 end
 
-core.register_cheat("MakeBlocks", { category = "Inventory", func = ws.make_blocks })
+core.register_cheat("MakeBlocks", { category = "Inventory", func = ws.make_blocks, description = "Create a block of the selected node type" })
 
 -- Inventory dump via quint (extracted from emicor)
 if quint then
@@ -417,7 +417,7 @@ function ws.loot_list(items, range, max_per_scan)
 	return moved
 end
 
-core.register_cheat('Loot', { category = 'Inventory', func = ws.dumpto })
+core.register_cheat('Loot', { category = 'Inventory', func = ws.dumpto, description = "Transfer all items from a container to inventory" })
 core.register_chatcommand("dumpto", {
 	description = "Dump main inv (not hotbar) to pointed storage block.",
 	func = ws.dumpto
@@ -435,7 +435,7 @@ function ws.icebreaker()
 	core.localplayer:set_wield_index(owx)
 end
 
-core.register_cheat('IceBreaker', { category = 'Dig', setting = 'icebreaker' })
+core.register_cheat('IceBreaker', { category = 'Dig', setting = 'icebreaker', description = "Break ice by walking on it" })
 
 -- Inventory to/from ender chest (extracted from emicor)
 -- moved into quint guard above

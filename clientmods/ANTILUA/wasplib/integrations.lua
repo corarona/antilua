@@ -164,6 +164,7 @@ end
 ws.rg("HeadSaver", {
 	category = "Player",
 	setting = "headsaver",
+	description = "Save head position for quick return",
 	on_step = function()
 		local head = ws.dircoord(0, 1, 0)
 		local headnd = core.get_node_or_nil(head)
@@ -189,6 +190,7 @@ ws.rg("HeadSaver", {
 ws.rg("LockView", {
 	category = "Player",
 	setting = "lockview",
+	description = "Lock camera to a fixed direction",
 	on_step = function(self)
 		if self.pitch and self.yaw then
 			core.localplayer:set_yaw(self.yaw)
@@ -238,12 +240,12 @@ core.register_globalstep(function()
 	at_new_idx, at_old_idx, at_pointed_pos, at_best_time = nil
 end)
 
-core.register_cheat("AutoTool", { category = "Inventory", setting = "autotool" })
+core.register_cheat("AutoTool", { category = "Inventory", setting = "autotool", description = "Auto-select the best tool for the job" })
 
 ----------------------------------------------------------------------------------
 -- StripChatColors
 ----------------------------------------------------------------------------------
-core.register_cheat("StripChatColors", { category = "Render", setting = "strip_chat_colors" })
+core.register_cheat("StripChatColors", { category = "Render", setting = "strip_chat_colors", description = "Remove color codes from chat messages" })
 if not core.settings:get("strip_chat_colors") then
 	core.settings:set("strip_chat_colors", "false")
 end

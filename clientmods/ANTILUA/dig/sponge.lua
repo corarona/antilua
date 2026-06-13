@@ -3,6 +3,7 @@
 ws.rg("DigFreeSponge", {
 	category = "Dig",
 	setting = "autospongedig",
+	description = "Dig and sponge water simultaneously",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 4
 		local water_dist = tonumber(core.settings:get(self.setting .. ".water_distance")) or 6
@@ -52,6 +53,7 @@ core.register_chatcommand("digcyl_rad", {
 ws.rg("Digcyl", {
 	category = "Dig",
 	setting = "digcyl",
+	description = "Dig in a cylinder shape",
 	on_step = function(self)
 		if not digcyl_mid or not digcyl_rad then return end
 		local floor_y = tonumber(core.settings:get(self.setting .. ".floor_y")) or -125

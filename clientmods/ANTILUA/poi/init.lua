@@ -285,7 +285,10 @@ core.register_cheat("DeathWaypointLimit", {
 	setting = "auto_death_waypoint_max",
 	description = "Max death waypoints to keep",
 })
-ws.rg("DeathTP", "Player", "death_tp", function() end, function() end, function() end, { "autorespawn" })
+ws.rg("DeathTP", { category = "Player", setting = "death_tp",
+	description = "Teleport to death location",
+	on_step = function() end, on_start = function() end, on_stop = function() end,
+	daughters = { "autorespawn" } })
 
 --
 -- Formspec
@@ -677,8 +680,11 @@ core.register_chatcommand("dump_pois", {
 -- Cheat registrations
 --
 
-core.register_cheat("ShowNames", { category = "Render", setting = "poi_shownames" })
-core.register_cheat("POIs", { category = "Misc", func = poi.display_formspec })
+core.register_cheat("ShowNames", { category = "Render", setting = "poi_shownames",
+	description = "Show names on POIs" })
+core.register_cheat("POIs", { category = "Misc",
+	description = "Open POI management formspec",
+	func = poi.display_formspec })
 
 core.register_on_death(function()
 	if not core.settings:get_bool("auto_screenshot") then return end

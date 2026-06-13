@@ -44,6 +44,7 @@ for _, v in pairs(seeds) do
 end
 
 ws.rg("Reap", { category = "Place", setting = "farmtool_reap",
+	description = "Harvest mature crops",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or ws.range
 		local nds = core.find_nodes_near(ws.dircoord(0, 0, 0), range, farmnodes, true)
@@ -70,6 +71,7 @@ ws.rg("Reap", { category = "Place", setting = "farmtool_reap",
 })
 
 ws.rg("Till", { category = "Place", setting = "farmtool_till",
+	description = "Till soil for planting",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 5
 		local hoe = core.settings:get(self.setting .. ".hoe_item") or "mcl_tools:hoe_diamond"
@@ -89,6 +91,7 @@ ws.rg("Till", { category = "Place", setting = "farmtool_till",
 local sseed = "mcl_farming:wheat_seed"
 
 ws.rg("Sow", { category = "Place", setting = "farmtool_sow",
+	description = "Sow seeds on tilled soil",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or ws.range
 		local nds = core.find_nodes_near(ws.dircoord(0, 0, 0), range, farmsoil, true)
@@ -114,6 +117,7 @@ ws.rg("Sow", { category = "Place", setting = "farmtool_sow",
 })
 
 ws.rg("FarmRepair", { category = "Place", setting = "farmrepair",
+	description = "Repair broken farmland",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 5
 		local channel = tonumber(core.settings:get(self.setting .. ".channel_range")) or 5
@@ -141,6 +145,7 @@ local function find_soil(pos, r)
 end
 
 sbots.register_bot("FarmBot", {
+	description = "Bot that farms automatically",
 	spos = vector.new(0, 0, 0),
 	on_activate = function(self)
 		self.start_pos = core.localplayer:get_pos()

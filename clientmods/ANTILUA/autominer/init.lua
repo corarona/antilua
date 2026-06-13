@@ -36,6 +36,7 @@ local function get_reach()
 end
 
 sbots.register_bot("AutoMiner", {
+	description = "Bot that mines ores automatically",
 	movement = "teleport",
 	find_pos = function(self, pos)
 		parse_lava_nodes()

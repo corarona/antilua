@@ -13,6 +13,7 @@ local function get_bobber_pos(range)
 end
 
 sbots.register_bot("FishBot", {
+	description = "Bot that fishes automatically",
 	movement = "stationary",
 	find_pos = function(self, pos)
 		return nil
