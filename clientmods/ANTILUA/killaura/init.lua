@@ -109,24 +109,33 @@ local function make_filter(mode)
 	end
 end
 
+local function textlist_selected(field_value, items)
+	if not field_value or field_value == "" or not items then return nil end
+	local colon = field_value:find(":")
+	local idx = colon and tonumber(field_value:sub(colon + 1)) or tonumber(field_value)
+	if idx and idx >= 1 and idx <= #items then return items[idx] end
+	return nil
+end
+
 local function build_formspec()
 	local af = core.al_formspec
 	local friends = nlist and nlist.get("friends") or {}
 	local enemies = nlist and nlist.get("enemies") or {}
-	local sb = af.cheat_form_begin("size[10,8.5]")
+	local sb = af.cheat_form_begin("size[10,8]")
 	sb:add(
 		af.label(0.3, 0, "Friends (not attacked)"),
-		af.textlist(0.3, 0.5, 4.4, 3, "friend_entries", friends),
-		af.field(0.3, 3.8, 7, 0.8, "friend_input", "", ""),
-		af.button(7.4, 3.8, 1.2, 0.8, "btn_add_friend", "Add"),
-		af.button(8.7, 3.8, 1.2, 0.8, "btn_rm_friend", "Rem"),
+		af.textlist(0.3, 0.5, 4.4, 2, "friend_entries", friends),
+		af.field(0.3, 2.8, 4.4, 0.7, "friend_input", "", ""),
+		af.button(0.3, 3.6, 1.5, 0.7, "btn_add_friend", "Add"),
+		af.button(1.9, 3.6, 1.5, 0.7, "btn_rm_friend", "Rem"),
 		af.label(5.3, 0, "Enemies (always attacked)"),
-		af.textlist(5.3, 0.5, 4.4, 3, "enemy_entries", enemies),
-		af.field(5.3, 3.8, 7, 0.8, "enemy_input", "", ""),
-		af.button(7.4, 3.8, 1.2, 0.8, "btn_add_enemy", "Add"),
-		af.button(8.7, 3.8, 1.2, 0.8, "btn_rm_enemy", "Rem"),
-		af.label(0.3, 4.8, "Tip: click a name in the list to remove it"),
-		af.button_exit(8.5, 7.5, 1.3, 0.8, "btn_done", "Done")
+		af.textlist(5.3, 0.5, 4.4, 2, "enemy_entries", enemies),
+		af.field(5.3, 2.8, 4.4, 0.7, "enemy_input", "", ""),
+		af.button(5.3, 3.6, 1.5, 0.7, "btn_add_enemy", "Add"),
+		af.button(6.9, 3.6, 1.5, 0.7, "btn_rm_enemy", "Rem"),
+		af.label(0.3, 4.8, "Tip: double-click a name in the list to remove it"),
+		af.button(0.3, 6.5, 3, 0.8, "__cheat_settings__", "Settings"),
+		af.button_exit(8.5, 6.5, 1.3, 0.8, "btn_done", "Done")
 	)
 	return sb:get()
 end
@@ -196,6 +205,25 @@ ws.rg("Killaura", {
 	get_formspec = build_formspec,
 })
 
+local function rm_item(list, input, tl_field, items)
+	if input and input ~= "" then
+		nlist.remove(list, input)
+	elseif tl_field then
+		local name = textlist_selected(tl_field, items)
+		if name then nlist.remove(list, name) end
+	end
+end
+
+local function add_rm_handler(list, input_field, tl_field, items)
+	local input = fields[input_field]
+	local tl_val = fields[tl_field]
+	if fields["btn_add_" .. list] and input and input ~= "" then
+		nlist.add(list, input)
+	elseif fields["btn_rm_" .. list] then
+		rm_item(list, input, tl_val, items)
+	end
+end
+
 core.register_on_formspec_input(function(formname, fields)
 	if formname ~= "cheat_settings:killaura:custom" then return end
 	if fields.btn_done or fields.quit or not next(fields) then return end
@@ -205,18 +233,21 @@ core.register_on_formspec_input(function(formname, fields)
 		return
 	end
 
-	if fields.btn_add_friend and fields.friend_input and fields.friend_input ~= "" then
-		nlist.add("friends", fields.friend_input)
+	local friends = nlist.get("friends") or {}
+	local enemies = nlist.get("enemies") or {}
+
+	-- DCL (double-click) removes the entry directly
+	if fields.friend_entries and fields.friend_entries:find("^DCL:") then
+		local name = textlist_selected(fields.friend_entries, friends)
+		if name then nlist.remove("friends", name) end
+	elseif fields.enemy_entries and fields.enemy_entries:find("^DCL:") then
+		local name = textlist_selected(fields.enemy_entries, enemies)
+		if name then nlist.remove("enemies", name) end
+	else
+		add_rm_handler("friend", "friend_input", "friend_entries", friends)
+		add_rm_handler("enemy", "enemy_input", "enemy_entries", enemies)
 	end
-	if fields.btn_rm_friend and fields.friend_input and fields.friend_input ~= "" then
-		nlist.remove("friends", fields.friend_input)
-	end
-	if fields.btn_add_enemy and fields.enemy_input and fields.enemy_input ~= "" then
-		nlist.add("enemies", fields.enemy_input)
-	end
-	if fields.btn_rm_enemy and fields.enemy_input and fields.enemy_input ~= "" then
-		nlist.remove("enemies", fields.enemy_input)
-	end
+
 	core.show_cheat_settings_form("killaura")
 end)
 

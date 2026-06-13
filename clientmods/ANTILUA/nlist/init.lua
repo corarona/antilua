@@ -204,9 +204,9 @@ core.register_on_formspec_input(function(formname, fields)
 		nlist.select(fields.list_select)
 	end
 
-	if fields.btn_addlist and fields.item_input and fields.item_input ~= "" then
-		nlist.set(fields.item_input, {})
-		nlist.select(fields.item_input)
+	if fields.btn_addlist and fields.rename_input and fields.rename_input ~= "" then
+		nlist.set(fields.rename_input, {})
+		nlist.select(fields.rename_input)
 	end
 	if fields.btn_rmlist then
 		local name = fields.list_select or sl
@@ -222,23 +222,23 @@ core.register_on_formspec_input(function(formname, fields)
 	if fields.btn_addentry and fields.item_input and fields.item_input ~= "" then
 		nlist.add(sl, fields.item_input)
 	end
-		if fields.btn_rmentry then
-			if fields.item_input and fields.item_input ~= "" then
-				nlist.remove(sl, fields.item_input)
-			elseif fields.entries and fields.entries ~= "" then
-				local entries = nlist.get(sl)
-				local idx = textlist_idx(fields.entries)
-				if idx > 0 and idx <= #entries then
-					nlist.remove(sl, entries[idx])
-				end
+	if fields.btn_rmentry then
+		if fields.item_input and fields.item_input ~= "" then
+			nlist.remove(sl, fields.item_input)
+		elseif fields.entries and fields.entries ~= "" then
+			local entries = nlist.get(sl)
+			local idx = textlist_idx(fields.entries)
+			if idx > 0 and idx <= #entries then
+				nlist.remove(sl, entries[idx])
 			end
 		end
-		if fields.btn_clear then
-			nlist.clear(sl)
-		end
+	end
+	if fields.btn_clear then
+		nlist.clear(sl)
+	end
 
-		core.show_cheat_settings_form("nlist_edmode")
-	end)
+	core.show_cheat_settings_form("nlist_edmode")
+end)
 
 core.register_chatcommand('nls',{
 	description = "Select a list",

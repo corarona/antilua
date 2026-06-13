@@ -491,6 +491,23 @@ end
 core.register_on_formspec_input(function(formname, fields)
 	if formname ~= "poi-csm" then return end
 
+	-- Group filter: check before everything else since it's always
+	-- submitted alongside other dropdowns like wp_color
+	if fields.group_filter then
+		local filter_names = {"All"}
+		local groups = get_unique_groups()
+		for _, g in ipairs(groups) do
+			table.insert(filter_names, g)
+		end
+		local idx = tonumber(fields.group_filter)
+		if idx and filter_names[idx] then
+			local new_filter = filter_names[idx]
+			filter_group = (new_filter == "All") and "" or new_filter
+			poi.display_formspec()
+			return true
+		end
+	end
+
 	local name
 	if fields.wp_list then
 		local event = core.explode_textlist_event(fields.wp_list)
@@ -571,18 +588,6 @@ core.register_on_formspec_input(function(formname, fields)
 			end
 		end
 		poi.display_formspec()
-	elseif fields.group_filter then
-		local filter_names = {"All"}
-		local groups = get_unique_groups()
-		for _, g in ipairs(groups) do
-			table.insert(filter_names, g)
-		end
-		local idx = tonumber(fields.group_filter)
-		if idx and filter_names[idx] then
-			local new_filter = filter_names[idx]
-			filter_group = (new_filter == "All") and "" or new_filter
-			poi.display_formspec()
-		end
 	end
 
 	return true
