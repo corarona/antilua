@@ -446,7 +446,7 @@ corresponding setting.
 | **Player** | NoFallDamage | `prevent_natural_damage` | No environmental damage |
 | | NoForceRotate | `no_force_rotate` | No forced rotation |
 | | Reach | `reach` | Extended interaction range |
-| | PointLiquids | `point_liquids` | Select liquid nodes |
+| | PointAll | `point_all` | Point any node except air |
 | | PrivBypass | `priv_bypass` | Bypass privilege checks |
 | | ThroughWalls | `dont_point_nodes` | Don't auto-point nodes |
 
@@ -532,7 +532,7 @@ These settings exist only in Antilua. Set via `core.settings:set()`,
 | `fastplace` | `false` | Faster placement |
 | `autoplace` | `false` | Auto-place blocks |
 | `instant_break` | `false` | Instant node breaking |
-| `point_liquids` | `false` | Point/select liquids |
+| `point_all` | `false` | Point any node except air |
 | `spamclick` | `false` | Fast auto-clicking |
 | `no_force_rotate` | `false` | Prevent forced rotation |
 | `float_above_parent` | `false` | Float above attached parent |

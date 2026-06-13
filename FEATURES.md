@@ -79,7 +79,7 @@ them unless `priv_bypass` is active.
 | NoFallDamage | `prevent_natural_damage` | 🔄 |
 | NoForceRotate | `no_force_rotate` | 🔄 |
 | Reach | `reach` | 🔄 |
-| PointLiquids | `point_liquids` | 🔄 |
+| PointAll | `point_all` | ✅ |
 | PrivBypass | `priv_bypass` | ✅ |
 | AutoRespawn | `autorespawn` | 🔄 |
 | ThroughWalls | `dont_point_nodes` | 🔄 |

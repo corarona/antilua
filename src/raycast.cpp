@@ -44,12 +44,14 @@ bool RaycastSort::operator() (const PointedThing &pt1,
 
 RaycastState::RaycastState(const core::line3d<f32> &shootline,
 	bool objects_pointable, bool liquids_pointable,
-	const std::optional<Pointabilities> &pointabilities) :
+	const std::optional<Pointabilities> &pointabilities,
+	bool point_all) :
 	m_shootline(shootline),
 	m_iterator(shootline.start / BS, shootline.getVector() / BS),
 	m_previous_node(m_iterator.m_current_node_pos),
 	m_objects_pointable(objects_pointable),
 	m_liquids_pointable(liquids_pointable),
+	m_point_all(point_all),
 	m_pointabilities(pointabilities)
 {
 }

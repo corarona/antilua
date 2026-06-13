@@ -120,7 +120,7 @@ static void set_al_default_settings()
 	settings->setDefault("fastplace", "false");
 	settings->setDefault("autoplace", "false");
 	settings->setDefault("instant_break", "false");
-	settings->setDefault("point_liquids", "false");
+	settings->setDefault("point_all", "false");
 	settings->setDefault("spamclick", "false");
 	settings->setDefault("no_force_rotate", "false");
 	settings->setDefault("no_slow", "false");

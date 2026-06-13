@@ -24,7 +24,8 @@ public:
 	 * @param liquids pointable if false, liquid nodes won't be found
 	 */
 	RaycastState(const core::line3d<f32> &shootline, bool objects_pointable,
-		bool liquids_pointable, const std::optional<Pointabilities> &pointabilities);
+		bool liquids_pointable, const std::optional<Pointabilities> &pointabilities,
+		bool point_all = false);
 
 	//! Shootline of the raycast.
 	core::line3d<f32> m_shootline;
@@ -41,6 +42,7 @@ public:
 
 	bool m_objects_pointable;
 	bool m_liquids_pointable;
+	bool m_point_all;
 	const std::optional<Pointabilities> m_pointabilities;
 
 	//! The code needs to search these nodes around the center node.

@@ -305,8 +305,9 @@ public:
 		const core::line3d<f32> &shootline,
 		bool objects_pointable,
 		bool liquids_pointable,
-		const std::optional<Pointabilities> &pointabilities) :
-		state(shootline, objects_pointable, liquids_pointable, pointabilities)
+		const std::optional<Pointabilities> &pointabilities,
+		bool point_all = false) :
+		state(shootline, objects_pointable, liquids_pointable, pointabilities, point_all)
 	{}
 
 	//! Creates a LuaRaycast and leaves it on top of the stack.

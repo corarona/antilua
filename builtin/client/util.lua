@@ -47,7 +47,9 @@ function core.get_pointed_thing()
 	local item = player:get_wielded_item()
 	if not item then return end
 	local def = core.get_item_def(item:get_name())
-	local ray = core.raycast(pos, pos2, true, core.settings:get_bool("point_liquids") or def and def.liquids_pointable)
+	local point_all = core.settings:get_bool("point_all")
+	local liquids = point_all or (def and def.liquids_pointable)
+	local ray = core.raycast(pos, pos2, true, liquids, nil, point_all)
 	return ray and ray:next()
 end
 

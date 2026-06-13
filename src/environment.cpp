@@ -83,9 +83,13 @@ bool Environment::line_of_sight(v3f pos1, v3f pos2, v3s16 *p)
 */
 inline static PointabilityType isPointableNode(const MapNode &n,
 	const NodeDefManager *nodedef, bool liquids_pointable,
-	const std::optional<Pointabilities> &pointabilities)
+	const std::optional<Pointabilities> &pointabilities,
+	bool point_all = false)
 {
 	const ContentFeatures &features = nodedef->get(n);
+	if (point_all && features.name != "air" && features.name != "ignore")
+		return PointabilityType::POINTABLE;
+
 	if (pointabilities) {
 		std::optional<PointabilityType> match =
 				pointabilities->matchNode(features.name, features.groups);
@@ -170,7 +174,8 @@ void Environment::continueRaycast(RaycastState *state, PointedThing *result_p)
 
 			PointabilityType pointable = isPointableNode(n, nodedef,
 					state->m_liquids_pointable,
-					state->m_pointabilities);
+					state->m_pointabilities,
+					state->m_point_all);
 			// If it can be pointed through skip
 			if (pointable == PointabilityType::POINTABLE_NOT)
 				continue;

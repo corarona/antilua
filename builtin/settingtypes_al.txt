@@ -72,7 +72,7 @@ no_hurt_cam (No hurt camera) bool false
 coords (Coordinates) bool false
 
 #    Allow pointing at/selecting liquid nodes.
-point_liquids (Point liquids) bool false
+point_all (Point All) bool false
 
 #    Entity wireframe hitboxes visible through walls.
 enable_entity_esp (Entity hitboxes) bool false

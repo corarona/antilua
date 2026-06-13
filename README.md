@@ -104,7 +104,7 @@ or by setting their corresponding settings.
 | NoForceRotate | `no_force_rotate` | Prevent server-forced rotation |
 | Reach | `reach` | Longer interaction range |
 | AutoRespawn | `autorespawn` | Auto-respawn on death |
-| PointLiquids | `point_liquids` | Target/select liquid nodes |
+| PointAll | `point_all` | Point any node except air |
 | ThroughWalls | `dont_point_nodes` | Don't auto-select any node |
 | PrivBypass | `priv_bypass` | Bypass fly/fast/noclip privilege checks |
 

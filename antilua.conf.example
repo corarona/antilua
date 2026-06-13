@@ -3850,7 +3850,7 @@
 # autoplace (Auto Place) bool false
 # instant_break (Instant Break) bool false
 # reach (Extended Reach) bool false
-# point_liquids (Point at Liquids) bool false
+# point_all (Point All) bool false
 # dont_point_nodes (Through Walls) bool false
 
 ## Cheat Toggles (Player/Exploit)

@@ -3031,7 +3031,8 @@ PointedThing Game::updatePointedThing(
 	runData.selected_object = NULL;
 	hud->pointing_at_object = false;
 
-	RaycastState s(shootline, look_for_object, liquids_pointable, pointabilities);
+	bool point_all = g_settings->getBool("point_all");
+	RaycastState s(shootline, look_for_object, liquids_pointable, pointabilities, point_all);
 	PointedThing result;
 	env.continueRaycast(&s, &result);
 	if (result.type == POINTEDTHING_OBJECT) {
