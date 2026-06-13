@@ -9,19 +9,24 @@ local storage = core.get_mod_storage("blockexchange")
 local http
 local http_available = false
 
--- Acquire HTTP API safely. Use pcall to avoid crashing if the function
--- isn't available at mod init time (it IS available at on_mods_loaded,
--- but init.lua timing varies). The security check may fail due to the
--- pcall wrapper — if so, add blockexchange to secure.trusted_mods.
-local ok, result = pcall(core.request_http_api, core)
-if ok and result then
-	http = result
-	http_available = true
-end
-
-if not http_available then
-	core.log("warning", "[blockexchange] HTTP API not available (add to secure.trusted_mods if needed)")
-end
+core.register_on_mods_loaded(function()
+	-- Try at on_mods_loaded time when we know the function exists.
+	-- This requires direct call from callback scope — pcall inside
+	-- req_http_api itself doesn't affect the Lua stack frames here
+	-- since we call it directly (not through pcall).
+	local fn = core.request_http_api
+	if fn then
+		local result = fn()
+		if result then
+			http = result
+			http_available = true
+			core.log("action", "[blockexchange] HTTP API ready")
+		end
+	end
+	if not http_available then
+		core.log("warning", "[blockexchange] HTTP API not available")
+	end
+end)
 
 ---------------------------------------------------------------------------
 -- Utilities
