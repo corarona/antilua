@@ -415,7 +415,7 @@ core.register_on_receiving_formspec(function(formname, formspec)
 	end
 	local loc = "nodemeta:" .. x .. "," .. y .. "," .. z
 
-	local px, py = 0.3, 5
+	local px, py = 3, 0
 	local inject = ws.get_itemslot_bg_v4(px, py, 1, 1) ..
 	"list[" .. loc .. ";input;"..px..","..py..";1,1;]"..
 	"label["..px..","..py..";Input]"
