@@ -308,20 +308,38 @@ std::string AlScriptApi::on_receiving_formspec(const std::string &formname,
 
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "registered_on_receiving_formspec");
-	lua_pushstring(L, formname.c_str());
-	lua_pushstring(L, formspec.c_str());
-	try {
-		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
-	} catch (LuaError &e) {
-		getClient()->setFatalError(e);
+	lua_remove(L, -2); // pop 'core'
+
+	if (lua_type(L, -1) != LUA_TTABLE) {
+		lua_pop(L, 1);
 		return formspec;
 	}
-	if (lua_type(L, -1) == LUA_TSTRING) {
-		const char *s = lua_tostring(L, -1);
-		if (s)
-			return s;
+
+	// Chain: each callback receives the output of the previous one
+	std::string current = formspec;
+
+	lua_pushnil(L);
+	while (lua_next(L, -2) != 0) {
+		if (lua_type(L, -1) == LUA_TFUNCTION) {
+			PUSH_ERROR_HANDLER(L);
+			lua_pushvalue(L, -2); // copy function
+			lua_pushstring(L, formname.c_str());
+			lua_pushlstring(L, current.data(), current.size());
+
+			if (lua_pcall(L, 2, 1, -4) == 0) {
+				if (lua_type(L, -1) == LUA_TSTRING)
+					current = lua_tostring(L, -1);
+				lua_pop(L, 1); // pop return value
+			} else {
+				lua_pop(L, 1); // pop error message
+			}
+			lua_pop(L, 1); // pop error handler
+		}
+		lua_pop(L, 1); // pop value (function or non-function)
 	}
-	return formspec;
+	lua_pop(L, 1); // pop table
+
+	return current;
 }
 
 void AlScriptApi::on_node_add(v3s16 pos, const MapNode &node)

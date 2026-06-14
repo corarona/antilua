@@ -1,39 +1,45 @@
--- Inventory: merged from invutil, inv_open, chest_stealer
-
 --
 -- AutoRefill & AutoEject (from invutil)
 --
 
-local etime = 0
-
-core.register_globalstep(function(dtime)
-	local player = core.localplayer
-	if not player then return end
-	local item = player:get_wielded_item()
-	local itemname = item:get_name()
-	local itemdef = core.get_item_def(itemname)
-	local wieldindex = player:get_wield_index()
-	etime = etime + dtime
-	if core.settings:get_bool("autorefill") and itemname ~= "" and itemdef and etime > 0.1 then
-		etime = 0
+ws.rg("AutoRefill", {
+	category = "Inventory",
+	setting = "autorefill",
+	description = "Auto-refill hotbar from inventory",
+	delay = 0.1,
+	on_step = function()
+		local player = core.localplayer
+		if not player then return end
+		local item = player:get_wielded_item()
+		local itemname = item:get_name()
+		if itemname == "" then return end
 		local space = item:get_free_space()
-		local i = core.find_item(item:get_name(), wieldindex + 1)
-		if i and space > 0 then
+		if space <= 0 then return end
+		local wieldindex = player:get_wield_index()
+		local i = core.find_item(itemname, wieldindex + 1)
+		if i then
 			ws.move_stack("current_player", "main", i, "current_player", "main", wieldindex, space)
 		end
-	end
-	if core.settings:get_bool("autoeject") then
+	end,
+})
+
+ws.rg("AutoEject", {
+	category = "Inventory",
+	setting = "autoeject",
+	description = "Auto-eject items from inventory",
+	on_step = function()
 		local invact = InventoryAction("drop")
 		local list = (core.settings:get("eject_items") or ""):split(",")
 		local inventory = core.get_inventory("current_player")
+		if not inventory or not inventory.main then return end
 		for index, stack in pairs(inventory.main) do
 			if table.indexof(list, stack:get_name()) ~= -1 then
 				invact:from("current_player", "main", index)
 				invact:apply()
 			end
 		end
-	end
-end)
+	end,
+})
 
 core.register_chatcommand("eject", {
 	params = "<item_string>",
@@ -43,9 +49,6 @@ core.register_chatcommand("eject", {
 		return true, "Eject items set to: " .. param
 	end,
 })
-
-core.register_cheat("AutoRefill", { category = "Inventory", setting = "autorefill", description = "Auto-refill hotbar from inventory" })
-core.register_cheat("AutoEject", { category = "Inventory", setting = "autoeject", description = "Auto-eject items from inventory" })
 
 --
 -- DumpFull (from invutil)
@@ -59,50 +62,6 @@ core.register_cheat("DumpFull", { category = "Inventory", description = "Dump en
 		ws.move_stack("current_player", "main", i, "nodemeta:"..pt.x..","..pt.y..","..pt.z, "main", i)
 	end
 end})
-
---
--- AutoBlock (from invutil)
---
-
-local blockable = { "default:diamond" }
-local blocks = { "default:diamondblock" }
-
-ws.rg("AutoBlock", {
-	category = "Inventory",
-	setting = "autoblock",
-	description = "Auto-select blocks for placement",
-	on_step = function()
-		local inv = core.get_inventory("current_player")
-		local item
-		local count = 0
-		local items = {}
-
-		for idx, it in pairs(inv.main) do
-			for _, b in pairs(blockable) do
-				if ((item and item == it:get_name()) or it:get_name() == b) and it:get_count() == it:get_stack_max() then
-					items[idx] = it
-					item = b
-					count = count + 1
-				end
-			end
-		end
-		if item and count >= 9 then
-			local cidx = 1
-			for idx, it in pairs(items) do
-				ws.move_stack("current_player", "main", idx, "current_player", "craft", cidx, it:get_count())
-				cidx = cidx + 1
-			end
-		end
-
-		local empty = ws.find_empty(inv.main)
-		if empty and inv.craftpreview[1]:get_name() == blocks[1] then
-			for _ = 1, inv.craft[1]:get_count() do
-				ws.move_stack("current_player", "craftpreview", 1, "current_player", "main", empty)
-			end
-		end
-	end,
-})
-
 --
 -- Crafting GUI (from inv_open)
 --
@@ -166,7 +125,7 @@ local function show_list_fs(param, ll, tab)
 	local theme_bg = core.settings:get("theme_bg") or "#121212"
 
 	local form_h = (tab == 0) and "12.425" or "13.5"
-	local fs = "formspec_version[6]size[11.75," .. form_h .. "]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
+	local fs = "formspec_version[10]size[11.75," .. form_h .. "]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
 		"tabheader[0,0;inv_tabs;Inventories,Nearby;" .. (tab + 1) .. "]" ..
 		"button[10.5," .. (tab == 0 and "11.5" or "12.5") .. ";1,0.8;close;Close]"
 
@@ -444,6 +403,28 @@ core.register_cheat("ChestStealer", {
 	setting = "chest_stealer",
 	description = "Auto-steal all items when opening a container",
 })
+
+--
+-- mcl_chests input slot injector
+--
+
+core.register_on_receiving_formspec(function(formname, formspec)
+	local x, y, z = formname:match("^mcl_chests:chest_(%-?%d+)_(%-?%d+)_(%-?%d+)$")
+	if not x then
+		return nil
+	end
+	local loc = "nodemeta:" .. x .. "," .. y .. "," .. z
+
+	local px, py = 0.3, 5
+	local inject = ws.get_itemslot_bg_v4(px, py, 1, 1) ..
+	"list[" .. loc .. ";input;"..px..","..py..";1,1;]"..
+	"label["..px..","..py..";Input]"
+	local modified = formspec..inject --formspec:gsub('(list%["' .. loc .. '";main;%d+,%d+;%d+,%d+;%d*%])', "%1" .. inject, 1)
+	if modified ~= formspec then
+		return modified
+	end
+	return nil
+end)
 
 --
 -- Auto-Torch
