@@ -65,6 +65,7 @@ or by setting their corresponding settings.
 | AttachmentFloat | `float_above_parent` | Float above boats/minecarts |
 | AutoHit | `autohit` | Auto-attack nearby entities |
 | Killaura | `killaura` | Attack all entities in range (special cheat, see Key Bindings) |
+| PatrolGuard | `patrolguard` | Bot that patrols and engages targets using killaura strategy |
 | Scaffold | `scaffold` | Auto-place blocks beneath your feet (special cheat, see Key Bindings) |
 
 ### Render

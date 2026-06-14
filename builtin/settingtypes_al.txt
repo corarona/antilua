@@ -12,6 +12,9 @@ float_above_parent (Float above parent) bool false
 #    Auto-attack nearby entities (players/mobs/all modes).
 killaura (Killaura) bool false
 
+#    PatrolGuard bot — patrol area and engage targets using killaura strategy.
+patrolguard (PatrolGuard) bool false
+
 #    Build/place blocks below the player automatically.
 scaffold (Scaffold) bool false
 

@@ -459,7 +459,8 @@ Additional cheats registered by client-side mods (ANTILUA modpack):
 
 | Category | Cheat | Setting | Provided by |
 |----------|-------|---------|-------------|
-| **Combat** | Killaura | `killaura` | `killaura` mod (key X) |
+| **Combat** | Killaura | `killaura` | `combat` mod (key X) |
+| **Bots** | PatrolGuard | `combat_bot` | `combat` mod |
 | **Movement** | AutoFsprint | `autoforwardsprint` | `basic_moves` mod |
 | | RhythmTP | `rhythmtp` | `rhythmtp` mod |
 | **Render** | AlwaysDay | `always_day` | `always_day` mod |

@@ -1,6 +1,6 @@
--- Tests for killaura mod
+-- Tests for combat mod (killaura + PatrolGuard)
 
-function test_killaura(T)
+function test_combat(T)
 	T.run("killaura cheat setting exists", function()
 		T.assert(core.settings:get("killaura") ~= nil)
 	end)
@@ -24,10 +24,10 @@ function test_killaura(T)
 
 	T.run("killaura.target_mode can be set and read", function()
 		local orig = core.settings:get("killaura.target_mode")
-		core.settings:set("killaura.target_mode", "mobs")
-		T.assert_eq(core.settings:get("killaura.target_mode"), "mobs",
+		core.settings:set("killaura.target_mode", "hunter")
+		T.assert_eq(core.settings:get("killaura.target_mode"), "hunter",
 			"target_mode should round-trip through settings")
-		core.settings:set("killaura.target_mode", orig or "players_enemies")
+		core.settings:set("killaura.target_mode", orig or "aggressive")
 	end)
 
 	T.run("killaura.punch_object exists", function()
@@ -58,8 +58,8 @@ function test_killaura(T)
 		T.assert(found, "Killaura found in Combat category")
 	end)
 
-	T.run("killaura.target_mode accepts all valid values", function()
-		local modes = {"players_enemies", "players_all", "mobs", "all"}
+	T.run("killaura.target_mode accepts new strategy values", function()
+		local modes = {"aggressive", "neutral", "retaliate", "guard", "hunter"}
 		for _, mode in ipairs(modes) do
 			core.settings:set("killaura.target_mode", mode)
 			local v = core.settings:get("killaura.target_mode")
@@ -82,4 +82,39 @@ function test_killaura(T)
 		core.settings:set("killaura.range", "10")
 	end)
 
+	T.run("killaura.make_filter exists", function()
+		T.assert(type(killaura.make_filter) == "function")
+		T.assert(type(killaura.make_filter("aggressive")) == "function")
+	end)
+
+	T.run("killaura.resolve_mode maps old names", function()
+		T.assert_eq(killaura.resolve_mode("players_enemies"), "neutral")
+		T.assert_eq(killaura.resolve_mode("players_all"), "aggressive")
+		T.assert_eq(killaura.resolve_mode("mobs"), "neutral")
+		T.assert_eq(killaura.resolve_mode("all"), "aggressive")
+		T.assert_eq(killaura.resolve_mode("aggressive"), "aggressive")
+		T.assert_eq(killaura.resolve_mode(nil), "aggressive")
+	end)
+
+	-- PatrolGuard tests are deferred because the bot is registered
+	-- in combat's on_mods_loaded callback (fires after al_test's)
+	T.defer("PatrolGuard bot registered", function()
+		T.assert(core.settings:get("patrolguard") ~= nil, "patrolguard setting exists")
+		local bots = core.cheats["Bots"]
+		if bots then
+			local found = false
+			for name, _ in pairs(bots) do
+				if name:lower() == "patrolguard" then
+					found = true
+					break
+				end
+			end
+			T.assert(found, "PatrolGuard found in Bots category")
+		end
+	end)
+
+	T.defer("patrolguard settings exist", function()
+		T.assert(core.settings:get("patrolguard.scan_range") ~= nil)
+		T.assert(core.settings:get("patrolguard.patrol_radius") ~= nil)
+	end)
 end
