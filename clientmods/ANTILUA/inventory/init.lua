@@ -405,28 +405,6 @@ core.register_cheat("ChestStealer", {
 })
 
 --
--- mcl_chests input slot injector
---
-
-core.register_on_receiving_formspec(function(formname, formspec)
-	local x, y, z = formname:match("^mcl_chests:chest_(%-?%d+)_(%-?%d+)_(%-?%d+)$")
-	if not x then
-		return nil
-	end
-	local loc = "nodemeta:" .. x .. "," .. y .. "," .. z
-
-	local px, py = 3, 0
-	local inject = ws.get_itemslot_bg_v4(px, py, 1, 1) ..
-	"list[" .. loc .. ";input;"..px..","..py..";1,1;]"..
-	"label["..px..","..py..";Input]"
-	local modified = formspec..inject --formspec:gsub('(list%["' .. loc .. '";main;%d+,%d+;%d+,%d+;%d*%])', "%1" .. inject, 1)
-	if modified ~= formspec then
-		return modified
-	end
-	return nil
-end)
-
---
 -- Auto-Torch
 --
 

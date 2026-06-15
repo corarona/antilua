@@ -1222,6 +1222,45 @@ if sbots and sbots.register_bot then
 		end,
 	})
 
+	register_strategy("random", {
+		find_target = function(nodes, pos, has_item, is_allowed)
+			local candidates = {}
+			for i, entry in ipairs(nodes) do
+				if is_allowed(entry.name) then
+					table.insert(candidates, i)
+				end
+			end
+			if #candidates == 0 then return nil end
+			return candidates[math.random(1, #candidates)]
+		end,
+		get_needed_items = function() return {} end,
+		batch_filter = function() return true end,
+	})
+
+	local function pick_random_block()
+		local inv = core.get_inventory("current_player")
+		if not inv or not inv.main then return nil end
+		local pool, total = {}, 0
+		for _, stack in ipairs(inv.main) do
+			if not stack:is_empty() then
+				local name = stack:get_name()
+				if core.get_node_def(name) then
+					local count = stack:get_count()
+					pool[name] = (pool[name] or 0) + count
+					total = total + count
+				end
+			end
+		end
+		if total == 0 then return nil end
+		local r = math.random(1, total)
+		local acc = 0
+		for name, count in pairs(pool) do
+			acc = acc + count
+			if r <= acc then return name end
+		end
+		return nil
+	end
+
 	sbots.register_bot("SchemBuilderBot", {
 		description = "Bot that builds schematics",
 		moving_target = true,
@@ -1230,7 +1269,7 @@ if sbots and sbots.register_bot then
 		cheat_settings = {
 			place_cooldown = { type = "number", default = 0.1, min = 0, max = 5 },
 			batch_size = { type = "number", default = 8, min = 1, max = 64 },
-			place_strategy = { type = "enum", default = "closest", values = {"closest", "layer", "top_to_bottom", "column", "by_material"} },
+			place_strategy = { type = "enum", default = "closest", values = {"closest", "layer", "top_to_bottom", "column", "by_material", "random"} },
 			filter_mode = { type = "string", default = "all" },
 			filter_list = { type = "string", default = "schembuilder" },
 		},
@@ -1336,12 +1375,14 @@ if sbots and sbots.register_bot then
 			local range = tonumber(core.settings:get("placelitem.range")) or 4
 			local strat_name = core.settings:get("schembuilderbot.place_strategy") or "closest"
 			local strat = strategies[strat_name] or strategies.closest
+			local is_random = strat_name == "random"
 			local px, py, pz = pos.x, pos.y, pos.z
 			local placed = 0
 
 			-- Place the primary target first
 			local target_entry = self._current_entry
-			if ws.place(target_entry, target_entry.name) then
+			local place_item = is_random and pick_random_block() or target_entry.name
+			if place_item and ws.place(target_entry, place_item) then
 				self._last_place_time = os.clock()
 				for i = #place_nodes, 1, -1 do
 					if place_nodes[i] == target_entry then
@@ -1352,7 +1393,7 @@ if sbots and sbots.register_bot then
 				placed = 1
 			else
 				local node = core.get_node_or_nil(target_entry)
-				if node and node.name == target_entry.name then
+				if node and (is_random and node.name ~= "air" or node.name == target_entry.name) then
 					for i = #place_nodes, 1, -1 do
 						if place_nodes[i] == target_entry then
 							table.remove(place_nodes, i)
@@ -1375,12 +1416,13 @@ if sbots and sbots.register_bot then
 							local dy = entry.y - py
 							local dz = entry.z - pz
 							if dx*dx + dy*dy + dz*dz <= range*range then
-								if ws.place(entry, entry.name) then
+								local batch_item = is_random and pick_random_block() or entry.name
+								if batch_item and ws.place(entry, batch_item) then
 									table.remove(place_nodes, i)
 									placed = placed + 1
 								else
 									local node = core.get_node_or_nil(entry)
-									if node and node.name == entry.name then
+									if node and (is_random and node.name ~= "air" or node.name == entry.name) then
 										table.remove(place_nodes, i)
 									end
 								end

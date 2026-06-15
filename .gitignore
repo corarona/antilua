@@ -145,3 +145,6 @@ lib/irrlichtmt
 client/mod_storage.sqlite
 client/mod_storage.sqlite-journal
 .opencode/
+
+# Private/undocumented client mods
+clientmods/ANTILUA/priv/
