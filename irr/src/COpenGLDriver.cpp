@@ -309,12 +309,22 @@ bool COpenGLDriver::updateVertexHardwareBuffer(SHWBufferLink_opengl *HWBuffer)
 	extGlBindBuffer(GL_ARRAY_BUFFER, HWBuffer->vbo_ID);
 
 	// copy data to graphics card
-	if (!newBuffer)
-		extGlBufferSubData(GL_ARRAY_BUFFER, 0, vertexCount * vertexSize, vbuf);
-	else {
+	if (!newBuffer && HWBuffer->vbo_Size == vertexCount * vertexSize) {
+		// Buffer size unchanged, update in-place.
+		// Use glBufferSubData on STREAM buffers to avoid Mesa warning.
+		// For other types, Mesa warns about glBufferSubData on STATIC_DRAW;
+		// use glBufferData (buffer orphaning) to suppress it and hint
+		// the driver that data will change.
+		GLenum usage = convertEHM(HWBuffer->Buffer->MappingHint);
+		if (usage == GL_STREAM_DRAW)
+			extGlBufferSubData(GL_ARRAY_BUFFER, 0, vertexCount * vertexSize, vbuf);
+		else
+			extGlBufferData(GL_ARRAY_BUFFER, vertexCount * vertexSize, vbuf, usage);
+	} else {
 		HWBuffer->vbo_Size = vertexCount * vertexSize;
 
-		extGlBufferData(GL_ARRAY_BUFFER, vertexCount * vertexSize, vbuf, convertEHM(HWBuffer->Buffer->MappingHint));
+		extGlBufferData(GL_ARRAY_BUFFER, vertexCount * vertexSize, vbuf,
+			convertEHM(HWBuffer->Buffer->MappingHint));
 	}
 
 	extGlBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -354,9 +364,13 @@ bool COpenGLDriver::updateIndexHardwareBuffer(SHWBufferLink_opengl *link)
 	extGlBindBuffer(GL_ELEMENT_ARRAY_BUFFER, link->vbo_ID);
 
 	// copy data to graphics card
-	if (!newBuffer)
-		extGlBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexCount * indexSize, indices);
-	else {
+	if (!newBuffer && link->vbo_Size == indexCount * indexSize) {
+		GLenum usage = convertEHM(ib->MappingHint);
+		if (usage == GL_STREAM_DRAW)
+			extGlBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indexCount * indexSize, indices);
+		else
+			extGlBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * indexSize, indices, usage);
+	} else {
 		link->vbo_Size = indexCount * indexSize;
 
 		extGlBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * indexSize, indices, convertEHM(ib->MappingHint));

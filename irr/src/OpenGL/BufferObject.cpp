@@ -26,8 +26,7 @@ void OGLBufferObject::upload(const void *data, size_t size, size_t offset,
 
 	GL.BindBuffer(m_target, m_name);
 
-	if (newBuffer) {
-		assert(offset == 0);
+	if (newBuffer || offset == 0) {
 		GL.BufferData(m_target, size, data, usage);
 		m_size = size;
 	} else {
