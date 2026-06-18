@@ -771,7 +771,9 @@ MapBlockMesh::MapBlockMesh(Client *client, MeshMakeData *data):
 
 		if (mesh) {
 			// Use VBO for mesh (this just would set this for every buffer)
-			mesh->setHardwareMappingHint(scene::EHM_STATIC);
+			// Use DYNAMIC hint when shaders disabled (FFP day/night anim updates per frame)
+			mesh->setHardwareMappingHint(data->m_use_shaders
+				? scene::EHM_STATIC : scene::EHM_DYNAMIC);
 		}
 	}
 

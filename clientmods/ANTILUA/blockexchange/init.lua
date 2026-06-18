@@ -404,7 +404,3 @@ core.register_chatcommand("bx_logout", {
 		return true, "Logged out."
 	end,
 })
-
-if not http_available then
-	core.log("warning", "[blockexchange] Offline mode — HTTP not available")
-end

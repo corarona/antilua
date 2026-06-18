@@ -283,6 +283,7 @@ end
 core.register_cheat("MakeBlocks", { category = "Inventory", func = ws.make_blocks, description = "Create a block of the selected node type" })
 
 -- Inventory dump via quint (extracted from emicor)
+local quint = rawget(_G, "quint")
 if quint then
 	function ws.invdump(src, dst)
 		local lp = ws.dircoord(0, 0, 0)

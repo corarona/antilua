@@ -53,10 +53,10 @@ std::string getSubgamePathEnv()
 {
 	static bool has_warned = false;
 
-	if (const char *path = getenv("ANTILUA_GAME_PATH"))
+	if (const char *path = getenv("ANTILUA_GAME_PATH"); path && *path)
 		return std::string(path);
 
-	if (const char *path = getenv("LUANTI_GAME_PATH")) {
+	if (const char *path = getenv("LUANTI_GAME_PATH"); path && *path) {
 		if (!has_warned) {
 			warningstream << "LUANTI_GAME_PATH is deprecated, use ANTILUA_GAME_PATH instead."
 				      << std::endl;
@@ -65,7 +65,7 @@ std::string getSubgamePathEnv()
 		return std::string(path);
 	}
 
-	if (const char *path = getenv("MINETEST_GAME_PATH")) {
+	if (const char *path = getenv("MINETEST_GAME_PATH"); path && *path) {
 		if (!has_warned) {
 			warningstream << "MINETEST_GAME_PATH is deprecated, use ANTILUA_GAME_PATH instead."
 				      << std::endl;
@@ -73,7 +73,7 @@ std::string getSubgamePathEnv()
 		}
 		return std::string(path);
 	}
-	if (const char *path = getenv("MINETEST_SUBGAME_PATH")) {
+	if (const char *path = getenv("MINETEST_SUBGAME_PATH"); path && *path) {
 		if (!has_warned) {
 			warningstream << "MINETEST_SUBGAME_PATH is deprecated, use ANTILUA_GAME_PATH instead."
 				      << std::endl;
@@ -88,10 +88,10 @@ std::string getWorldPathEnv()
 {
 	static bool has_warned = false;
 
-	if (const char *path = getenv("ANTILUA_WORLD_PATH"))
+	if (const char *path = getenv("ANTILUA_WORLD_PATH"); path && *path)
 		return std::string(path);
 
-	if (const char *path = getenv("LUANTI_WORLD_PATH")) {
+	if (const char *path = getenv("LUANTI_WORLD_PATH"); path && *path) {
 		if (!has_warned) {
 			warningstream << "LUANTI_WORLD_PATH is deprecated, use ANTILUA_WORLD_PATH instead."
 				      << std::endl;
@@ -100,7 +100,7 @@ std::string getWorldPathEnv()
 		return std::string(path);
 	}
 
-	if (const char *path = getenv("MINETEST_WORLD_PATH")) {
+	if (const char *path = getenv("MINETEST_WORLD_PATH"); path && *path) {
 		if (!has_warned) {
 			warningstream << "MINETEST_WORLD_PATH is deprecated, use ANTILUA_WORLD_PATH instead."
 				      << std::endl;
@@ -475,15 +475,15 @@ std::vector<std::string> getEnvModPaths()
 
 	std::vector<std::string> paths;
 	const char *c_mod_path = nullptr;
-	if ((c_mod_path = getenv("ANTILUA_MOD_PATH"))) {
+	if ((c_mod_path = getenv("ANTILUA_MOD_PATH")); c_mod_path && *c_mod_path) {
 		// no-op
-	} else if ((c_mod_path = getenv("LUANTI_MOD_PATH"))) {
+	} else if ((c_mod_path = getenv("LUANTI_MOD_PATH")); c_mod_path && *c_mod_path) {
 		if (!has_warned) {
 			warningstream << "LUANTI_MOD_PATH is deprecated, use ANTILUA_MOD_PATH instead."
 				      << std::endl;
 			has_warned = true;
 		}
-	} else if ((c_mod_path = getenv("MINETEST_MOD_PATH"))) {
+	} else if ((c_mod_path = getenv("MINETEST_MOD_PATH")); c_mod_path && *c_mod_path) {
 		if (!has_warned) {
 			warningstream << "MINETEST_MOD_PATH is deprecated, use ANTILUA_MOD_PATH instead."
 				      << std::endl;

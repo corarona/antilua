@@ -71,7 +71,7 @@ void TestServerModManager::runTests(IGameDef *gamedef)
 	TEST(testGetModNames);
 	TEST(testGetModMediaPathsWrongDir);
 	TEST(testGetModMediaPaths);
-	// TODO: test LUANTI_GAME_PATH
+	// TODO: test ANTILUA_GAME_PATH
 
 	unsetenv("LUANTI_MOD_PATH");
 }
@@ -114,7 +114,7 @@ void TestServerModManager::testGetMods()
 	UASSERTEQ(std::size_t, mods.size(), 36 + 1);
 
 	// Ensure we found basenodes mod (part of devtest)
-	// and test_mod (for testing MINETEST_MOD_PATH).
+	// and test_mod (for testing ANTILUA_MOD_PATH).
 	bool default_found = false;
 	bool test_mod_found = false;
 	for (const auto &m : mods) {
