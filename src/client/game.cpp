@@ -606,6 +606,34 @@ void Game::run()
 		}
 		updatePlayerControl(m_cam_view);
 
+		if (!m_is_paused) {
+			// Camera roll from keyboard input
+			bool roll_left = isKeyDown(KeyType::CAMERA_ROLL_LEFT);
+			bool roll_right = isKeyDown(KeyType::CAMERA_ROLL_RIGHT);
+			if (roll_left || roll_right) {
+				LocalPlayer *player = client->getEnv().getLocalPlayer();
+				f32 roll_speed = g_settings->getFloat("camera_roll_speed", 0.0f, 720.0f);
+				f32 roll_max = g_settings->getFloat("camera_roll_max", 0.0f, 360.0f);
+				f32 current_roll = player->getCameraRoll() * core::RADTODEG;
+				if (roll_left)
+					current_roll -= roll_speed * dtime;
+				if (roll_right)
+					current_roll += roll_speed * dtime;
+				if (roll_max >= 360.0f) {
+					// continuous rotation: wrap to [-180, 180) so it keeps spinning
+					current_roll = fmod(current_roll, 360.0f);
+					if (current_roll > 180.0f)
+						current_roll -= 360.0f;
+					if (current_roll <= -180.0f)
+						current_roll += 360.0f;
+				} else {
+					// limited lean: clamp
+					current_roll = rangelim(current_roll, -roll_max, roll_max);
+				}
+				player->setCameraRoll(current_roll * core::DEGTORAD);
+			}
+		}
+
 		updatePauseState();
 		if (m_is_paused)
 			dtime = 0.0f;

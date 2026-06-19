@@ -370,6 +370,46 @@ Response file format: first line is `ok` or `error`, followed by the result.
 | `src/client/client.cpp` | Init in `loadMods()`, poll in `step()` |
 | `src/defaultsettings.cpp` | `pipe_lua_enable`, `pipe_lua_path` defaults |
 
+## Camera Roll
+
+Adds camera roll support — rotating the camera around its look direction axis.
+Controllable via player keybindings (default: Q/E) and Lua API.
+
+Roll is stored on `LocalPlayer` (radians) and applied in `Camera::update()` by
+rotating the up vector around the camera direction via a quaternion. This
+produces a mathematically pure roll unaffected by pitch or yaw.
+
+### Key bindings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `keymap_camera_roll_left` | Q | Roll camera counterclockwise |
+| `keymap_camera_roll_right` | E | Roll camera clockwise |
+| `camera_roll_speed` | 90 | Degrees per second |
+| `camera_roll_max` | 180 | Maximum roll angle in degrees (set to 360 for full barrel roll) |
+
+Note: `keymap_drop` was unbound (was Q) and `keymap_aux1` moved to Left Ctrl
+(was E) to free Q/E for camera roll.
+
+### Lua API
+
+```lua
+core.localplayer:get_roll()       -- returns roll in radians
+core.localplayer:set_roll(0.5)    -- sets roll to 0.5 radians
+```
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/client/keys.h` | `CAMERA_ROLL_LEFT`, `CAMERA_ROLL_RIGHT` enum entries |
+| `src/client/inputhandler.cpp` | Key binding registration |
+| `src/defaultsettings.cpp` | Default settings for keys, speed, max |
+| `src/client/localplayer.h/cpp` | `m_camera_roll`, `setCameraRoll()`, `getCameraRoll()` |
+| `src/client/camera.cpp` | Up vector rotation in `Camera::update()` |
+| `src/client/game.cpp` | Keyboard roll input handling in main loop |
+| `src/script/lua_api/l_localplayer.h/cpp` | `get_roll()` / `set_roll()` Lua bindings |
+
 ## OpenGL Drivers
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.

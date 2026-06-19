@@ -156,6 +156,10 @@ public:
 	void setFreelookPitch(f32 pitch) { m_freelook_pitch = pitch; }
 	f32 getFreelookPitch() const { return m_freelook_pitch; }
 
+	// Camera roll (radians)
+	void setCameraRoll(f32 roll) { m_camera_roll = roll; }
+	f32 getCameraRoll() const { return m_camera_roll; }
+
 	inline void setPosition(const v3f &position)
 	{
 		m_position = position;
@@ -250,6 +254,7 @@ private:
 	f32 m_legit_pitch = 0.0f;
 	f32 m_freelook_yaw = 0.0f;
 	f32 m_freelook_pitch = 0.0f;
+	f32 m_camera_roll = 0.0f;
 	bool m_yaw_locked = false;
 	bool m_pitch_locked = false;
 

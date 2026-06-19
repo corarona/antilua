@@ -411,6 +411,16 @@ void Camera::update(LocalPlayer* player, f32 frametime, f32 tool_reload_ratio)
 	v3f abs_cam_up = m_headnode->getAbsoluteTransformation()
 			.rotateAndScaleVect(rel_cam_up);
 
+	// Apply camera roll: rotate up vector around look direction
+	f32 roll = player->getCameraRoll();
+	if (roll != 0.0f) {
+		core::vector3df axis = m_camera_direction;
+		axis.normalize();
+		core::quaternion q;
+		q.fromAngleAxis(roll, axis);
+		abs_cam_up = q * abs_cam_up;
+	}
+
 	// Reposition the camera for third person view
 	if (m_camera_mode > CAMERA_MODE_FIRST)
 	{

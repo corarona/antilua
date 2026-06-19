@@ -282,6 +282,23 @@ int LuaLocalPlayer::l_get_last_look_horizontal(lua_State *L)
 	return 1;
 }
 
+int LuaLocalPlayer::l_get_roll(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	lua_pushnumber(L, player->getCameraRoll());
+	return 1;
+}
+
+int LuaLocalPlayer::l_set_roll(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	if (lua_isnumber(L, 2)) {
+		f32 roll = lua_tonumber(L, 2);
+		player->setCameraRoll(roll);
+	}
+	return 0;
+}
+
 // get_control(self)
 int LuaLocalPlayer::l_get_control(lua_State *L)
 {
@@ -599,6 +616,8 @@ const luaL_Reg LuaLocalPlayer::methods[] = {
 		luamethod(LuaLocalPlayer, get_last_look_horizontal),
 		luamethod(LuaLocalPlayer, get_last_look_vertical),
 		//
+		luamethod(LuaLocalPlayer, get_roll),
+		luamethod(LuaLocalPlayer, set_roll),
 		luamethod(LuaLocalPlayer, get_control),
 		luamethod(LuaLocalPlayer, get_breath),
 		luamethod(LuaLocalPlayer, get_pos),

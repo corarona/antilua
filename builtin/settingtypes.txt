@@ -292,6 +292,10 @@ keymap_toggle_block_bounds (Toggle block bounds) key
 
 keymap_camera_mode (Toggle camera mode) key SYSTEM_SCANCODE_6
 
+keymap_camera_roll_left (Camera roll left) key SYSTEM_SCANCODE_20
+
+keymap_camera_roll_right (Camera roll right) key SYSTEM_SCANCODE_8
+
 keymap_increase_viewing_range_min (Increase view range) key SYSTEM_SCANCODE_46
 
 keymap_decrease_viewing_range_min (Decrease view range) key SYSTEM_SCANCODE_45
@@ -540,6 +544,12 @@ display_gamma (Light curve gamma) float 1.0 0.33 3.0
 #    setting is 0.25 to 4.0 inclusive. If the value is out of range it will be
 #    set to the nearest valid value.
 ambient_occlusion_gamma (Ambient occlusion gamma) float 1.8 0.25 4.0
+
+#    Camera roll rotation speed in degrees per second.
+camera_roll_speed (Camera roll speed) float 90.0 0.0 720.0
+
+#    Maximum camera roll angle in degrees. Set to 360 for full barrel roll.
+camera_roll_max (Camera roll max) float 180.0 0.0 360.0
 
 [**Screenshots]
 

@@ -85,6 +85,12 @@ private:
 	static int l_get_last_look_vertical(lua_State *L);
 	static int l_get_last_look_horizontal(lua_State *L);
 
+	// get_roll(self)
+	static int l_get_roll(lua_State *L);
+
+	// set_roll(self, roll)
+	static int l_set_roll(lua_State *L);
+
 	// get_control(self)
 	static int l_get_control(lua_State *L);
 
