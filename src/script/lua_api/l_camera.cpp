@@ -10,9 +10,20 @@
 #include "client/client.h"
 #include "client/localplayer.h"
 #include <ICameraSceneNode.h>
+#include <ISceneManager.h>
 
 LuaCamera::LuaCamera(Camera *m) : m_camera(m)
 {
+}
+
+LuaCamera::~LuaCamera()
+{
+	for (auto &entry : m_nametags) {
+		m_camera->removeNametag(entry.tag);
+		if (entry.node)
+			entry.node->remove();
+	}
+	m_nametags.clear();
 }
 
 void LuaCamera::create(lua_State *L, Camera *m)
@@ -151,6 +162,131 @@ int LuaCamera::l_get_aspect_ratio(lua_State *L)
 	return 1;
 }
 
+// add_nametag(self, {pos={...}, text="...", color=..., bgcolor=..., size=..., scale_z=...})
+int LuaCamera::l_add_nametag(lua_State *L)
+{
+	Camera *camera = getobject(L, 1);
+	LuaCamera *self = checkObject<LuaCamera>(L, 1);
+	if (!camera || !self)
+		return 0;
+
+	luaL_checktype(L, 2, LUA_TTABLE);
+
+	// Read required fields
+	lua_getfield(L, 2, "pos");
+	v3f pos = check_v3f(L, -1) * BS;
+	lua_pop(L, 1);
+
+	lua_getfield(L, 2, "text");
+	const char *text = luaL_checkstring(L, -1);
+	lua_pop(L, 1);
+
+	// Read optional fields
+	video::SColor textcolor(255, 255, 255, 255);
+	if (read_color(L, 2, &textcolor))
+		textcolor.setAlpha(255);
+
+	video::SColor bgcolor(0, 0, 0, 0);
+	bool has_bg = false;
+	{
+		video::SColor parsed;
+		if (read_color(L, 2, &parsed)) {
+			// Need to check if there's a color key in the table
+			lua_getfield(L, 2, "bgcolor");
+			if (!lua_isnil(L, -1)) {
+				has_bg = true;
+				bgcolor = parsed;
+				bgcolor.setAlpha(128);
+			}
+			lua_pop(L, 1);
+		}
+	}
+
+	u32 fontsize = 0;
+	bool has_fontsize = false;
+	lua_getfield(L, 2, "size");
+	if (lua_isnumber(L, -1)) {
+		fontsize = (u32)lua_tonumber(L, -1);
+		has_fontsize = true;
+	}
+	lua_pop(L, 1);
+
+	bool scale_z = false;
+	lua_getfield(L, 2, "scale_z");
+	if (lua_isboolean(L, -1))
+		scale_z = lua_toboolean(L, -1);
+	lua_pop(L, 1);
+
+	// Create scene node for the nametag
+	auto *smgr = getClient(L)->getSceneManager();
+	scene::ISceneNode *node = smgr->addEmptySceneNode(smgr->getRootSceneNode());
+	node->setPosition(pos);
+
+	// Build Nametag
+	Nametag ntag;
+	ntag.parent_node = node;
+	ntag.text = text ? text : "";
+	ntag.textcolor = textcolor;
+	if (has_bg)
+		ntag.bgcolor = bgcolor;
+	if (has_fontsize)
+		ntag.textsize = fontsize;
+	ntag.pos = v3f(0.0f);
+	ntag.scale_z = scale_z;
+
+	Nametag *tag = camera->addNametag(ntag);
+
+	// Store
+	u32 id = self->m_next_nametag_id++;
+	self->m_nametags.push_back({id, node, tag});
+
+	lua_pushinteger(L, (lua_Integer)id);
+	return 1;
+}
+
+// remove_nametag(self, id)
+int LuaCamera::l_remove_nametag(lua_State *L)
+{
+	Camera *camera = getobject(L, 1);
+	LuaCamera *self = checkObject<LuaCamera>(L, 1);
+	if (!camera || !self)
+		return 0;
+
+	u32 id = (u32)luaL_checkinteger(L, 2);
+
+	for (auto it = self->m_nametags.begin(); it != self->m_nametags.end(); ++it) {
+		if (it->id == id) {
+			camera->removeNametag(it->tag);
+			if (it->node)
+				it->node->remove();
+			self->m_nametags.erase(it);
+			lua_pushboolean(L, true);
+			return 1;
+		}
+	}
+
+	lua_pushboolean(L, false);
+	return 1;
+}
+
+// clear_nametags(self)
+int LuaCamera::l_clear_nametags(lua_State *L)
+{
+	Camera *camera = getobject(L, 1);
+	LuaCamera *self = checkObject<LuaCamera>(L, 1);
+	if (!camera || !self)
+		return 0;
+
+	for (auto &entry : self->m_nametags) {
+		camera->removeNametag(entry.tag);
+		if (entry.node)
+			entry.node->remove();
+	}
+	self->m_nametags.clear();
+
+	return 0;
+}
+
 Camera *LuaCamera::getobject(LuaCamera *ref)
 {
 	return ref->m_camera;
@@ -190,6 +326,10 @@ const luaL_Reg LuaCamera::methods[] = {
 	luamethod(LuaCamera, get_look_vertical),
 	luamethod(LuaCamera, get_look_horizontal),
 	luamethod(LuaCamera, get_aspect_ratio),
+
+	luamethod(LuaCamera, add_nametag),
+	luamethod(LuaCamera, remove_nametag),
+	luamethod(LuaCamera, clear_nametags),
 
 	{0, 0}
 };

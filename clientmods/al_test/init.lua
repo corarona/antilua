@@ -105,6 +105,7 @@ dofile(modpath .. "/test_nlist.lua")
 dofile(modpath .. "/test_tps_client.lua")
 dofile(modpath .. "/test_localplayer.lua")
 dofile(modpath .. "/test_sound.lua")
+dofile(modpath .. "/test_camera.lua")
 
 
 -- Run API/registration tests at mod load time
@@ -160,6 +161,7 @@ core.register_on_mods_loaded(function()
 	test_notification_api(al_test)
 	test_localplayer_extras(al_test)
 	test_sound_api(al_test)
+	test_camera_nametags(al_test)
 
 	-- Integration tests (deferred — register but don't run yet)
 	test_ws_rg_lifecycle(al_test)

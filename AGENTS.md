@@ -486,6 +486,38 @@ Additional read-only getters on `core.localplayer`:
 | `src/client/localplayer.cpp` | Added `setAutojump()` implementation |
 | `src/script/lua_api/l_localplayer.h/cpp` | 7 new Lua method bindings |
 
+## Camera Nametag API
+
+Adds world-space nametag support through `core.camera`. Nametags are
+rendered as 2D text projected from 3D positions (not billboards), following
+the same rendering pipeline as entity nametags.
+
+### Lua API
+
+```lua
+-- Add a nametag at a world position
+local id = core.camera:add_nametag({
+    pos = { x = 0, y = 10, z = 0 },
+    text = "Hello World",
+    color = "#FFFFFF",         -- optional: text color (default white)
+    bgcolor = "#000000",       -- optional: background color (default transparent)
+    size = 24,                 -- optional: font size (default 16)
+    scale_z = true,            -- optional: enable distance-based scaling
+})
+
+-- Remove by id
+local ok = core.camera:remove_nametag(id)
+
+-- Remove all
+core.camera:clear_nametags()
+```
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/script/lua_api/l_camera.h/cpp` | New Lua bindings: `add_nametag`, `remove_nametag`, `clear_nametags` |
+
 ## OpenGL Drivers
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
