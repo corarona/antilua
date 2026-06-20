@@ -42,6 +42,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_settings.h"
 #include "lua_api/l_http.h"
 #include "lua_api/l_vmanip.h"
+#include "lua_api/l_client_sound.h"
 
 ClientScripting::ClientScripting(Client *client):
 	ScriptApiBase(ScriptingType::Client)
@@ -101,6 +102,8 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModApiEnv::InitializeClient(L, top);
 	ModApiChannels::Initialize(L, top);
 	ModApiParticlesLocal::Initialize(L, top);
+	ModApiClientSound::Initialize(L, top);
+	ClientSoundHandle::Register(L);
 	init_raw_packet_api();
 }
 
