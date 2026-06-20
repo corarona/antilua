@@ -183,24 +183,20 @@ int LuaCamera::l_add_nametag(lua_State *L)
 
 	// Read optional fields
 	video::SColor textcolor(255, 255, 255, 255);
-	if (read_color(L, 2, &textcolor))
-		textcolor.setAlpha(255);
+	lua_getfield(L, 2, "color");
+	if (!lua_isnil(L, -1))
+		read_color(L, -1, &textcolor);
+	lua_pop(L, 1);
 
 	video::SColor bgcolor(0, 0, 0, 0);
 	bool has_bg = false;
-	{
-		video::SColor parsed;
-		if (read_color(L, 2, &parsed)) {
-			// Need to check if there's a color key in the table
-			lua_getfield(L, 2, "bgcolor");
-			if (!lua_isnil(L, -1)) {
-				has_bg = true;
-				bgcolor = parsed;
-				bgcolor.setAlpha(128);
-			}
-			lua_pop(L, 1);
-		}
+	lua_getfield(L, 2, "bgcolor");
+	if (!lua_isnil(L, -1)) {
+		has_bg = true;
+		bgcolor = video::SColor(128, 0, 0, 0);
+		read_color(L, -1, &bgcolor);
 	}
+	lua_pop(L, 1);
 
 	u32 fontsize = 0;
 	bool has_fontsize = false;
