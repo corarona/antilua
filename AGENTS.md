@@ -548,6 +548,59 @@ core.ui.minimap:clear_markers()
 | `src/client/minimap.cpp` | Marker projection in `updateActiveMarkers()`, colored dot draw in `drawMinimap()` |
 | `src/script/lua_api/l_minimap.h/cpp` | Lua bindings for `add_marker`, `remove_marker`, `clear_markers` |
 
+## Sky API
+
+Client-side access to the sky parameters via `core.sky`.
+
+```lua
+core.sky:set_sun_visible(true)
+core.sky:set_moon_visible(true)
+core.sky:set_stars_visible(true)
+core.sky:set_star_count(1000)
+core.sky:set_star_color("#FFFFFF")
+core.sky:set_star_scale(1.0)
+core.sky:set_sun_scale(1.0)
+core.sky:set_moon_scale(1.0)
+core.sky:set_body_orbit_tilt(23.5)
+core.sky:set_clouds_enabled(true)
+core.sky:set_fog_distance(100)
+core.sky:set_fog_start(0.5)
+core.sky:set_fog_color("#FFFFFF")
+
+local b = core.sky:get_brightness()
+local sun_dir = core.sky:get_sun_direction()
+local moon_dir = core.sky:get_moon_direction()
+local cloud_col = core.sky:get_cloud_color()
+```
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/script/lua_api/l_sky.h/cpp` | New Lua bindings for Sky |
+
+## Clouds API
+
+Client-side access to cloud parameters via `core.clouds`.
+
+```lua
+core.clouds:set_density(0.4)
+core.clouds:set_height(120)
+core.clouds:set_thickness(16)
+core.clouds:set_speed({ x = 0, z = -2 })
+core.clouds:set_color_bright("#FFFFFF")
+core.clouds:set_color_ambient("#000000")
+core.clouds:set_color_shadow("#CCCCCC")
+local c = core.clouds:get_color()
+local inside = core.clouds:is_camera_inside()
+```
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/script/lua_api/l_clouds.h/cpp` | New Lua bindings for Clouds |
+
 ## OpenGL Drivers
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.

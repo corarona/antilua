@@ -21,6 +21,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "scripting_client.h"
 #include "client/client.h"
 #include "client/game.h"
+#include "client/game_internal.h"
 #include "cpp_api/s_internal.h"
 #include "lua_api/l_client.h"
 #include "lua_api/l_clientobject.h"
@@ -43,6 +44,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_http.h"
 #include "lua_api/l_vmanip.h"
 #include "lua_api/l_client_sound.h"
+#include "lua_api/l_sky.h"
+#include "lua_api/l_clouds.h"
 
 ClientScripting::ClientScripting(Client *client):
 	ScriptApiBase(ScriptingType::Client)
@@ -87,6 +90,8 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	NodeMetaRef::RegisterClient(L);
 	LuaLocalPlayer::Register(L);
 	LuaCamera::Register(L);
+	LuaSky::Register(L);
+	LuaClouds::Register(L);
 	ModChannelRef::Register(L);
 	LuaSettings::Register(L);
 	ClientObjectRef::Register(L);
@@ -120,4 +125,6 @@ void ClientScripting::on_camera_ready(Camera *camera)
 void ClientScripting::on_minimap_ready(Minimap *minimap)
 {
 	LuaMinimap::create(getStack(), minimap);
+	LuaSky::create(getStack(), g_game->sky.get());
+	LuaClouds::create(getStack(), g_game->clouds.get());
 }
