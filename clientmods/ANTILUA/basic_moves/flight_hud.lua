@@ -138,7 +138,7 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		if not lp then return end
 
 		local pitch = -lp:get_pitch()  -- negative = looking up
-		local roll = tonumber(core.settings:get("flight_hud_roll")) or 0
+		local roll = lp:get_roll() and math.deg(lp:get_roll()) or 0
 
 		-- Indicator line: pitch down (positive) → moves UP
 		-- Indicator: move up/down with pitch, centered on horizon
