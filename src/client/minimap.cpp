@@ -669,6 +669,28 @@ void Minimap::drawMinimap(core::rect<s32> rect)
 		driver->draw2DImage(data->object_marker_red, dest_rect,
 			img_rect, &dest_rect, &c[0], true);
 	}
+
+	// Draw Lua markers as colored squares
+	s32 lua_size2 = 0.015f * (float)rect.getWidth();
+	for (auto &mp : m_active_lua_markers) {
+		v2f mpos = mp.second;
+		if (data->minimap_shape_round) {
+			f32 t1 = mpos.X * cos_angle - mpos.Y * sin_angle;
+			f32 t2 = mpos.X * sin_angle + mpos.Y * cos_angle;
+			mpos.X = t1;
+			mpos.Y = t2;
+		}
+		mpos.X = (mpos.X + 0.5f) * (float)rect.getWidth();
+		mpos.Y = (mpos.Y + 0.5f) * (float)rect.getHeight();
+		core::rect<s32> dest_rect(
+			s_pos.X + mpos.X - lua_size2,
+			s_pos.Y + mpos.Y - lua_size2,
+			s_pos.X + mpos.X + lua_size2,
+			s_pos.Y + mpos.Y + lua_size2);
+		video::SColor col = mp.first;
+		col.setAlpha(255);
+		driver->draw2DRectangle(col, dest_rect, &rect);
+	}
 }
 
 MinimapMarker *Minimap::addMarker(scene::ISceneNode *parent_node)
@@ -691,11 +713,34 @@ void Minimap::removeMarker(MinimapMarker **m)
 	m_markers.erase(it);
 }
 
+u32 Minimap::addLuaMarker(v3s16 world_pos, video::SColor color)
+{
+	u32 id = m_next_lua_marker_id++;
+	m_lua_markers.push_back({id, world_pos, color});
+	return id;
+}
+
+bool Minimap::removeLuaMarker(u32 id)
+{
+	auto it = std::find_if(m_lua_markers.begin(), m_lua_markers.end(),
+		[&] (const auto &m) { return m.id == id; });
+	if (it == m_lua_markers.end())
+		return false;
+	m_lua_markers.erase(it);
+	return true;
+}
+
+void Minimap::clearLuaMarkers()
+{
+	m_lua_markers.clear();
+}
+
 void Minimap::updateActiveMarkers()
 {
 	video::IImage *minimap_mask = getMinimapMask();
 
 	m_active_markers.clear();
+	m_active_lua_markers.clear();
 	v3f cam_offset = intToFloat(client->getCamera()->getOffset(), BS);
 	v3s16 pos_offset = data->pos - v3s16(data->mode.map_size / 2,
 			data->mode.scan_height / 2,
@@ -704,20 +749,33 @@ void Minimap::updateActiveMarkers()
 	for (auto &&marker : m_markers) {
 		v3s16 pos = floatToInt(marker->parent_node->getAbsolutePosition() +
 			cam_offset, BS) - pos_offset;
-		if (pos.X < 0 || pos.X > data->mode.map_size ||
-				pos.Y < 0 || pos.Y > data->mode.scan_height ||
-				pos.Z < 0 || pos.Z > data->mode.map_size) {
+		if (pos.X < 0 || pos.X > (s16)data->mode.map_size ||
+				pos.Y < 0 || pos.Y > (s16)data->mode.scan_height ||
+				pos.Z < 0 || pos.Z > (s16)data->mode.map_size)
 			continue;
-		}
 		pos.X = ((float)pos.X / data->mode.map_size) * MINIMAP_MAX_SX;
 		pos.Z = ((float)pos.Z / data->mode.map_size) * MINIMAP_MAX_SY;
 		const video::SColor &mask_col = minimap_mask->getPixel(pos.X, pos.Z);
-		if (!mask_col.getAlpha()) {
+		if (!mask_col.getAlpha())
 			continue;
-		}
-
 		m_active_markers.emplace_back(((float)pos.X / (float)MINIMAP_MAX_SX) - 0.5f,
 			(1.0f - (float)pos.Z / (float)MINIMAP_MAX_SY) - 0.5f);
+	}
+
+	for (auto &marker : m_lua_markers) {
+		v3s16 pos = marker.world_pos - pos_offset;
+		if (pos.X < 0 || pos.X > (s16)data->mode.map_size ||
+				pos.Y < 0 || pos.Y > (s16)data->mode.scan_height ||
+				pos.Z < 0 || pos.Z > (s16)data->mode.map_size)
+			continue;
+		pos.X = ((float)pos.X / data->mode.map_size) * MINIMAP_MAX_SX;
+		pos.Z = ((float)pos.Z / data->mode.map_size) * MINIMAP_MAX_SY;
+		const video::SColor &mask_col = minimap_mask->getPixel(pos.X, pos.Z);
+		if (!mask_col.getAlpha())
+			continue;
+		m_active_lua_markers.emplace_back(marker.color, v2f(
+			((float)pos.X / (float)MINIMAP_MAX_SX) - 0.5f,
+			(1.0f - (float)pos.Z / (float)MINIMAP_MAX_SY) - 0.5f));
 	}
 }
 

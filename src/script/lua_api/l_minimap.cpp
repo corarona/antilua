@@ -143,6 +143,52 @@ int LuaMinimap::l_hide(lua_State *L)
 	return 1;
 }
 
+// add_marker(self, {pos={...}, color=...})
+int LuaMinimap::l_add_marker(lua_State *L)
+{
+	LuaMinimap *ref = checkObject<LuaMinimap>(L, 1);
+	Minimap *m = getobject(ref);
+
+	luaL_checktype(L, 2, LUA_TTABLE);
+
+	lua_getfield(L, 2, "pos");
+	v3f posf = check_v3f(L, -1);
+	lua_pop(L, 1);
+	v3s16 pos = floatToInt(posf, BS);
+
+	video::SColor color(255, 255, 0, 0);
+	lua_getfield(L, 2, "color");
+	if (lua_isstring(L, -1))
+		read_color(L, -1, &color);
+	lua_pop(L, 1);
+
+	u32 id = m->addLuaMarker(pos, color);
+	lua_pushinteger(L, (lua_Integer)id);
+	return 1;
+}
+
+// remove_marker(self, id)
+int LuaMinimap::l_remove_marker(lua_State *L)
+{
+	LuaMinimap *ref = checkObject<LuaMinimap>(L, 1);
+	Minimap *m = getobject(ref);
+
+	u32 id = (u32)luaL_checkinteger(L, 2);
+	bool ok = m->removeLuaMarker(id);
+	lua_pushboolean(L, ok);
+	return 1;
+}
+
+// clear_markers(self)
+int LuaMinimap::l_clear_markers(lua_State *L)
+{
+	LuaMinimap *ref = checkObject<LuaMinimap>(L, 1);
+	Minimap *m = getobject(ref);
+
+	m->clearLuaMarkers();
+	return 0;
+}
+
 Minimap* LuaMinimap::getobject(LuaMinimap *ref)
 {
 	return ref->m_minimap;
@@ -175,5 +221,8 @@ const luaL_Reg LuaMinimap::methods[] = {
 	luamethod(LuaMinimap, set_mode),
 	luamethod(LuaMinimap, set_shape),
 	luamethod(LuaMinimap, get_shape),
+	luamethod(LuaMinimap, add_marker),
+	luamethod(LuaMinimap, remove_marker),
+	luamethod(LuaMinimap, clear_markers),
 	{0,0}
 };

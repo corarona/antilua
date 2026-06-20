@@ -31,6 +31,11 @@ private:
 	static int l_set_shape(lua_State *L);
 	static int l_get_shape(lua_State *L);
 
+	// Marker API
+	static int l_add_marker(lua_State *L);
+	static int l_remove_marker(lua_State *L);
+	static int l_clear_markers(lua_State *L);
+
 	Minimap *m_minimap = nullptr;
 
 public:

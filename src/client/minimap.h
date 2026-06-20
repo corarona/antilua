@@ -58,6 +58,12 @@ struct MinimapMarker {
 	scene::ISceneNode *parent_node;
 };
 
+struct MinimapLuaMarker {
+	u32 id;
+	v3s16 world_pos;
+	video::SColor color;
+};
+
 struct MinimapPixel {
 	//! The topmost node that the minimap displays.
 	MapNode n;
@@ -156,6 +162,10 @@ public:
 	MinimapMarker* addMarker(scene::ISceneNode *parent_node);
 	void removeMarker(MinimapMarker **marker);
 
+	u32 addLuaMarker(v3s16 world_pos, video::SColor color);
+	bool removeLuaMarker(u32 id);
+	void clearLuaMarkers();
+
 	void updateActiveMarkers();
 	void drawMinimap(core::rect<s32> rect);
 
@@ -177,4 +187,7 @@ private:
 	std::mutex m_mutex;
 	std::vector<std::unique_ptr<MinimapMarker>> m_markers;
 	std::vector<v2f> m_active_markers;
+	std::vector<MinimapLuaMarker> m_lua_markers;
+	std::vector<std::pair<video::SColor, v2f>> m_active_lua_markers;
+	u32 m_next_lua_marker_id = 1;
 };

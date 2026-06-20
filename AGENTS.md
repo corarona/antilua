@@ -518,6 +518,36 @@ core.camera:clear_nametags()
 |------|--------|
 | `src/script/lua_api/l_camera.h/cpp` | New Lua bindings: `add_nametag`, `remove_nametag`, `clear_nametags` |
 
+## Minimap Marker API
+
+Adds world-position markers rendered on the minimap surface. Markers are
+drawn as colored dots on the minimap overlay, using the same projection
+math as entity markers (`object_marker_red.png`).
+
+### Lua API
+
+```lua
+-- Add a marker at a world position (returns numeric id)
+local id = core.ui.minimap:add_marker({
+    pos = { x = 0, y = 10, z = 0 },
+    color = "#FF0000",      -- optional: CSS color string (default red)
+})
+
+-- Remove by id
+local ok = core.ui.minimap:remove_marker(id)
+
+-- Remove all
+core.ui.minimap:clear_markers()
+```
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/client/minimap.h` | `MinimapLuaMarker` struct, `addLuaMarker`/`removeLuaMarker`/`clearLuaMarkers` |
+| `src/client/minimap.cpp` | Marker projection in `updateActiveMarkers()`, colored dot draw in `drawMinimap()` |
+| `src/script/lua_api/l_minimap.h/cpp` | Lua bindings for `add_marker`, `remove_marker`, `clear_markers` |
+
 ## OpenGL Drivers
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
