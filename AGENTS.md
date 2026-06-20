@@ -410,6 +410,82 @@ core.localplayer:set_roll(0.5)    -- sets roll to 0.5 radians
 | `src/client/game.cpp` | Keyboard roll input handling in main loop |
 | `src/script/lua_api/l_localplayer.h/cpp` | `get_roll()` / `set_roll()` Lua bindings |
 
+## Pitch Wraparound
+
+Allows the camera pitch to pass beyond ±90° instead of clamping, enabling
+loopings and inverted flight. Controlled by the `pitch_wraparound` setting.
+
+When enabled, pitch is wrapped to [-180, 180] via `wrapDegrees_180()` instead
+of clamped. The camera head node and airplane forward vector already handle
+arbitrary pitch values, so this is the only change needed.
+
+### Setting
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `pitch_wraparound` | false | Allow pitch to wrap past ±90° for loopings |
+
+### Known limitations
+
+Brief gimbal lock if looking exactly straight up/down with zero camera roll.
+In airplane mode with bank, the up vector is not parallel to the direction
+so this doesn't occur.
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/client/game.cpp` | Conditional wrap vs clamp in `updateCameraOrientation()` |
+
+## Sound API
+
+The `core.sound_play()` function is now wired up (was a dead stub). It returns a
+`ClientSoundHandle` userdata object with `:stop()` and `:fade()` methods.
+
+```lua
+local handle = core.sound_play({ name = "my_sound.ogg" }, { gain = 0.5, loop = false })
+handle:stop()
+handle:fade(-1, 0)   -- fade out over 1 second
+```
+
+Positional sound:
+```lua
+core.sound_play({ name = "explode.ogg" }, { gain = 1.0, pos = { x = 0, y = 10, z = 0 } })
+```
+
+The underlying `ISoundManager`/`DummySoundManager`/OpenAL pipeline was already
+functional — `ModApiClientSound::Initialize()` and `ClientSoundHandle::Register()`
+just needed to be called from `scripting_client.cpp`.
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/script/scripting_client.cpp` | +2 lines to register `ModApiClientSound` + `ClientSoundHandle` |
+| `src/script/lua_api/l_client_sound.h/cpp` | Existing code, previously unregistered |
+
+## LocalPlayer Physics Extras
+
+Additional read-only getters on `core.localplayer`:
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `get_collisionbox()` | array `[minX, minY, minZ, maxX, maxY, maxZ]` | Player collision bounding box (in BS) |
+| `get_eye_offset()` | `{x, y, z}` vector | Camera eye offset from player position (BS) |
+| `get_standing_node()` | `{x, y, z}` or nil | Position of node under the player's feet |
+| `get_gravity()` | number | Current effective downward acceleration (BS/s²) |
+| `can_jump()` | boolean | Whether the player can initiate a jump this frame |
+| `get_autojump()` | boolean | Current autojump state |
+| `set_autojump(bool)` | nil | Enable/disable autojump |
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/client/localplayer.h` | Added `getStandingNode()`, `canJump()`, `setAutojump()` |
+| `src/client/localplayer.cpp` | Added `setAutojump()` implementation |
+| `src/script/lua_api/l_localplayer.h/cpp` | 7 new Lua method bindings |
+
 ## OpenGL Drivers
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.
