@@ -222,6 +222,10 @@ public:
 	void setZoomFOV(float zoom_fov) { m_zoom_fov = zoom_fov; }
 
 	bool getAutojump() const { return m_autojump; }
+	void setAutojump(bool autojump);
+
+	bool canJump() const { return m_can_jump; }
+	v3s16 getStandingNode() const { return m_standing_node; }
 
 	bool isDead() const;
 

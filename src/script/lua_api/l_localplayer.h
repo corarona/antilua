@@ -131,6 +131,15 @@ private:
 	// get_object(self)
 	static int l_get_object(lua_State *L);
 
+	// Physics extras
+	static int l_get_collisionbox(lua_State *L);
+	static int l_get_eye_offset(lua_State *L);
+	static int l_get_standing_node(lua_State *L);
+	static int l_get_gravity(lua_State *L);
+	static int l_can_jump(lua_State *L);
+	static int l_get_autojump(lua_State *L);
+	static int l_set_autojump(lua_State *L);
+
 	LocalPlayer *m_localplayer = nullptr;
 
 public:

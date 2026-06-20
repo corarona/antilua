@@ -532,6 +532,63 @@ int LuaLocalPlayer::l_get_hotbar_size(lua_State *L)
 	return 1;
 }
 
+// get_collisionbox(self)
+int LuaLocalPlayer::l_get_collisionbox(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	push_aabb3f(L, player->getCollisionbox(), BS);
+	return 1;
+}
+
+// get_eye_offset(self)
+int LuaLocalPlayer::l_get_eye_offset(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	push_v3f(L, player->getEyeOffset() / BS);
+	return 1;
+}
+
+// get_standing_node(self)
+int LuaLocalPlayer::l_get_standing_node(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	push_v3s16(L, player->getStandingNode());
+	return 1;
+}
+
+// get_gravity(self)
+int LuaLocalPlayer::l_get_gravity(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	lua_pushnumber(L, player->gravity);
+	return 1;
+}
+
+// can_jump(self)
+int LuaLocalPlayer::l_can_jump(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	lua_pushboolean(L, player->canJump());
+	return 1;
+}
+
+// get_autojump(self)
+int LuaLocalPlayer::l_get_autojump(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	lua_pushboolean(L, player->getAutojump());
+	return 1;
+}
+
+// set_autojump(self, enabled)
+int LuaLocalPlayer::l_set_autojump(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	if (lua_isboolean(L, 2))
+		player->setAutojump(lua_toboolean(L, 2));
+	return 0;
+}
+
 LuaLocalPlayer *LuaLocalPlayer::checkobject(lua_State *L, int narg)
 {
 	luaL_checktype(L, narg, LUA_TUSERDATA);
@@ -632,8 +689,16 @@ const luaL_Reg LuaLocalPlayer::methods[] = {
 		luamethod(LuaLocalPlayer, hud_get),
 		luamethod(LuaLocalPlayer, get_object),
 		luamethod(LuaLocalPlayer, get_hotbar_size),
-
 		luamethod(LuaLocalPlayer, get_move_resistance),
+
+		luamethod(LuaLocalPlayer, get_collisionbox),
+		luamethod(LuaLocalPlayer, get_eye_offset),
+		luamethod(LuaLocalPlayer, get_standing_node),
+		luamethod(LuaLocalPlayer, get_gravity),
+		luamethod(LuaLocalPlayer, can_jump),
+		luamethod(LuaLocalPlayer, get_autojump),
+		luamethod(LuaLocalPlayer, set_autojump),
+
 
 		{0, 0}
 };

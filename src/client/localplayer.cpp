@@ -1380,3 +1380,9 @@ void LocalPlayer::handleAutojump(f32 dtime, Environment *env,
 		m_autojump_time = 0.1f;
 	}
 }
+
+void LocalPlayer::setAutojump(bool autojump)
+{
+	m_autojump = autojump;
+	m_autojump_time = autojump ? 0.1f : 0.0f;
+}
