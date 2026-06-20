@@ -7,6 +7,8 @@ features, and quality-of-life improvements.
 
 **For the upstream Luanti README, see [LUANTI_README.md](LUANTI_README.md).**
 
+Antilua discord: https://discord.gg/ggvzuXn36c
+
 ---
 
 ## Build
