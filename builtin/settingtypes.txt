@@ -551,6 +551,11 @@ camera_roll_speed (Camera roll speed) float 90.0 0.0 720.0
 #    Maximum camera roll angle in degrees. Set to 360 for full barrel roll.
 camera_roll_max (Camera roll max) float 180.0 0.0 360.0
 
+#    Allow pitch to wrap past ±90° instead of clamping. Enables loopings
+#    and inverted flight by allowing the camera to rotate continuously
+#    through the vertical. Works in all movement modes.
+pitch_wraparound (Pitch wraparound) bool false
+
 [**Screenshots]
 
 #    Path to save screenshots at. Can be an absolute or relative path.

@@ -378,6 +378,7 @@ void set_default_settings()
 	settings->setDefault("view_bobbing_amount", "1.0");
 	settings->setDefault("camera_roll_speed", "90.0");
 	settings->setDefault("camera_roll_max", "180.0");
+	settings->setDefault("pitch_wraparound", "false");
 	settings->setDefault("enable_3d_clouds", "true");
 	settings->setDefault("soft_clouds", "false");
 	settings->setDefault("cloud_radius", "12");
