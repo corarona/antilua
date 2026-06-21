@@ -58,6 +58,9 @@ bool on_open_nodemeta_form(Client *client, v3s16 pos,
 
 void on_death(Client *client);
 
+bool on_object_add(Client *client, u16 id);
+void on_object_hp_change(Client *client, u16 id, u16 hp);
+void on_object_properties_change(Client *client, u16 id);
 
 void on_hp_change(Client *client, u16 hp);
 

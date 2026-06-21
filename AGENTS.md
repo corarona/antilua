@@ -601,6 +601,13 @@ local inside = core.clouds:is_camera_inside()
 |------|--------|
 | `src/script/lua_api/l_clouds.h/cpp` | New Lua bindings for Clouds |
 
+## Commit conventions
+
+Each feature or callback addition must be an **atomic commit** — one commit per logical change, never mixing unrelated work. A commit should:
+- Touch only files related to that single change
+- Compile and run independently (no half-finished state)
+- Have a concise message matching the repo style
+
 ## OpenGL Drivers
 
 - **EDT_OPENGL3** (`irr/src/OpenGL/` + `irr/src/OpenGL3/`): Modern driver using `COpenGL3DriverBase`, requires OpenGL 3.2 compat profile. Zero fixed-function code — every material type uses GLSL shaders.

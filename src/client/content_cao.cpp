@@ -24,6 +24,7 @@
 #include "collision.h"
 #include "content_cso.h"
 #include "clientobject.h"
+#include "client/al_hooks.h"
 #include "environment.h"
 #include "itemdef.h"
 #include "localplayer.h"
@@ -1652,6 +1653,9 @@ void GenericCAO::processMessage(const std::string &data)
 			updateNametag();
 			updateMarker();
 		}
+
+		if (m_client)
+			AlClientHooks::on_object_properties_change(m_client, m_id);
 	} else if (cmd == AO_CMD_UPDATE_POSITION) {
 		// Not sent by the server if this object is an attachment.
 		// We might however get here if the server notices the object being detached before the client.
@@ -1845,6 +1849,9 @@ void GenericCAO::processMessage(const std::string &data)
 		s32 damage = (s32)m_hp - (s32)result_hp;
 
 		m_hp = result_hp;
+
+		if (m_client)
+			AlClientHooks::on_object_hp_change(m_client, m_id, m_hp);
 
 		if (m_is_local_player)
 			m_env->getLocalPlayer()->hp = m_hp;

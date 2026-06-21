@@ -479,6 +479,8 @@ void Client::handleCommand_ActiveObjectRemoveAdd(NetworkPacket* pkt)
 		for (u16 i = 0; i < added_count; i++) {
 			*pkt >> id >> type;
 			m_env.addActiveObject(id, type, pkt->readLongString());
+			if (modsLoaded())
+				AlClientHooks::on_object_add(this, id);
 		}
 	} while (0);
 

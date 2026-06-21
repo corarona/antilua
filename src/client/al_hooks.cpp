@@ -100,6 +100,25 @@ void on_death(Client *client)
 }
 
 
+bool on_object_add(Client *client, u16 id)
+{
+	if (client->modsLoaded())
+		return client->getScript()->on_object_add(id);
+	return false;
+}
+
+void on_object_hp_change(Client *client, u16 id, u16 hp)
+{
+	if (client->modsLoaded())
+		client->getScript()->on_object_hp_change(id, hp);
+}
+
+void on_object_properties_change(Client *client, u16 id)
+{
+	if (client->modsLoaded())
+		client->getScript()->on_object_properties_change(id);
+}
+
 void on_hp_change(Client *client, u16 hp)
 {
 	if (client->modsLoaded())
