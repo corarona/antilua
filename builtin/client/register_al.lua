@@ -37,6 +37,9 @@ core.registered_on_delete_particlespawner, core.register_on_delete_particlespawn
 -- Phase 1e: Inventory notification
 core.registered_on_inventory_update, core.register_on_inventory_update = make_al_registration()
 
+-- Phase 1f: Nodemetadata notification
+core.registered_on_nodemetadata_change, core.register_on_nodemetadata_change = make_al_registration()
+
 -- Phase 2: Interception callbacks
 core.registered_on_receiving_formspec, core.register_on_receiving_formspec = make_al_registration()
 core.registered_on_node_add, core.register_on_node_add = make_al_registration()

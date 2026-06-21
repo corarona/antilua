@@ -127,6 +127,13 @@ void on_inventory_update(Client *client)
 		client->getScript()->on_inventory_update();
 }
 
+void on_nodemetadata_change(Client *client,
+		const std::vector<v3s16> &positions)
+{
+	if (client->modsLoaded())
+		client->getScript()->on_nodemetadata_change(positions);
+}
+
 bool on_object_add(Client *client, u16 id)
 {
 	if (client->modsLoaded())

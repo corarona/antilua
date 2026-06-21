@@ -142,6 +142,26 @@ void AlScriptApi::on_inventory_update()
 	}
 }
 
+void AlScriptApi::on_nodemetadata_change(const std::vector<v3s16> &positions)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_nodemetadata_change");
+
+	lua_newtable(L);
+	int idx = 1;
+	for (const auto &pos : positions) {
+		push_v3s16(L, pos);
+		lua_rawseti(L, -2, idx++);
+	}
+	try {
+		runCallbacks(1, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+}
+
 bool AlScriptApi::on_spawn_particle(const ParticleParameters &p)
 {
 	SCRIPTAPI_PRECHECKHEADER

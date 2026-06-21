@@ -62,6 +62,9 @@ public:
 	// Phase 1e: Inventory notification
 	void on_inventory_update();
 
+	// Phase 1f: Nodemetadata notification
+	void on_nodemetadata_change(const std::vector<v3s16> &positions);
+
 	// Phase 2: New interception callbacks
 	std::string on_receiving_formspec(const std::string &formname,
 			const std::string &formspec);
