@@ -286,14 +286,29 @@ void Client::handleCommand_NodemetaChanged(NetworkPacket *pkt)
 
 	Map &map = m_env.getMap();
 
-	std::vector<v3s16> updated_positions;
+	std::vector<NodeMetaChange> changes;
 	for (auto i = meta_updates_list.begin();
 			i != meta_updates_list.end(); ++i) {
 		v3s16 pos = i->first;
 
-		if (map.isValidPosition(pos) &&
-				map.setNodeMetadata(pos, i->second)) {
-			updated_positions.push_back(pos);
+		if (!map.isValidPosition(pos)) {
+			delete i->second;
+			continue;
+		}
+
+		NodeMetaChange change;
+		change.pos = pos;
+
+		// Read old strings before replacement
+		NodeMetadata *old_meta = map.getNodeMetadata(pos);
+		if (old_meta)
+			old_meta->getStrings(&change.old_strings);
+
+		// Read new strings from the incoming metadata
+		i->second->getStrings(&change.new_strings);
+
+		if (map.setNodeMetadata(pos, i->second)) {
+			changes.push_back(std::move(change));
 			continue; // Prevent from deleting metadata
 		}
 
@@ -301,8 +316,8 @@ void Client::handleCommand_NodemetaChanged(NetworkPacket *pkt)
 		delete i->second;
 	}
 
-	if (modsLoaded() && !updated_positions.empty())
-		AlClientHooks::on_nodemetadata_change(this, updated_positions);
+	if (modsLoaded() && !changes.empty())
+		AlClientHooks::on_nodemetadata_change(this, changes);
 }
 
 void Client::handleCommand_BlockData(NetworkPacket* pkt)

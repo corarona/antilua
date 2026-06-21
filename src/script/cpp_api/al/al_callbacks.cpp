@@ -183,7 +183,16 @@ void AlScriptApi::on_inventory_update()
 	}
 }
 
-void AlScriptApi::on_nodemetadata_change(const std::vector<v3s16> &positions)
+static void push_stringmap(lua_State *L, const StringMap &map)
+{
+	lua_newtable(L);
+	for (const auto &[key, val] : map) {
+		lua_pushstring(L, val.c_str());
+		lua_setfield(L, -2, key.c_str());
+	}
+}
+
+void AlScriptApi::on_nodemetadata_change(const std::vector<NodeMetaChange> &changes)
 {
 	SCRIPTAPI_PRECHECKHEADER
 
@@ -192,8 +201,18 @@ void AlScriptApi::on_nodemetadata_change(const std::vector<v3s16> &positions)
 
 	lua_newtable(L);
 	int idx = 1;
-	for (const auto &pos : positions) {
-		push_v3s16(L, pos);
+	for (const auto &change : changes) {
+		lua_newtable(L);
+
+		push_v3s16(L, change.pos);
+		lua_setfield(L, -2, "pos");
+
+		push_stringmap(L, change.old_strings);
+		lua_setfield(L, -2, "old");
+
+		push_stringmap(L, change.new_strings);
+		lua_setfield(L, -2, "new");
+
 		lua_rawseti(L, -2, idx++);
 	}
 	try {

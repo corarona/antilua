@@ -20,6 +20,12 @@ struct Lighting;
 enum class SoundLocation : u8;
 enum HudElementStat : u8;
 
+struct NodeMetaChange {
+	v3s16 pos;
+	StringMap old_strings;
+	StringMap new_strings;
+};
+
 struct RawPacketHookResult
 {
 	bool drop = false;
@@ -65,7 +71,7 @@ bool on_fade_sound(Client *client, s32 sound_id, float step, float gain);
 
 void on_inventory_update(Client *client);
 void on_nodemetadata_change(Client *client,
-		const std::vector<v3s16> &positions);
+		const std::vector<NodeMetaChange> &changes);
 void on_sky_changed(Client *client);
 void on_clouds_changed(Client *client);
 void on_hud_flags_changed(Client *client);

@@ -1,6 +1,6 @@
 -- SkyLocker: lock sky/cloud parameters when server changes them
 
-core.register_on_sky_changed(function()
+local function apply_sky_lock()
 	if not core.settings:get_bool("skylocker") then
 		return
 	end
@@ -21,9 +21,9 @@ core.register_on_sky_changed(function()
 		core.sky:set_fog_distance(tonumber(core.settings:get("skylocker.fog_distance")) or 100)
 		core.sky:set_fog_color(core.settings:get("skylocker.fog_color") or "#808080")
 	end
-end)
+end
 
-core.register_on_clouds_changed(function()
+local function apply_cloud_lock()
 	if not core.settings:get_bool("skylocker") then
 		return
 	end
@@ -32,6 +32,16 @@ core.register_on_clouds_changed(function()
 		core.clouds:set_height(tonumber(core.settings:get("skylocker.cloud_height")) or 120)
 		core.clouds:set_thickness(tonumber(core.settings:get("skylocker.cloud_thickness")) or 16)
 	end
+end
+
+-- Defer to next frame so the CE_SET_SKY/CE_CLOUD_PARAMS events
+-- are processed before we re-apply user preferences.
+core.register_on_sky_changed(function()
+	core.after(0, apply_sky_lock)
+end)
+
+core.register_on_clouds_changed(function()
+	core.after(0, apply_cloud_lock)
 end)
 
 core.register_cheat({ name = "SkyLocker", category = "Render",

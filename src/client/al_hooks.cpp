@@ -128,10 +128,10 @@ void on_inventory_update(Client *client)
 }
 
 void on_nodemetadata_change(Client *client,
-		const std::vector<v3s16> &positions)
+		const std::vector<NodeMetaChange> &changes)
 {
 	if (client->modsLoaded())
-		client->getScript()->on_nodemetadata_change(positions);
+		client->getScript()->on_nodemetadata_change(changes);
 }
 
 void on_sky_changed(Client *client)

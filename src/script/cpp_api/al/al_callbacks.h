@@ -63,7 +63,7 @@ public:
 	void on_inventory_update();
 
 	// Phase 1f: Nodemetadata notification
-	void on_nodemetadata_change(const std::vector<v3s16> &positions);
+	void on_nodemetadata_change(const std::vector<NodeMetaChange> &changes);
 
 	// Phase 1g: Sky and cloud notifications
 	void on_sky_changed();
