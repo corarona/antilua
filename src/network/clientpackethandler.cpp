@@ -1427,6 +1427,9 @@ void Client::handleCommand_HudSetFlags(NetworkPacket* pkt)
 	}
 	// <--
 	// End of 'not so satifying code'
+
+	if (modsLoaded())
+		AlClientHooks::on_hud_flags_changed(this);
 }
 
 void Client::handleCommand_HudSetParam(NetworkPacket* pkt)
@@ -1449,6 +1452,9 @@ void Client::handleCommand_HudSetParam(NetworkPacket* pkt)
 	else if (param == HUD_PARAM_HOTBAR_SELECTED_IMAGE) {
 		player->hotbar_selected_image = value;
 	}
+
+	if (modsLoaded())
+		AlClientHooks::on_hud_param_changed(this, param, value);
 }
 
 void Client::handleCommand_HudSetSky(NetworkPacket* pkt)

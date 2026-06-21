@@ -146,6 +146,24 @@ void on_clouds_changed(Client *client)
 		client->getScript()->on_clouds_changed();
 }
 
+void on_hud_flags_changed(Client *client)
+{
+	if (client->modsLoaded())
+		client->getScript()->on_hud_flags_changed();
+}
+
+void on_hud_param_changed(Client *client, u16 param, const std::string &value)
+{
+	if (client->modsLoaded())
+		client->getScript()->on_hud_param_changed(param, value);
+}
+
+void on_inventory_action(Client *client)
+{
+	if (client->modsLoaded())
+		client->getScript()->on_inventory_action();
+}
+
 bool on_object_add(Client *client, u16 id)
 {
 	if (client->modsLoaded())

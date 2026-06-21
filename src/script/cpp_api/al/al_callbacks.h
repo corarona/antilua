@@ -69,6 +69,13 @@ public:
 	void on_sky_changed();
 	void on_clouds_changed();
 
+	// Phase 1h: HUD state notifications
+	void on_hud_flags_changed();
+	void on_hud_param_changed(u16 param, const std::string &value);
+
+	// Phase 1i: Inventory action notification
+	void on_inventory_action();
+
 	// Phase 2: New interception callbacks
 	std::string on_receiving_formspec(const std::string &formname,
 			const std::string &formspec);

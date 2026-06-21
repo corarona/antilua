@@ -44,6 +44,13 @@ core.registered_on_nodemetadata_change, core.register_on_nodemetadata_change = m
 core.registered_on_sky_changed, core.register_on_sky_changed = make_al_registration()
 core.registered_on_clouds_changed, core.register_on_clouds_changed = make_al_registration()
 
+-- Phase 1h: HUD state notifications
+core.registered_on_hud_flags_changed, core.register_on_hud_flags_changed = make_al_registration()
+core.registered_on_hud_param_changed, core.register_on_hud_param_changed = make_al_registration()
+
+-- Phase 1i: Inventory action notification
+core.registered_on_inventory_action, core.register_on_inventory_action = make_al_registration()
+
 -- Phase 2: Interception callbacks
 core.registered_on_receiving_formspec, core.register_on_receiving_formspec = make_al_registration()
 core.registered_on_node_add, core.register_on_node_add = make_al_registration()

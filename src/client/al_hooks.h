@@ -68,6 +68,9 @@ void on_nodemetadata_change(Client *client,
 		const std::vector<v3s16> &positions);
 void on_sky_changed(Client *client);
 void on_clouds_changed(Client *client);
+void on_hud_flags_changed(Client *client);
+void on_hud_param_changed(Client *client, u16 param, const std::string &value);
+void on_inventory_action(Client *client);
 
 bool on_object_add(Client *client, u16 id);
 void on_object_hp_change(Client *client, u16 id, u16 hp);

@@ -129,6 +129,47 @@ bool AlScriptApi::on_delete_particlespawner(u32 server_id)
 	return readParam<bool>(L, -1);
 }
 
+void AlScriptApi::on_hud_flags_changed()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_hud_flags_changed");
+	try {
+		runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+}
+
+void AlScriptApi::on_hud_param_changed(u16 param, const std::string &value)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_hud_param_changed");
+	lua_pushinteger(L, param);
+	lua_pushstring(L, value.c_str());
+	try {
+		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+}
+
+void AlScriptApi::on_inventory_action()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_inventory_action");
+	try {
+		runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+}
+
 void AlScriptApi::on_inventory_update()
 {
 	SCRIPTAPI_PRECHECKHEADER
