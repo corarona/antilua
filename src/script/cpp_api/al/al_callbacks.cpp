@@ -79,6 +79,40 @@ bool AlScriptApi::on_play_sound(const SoundSpec &spec, SoundLocation type,
 	return readParam<bool>(L, -1);
 }
 
+bool AlScriptApi::on_stop_sound(s32 server_id)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_stop_sound");
+	lua_pushinteger(L, server_id);
+	try {
+		runCallbacks(1, RUN_CALLBACKS_MODE_OR_SC);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+		return true;
+	}
+	return readParam<bool>(L, -1);
+}
+
+bool AlScriptApi::on_fade_sound(s32 sound_id, float step, float gain)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_fade_sound");
+	lua_pushinteger(L, sound_id);
+	lua_pushnumber(L, step);
+	lua_pushnumber(L, gain);
+	try {
+		runCallbacks(3, RUN_CALLBACKS_MODE_OR_SC);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+		return true;
+	}
+	return readParam<bool>(L, -1);
+}
+
 bool AlScriptApi::on_spawn_particle(const ParticleParameters &p)
 {
 	SCRIPTAPI_PRECHECKHEADER

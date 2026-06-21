@@ -100,6 +100,20 @@ void on_death(Client *client)
 }
 
 
+bool on_stop_sound(Client *client, s32 server_id)
+{
+	if (client->modsLoaded())
+		return client->getScript()->on_stop_sound(server_id);
+	return false;
+}
+
+bool on_fade_sound(Client *client, s32 sound_id, float step, float gain)
+{
+	if (client->modsLoaded())
+		return client->getScript()->on_fade_sound(sound_id, step, gain);
+	return false;
+}
+
 bool on_object_add(Client *client, u16 id)
 {
 	if (client->modsLoaded())

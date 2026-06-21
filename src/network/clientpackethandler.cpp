@@ -915,6 +915,9 @@ void Client::handleCommand_StopSound(NetworkPacket* pkt)
 
 	*pkt >> server_id;
 
+	if (modsLoaded() && AlClientHooks::on_stop_sound(this, server_id))
+		return;
+
 	auto i = m_sounds_server_to_client.find(server_id);
 	if (i != m_sounds_server_to_client.end()) {
 		int client_id = i->second;
@@ -929,6 +932,9 @@ void Client::handleCommand_FadeSound(NetworkPacket *pkt)
 	float gain;
 
 	*pkt >> sound_id >> step >> gain;
+
+	if (modsLoaded() && AlClientHooks::on_fade_sound(this, sound_id, step, gain))
+		return;
 
 	auto i = m_sounds_server_to_client.find(sound_id);
 	if (i != m_sounds_server_to_client.end())

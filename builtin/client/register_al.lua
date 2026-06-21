@@ -27,6 +27,10 @@ core.registered_on_detached_inventory_update, core.register_on_detached_inventor
 core.registered_on_receiving_inventory_form, core.register_on_receiving_inventory_form = make_al_registration()
 core.registered_on_open_nodemeta_form, core.register_on_open_nodemeta_form = make_al_registration()
 
+-- Phase 1c: Sound lifecycle
+core.registered_on_stop_sound, core.register_on_stop_sound = make_al_registration()
+core.registered_on_fade_sound, core.register_on_fade_sound = make_al_registration()
+
 -- Phase 2: Interception callbacks
 core.registered_on_receiving_formspec, core.register_on_receiving_formspec = make_al_registration()
 core.registered_on_node_add, core.register_on_node_add = make_al_registration()

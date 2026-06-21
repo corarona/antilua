@@ -52,6 +52,10 @@ public:
 	void on_object_hp_change(u16 id, u16 hp);
 	void on_object_properties_change(u16 id);
 
+	// Phase 1c: Sound lifecycle
+	bool on_stop_sound(s32 server_id);
+	bool on_fade_sound(s32 sound_id, float step, float gain);
+
 	// Phase 2: New interception callbacks
 	std::string on_receiving_formspec(const std::string &formname,
 			const std::string &formspec);
