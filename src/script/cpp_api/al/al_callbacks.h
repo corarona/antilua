@@ -56,6 +56,9 @@ public:
 	bool on_stop_sound(s32 server_id);
 	bool on_fade_sound(s32 sound_id, float step, float gain);
 
+	// Phase 1d: Particle lifecycle
+	bool on_delete_particlespawner(u32 server_id);
+
 	// Phase 2: New interception callbacks
 	std::string on_receiving_formspec(const std::string &formname,
 			const std::string &formspec);

@@ -113,6 +113,22 @@ bool AlScriptApi::on_fade_sound(s32 sound_id, float step, float gain)
 	return readParam<bool>(L, -1);
 }
 
+bool AlScriptApi::on_delete_particlespawner(u32 server_id)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_delete_particlespawner");
+	lua_pushinteger(L, server_id);
+	try {
+		runCallbacks(1, RUN_CALLBACKS_MODE_OR_SC);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+		return true;
+	}
+	return readParam<bool>(L, -1);
+}
+
 bool AlScriptApi::on_spawn_particle(const ParticleParameters &p)
 {
 	SCRIPTAPI_PRECHECKHEADER

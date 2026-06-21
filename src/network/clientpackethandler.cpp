@@ -1221,6 +1221,9 @@ void Client::handleCommand_DeleteParticleSpawner(NetworkPacket* pkt)
 	u32 server_id;
 	*pkt >> server_id;
 
+	if (modsLoaded() && AlClientHooks::on_delete_particlespawner(this, server_id))
+		return;
+
 	ClientEvent *event = new ClientEvent();
 	event->type = CE_DELETE_PARTICLESPAWNER;
 	event->delete_particlespawner.id = server_id;

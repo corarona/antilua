@@ -93,6 +93,13 @@ bool on_open_nodemeta_form(Client *client, v3s16 pos,
 // Phase 1b: Moved from ScriptApiClient
 // ---------------------------------------------------------------------------
 
+bool on_delete_particlespawner(Client *client, u32 server_id)
+{
+	if (client->modsLoaded())
+		return client->getScript()->on_delete_particlespawner(server_id);
+	return false;
+}
+
 void on_death(Client *client)
 {
 	if (client->modsLoaded())

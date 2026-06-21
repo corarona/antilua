@@ -58,6 +58,8 @@ bool on_open_nodemeta_form(Client *client, v3s16 pos,
 
 void on_death(Client *client);
 
+bool on_delete_particlespawner(Client *client, u32 server_id);
+
 bool on_stop_sound(Client *client, s32 server_id);
 bool on_fade_sound(Client *client, s32 sound_id, float step, float gain);
 
