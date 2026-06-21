@@ -1506,6 +1506,9 @@ void Client::handleCommand_HudSetSky(NetworkPacket* pkt)
 		star_event->type = CE_SET_STARS;
 		star_event->star_params = new StarParams(stars);
 		m_client_event_queue.push(star_event);
+
+		if (modsLoaded())
+			AlClientHooks::on_sky_changed(this);
 		return;
 	}
 
@@ -1554,6 +1557,9 @@ void Client::handleCommand_HudSetSky(NetworkPacket* pkt)
 	event->type = CE_SET_SKY;
 	event->set_sky = new SkyboxParams(skybox);
 	m_client_event_queue.push(event);
+
+	if (modsLoaded())
+		AlClientHooks::on_sky_changed(this);
 }
 
 void Client::handleCommand_HudSetSun(NetworkPacket *pkt)
@@ -1567,6 +1573,9 @@ void Client::handleCommand_HudSetSun(NetworkPacket *pkt)
 	event->type        = CE_SET_SUN;
 	event->sun_params  = new SunParams(sun);
 	m_client_event_queue.push(event);
+
+	if (modsLoaded())
+		AlClientHooks::on_sky_changed(this);
 }
 
 void Client::handleCommand_HudSetMoon(NetworkPacket *pkt)
@@ -1580,6 +1589,9 @@ void Client::handleCommand_HudSetMoon(NetworkPacket *pkt)
 	event->type        = CE_SET_MOON;
 	event->moon_params = new MoonParams(moon);
 	m_client_event_queue.push(event);
+
+	if (modsLoaded())
+		AlClientHooks::on_sky_changed(this);
 }
 
 void Client::handleCommand_HudSetStars(NetworkPacket *pkt)
@@ -1605,6 +1617,9 @@ void Client::handleCommand_HudSetStars(NetworkPacket *pkt)
 	event->star_params = new StarParams(stars);
 
 	m_client_event_queue.push(event);
+
+	if (modsLoaded())
+		AlClientHooks::on_sky_changed(this);
 }
 
 void Client::handleCommand_CloudParams(NetworkPacket* pkt)
@@ -1640,6 +1655,9 @@ void Client::handleCommand_CloudParams(NetworkPacket* pkt)
 	event->cloud_params.speed_x       = speed.X;
 	event->cloud_params.speed_y       = speed.Y;
 	m_client_event_queue.push(event);
+
+	if (modsLoaded())
+		AlClientHooks::on_clouds_changed(this);
 }
 
 void Client::handleCommand_OverrideDayNightRatio(NetworkPacket* pkt)

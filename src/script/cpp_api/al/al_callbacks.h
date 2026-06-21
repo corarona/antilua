@@ -65,6 +65,10 @@ public:
 	// Phase 1f: Nodemetadata notification
 	void on_nodemetadata_change(const std::vector<v3s16> &positions);
 
+	// Phase 1g: Sky and cloud notifications
+	void on_sky_changed();
+	void on_clouds_changed();
+
 	// Phase 2: New interception callbacks
 	std::string on_receiving_formspec(const std::string &formname,
 			const std::string &formspec);

@@ -134,6 +134,18 @@ void on_nodemetadata_change(Client *client,
 		client->getScript()->on_nodemetadata_change(positions);
 }
 
+void on_sky_changed(Client *client)
+{
+	if (client->modsLoaded())
+		client->getScript()->on_sky_changed();
+}
+
+void on_clouds_changed(Client *client)
+{
+	if (client->modsLoaded())
+		client->getScript()->on_clouds_changed();
+}
+
 bool on_object_add(Client *client, u16 id)
 {
 	if (client->modsLoaded())

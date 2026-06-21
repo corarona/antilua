@@ -66,6 +66,8 @@ bool on_fade_sound(Client *client, s32 sound_id, float step, float gain);
 void on_inventory_update(Client *client);
 void on_nodemetadata_change(Client *client,
 		const std::vector<v3s16> &positions);
+void on_sky_changed(Client *client);
+void on_clouds_changed(Client *client);
 
 bool on_object_add(Client *client, u16 id);
 void on_object_hp_change(Client *client, u16 id, u16 hp);

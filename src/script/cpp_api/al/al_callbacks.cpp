@@ -162,6 +162,32 @@ void AlScriptApi::on_nodemetadata_change(const std::vector<v3s16> &positions)
 	}
 }
 
+void AlScriptApi::on_sky_changed()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_sky_changed");
+	try {
+		runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+}
+
+void AlScriptApi::on_clouds_changed()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_clouds_changed");
+	try {
+		runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+}
+
 bool AlScriptApi::on_spawn_particle(const ParticleParameters &p)
 {
 	SCRIPTAPI_PRECHECKHEADER
