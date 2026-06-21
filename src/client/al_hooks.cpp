@@ -121,6 +121,12 @@ bool on_fade_sound(Client *client, s32 sound_id, float step, float gain)
 	return false;
 }
 
+void on_inventory_update(Client *client)
+{
+	if (client->modsLoaded())
+		client->getScript()->on_inventory_update();
+}
+
 bool on_object_add(Client *client, u16 id)
 {
 	if (client->modsLoaded())

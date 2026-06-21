@@ -34,6 +34,9 @@ core.registered_on_fade_sound, core.register_on_fade_sound = make_al_registratio
 -- Phase 1d: Particle lifecycle
 core.registered_on_delete_particlespawner, core.register_on_delete_particlespawner = make_al_registration()
 
+-- Phase 1e: Inventory notification
+core.registered_on_inventory_update, core.register_on_inventory_update = make_al_registration()
+
 -- Phase 2: Interception callbacks
 core.registered_on_receiving_formspec, core.register_on_receiving_formspec = make_al_registration()
 core.registered_on_node_add, core.register_on_node_add = make_al_registration()

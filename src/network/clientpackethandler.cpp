@@ -369,6 +369,9 @@ void Client::handleCommand_Inventory(NetworkPacket* pkt)
 
 	m_inventory_from_server = std::make_unique<Inventory>(player->inventory);
 	m_inventory_from_server_age = 0.0f;
+
+	if (modsLoaded())
+		AlClientHooks::on_inventory_update(this);
 }
 
 void Client::handleCommand_TimeOfDay(NetworkPacket* pkt)

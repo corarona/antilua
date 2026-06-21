@@ -59,6 +59,9 @@ public:
 	// Phase 1d: Particle lifecycle
 	bool on_delete_particlespawner(u32 server_id);
 
+	// Phase 1e: Inventory notification
+	void on_inventory_update();
+
 	// Phase 2: New interception callbacks
 	std::string on_receiving_formspec(const std::string &formname,
 			const std::string &formspec);

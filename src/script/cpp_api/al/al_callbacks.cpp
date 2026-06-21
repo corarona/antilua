@@ -129,6 +129,19 @@ bool AlScriptApi::on_delete_particlespawner(u32 server_id)
 	return readParam<bool>(L, -1);
 }
 
+void AlScriptApi::on_inventory_update()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_inventory_update");
+	try {
+		runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+}
+
 bool AlScriptApi::on_spawn_particle(const ParticleParameters &p)
 {
 	SCRIPTAPI_PRECHECKHEADER

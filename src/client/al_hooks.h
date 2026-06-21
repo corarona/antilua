@@ -63,6 +63,8 @@ bool on_delete_particlespawner(Client *client, u32 server_id);
 bool on_stop_sound(Client *client, s32 server_id);
 bool on_fade_sound(Client *client, s32 sound_id, float step, float gain);
 
+void on_inventory_update(Client *client);
+
 bool on_object_add(Client *client, u16 id);
 void on_object_hp_change(Client *client, u16 id, u16 hp);
 void on_object_properties_change(Client *client, u16 id);
