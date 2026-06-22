@@ -108,6 +108,7 @@ dofile(modpath .. "/test_sound.lua")
 dofile(modpath .. "/test_camera.lua")
 dofile(modpath .. "/test_minimap.lua")
 dofile(modpath .. "/test_sky_clouds.lua")
+dofile(modpath .. "/test_http.lua")
 
 
 -- Run API/registration tests at mod load time
@@ -167,6 +168,7 @@ core.register_on_mods_loaded(function()
 	test_minimap_markers(al_test)
 	test_sky_api(al_test)
 	test_clouds_api(al_test)
+	test_http_api(al_test)
 
 	-- Integration tests (deferred — register but don't run yet)
 	test_ws_rg_lifecycle(al_test)
