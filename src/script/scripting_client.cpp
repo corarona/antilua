@@ -101,6 +101,7 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModApiItem::InitializeClient(L, top);
 	ModApiUtil::InitializeClient(L, top);
 	ModApiHttp::Initialize(L, top);
+	ModApiHttp::InitializeAsync(L, top);
 	ModApiClient::Initialize(L, top);
 	ModApiClientCommon::Initialize(L, top);
 	ModApiStorage::Initialize(L, top);

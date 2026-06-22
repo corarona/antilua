@@ -149,11 +149,13 @@ int ModApiHttp::l_request_http_api(lua_State *L)
 {
 	NO_MAP_LOCK_REQUIRED;
 
+#if !CHECK_CLIENT_BUILD()
 	if (!ScriptApiSecurity::checkWhitelisted(L, "secure.http_mods") &&
 			!ScriptApiSecurity::checkWhitelisted(L, "secure.trusted_mods")) {
 		lua_pushnil(L);
 		return 1;
 	}
+#endif
 
 	lua_rawgeti(L, LUA_REGISTRYINDEX, CUSTOM_RIDX_HTTP_API_LUA);
 	assert(lua_isfunction(L, -1));

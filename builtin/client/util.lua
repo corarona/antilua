@@ -80,3 +80,6 @@ function core.http_add_fetch(httpenv)
 
 	return httpenv
 end
+
+core.set_http_api_lua(core.http_add_fetch)
+core.set_http_api_lua = nil
