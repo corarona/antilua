@@ -63,15 +63,24 @@ function blockexchange.login(user, access_token, callback)
 			callback(false, "Connection failed: " .. (res.reason or "unknown"))
 			return
 		end
-		local data = json_decode(res.data)
-		if not data or not data.token then
-			local err = data and data.error or "Invalid response"
-			callback(false, err)
+		-- API returns the JWT token as raw string (not JSON-wrapped)
+		local raw = res.data:match("^%s*(.-)%s*$") or ""
+		local data = json_decode(raw)
+		local token
+		if data and data.token then
+			token = data.token
+		elseif data and data.error then
+			callback(false, data.error)
+			return
+		elseif raw ~= "" then
+			token = raw
+		else
+			callback(false, "Invalid response")
 			return
 		end
-		storage:set_string("token", data.token)
+		storage:set_string("token", token)
 		storage:set_string("username", user)
-		blockexchange.token = data.token
+		blockexchange.token = token
 		blockexchange.username = user
 		blockexchange.logged_in = true
 		core.log("action", "[blockexchange] Logged in as " .. user)
