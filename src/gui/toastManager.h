@@ -18,7 +18,7 @@ enum class ToastType
 	INFO,
 	SUCCESS,
 	WARNING,
-	ERROR
+	ERR
 };
 
 struct Toast

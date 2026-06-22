@@ -20,8 +20,8 @@ ToastType ToastManager::stringToType(const std::string &s)
 	if (s == "warning")
 		return ToastType::WARNING;
 	if (s == "error")
-		return ToastType::ERROR;
-	return ToastType::INFO;
+		return ToastType::ERR;
+		return ToastType::INFO;
 }
 
 void ToastManager::addToast(const std::wstring &text, ToastType type)
@@ -80,7 +80,7 @@ video::SColor ToastManager::getBackgroundColor(ToastType type) const
 		return toastHex(g_settings->get("theme_good"));
 	case ToastType::WARNING:
 		return toastHex(g_settings->get("theme_warning"));
-	case ToastType::ERROR:
+	case ToastType::ERR:
 		return toastHex(g_settings->get("theme_bad"));
 	case ToastType::INFO:
 	default:

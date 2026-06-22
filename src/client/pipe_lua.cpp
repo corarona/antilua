@@ -7,16 +7,19 @@
 
 #include <json/json.h>
 
+#include <fstream>
+#include <sstream>
+
+#ifndef _WIN32
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#include <fstream>
-#include <sstream>
+#endif
 
 ClientLuaPipe::ClientLuaPipe(Client *client, const std::string &path)
 	: m_client(client), m_path(path), m_fd(-1)
 {
+#ifndef _WIN32
 	// Create FIFO; ignore EEXIST
 	mkfifo(m_path.c_str(), 0666);
 
@@ -25,17 +28,23 @@ ClientLuaPipe::ClientLuaPipe(Client *client, const std::string &path)
 		warningstream << "ClientLuaPipe: failed to open FIFO at "
 			<< m_path << std::endl;
 	}
+#else
+	warningstream << "ClientLuaPipe: not supported on Windows" << std::endl;
+#endif
 }
 
 ClientLuaPipe::~ClientLuaPipe()
 {
+#ifndef _WIN32
 	if (m_fd >= 0)
 		close(m_fd);
 	unlink(m_path.c_str());
+#endif
 }
 
 void ClientLuaPipe::process()
 {
+#ifndef _WIN32
 	if (m_fd < 0)
 		return;
 
@@ -54,6 +63,7 @@ void ClientLuaPipe::process()
 		if (!line.empty())
 			processLine(line);
 	}
+#endif
 }
 
 void ClientLuaPipe::writeResult(const std::string &file, bool ok,
@@ -161,6 +171,7 @@ void ClientLuaPipe::processLine(const std::string &line)
 bool ClientLuaPipe::sendCommand(const std::string &pipe_path,
 	const std::string &code, const std::string &response_file)
 {
+#ifndef _WIN32
 	Json::Value root;
 	root["code"] = code;
 	if (!response_file.empty())
@@ -177,4 +188,7 @@ bool ClientLuaPipe::sendCommand(const std::string &pipe_path,
 	ssize_t written = write(fd, json.data(), json.size());
 	close(fd);
 	return written == (ssize_t)json.size();
+#else
+	return false;
+#endif
 }
