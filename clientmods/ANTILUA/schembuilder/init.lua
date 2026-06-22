@@ -336,6 +336,10 @@ local function update_hud()
 end
 
 -- Schematic browser formspec
+local _bx_status = ""
+local _sel_bx_result = nil
+local _sel_bx_dl = nil
+
 local function show_browser_form(tab)
 	tab = tab or 0
 	local sid = get_server_id()
@@ -549,9 +553,6 @@ end
 
 local _selected_schem = nil
 local _selected_build = nil
-local _bx_status = ""
-local _sel_bx_result = nil
-local _sel_bx_dl = nil
 
 local function load_bx_schematic(uid, name, mts_data)
 	local schem, err

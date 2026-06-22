@@ -64,19 +64,26 @@ function blockexchange.login(user, access_token, callback)
 			return
 		end
 		-- API returns the JWT token as raw string (not JSON-wrapped)
-		local raw = res.data:match("^%s*(.-)%s*$") or ""
-		local data = json_decode(raw)
+		local raw = res.data or ""
+		raw = raw:match("^%s*(.-)%s*$") or ""
 		local token
-		if data and data.token then
-			token = data.token
-		elseif data and data.error then
-			callback(false, data.error)
-			return
-		elseif raw ~= "" then
-			token = raw
-		else
-			callback(false, "Invalid response")
-			return
+		-- Only try JSON if the response starts with '{' or '['
+		if raw:sub(1, 1) == "{" or raw:sub(1, 1) == "[" then
+			local data = json_decode(raw)
+			if data and data.token then
+				token = data.token
+			elseif data and data.error then
+				callback(false, data.error)
+				return
+			end
+		end
+		if not token then
+			if raw ~= "" then
+				token = raw
+			else
+				callback(false, "Invalid response")
+				return
+			end
 		end
 		storage:set_string("token", token)
 		storage:set_string("username", user)
