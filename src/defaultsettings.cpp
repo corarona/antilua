@@ -378,6 +378,10 @@ void set_default_settings()
 	settings->setDefault("view_bobbing_amount", "1.0");
 	settings->setDefault("camera_roll_speed", "90.0");
 	settings->setDefault("camera_roll_max", "180.0");
+	settings->setDefault("camera_roll_auto_reset", "true");
+	settings->setDefault("camera_roll_auto_reset_delay", "3.0");
+	settings->setDefault("camera_roll_auto_reset_duration", "0.3");
+	settings->setDefault("camera_roll_adaptive_mouse", "both");
 	settings->setDefault("pitch_wraparound", "false");
 	settings->setDefault("enable_3d_clouds", "true");
 	settings->setDefault("soft_clouds", "false");
