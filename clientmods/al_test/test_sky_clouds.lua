@@ -105,7 +105,7 @@ function test_clouds_api(T)
 	end)
 
 	T.defer("core.clouds:set_speed", function()
-		core.clouds:set_speed({ x = 0, z = -2 })
+		core.clouds:set_speed({ x = 0, y = -2 })
 	end)
 
 	T.defer("core.clouds:set_color_bright", function()
