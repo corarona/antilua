@@ -2252,15 +2252,15 @@ void Game::updateCameraOrientation(CameraOrientation *cam, float dtime)
 				if (roll != 0.0f) {
 					f32 cos_r = cosf(roll);
 					f32 sin_r = sinf(roll);
-					if (mode == "both") {
-						// Both axes: rotate standard (-dx, dy) response by -θ
-						cam->camera_yaw   -= dx * cos_r - dy * sin_r;
-						cam->camera_pitch += dx * sin_r + dy * cos_r;
-					} else {
-						// Pitch only: only vertical channel adapts
-						cam->camera_yaw   -= dx;
-						cam->camera_pitch += dy * cos_r;
-					}
+				if (mode == "both") {
+					// Both axes: rotate standard (-dx, dy) response by -θ
+					cam->camera_yaw   -= dx * cos_r - dy * sin_r;
+					cam->camera_pitch += dx * sin_r + dy * fabsf(cos_r);
+				} else {
+					// Pitch only: only vertical channel adapts
+					cam->camera_yaw   -= dx;
+					cam->camera_pitch += dy * fabsf(cos_r);
+				}
 					goto roll_applied;
 				}
 			}
