@@ -644,6 +644,45 @@ void Game::run()
 				}
 				player->setCameraRoll(current_roll * core::DEGTORAD);
 			}
+
+			// Camera roll auto-reset
+			if (g_settings->getBool("camera_roll_auto_reset")) {
+				LocalPlayer *player = client->getEnv().getLocalPlayer();
+				f32 current_roll = player->getCameraRoll();
+				if (current_roll != 0.0f) {
+					f32 delay = g_settings->getFloat("camera_roll_auto_reset_delay");
+					f32 duration = g_settings->getFloat("camera_roll_auto_reset_duration");
+
+					// Any input cancels idle and any in-progress decay
+					bool any_input = (roll_left || roll_right) ||
+						isKeyDown(KeyType::FORWARD) || isKeyDown(KeyType::BACKWARD) ||
+						isKeyDown(KeyType::LEFT) || isKeyDown(KeyType::RIGHT) ||
+						isKeyDown(KeyType::JUMP) || isKeyDown(KeyType::SNEAK) ||
+						isKeyDown(KeyType::AUX1) || isKeyDown(KeyType::DIG) || isKeyDown(KeyType::PLACE);
+
+					if (any_input) {
+						m_camera_roll_idle_time = 0.0f;
+						m_camera_roll_reset_timer = -1.0f;
+					} else if (m_camera_roll_idle_time >= delay) {
+						// Idle long enough — start or continue smooth decay to 0
+						if (m_camera_roll_reset_timer < 0.0f) {
+							m_camera_roll_reset_timer = 0.0f;
+							m_camera_roll_at_reset_start = current_roll;
+						}
+						m_camera_roll_reset_timer += dtime;
+						f32 t = fmin(m_camera_roll_reset_timer / duration, 1.0f);
+						f32 smooth = t * t * (3.0f - 2.0f * t); // smoothstep
+						f32 new_roll = m_camera_roll_at_reset_start * (1.0f - smooth);
+						player->setCameraRoll(new_roll);
+						if (t >= 1.0f) {
+							player->setCameraRoll(0.0f);
+							m_camera_roll_reset_timer = -1.0f;
+						}
+					}
+				} else {
+					m_camera_roll_reset_timer = -1.0f;
+				}
+			}
 		}
 
 		updatePauseState();
