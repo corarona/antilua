@@ -87,6 +87,10 @@ headless and reports results instead.
   `modernize-use-emplace`, `performance-*`, misc checks
   (`util/ci/clang-tidy.sh`)
 - Lua: luacheck (see `.luacheckrc`), run via `.github/workflows/lua.yml`
+- **Small atomic commits** whenever possible — each commit should be one
+  logical change, compile, and pass tests independently
+- **Fix all errors and warnings as soon as it makes sense** — do not put them
+  off for later
 
 ## Key directories
 - **Engine**: This repo. C++ core + Irrlicht fork.
