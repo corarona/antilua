@@ -2242,8 +2242,33 @@ void Game::updateCameraOrientation(CameraOrientation *cam, float dtime)
 			dist.Y = -dist.Y;
 		}
 
-		cam->camera_yaw   -= dist.X * m_cache_mouse_sensitivity * sens_scale;
-		cam->camera_pitch += dist.Y * m_cache_mouse_sensitivity * sens_scale;
+		f32 dx = (f32)dist.X * m_cache_mouse_sensitivity * sens_scale;
+		f32 dy = (f32)dist.Y * m_cache_mouse_sensitivity * sens_scale;
+
+		std::string mode = g_settings->get("camera_roll_adaptive_mouse");
+		if (mode == "both" || mode == "pitch") {
+			if (auto *player = client->getEnv().getLocalPlayer()) {
+				f32 roll = player->getCameraRoll();
+				if (roll != 0.0f) {
+					f32 cos_r = cosf(roll);
+					f32 sin_r = sinf(roll);
+					if (mode == "both") {
+						// Both axes: rotate standard (-dx, dy) response by -θ
+						cam->camera_yaw   -= dx * cos_r - dy * sin_r;
+						cam->camera_pitch += dx * sin_r + dy * cos_r;
+					} else {
+						// Pitch only: only vertical channel adapts
+						cam->camera_yaw   -= dx;
+						cam->camera_pitch += dy * cos_r;
+					}
+					goto roll_applied;
+				}
+			}
+		}
+		// Fallback: no adaptation or zero roll
+		cam->camera_yaw   -= dx;
+		cam->camera_pitch += dy;
+		roll_applied: ;
 
 		if (dist.X != 0 || dist.Y != 0) {
 			input->setMousePos(center.X, center.Y);
