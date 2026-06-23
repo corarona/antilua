@@ -585,6 +585,10 @@ void Game::run()
 		// since it's invisible to the user. But it needs to be consistent.
 		updateCameraOffset();
 
+		if (!m_is_paused) {
+			m_camera_roll_idle_time += dtime;
+		}
+
 		processUserInput(dtime);
 		// Update camera before player movement to avoid camera lag of one frame
 		updateCameraDirection(&m_cam_view_target, dtime);
@@ -604,6 +608,13 @@ void Game::run()
 					cam_damp_lambda
 			);
 		}
+		// Reset camera roll idle timer on movement keys
+		if (isKeyDown(KeyType::FORWARD) || isKeyDown(KeyType::BACKWARD) ||
+			isKeyDown(KeyType::LEFT) || isKeyDown(KeyType::RIGHT) ||
+			isKeyDown(KeyType::JUMP) || isKeyDown(KeyType::SNEAK) ||
+			isKeyDown(KeyType::AUX1) || isKeyDown(KeyType::DIG) || isKeyDown(KeyType::PLACE)) {
+			m_camera_roll_idle_time = 0.0f;
+		}
 		updatePlayerControl(m_cam_view);
 
 		if (!m_is_paused) {
@@ -611,6 +622,7 @@ void Game::run()
 			bool roll_left = isKeyDown(KeyType::CAMERA_ROLL_LEFT);
 			bool roll_right = isKeyDown(KeyType::CAMERA_ROLL_RIGHT);
 			if (roll_left || roll_right) {
+				m_camera_roll_idle_time = 0.0f;
 				LocalPlayer *player = client->getEnv().getLocalPlayer();
 				f32 roll_speed = g_settings->getFloat("camera_roll_speed", 0.0f, 720.0f);
 				f32 roll_max = g_settings->getFloat("camera_roll_max", 0.0f, 360.0f);
@@ -2196,6 +2208,7 @@ void Game::updateCameraOrientation(CameraOrientation *cam, float dtime)
 
 		if (dist.X != 0 || dist.Y != 0) {
 			input->setMousePos(center.X, center.Y);
+			m_camera_roll_idle_time = 0.0f;
 			if (auto *player = client->getEnv().getLocalPlayer()) {
 				player->unlockYaw();
 				player->unlockPitch();
