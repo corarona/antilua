@@ -551,6 +551,21 @@ camera_roll_speed (Camera roll speed) float 90.0 0.0 720.0
 #    Maximum camera roll angle in degrees. Set to 360 for full barrel roll.
 camera_roll_max (Camera roll max) float 180.0 0.0 360.0
 
+#    Automatically reset camera roll to 0 when no input is detected
+#    for camera_roll_auto_reset_delay seconds.
+camera_roll_auto_reset (Camera roll auto-reset) bool true
+
+#    Seconds without any input before camera roll starts auto-resetting.
+camera_roll_auto_reset_delay (Camera roll auto-reset delay) float 3.0 0.0 60.0
+
+#    Duration of the smooth roll decay when auto-resetting.
+camera_roll_auto_reset_duration (Camera roll auto-reset duration) float 0.3 0.0 10.0
+
+#    Whether mouse movement adapts to camera roll.
+#    both: both axes adapt (screen-space camera)
+#    pitch: only vertical mouse adapts to roll
+camera_roll_adaptive_mouse (Camera roll adaptive mouse) enum both both,pitch,off
+
 #    Allow pitch to wrap past ±90° instead of clamping. Enables loopings
 #    and inverted flight by allowing the camera to rotate continuously
 #    through the vertical. Works in all movement modes.
