@@ -413,6 +413,11 @@ public:
 	// this happens in pause menu in singleplayer
 	bool m_is_paused = false;
 
+	// Camera roll auto-reset
+	f32 m_camera_roll_idle_time = 0.0f;     // seconds since last input
+	f32 m_camera_roll_at_reset_start = 0.0f;
+	f32 m_camera_roll_reset_timer = -1.0f;  // -1 = not decaying, 0+ = elapsed decay time
+
 	bool m_touch_simulate_aux1 = false;
 	bool isTouchShootlineUsed() const;
 #ifdef __ANDROID__
