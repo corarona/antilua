@@ -387,6 +387,10 @@ produces a mathematically pure roll unaffected by pitch or yaw.
 | `keymap_camera_roll_right` | E | Roll camera clockwise |
 | `camera_roll_speed` | 90 | Degrees per second |
 | `camera_roll_max` | 180 | Maximum roll angle in degrees (set to 360 for full barrel roll) |
+| `camera_roll_auto_reset` | true | Auto-reset camera roll to 0 when idle |
+| `camera_roll_auto_reset_delay` | 3.0 | Seconds of input idle before reset starts |
+| `camera_roll_auto_reset_duration` | 0.3 | Duration of smooth roll decay |
+| `camera_roll_adaptive_mouse` | both | `both` or `pitch` — whether mouse movement adapts to camera roll |
 
 Note: `keymap_drop` was unbound (was Q) and `keymap_aux1` moved to Left Ctrl
 (was E) to free Q/E for camera roll.
