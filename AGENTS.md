@@ -3,6 +3,10 @@
 This repo is Antilua, a fork of Luanti (formerly Minetest) — a free
 open-source voxel game engine with client-side enhancements.
 
+## Skills
+
+- `skills/antilua-lua-pipe/SKILL.md` — Control the Antilua client via the named pipe IPC (Lua pipe). Use when the client is running and you need to send Lua commands, interact with the world, craft items, or manage inventory through the FIFO at `/tmp/antilua_lua`.
+
 ## Remotes
 
 - `luanti` — upstream Luanti at https://github.com/luanti-org/luanti/
