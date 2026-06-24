@@ -22,6 +22,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "chatmessage.h"
 #include "script/scripting_client.h"
 #include "client/renderingengine.h"
+#include <IFileSystem.h>
+#include <IReadFile.h>
 #include "client/session.h"
 #include "itemdef.h"
 #include "client/client.h"
@@ -747,6 +749,109 @@ int ModApiClient::l_read_file(lua_State *L)
 	return 2;
 }
 
+// decode_image(data)
+int ModApiClient::l_decode_image(lua_State *L)
+{
+	size_t len;
+	const char *data = luaL_checklstring(L, 1, &len);
+	if (!data || len == 0) {
+		lua_pushnil(L);
+		lua_pushstring(L, "Empty data");
+		return 2;
+	}
+
+	auto *device = RenderingEngine::get_raw_device();
+	if (!device) {
+		lua_pushnil(L);
+		lua_pushstring(L, "No rendering device");
+		return 2;
+	}
+	auto *fs = device->getFileSystem();
+	auto *vd = device->getVideoDriver();
+
+	auto *memfile = fs->createMemoryReadFile(data, (u32)len,
+		"__antilua_decode__");
+	if (!memfile) {
+		lua_pushnil(L);
+		lua_pushstring(L, "Failed to create memory file");
+		return 2;
+	}
+
+	video::IImage *img = vd->createImageFromFile(memfile);
+	memfile->drop();
+
+	if (!img) {
+		lua_pushnil(L);
+		lua_pushstring(L, "Failed to decode image");
+		return 2;
+	}
+
+	u32 w = img->getDimension().Width;
+	u32 h = img->getDimension().Height;
+
+	// Convert to consistent RGBA format
+	video::IImage *rgba_img = img;
+	bool needs_drop = false;
+	if (img->getColorFormat() != video::ECF_A8R8G8B8) {
+		rgba_img = vd->createImage(video::ECF_A8R8G8B8, img->getDimension());
+		if (rgba_img) {
+			img->copyTo(rgba_img);
+			needs_drop = true;
+		} else {
+			rgba_img = img;
+		}
+	}
+
+	// Build RGBA byte string
+	std::string pixels;
+	pixels.reserve((size_t)w * h * 4);
+	for (u32 y = 0; y < h; y++) {
+		for (u32 x = 0; x < w; x++) {
+			video::SColor c = rgba_img->getPixel(x, y);
+			pixels.push_back((char)c.getRed());
+			pixels.push_back((char)c.getGreen());
+			pixels.push_back((char)c.getBlue());
+			pixels.push_back((char)c.getAlpha());
+		}
+	}
+
+	if (needs_drop)
+		rgba_img->drop();
+	img->drop();
+
+	lua_createtable(L, 0, 3);
+	lua_pushinteger(L, (int)w);
+	lua_setfield(L, -2, "width");
+	lua_pushinteger(L, (int)h);
+	lua_setfield(L, -2, "height");
+	lua_pushlstring(L, pixels.data(), pixels.size());
+	lua_setfield(L, -2, "data");
+	return 1;
+}
+
+// write_file(path, data)
+int ModApiClient::l_write_file(lua_State *L)
+{
+	std::string path = luaL_checkstring(L, 1);
+	// Prevent directory traversal
+	if (path.find("..") != std::string::npos) {
+		lua_pushnil(L);
+		lua_pushstring(L, "Path traversal denied");
+		return 2;
+	}
+	size_t data_len;
+	const char *content = luaL_checklstring(L, 2, &data_len);
+
+	if (fs::safeWriteToFile(path, std::string_view(content, data_len))) {
+		lua_pushboolean(L, true);
+		return 1;
+	}
+
+	lua_pushnil(L);
+	lua_pushstring(L, "Failed to write file");
+	return 2;
+}
+
 // get_dir_list(path, is_dir)
 int ModApiClient::l_get_dir_list(lua_State *L)
 {
@@ -1239,6 +1344,8 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(read_schematic);
 	API_FCT(serialize_schematic);
 	API_FCT(read_file);
+	API_FCT(decode_image);
+	API_FCT(write_file);
 	API_FCT(get_dir_list);
 	API_FCT(create_client_entity);
 	API_FCT(detach);

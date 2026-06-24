@@ -46,6 +46,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_client_sound.h"
 #include "lua_api/l_sky.h"
 #include "lua_api/l_clouds.h"
+#include "lua_api/al_client_map.h"
 
 ClientScripting::ClientScripting(Client *client):
 	ScriptApiBase(ScriptingType::Client)
@@ -110,6 +111,7 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModApiParticlesLocal::Initialize(L, top);
 	ModApiClientSound::Initialize(L, top);
 	ClientSoundHandle::Register(L);
+	AlApiClientMap::Initialize(L, top);
 	init_raw_packet_api();
 }
 

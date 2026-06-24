@@ -809,6 +809,7 @@ void ModApiUtil::InitializeClient(lua_State *L, int top)
 
 	API_FCT(encode_base64);
 	API_FCT(decode_base64);
+	API_FCT(encode_png);
 
 	API_FCT(get_version);
 	API_FCT(sha1);

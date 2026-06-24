@@ -156,6 +156,12 @@ private:
 	// read_file(path)
 	static int l_read_file(lua_State *L);
 
+	// decode_image(data) — decode PNG bytes to {width, height, data}
+	static int l_decode_image(lua_State *L);
+
+	// write_file(path, data) — write data to a file on disk
+	static int l_write_file(lua_State *L);
+
 	// get_dir_list(path, is_dir)
 	static int l_get_dir_list(lua_State *L);
 

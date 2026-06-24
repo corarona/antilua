@@ -86,6 +86,9 @@ core.show_toast(text, type)                         -- Show toast notification (
 core.get_language() -> locale, lang_code            -- System locale and language code
 core.gettext(text) -> string                        -- Gettext translation
 core.read_file(path) -> content                     -- Read file from disk (blocks ".." traversal)
+core.write_file(path, data) -> bool|nil,err         -- Write data to file (blocks ".." traversal)
+core.decode_image(png_data) -> {width,height,data}|nil,err -- Decode PNG bytes to RGBA pixel data
+core.encode_png(width, height, data[, compression]) -> png_bytes -- Encode RGBA pixel data to PNG with libpng (prefilters enabled)
 core.get_dir_list(path, is_dir) -> {name,...}        -- List directory contents
 core.get_modpath_real(modname) -> string             -- Resolve virtual mod path to real path
 core.get_server_info() -> table                     -- {address, ip, port, protocol_version}

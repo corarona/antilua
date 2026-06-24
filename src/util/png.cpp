@@ -1,119 +1,107 @@
 // Antilua
 // SPDX-License-Identifier: LGPL-2.1-or-later
 // Copyright (C) 2021 hecks
+// Rewritten to use libpng for proper filter support
 
 #include "png.h"
 #include <string>
-#include <optional>
-#include <sstream>
-#include <zlib.h>
-#include <cassert>
-#include "util/serialize.h"
-#include "serialization.h"
+#include <vector>
+#include <memory>
+#include <cstring>
+#include <png.h>
 #include "irrlichttypes.h"
 
-enum {
-	COLOR_GRAY = 0,
-	COLOR_RGB = 2,
-	COLOR_RGBA = 6,
-};
-
-static void writeChunk(std::string &target, const std::string &chunk_str)
-{
-	assert(chunk_str.size() >= 4);
-	assert(chunk_str.size() - 4 < U32_MAX);
-	u8 tmp[4];
-	target.reserve(target.size() + 4 + chunk_str.size() + 4);
-
-	writeU32(tmp, chunk_str.size() - 4); // Length minus the identifier
-	target.append(reinterpret_cast<char*>(tmp), 4);
-	target.append(chunk_str); // Data
-	const u32 csum = crc32(0, reinterpret_cast<const u8*>(chunk_str.data()),
-			chunk_str.size());
-	writeU32(tmp, csum); // CRC32 checksum
-	target.append(reinterpret_cast<char*>(tmp), 4);
-}
-
-static std::optional<u8> reduceColor(const u8 *data, u32 width, u32 height, std::string &new_data)
+static int choose_color_type(const u8 *data, u32 width, u32 height,
+	std::vector<u8> &converted)
 {
 	const u32 npixels = width * height;
-	// check if the alpha channel is all opaque
+	// check if alpha is all opaque
+	bool all_opaque = true;
 	for (u32 i = 0; i < npixels; i++) {
-		if (data[4*i + 3] != 255)
-			return std::nullopt;
+		if (data[4*i + 3] != 255) {
+			all_opaque = false;
+			break;
+		}
 	}
+	if (!all_opaque)
+		return PNG_COLOR_TYPE_RGBA;
 
-	// check if RGB components are identical
+	// check if R=G=B (grayscale)
 	bool gray = true;
 	for (u32 i = 0; i < npixels; i++) {
-		const u8 *pixel = &data[4*i];
-		if (pixel[0] != pixel[1] || pixel[1] != pixel[2]) {
+		const u8 *p = &data[4*i];
+		if (p[0] != p[1] || p[1] != p[2]) {
 			gray = false;
 			break;
 		}
 	}
 
 	if (gray) {
-		// convert to grayscale
-		new_data.resize(width * height);
-		u8 *dst = reinterpret_cast<u8*>(new_data.data());
+		converted.resize(width * height);
 		for (u32 i = 0; i < npixels; i++)
-			dst[i] = data[4*i];
-		return COLOR_GRAY;
-	} else {
-		// convert to RGB
-		new_data.resize(width * 3 * height);
-		u8 *dst = reinterpret_cast<u8*>(new_data.data());
-		for (u32 i = 0; i < npixels; i++)
-			memcpy(&dst[3*i], &data[4*i], 3);
-		return COLOR_RGB;
+			converted[i] = data[4*i];
+		return PNG_COLOR_TYPE_GRAY;
 	}
+
+	converted.resize(width * 3 * height);
+	for (u32 i = 0; i < npixels; i++)
+		memcpy(&converted[3*i], &data[4*i], 3);
+	return PNG_COLOR_TYPE_RGB;
 }
 
 std::string encodePNG(const u8 *data, u32 width, u32 height, s32 compression)
 {
-	u8 color_type = COLOR_RGBA;
-	std::string new_data;
-	if (compression == Z_DEFAULT_COMPRESSION || compression >= 2) {
-		// try to reduce the image data to grayscale or RGB
-		if (auto ret = reduceColor(data, width, height, new_data); ret.has_value()) {
-			color_type = ret.value();
-			assert(!new_data.empty());
-			data = reinterpret_cast<u8*>(new_data.data());
-		}
+	// Optimize: reduce color type when possible
+	std::vector<u8> converted;
+	int color_type = choose_color_type(data, width, height, converted);
+	if (!converted.empty())
+		data = converted.data();
+
+	// Create write structs
+	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
+		nullptr, nullptr, nullptr);
+	if (!png_ptr)
+		return {};
+
+	png_infop info_ptr = png_create_info_struct(png_ptr);
+	if (!info_ptr) {
+		png_destroy_write_struct(&png_ptr, nullptr);
+		return {};
 	}
 
-	std::string file;
-	file.append("\x89PNG\r\n\x1a\n");
-
-	{
-		std::ostringstream header(std::ios::binary);
-		header << "IHDR";
-		writeU32(header, width);
-		writeU32(header, height);
-		writeU8(header, 8); // bpp
-		writeU8(header, color_type);
-		header.write("\x00\x00\x00", 3);
-		writeChunk(file, header.str());
+	// Error handler
+	if (setjmp(png_jmpbuf(png_ptr))) {
+		png_destroy_write_struct(&png_ptr, &info_ptr);
+		return {};
 	}
 
-	{
-		std::ostringstream IDAT(std::ios::binary);
-		IDAT << "IDAT";
-		const u32 ps = color_type == COLOR_GRAY ? 1 :
-				(color_type == COLOR_RGB ? 3 : 4);
-		std::string scanlines;
-		scanlines.reserve(width * ps * height + height);
-		for(u32 i = 0; i < height; i++) {
-			scanlines.append(1, 0); // Null predictor
-			scanlines.append(reinterpret_cast<const char*>(data + width * ps * i),
-					width * ps);
-		}
-		compressZlib(scanlines, IDAT, compression);
-		writeChunk(file, IDAT.str());
-	}
+	// Write-to-string callback
+	struct Sink { std::string buf; } sink;
+	png_set_write_fn(png_ptr, &sink, [](png_structp p, png_bytep d, png_size_t l) {
+		static_cast<Sink *>(png_get_io_ptr(p))->buf.append(
+			reinterpret_cast<const char *>(d), l);
+	}, nullptr);
 
-	file.append("\x00\x00\x00\x00IEND\xae\x42\x60\x82", 12);
+	// Header
+	png_set_IHDR(png_ptr, info_ptr, width, height, 8, color_type,
+		PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
-	return file;
+	// Compression & filters
+	if (compression >= 0)
+		png_set_compression_level(png_ptr, compression);
+	png_set_filter(png_ptr, 0, PNG_ALL_FILTERS);
+
+	png_write_info(png_ptr, info_ptr);
+
+	// Write rows
+	u32 bpp = png_get_rowbytes(png_ptr, info_ptr) / width;
+	std::vector<png_bytep> rows(height);
+	for (u32 y = 0; y < height; y++)
+		rows[y] = const_cast<png_bytep>(data + y * width * bpp);
+
+	png_write_image(png_ptr, rows.data());
+	png_write_end(png_ptr, info_ptr);
+	png_destroy_write_struct(&png_ptr, &info_ptr);
+
+	return std::move(sink.buf);
 }

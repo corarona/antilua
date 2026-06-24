@@ -1,5 +1,9 @@
 local modpath = core.get_modpath(core.get_current_modname())
 
+-- Forward declarations for optional mapart integration
+handle_mapart_events = nil
+get_mapart_tab = nil
+
 local schembuilder = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
 local place_nodes = {}
 local supply_chests = {}
@@ -345,7 +349,7 @@ local function show_browser_form(tab)
 	local sid = get_server_id()
 	local theme_bg = core.settings:get("theme_bg") or "#121212"
 	local fs = "formspec_version[10]size[10,10]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
-		"tabheader[0,0;tabs;Browse Schematics,Saved Builds,BlockExchange;" .. (tab + 1) .. "]" ..
+		"tabheader[0,0;tabs;Browse Schematics,Saved Builds,BlockExchange,Mapart;" .. (tab + 1) .. "]" ..
 		"button[8,9;2,0.8;close;Close]"
 
 	if tab == 0 then
@@ -385,7 +389,7 @@ local function show_browser_form(tab)
 				"button[5,6.5;2.4,0.8;build_delete;Delete]" ..
 				"button[7.5,6.5;2.4,0.8;build_clear_particles;Clear Particles]"
 		end
-	else
+	elseif tab == 2 then
 		-- Tab 2: BlockExchange
 		local logged_in = blockexchange and blockexchange.logged_in
 		if logged_in then
@@ -430,6 +434,12 @@ local function show_browser_form(tab)
 			fs = fs .. "label[0,8.5;Downloads:]" ..
 				"textlist[0,9;8,1.5;bx_downloads;" .. table.concat(entries, ",") .. ";0]" ..
 				"button[8.2,9;1.6,0.8;bx_load_dl;Load]"
+		end
+	elseif tab == 3 then
+		if type(get_mapart_tab) == "function" then
+			fs = get_mapart_tab(fs, tab)
+		else
+			fs = fs .. "label[0,1;Mapart mod not loaded. Please wait...]"
 		end
 	end
 
@@ -639,6 +649,11 @@ core.register_on_formspec_input(function(formname, fields)
 		return
 	end
 
+	if type(handle_mapart_events) == "function" and handle_mapart_events(fields) then
+		show_browser_form(3)
+		return
+	end
+
 	-- Track textlist selections
 	if fields.schem_list then
 		local idx = parse_list_event(fields.schem_list)
@@ -659,6 +674,9 @@ core.register_on_formspec_input(function(formname, fields)
 	end
 
 	-- Tab 2: BlockExchange actions
+	if fields.tabs and tonumber(fields.tabs) == 4 then
+		-- Tab 3 (Mapart) — state is managed by mapart mod
+	end
 	if fields.tabs and tonumber(fields.tabs) == 3 then
 		_bx_status = ""
 	end
@@ -1524,3 +1542,15 @@ restore_job()
 core.register_on_connect(function()
 	restore_job()
 end)
+
+-- Exposed for other mods (e.g., mapart)
+schembuilder_load_mts = function(filepath, label, use_pos)
+	if type(do_schembuild) ~= "function" then
+		return false, "schembuilder not initialized"
+	end
+	local ok, err, sparam = do_schembuild("file:" .. filepath, use_pos)
+	if ok then
+		create_build(sparam or ("file:" .. filepath), label or "schematic")
+	end
+	return ok, err
+end

@@ -294,16 +294,13 @@ void Client::loadMods()
 
 	ModConfiguration modconf;
 	{
-		std::unordered_map<std::string, std::string> paths;
-		std::string path_user = porting::path_user + DIR_DELIM + "clientmods";
-		const auto modsPath = getClientModsLuaPath();
-		if (modsPath != path_user) {
-			paths["share"] = modsPath;
-		}
-		paths["mods"] = path_user;
+		const std::string share_path = getClientModsLuaPath();
+		const std::string user_path = porting::path_user + DIR_DELIM + "clientmods";
 
-		std::string settings_path = path_user + DIR_DELIM + "mods.conf";
-		modconf.addModsFromConfig(settings_path, paths);
+		modconf.addModsInPath(share_path, "clientmods");
+		if (user_path != share_path)
+			modconf.addModsInPath(user_path, "clientmods_user");
+
 		modconf.checkConflictsAndDeps();
 	}
 
