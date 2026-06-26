@@ -321,10 +321,6 @@ local function save_and_load_mts(schem, name, use_pos)
 	local schem_dir = core.settings:get("mapart_output_dir")
 		or "/tmp/antilua_mapart"
 
-	if type(core.mkdir) == "function" then
-		core.mkdir(schem_dir)
-	end
-
 	local filepath = schem_dir .. "/" .. name:gsub("%.png$", "") .. ".mts"
 	local ok, err = core.write_file(filepath, mts_data)
 	if not ok then
