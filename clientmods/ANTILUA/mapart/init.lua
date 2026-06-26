@@ -774,5 +774,33 @@ core.register_chatcommand("mapart_wall", {
 	end,
 })
 
+core.register_chatcommand("test_encode_png", {
+	params = "<path>",
+	description = "Test core.encode_png roundtrip: decode PNG, re-encode, save",
+	func = function(param)
+		if param == "" then
+			return false, "Usage: /test_encode_png <path>"
+		end
+		local ok, data = pcall(core.read_file, param)
+		if not ok or not data then
+			return false, "File not found: " .. param
+		end
+		local ok2, img = pcall(core.decode_image, data)
+		if not ok2 or not img then
+			return false, "Failed to decode image"
+		end
+
+		local out = core.encode_png(img.width, img.height, img.data)
+		if not out then
+			return false, "encode_png returned nil"
+		end
+
+		local outpath = "/tmp/test_encode_png_out.png"
+		core.write_file(outpath, out)
+		return true, string.format("encode_png ok: %dx%d -> %d bytes (input %d bytes)",
+			img.width, img.height, #out, #data)
+	end,
+})
+
 -- Initialize palette (synchronous, mod load time)
 pcall(load_palette)
