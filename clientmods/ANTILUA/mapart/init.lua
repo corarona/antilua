@@ -458,19 +458,17 @@ handle_mapart_events = function(fields)
 				if ok2 and img then
 					-- Resize to 64x64 for formspec preview
 					local pw, ph = 64, 64
-					local px = {}
+					local parts = {}
 					for z = 0, ph - 1 do
 						for x = 0, pw - 1 do
 							local sx = math.min(math.floor(x * img.width / pw), img.width - 1)
 							local sy = math.min(math.floor(z * img.height / ph), img.height - 1)
 							local pi = (sy * img.width + sx) * 4 + 1
-							table.insert(px, string.byte(img.data, pi))
-							table.insert(px, string.byte(img.data, pi + 1))
-							table.insert(px, string.byte(img.data, pi + 2))
-							table.insert(px, string.byte(img.data, pi + 3))
+							parts[#parts + 1] = img.data:sub(pi, pi + 3)
 						end
 					end
-					local png_data = core.encode_png(pw, ph, px)
+					local px_str = table.concat(parts)
+					local png_data = core.encode_png(pw, ph, px_str, -1)
 					if png_data then
 						s.preview = "[png:" .. core.encode_base64(png_data)
 					end
@@ -790,7 +788,7 @@ core.register_chatcommand("test_encode_png", {
 			return false, "Failed to decode image"
 		end
 
-		local out = core.encode_png(img.width, img.height, img.data)
+		local out = core.encode_png(img.width, img.height, img.data, -1)
 		if not out then
 			return false, "encode_png returned nil"
 		end
