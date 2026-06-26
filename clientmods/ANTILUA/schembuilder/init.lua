@@ -1454,6 +1454,14 @@ if sbots and sbots.register_bot then
 
 			-- Place the primary target first
 			local target_entry = self._current_entry
+			-- Dig any existing node at the target position first
+			local tpos = {x = target_entry.x, y = target_entry.y, z = target_entry.z}
+			local existing = core.get_node_or_nil(tpos)
+			if existing and existing.name ~= "air" and existing.name ~= "ignore" then
+				if ws.dig then
+					ws.dig(tpos)
+				end
+			end
 			local place_item = is_random and pick_random_block() or target_entry.name
 			if place_item and ws.place(target_entry, place_item) then
 				self._last_place_time = os.clock()
@@ -1490,6 +1498,13 @@ if sbots and sbots.register_bot then
 							local dz = entry.z - pz
 							if dx*dx + dy*dy + dz*dz <= range*range then
 								local batch_item = is_random and pick_random_block() or entry.name
+								if batch_item then
+									local epos = {x = entry.x, y = entry.y, z = entry.z}
+									local enode = core.get_node_or_nil(epos)
+									if enode and enode.name ~= "air" and enode.name ~= "ignore" then
+										if ws.dig then ws.dig(epos) end
+									end
+								end
 								if batch_item and ws.place(entry, batch_item) then
 									table.remove(place_nodes, i)
 									placed = placed + 1
