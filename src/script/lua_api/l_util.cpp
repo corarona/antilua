@@ -673,7 +673,7 @@ int ModApiUtil::l_encode_png(lua_State *L)
 	u32 width = readParam<int>(L, 1);
 	u32 height = readParam<int>(L, 2);
 	const char *data = luaL_checklstring(L, 3, NULL);
-	s32 compression = readParam<int>(L, 4);
+	s32 compression = lua_isnumber(L, 4) ? lua_tointeger(L, 4) : 6;
 
 	std::string out = encodePNG((const u8*)data, width, height, compression);
 
@@ -810,6 +810,7 @@ void ModApiUtil::InitializeClient(lua_State *L, int top)
 	API_FCT(encode_base64);
 	API_FCT(decode_base64);
 	API_FCT(encode_png);
+	API_FCT(mkdir);
 
 	API_FCT(get_version);
 	API_FCT(sha1);

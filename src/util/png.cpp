@@ -15,27 +15,20 @@ static int choose_color_type(const u8 *data, u32 width, u32 height,
 	std::vector<u8> &converted)
 {
 	const u32 npixels = width * height;
-	// check if alpha is all opaque
 	bool all_opaque = true;
-	for (u32 i = 0; i < npixels; i++) {
-		if (data[4*i + 3] != 255) {
-			all_opaque = false;
-			break;
-		}
-	}
-	if (!all_opaque)
-		return PNG_COLOR_TYPE_RGBA;
-
-	// check if R=G=B (grayscale)
 	bool gray = true;
+
 	for (u32 i = 0; i < npixels; i++) {
 		const u8 *p = &data[4*i];
-		if (p[0] != p[1] || p[1] != p[2]) {
+		if (p[3] != 255)
+			all_opaque = false;
+		if (p[0] != p[1] || p[1] != p[2])
 			gray = false;
-			break;
-		}
+		if (!all_opaque && !gray)
+			return PNG_COLOR_TYPE_RGBA;
 	}
 
+	// All opaque. Convert to grayscale or RGB.
 	if (gray) {
 		converted.resize(width * height);
 		for (u32 i = 0; i < npixels; i++)

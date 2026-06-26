@@ -3,6 +3,7 @@ local modpath = core.get_modpath(core.get_current_modname())
 -- Forward declarations for optional mapart integration
 handle_mapart_events = nil
 get_mapart_tab = nil
+schembuilder_api = nil
 
 local schembuilder = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
 local place_nodes = {}
@@ -1613,13 +1614,15 @@ core.register_on_connect(function()
 end)
 
 -- Exposed for other mods (e.g., mapart)
-schembuilder_load_mts = function(filepath, label, use_pos)
-	if type(do_schembuild) ~= "function" then
-		return false, "schembuilder not initialized"
-	end
-	local ok, err, sparam = do_schembuild("file:" .. filepath, use_pos)
-	if ok then
-		create_build(sparam or ("file:" .. filepath), label or "schematic")
-	end
-	return ok, err
-end
+schembuilder_api = {
+	load_mts = function(filepath, label, use_pos)
+		if type(do_schembuild) ~= "function" then
+			return false, "schembuilder not initialized"
+		end
+		local ok, err, sparam = do_schembuild("file:" .. filepath, use_pos)
+		if ok then
+			create_build(sparam or ("file:" .. filepath), label or "schematic")
+		end
+		return ok, err
+	end,
+}

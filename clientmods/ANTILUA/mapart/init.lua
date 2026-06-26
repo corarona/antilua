@@ -134,6 +134,38 @@ local function floyd_steinberg(errors, w, h, x, y, dr, dg, db)
 	add_err(1, 1, 1/16)
 end
 
+-- Sample a pixel from the source image (nearest-neighbor or bilinear)
+local function sample_px(data, sw, sh, px, py, dw, dh, bilinear)
+	if bilinear then
+		local sx = px * sw / dw
+		local sy = py * sh / dh
+		local x1 = math.min(math.floor(sx), sw - 1)
+		local y1 = math.min(math.floor(sy), sh - 1)
+		local x2 = math.min(x1 + 1, sw - 1)
+		local y2 = math.min(y1 + 1, sh - 1)
+		local fx = sx - x1; local fy = sy - y1
+		local function get(x, y)
+			local idx = (y * sw + x) * 4 + 1
+			return string.byte(data, idx), string.byte(data, idx + 1),
+				string.byte(data, idx + 2), string.byte(data, idx + 3)
+		end
+		local r1,g1,b1,a1 = get(x1, y1)
+		local r2,g2,b2,a2 = get(x2, y1)
+		local r3,g3,b3,a3 = get(x1, y2)
+		local r4,g4,b4,a4 = get(x2, y2)
+		return (1-fx)*(1-fy)*r1 + fx*(1-fy)*r2 + (1-fx)*fy*r3 + fx*fy*r4,
+			(1-fx)*(1-fy)*g1 + fx*(1-fy)*g2 + (1-fx)*fy*g3 + fx*fy*g4,
+			(1-fx)*(1-fy)*b1 + fx*(1-fy)*b2 + (1-fx)*fy*b3 + fx*fy*b4,
+			(1-fx)*(1-fy)*a1 + fx*(1-fy)*a2 + (1-fx)*fy*a3 + fx*fy*a4
+	end
+	local sx = math.floor(px * sw / dw)
+	local sy = math.floor(py * sh / dh)
+	sx = math.min(sx, sw - 1); sy = math.min(sy, sh - 1)
+	local idx = (sy * sw + sx) * 4 + 1
+	return string.byte(data, idx), string.byte(data, idx + 1),
+		string.byte(data, idx + 2), string.byte(data, idx + 3)
+end
+
 -- Convert decoded image data to an MTS schematic
 local function image_to_schem(width, height, pixel_data, opts)
 	opts = opts or {}
@@ -142,21 +174,7 @@ local function image_to_schem(width, height, pixel_data, opts)
 	local use_dither = opts.dither or false
 	local use_gamma = opts.gamma or false
 	local pal = opts.palette or palette
-
-	-- Nearest-neighbor resize
-	local function get_pixel(px, py)
-		local sx = math.floor(px * width / out_w)
-		local sy = math.floor(py * height / out_h)
-		sx = math.min(sx, width - 1)
-		sy = math.min(sy, height - 1)
-		local idx = (sy * width + sx) * 4 + 1
-		return string.byte(pixel_data, idx),
-			string.byte(pixel_data, idx + 1),
-			string.byte(pixel_data, idx + 2),
-			string.byte(pixel_data, idx + 3)
-	end
-
-	-- Initialize error accumulators for dithering
+	local use_bilinear = opts.filter == "bilinear"
 	local errors = {}
 	if use_dither then
 		for i = 1, out_w * out_h * 3 do
@@ -171,7 +189,7 @@ local function image_to_schem(width, height, pixel_data, opts)
 
 	for z = out_h - 1, 0, -1 do
 		for x = 0, out_w - 1 do
-			local r, g, b, a = get_pixel(x, z)
+			local r, g, b, a = sample_px(pixel_data, width, height, x, z, out_w, out_h, use_bilinear)
 
 			if use_dither then
 				local idx = z * out_w + x
@@ -227,18 +245,7 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 	local use_gamma = opts.gamma or false
 	local pal = opts.palette or palette
 	local dir = opts.direction or "x"
-
-	local function get_pixel(px, py)
-		local sx = math.floor(px * width / out_w)
-		local sy = math.floor(py * height / out_h)
-		sx = math.min(sx, width - 1)
-		sy = math.min(sy, height - 1)
-		local idx = (sy * width + sx) * 4 + 1
-		return string.byte(pixel_data, idx),
-			string.byte(pixel_data, idx + 1),
-			string.byte(pixel_data, idx + 2),
-			string.byte(pixel_data, idx + 3)
-	end
+	local use_bilinear = opts.filter == "bilinear"
 
 	local errors = {}
 	if use_dither then
@@ -252,7 +259,7 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 		schem = { size = { x = out_w, y = out_h, z = 1 }, data = {} }
 		for y = out_h - 1, 0, -1 do
 			for x = 0, out_w - 1 do
-				local r, g, b, a = get_pixel(x, y)
+				local r, g, b, a = sample_px(pixel_data, width, height, x, y, out_w, out_h, use_bilinear)
 				if use_dither then
 					local idx = y * out_w + x
 					r = math.max(0, math.min(255, r + errors[idx * 3 + 1]))
@@ -278,7 +285,7 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 		schem = { size = { x = 1, y = out_h, z = out_w }, data = {} }
 		for z = 0, out_w - 1 do
 			for y = out_h - 1, 0, -1 do
-				local r, g, b, a = get_pixel(z, y)
+				local r, g, b, a = sample_px(pixel_data, width, height, z, y, out_w, out_h, use_bilinear)
 				if use_dither then
 					local idx = y * out_w + z
 					r = math.max(0, math.min(255, r + errors[idx * 3 + 1]))
@@ -314,6 +321,10 @@ local function save_and_load_mts(schem, name, use_pos)
 	local schem_dir = core.settings:get("mapart_output_dir")
 		or "/tmp/antilua_mapart"
 
+	if type(core.mkdir) == "function" then
+		core.mkdir(schem_dir)
+	end
+
 	local filepath = schem_dir .. "/" .. name:gsub("%.png$", "") .. ".mts"
 	local ok, err = core.write_file(filepath, mts_data)
 	if not ok then
@@ -321,14 +332,20 @@ local function save_and_load_mts(schem, name, use_pos)
 	end
 
 	-- Try to load into schembuilder if available
-	if type(schembuilder_load_mts) == "function" then
-		schembuilder_load_mts(filepath, name:gsub("%.png$", "") .. ".mts", use_pos)
+	if schembuilder_api and type(schembuilder_api.load_mts) == "function" then
+		schembuilder_api.load_mts(filepath, name:gsub("%.png$", "") .. ".mts", use_pos)
 	end
 	return true, filepath
 end
 
--- Build a filtered palette with only nodes in the player's inventory
+-- Build a filtered palette with only nodes in the player's inventory (cached 1s)
+local _inv_cache_time = 0
+local _inv_cache_pal = nil
 local function build_inv_palette()
+	local now = os.clock()
+	if now - _inv_cache_time < 1.0 and _inv_cache_pal then
+		return _inv_cache_pal
+	end
 	local inv = core.get_inventory("current_player")
 	if not inv then return nil end
 	local types = {}
@@ -351,6 +368,8 @@ local function build_inv_palette()
 			table.insert(filtered, entry)
 		end
 	end
+	_inv_cache_time = now
+	_inv_cache_pal = filtered
 	return filtered
 end
 
@@ -367,6 +386,7 @@ local state = {
 	invonly = false,
 	grid_new = core.settings:get_bool("mapart_grid_new", false),
 	mode = "floor",
+	filter = "nearest",
 	status = "",
 }
 
@@ -402,20 +422,21 @@ get_mapart_tab = function(fs, tab)
 		"field[6.7,4.8;1.5,0.6;mapart_h;;" .. s.out_h .. "]" ..
 		"label[6.7,4.3;H]" ..
 		"dropdown[5,5.5;3.5;mapart_mode;Floor,Wall (X),Wall (Z);" .. mode_idx .. "]" ..
-		"checkbox[5,6.2;mapart_dither;Dither;" .. (s.dither and "true" or "false") .. "]" ..
-		"checkbox[5,6.9;mapart_gamma;Gamma;" .. (s.gamma and "true" or "false") .. "]" ..
-		"checkbox[5,7.6;mapart_invonly;Inventory only;" .. (s.invonly and "true" or "false") .. "]"
+		"dropdown[5,6.2;3.5;mapart_filter;Nearest,Bilinear;" .. (s.filter == "bilinear" and 2 or 1) .. "]" ..
+		"checkbox[5,6.9;mapart_dither;Dither;" .. (s.dither and "true" or "false") .. "]" ..
+		"checkbox[5,7.6;mapart_gamma;Gamma;" .. (s.gamma and "true" or "false") .. "]" ..
+		"checkbox[5,8.3;mapart_invonly;Inventory only;" .. (s.invonly and "true" or "false") .. "]"
 
 	if s.mode == "floor" then
-		fs = fs .. "checkbox[5,8.3;mapart_grid_new;New grid;" .. (s.grid_new and "true" or "false") .. "]"
+		fs = fs .. "checkbox[5,9.0;mapart_grid_new;New grid;" .. (s.grid_new and "true" or "false") .. "]"
 	end
 
 	-- Convert button + status
-	local btn_y = s.mode == "floor" and 9.0 or 8.3
-	fs = fs .. "button[5," .. btn_y .. ";3,0.8;mapart_convert;Convert]"
-	local st_y = btn_y + 0.8
+	local btn_y = s.mode == "floor" and 9.7 or 9.0
+	fs = fs .. "button[0.3," .. btn_y .. ";9,0.8;mapart_convert;Convert]"
+	local st_y = btn_y + 0.9
 	if s.status ~= "" then
-		fs = fs .. "label[5," .. st_y .. ";" .. core.formspec_escape(s.status) .. "]"
+		fs = fs .. "label[0.3," .. st_y .. ";" .. core.formspec_escape(s.status) .. "]"
 	end
 
 	return fs
@@ -450,24 +471,35 @@ handle_mapart_events = function(fields)
 		end
 		if idx and s.png_list[idx] then
 			s.selected = idx
-			-- Show preview of the original image
+			-- Show color-matched preview
 			local filepath = s.png_dir .. "/" .. s.png_list[idx]
 			local ok, data = pcall(core.read_file, filepath)
 			if ok and data then
 				local ok2, img = pcall(core.decode_image, data)
 				if ok2 and img then
-					-- Resize to 64x64 for formspec preview
 					local pw, ph = 64, 64
-					local parts = {}
-					for z = 0, ph - 1 do
+					local pixels = {}
+					for y = 0, ph - 1 do
 						for x = 0, pw - 1 do
-							local sx = math.min(math.floor(x * img.width / pw), img.width - 1)
-							local sy = math.min(math.floor(z * img.height / ph), img.height - 1)
-							local pi = (sy * img.width + sx) * 4 + 1
-							parts[#parts + 1] = img.data:sub(pi, pi + 3)
+							local r,g,b,a = sample_px(img.data, img.width, img.height, x, y, pw, ph, false)
+							if a < 128 then
+								pixels[#pixels + 1] = 0; pixels[#pixels + 1] = 0
+								pixels[#pixels + 1] = 0; pixels[#pixels + 1] = 0
+							else
+								local best = find_closest(r, g, b, false, palette)
+								if best then
+									pixels[#pixels + 1] = best.r
+									pixels[#pixels + 1] = best.g
+									pixels[#pixels + 1] = best.b
+									pixels[#pixels + 1] = 255
+								else
+									pixels[#pixels + 1] = r; pixels[#pixels + 1] = g
+									pixels[#pixels + 1] = b; pixels[#pixels + 1] = 255
+								end
+							end
 						end
 					end
-					local px_str = table.concat(parts)
+					local px_str = string.char(unpack(pixels))
 					local png_data = core.encode_png(pw, ph, px_str, -1)
 					if png_data then
 						s.preview = "[png:" .. core.encode_base64(png_data)
@@ -507,6 +539,8 @@ handle_mapart_events = function(fields)
 		local do_invonly = fields.mapart_invonly == "true"
 		local mode_names = { "floor", "wall_x", "wall_z" }
 		local mode = mode_names[tonumber(fields.mapart_mode) or 1]
+		local filter_names = { "nearest", "bilinear" }
+		local filter = filter_names[tonumber(fields.mapart_filter) or 1]
 
 		s.out_w = out_w
 		s.out_h = out_h
@@ -514,6 +548,7 @@ handle_mapart_events = function(fields)
 		s.gamma = do_gamma
 		s.invonly = do_invonly
 		s.mode = mode
+		s.filter = filter
 
 		local pal = palette
 		if do_invonly then
@@ -524,31 +559,139 @@ handle_mapart_events = function(fields)
 			end
 		end
 
-		local schem
-		if mode == "floor" then
-			local do_grid_new = fields.mapart_grid_new == "true"
-			if do_grid_new ~= s.grid_new then
-				core.settings:set_bool("mapart_grid_new", do_grid_new)
+		-- Start chunked conversion
+		s.status = "Converting..."
+		s._conv = {
+			pal = pal, name = name, mode = mode,
+			out_w = out_w, out_h = out_h,
+			filter = filter,
+			dither = do_dither, gamma = do_gamma,
+			grid_new = fields.mapart_grid_new == "true",
+			wall_dir = mode == "wall_x" and "x" or "z",
+			img = img,
+			schem = { size = { x = out_w, y = mode:sub(1,4) == "wall" and out_h or 1, z = mode:sub(1,4) == "wall" and (mode == "wall_z" and out_w or 1) or out_h }, data = {} },
+			y = mode == "floor" and out_h - 1 or out_h - 1,
+			z = 0,
+			errors = {},
+			air_count = 0,
+		}
+		if do_dither then
+			for i = 1, out_w * out_h * 3 do s._conv.errors[i] = 0 end
+		end
+		if mode:sub(1,4) == "wall" then
+			s._conv.schem.size.z = mode == "wall_z" and out_w or 1
+			s._conv.schem.size.x = mode == "wall_x" and out_w or 1
+		end
+		core.after(0, function() process_conv_chunk() end)
+		return true
+	end
+
+	return false
+end
+
+local function process_conv_chunk()
+	local s = state
+	local c = s._conv
+	if not c then return end
+	local chunk = 32
+	local done = 0
+
+	for batch = 1, chunk do
+		if c.mode == "floor" then
+			if c.y < 0 then done = 1; break end
+			for x = 0, c.out_w - 1 do
+				local r,g,b,a = sample_px(c.img.data, c.img.width, c.img.height, x, c.y, c.out_w, c.out_h, c.filter == "bilinear")
+				if c.dither then
+					local idx = c.y * c.out_w + x
+					r = math.max(0, math.min(255, r + c.errors[idx*3+1]))
+					g = math.max(0, math.min(255, g + c.errors[idx*3+2]))
+					b = math.max(0, math.min(255, b + c.errors[idx*3+3]))
+				end
+				if a < 128 then
+					table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
+				else
+					local best = find_closest(r, g, b, c.gamma, c.pal)
+					if best then
+						local dr = r - best.r; local dg = g - best.g; local db = b - best.b
+						if c.dither then floyd_steinberg(c.errors, c.out_w, c.out_h, x, c.y, dr, dg, db) end
+						table.insert(c.schem.data, { name = best.name, prob = 254, param2 = best.param2 })
+					else
+						table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
+					end
+				end
 			end
-			s.grid_new = do_grid_new
-
-			schem = image_to_schem(img.width, img.height, img.data, {
-				width = out_w,
-				height = out_h,
-				dither = do_dither,
-				gamma = do_gamma,
-				palette = pal,
-			})
-
-			if #schem.data == 0 then
-				s.status = "No non-transparent pixels found"
-				return true
+			c.y = c.y - 1
+		else
+			local dir = c.wall_dir
+			if dir == "x" then
+				if c.y < 0 then done = 1; break end
+				for x = 0, c.out_w - 1 do
+					local r,g,b,a = sample_px(c.img.data, c.img.width, c.img.height, x, c.y, c.out_w, c.out_h, c.filter == "bilinear")
+					if c.dither then
+						local idx = c.y * c.out_w + x
+						r = math.max(0, math.min(255, r + c.errors[idx*3+1]))
+						g = math.max(0, math.min(255, g + c.errors[idx*3+2]))
+						b = math.max(0, math.min(255, b + c.errors[idx*3+3]))
+					end
+					if a < 128 then
+						table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
+					else
+						local best = find_closest(r, g, b, c.gamma, c.pal)
+						if best then
+							local dr = r - best.r; local dg = g - best.g; local db = b - best.b
+							if c.dither then floyd_steinberg(c.errors, c.out_w, c.out_h, x, c.y, dr, dg, db) end
+							table.insert(c.schem.data, { name = best.name, prob = 254, param2 = best.param2 })
+						else
+							table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
+						end
+					end
+				end
+				c.y = c.y - 1
+			else
+				if c.z >= c.out_w then done = 1; break end
+				for y = c.out_h - 1, 0, -1 do
+					local r,g,b,a = sample_px(c.img.data, c.img.width, c.img.height, c.z, y, c.out_w, c.out_h, c.filter == "bilinear")
+					if c.dither then
+						local idx = y * c.out_w + c.z
+						r = math.max(0, math.min(255, r + c.errors[idx*3+1]))
+						g = math.max(0, math.min(255, g + c.errors[idx*3+2]))
+						b = math.max(0, math.min(255, b + c.errors[idx*3+3]))
+					end
+					if a < 128 then
+						table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
+					else
+						local best = find_closest(r, g, b, c.gamma, c.pal)
+						if best then
+							local dr = r - best.r; local dg = g - best.g; local db = b - best.b
+							if c.dither then floyd_steinberg(c.errors, c.out_w, c.out_h, c.z, y, dr, dg, db) end
+							table.insert(c.schem.data, { name = best.name, prob = 254, param2 = best.param2 })
+						else
+							table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
+						end
+					end
+				end
+				c.z = c.z + 1
 			end
+		end
+	end
 
+	if done == 1 or (c.mode == "floor" and c.y < 0) or (c.mode:sub(1,4) == "wall" and c.wall_dir == "x" and c.y < 0) or (c.wall_dir == "z" and c.z >= c.out_w) then
+		-- Conversion complete
+		s._conv = nil
+		if #c.schem.data == 0 then
+			s.status = "No non-transparent pixels found"
+			return
+		end
+
+		if c.mode == "floor" then
+			if c.grid_new ~= s.grid_new then
+				core.settings:set_bool("mapart_grid_new", c.grid_new)
+			end
+			s.grid_new = c.grid_new
 			local grid_pos
 			if core.localplayer then
 				local p = core.localplayer:get_pos()
-				if do_grid_new then
+				if c.grid_new then
 					grid_pos = {
 						x = math.floor((p.x - 63) / 128) * 128 + 64,
 						y = math.floor(p.y),
@@ -562,47 +705,29 @@ handle_mapart_events = function(fields)
 					}
 				end
 			end
-			local ok3, result = save_and_load_mts(schem, name, grid_pos)
-			if ok3 then
-				s.status = "Saved: " .. result
-			else
-				s.status = "Error: " .. (result or "unknown")
-			end
+			local ok3, result = save_and_load_mts(c.schem, c.name, grid_pos)
+			if ok3 then s.status = "Saved: " .. result else s.status = "Error: " .. (result or "unknown") end
 		else
-			local wall_dir = mode == "wall_x" and "x" or "z"
-			schem = image_to_wall_schem(img.width, img.height, img.data, {
-				width = out_w,
-				height = out_h,
-				dither = do_dither,
-				gamma = do_gamma,
-				palette = pal,
-				direction = wall_dir,
-			})
-
-			if #schem.data == 0 then
-				s.status = "No non-transparent pixels found"
-				return true
-			end
-
-			local ok3, result = save_and_load_mts(schem, name)
-			if ok3 then
-				s.status = "Saved: " .. result
-			else
-				s.status = "Error: " .. (result or "unknown")
-			end
+			local ok3, result = save_and_load_mts(c.schem, c.name)
+			if ok3 then s.status = "Saved: " .. result else s.status = "Error: " .. (result or "unknown") end
 		end
-		return true
+		return
 	end
 
-	return false
+	-- More rows remain
+	local total_rows = (c.mode == "floor" or (c.mode:sub(1,4) == "wall" and c.wall_dir == "x")) and c.out_h or c.out_w
+	local remaining = (c.mode:sub(1,4) == "wall" and c.wall_dir == "z") and (c.out_w - c.z) or (c.y + 1)
+	local pct = math.floor((total_rows - remaining) * 100 / total_rows)
+	s.status = "Converting " .. pct .. "%..."
+	core.after(0, process_conv_chunk)
 end
 
 core.register_chatcommand("mapart", {
-	params = "<path> [width] [height] [--dither] [--gamma] [--invonly]",
+	params = "<path> [width] [height] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear]",
 	description = "Convert a PNG image to an MTS schematic using map colors",
 	func = function(param)
 		if param == "" then
-			return false, "Usage: /mapart <path> [width] [height] [--dither] [--gamma] [--invonly]"
+			return false, "Usage: /mapart <path> [width] [height] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear]"
 		end
 
 		local parts = {}
@@ -611,12 +736,12 @@ core.register_chatcommand("mapart", {
 		end
 
 		local filepath = parts[1]
-		local out_w = 128
-		local out_h = 128
+		local out_w, out_h
 		local do_dither = false
 		local do_gamma = false
 		local do_invonly = false
 		local do_grid_new = core.settings:get_bool("mapart_grid_new", false)
+		local filter = "nearest"
 
 		for i = 2, #parts do
 			if parts[i] == "--dither" then
@@ -625,12 +750,28 @@ core.register_chatcommand("mapart", {
 				do_gamma = true
 			elseif parts[i] == "--invonly" then
 				do_invonly = true
-			elseif out_w == 128 and not parts[i]:match("^%-%-") then
-				out_w = tonumber(parts[i]) or 128
+			elseif parts[i] == "--filter" then
+				filter = parts[i + 1] or "nearest"
+				i = i + 1
+			elseif not out_w and not parts[i]:match("^%-%-") then
+				out_w = tonumber(parts[i])
 			elseif not parts[i]:match("^%-%-") then
-				out_h = tonumber(parts[i]) or 128
+				out_h = tonumber(parts[i])
 			end
 		end
+
+		local ok, data = pcall(core.read_file, filepath)
+		if not ok or not data then
+			return false, "File not found: " .. filepath
+		end
+
+		local ok2, img = pcall(core.decode_image, data)
+		if not ok2 or not img then
+			return false, "Failed to decode image"
+		end
+
+		out_w = out_w or img.width
+		out_h = out_h or img.height
 
 		local ok, data = pcall(core.read_file, filepath)
 		if not ok or not data then
@@ -656,6 +797,7 @@ core.register_chatcommand("mapart", {
 			dither = do_dither,
 			gamma = do_gamma,
 			palette = pal,
+			filter = filter,
 		})
 
 		if #schem.data == 0 then
@@ -691,11 +833,11 @@ core.register_chatcommand("mapart", {
 })
 
 core.register_chatcommand("mapart_wall", {
-	params = "<path> [width] [height] [--direction x|z] [--dither] [--gamma] [--invonly]",
+	params = "<path> [width] [height] [--direction x|z] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear]",
 	description = "Convert a PNG image to a vertical wall MTS schematic",
 	func = function(param)
 		if param == "" then
-			return false, "Usage: /mapart_wall <path> [width] [height] [--direction x|z] [--dither] [--gamma] [--invonly]"
+			return false, "Usage: /mapart_wall <path> [width] [height] [--direction x|z] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear]"
 		end
 
 		local parts = {}
@@ -708,6 +850,7 @@ core.register_chatcommand("mapart_wall", {
 		local do_dither = false
 		local do_gamma = false
 		local do_invonly = false
+		local filter = "nearest"
 		local args = {}
 
 		for i = 2, #parts do
@@ -719,6 +862,9 @@ core.register_chatcommand("mapart_wall", {
 				do_invonly = true
 			elseif parts[i] == "--direction" then
 				dir = parts[i + 1] or "x"
+				i = i + 1
+			elseif parts[i] == "--filter" then
+				filter = parts[i + 1] or "nearest"
 				i = i + 1
 			elseif not parts[i]:match("^%-%-") then
 				table.insert(args, parts[i])
@@ -755,6 +901,7 @@ core.register_chatcommand("mapart_wall", {
 			dither = do_dither,
 			gamma = do_gamma,
 			palette = pal,
+			filter = filter,
 			direction = dir,
 		})
 
