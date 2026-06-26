@@ -800,5 +800,17 @@ core.register_chatcommand("test_encode_png", {
 	end,
 })
 
+core.register_chatcommand("clear_particles", {
+	params = "",
+	description = "Clear all particles from the world (schembuilder previews etc.)",
+	func = function()
+		if type(core.clear_all_particles) == "function" then
+			core.clear_all_particles()
+			return true, "Particles cleared"
+		end
+		return false, "clear_all_particles not available"
+	end,
+})
+
 -- Initialize palette (synchronous, mod load time)
 pcall(load_palette)
