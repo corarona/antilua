@@ -997,6 +997,56 @@ core.register_chatcommand("ssave", {
 if sbots and sbots.register_bot then
 	local _item_cache = {}
 	local _item_cache_time = 0
+
+	-- Find a safe stand position near a target block so the player's head
+	-- doesn't end up inside another block (to-be-placed or existing).
+	local function compute_safe_stand_pos(target, nodes)
+		local standing_candidates = {
+			{x = 0, y = -2, z = 0},
+			{x = 1, y = -1, z = 0},
+			{x = -1, y = -1, z = 0},
+			{x = 0, y = -1, z = 1},
+			{x = 0, y = -1, z = -1},
+			{x = 1, y = -2, z = 0},
+			{x = -1, y = -2, z = 0},
+			{x = 0, y = -2, z = 1},
+			{x = 0, y = -2, z = -1},
+		}
+
+		-- Build a set of to-be-placed block positions for fast lookup
+		local place_set = {}
+		for _, entry in ipairs(nodes) do
+			if entry.name ~= "air" then
+				local key = entry.x .. "," .. entry.y .. "," .. entry.z
+				place_set[key] = true
+			end
+		end
+
+		for _, off in ipairs(standing_candidates) do
+			local sx = target.x + off.x
+			local sy = target.y + off.y
+			local sz = target.z + off.z
+			local head_y = sy + 1
+
+			-- Check if a to-be-placed block occupies the head space
+			if not place_set[sx .. "," .. head_y .. "," .. sz] then
+				-- Check if an existing solid node is at the head space
+				local node
+				if core.get_node_or_nil then
+					node = core.get_node_or_nil({x = sx, y = head_y, z = sz})
+				end
+				local blocked = node and node.name ~= "air"
+					and node.name ~= "ignore"
+					and (not core.registered_nodes or not core.registered_nodes[node.name]
+						or not core.registered_nodes[node.name].buildable_to)
+				if not blocked then
+					return {x = sx, y = sy, z = sz}
+				end
+			end
+		end
+		return nil
+	end
+
 	local function has_item(name)
 		local now = os.clock()
 		if now - _item_cache_time > 0.3 then
@@ -1310,12 +1360,16 @@ if sbots and sbots.register_bot then
 					max_batch_y = strat.max_batch_y and strat.max_batch_y(pos),
 				}
 				self._is_supply_target = nil
-				-- Layer strategy: aim at the top layer (target_y+2), place 3 layers at once
+				-- Layer strategy: place 3 layers at once
 				if name == "layer" then
 					self._strat_state.max_batch_y = target.y + 2
-					return vector.new(target.x, target.y + 2, target.z)
 				end
-				return vector.new(target.x, target.y, target.z)
+				-- Compute a safe stand position so the player's head isn't in a block
+				local safe = compute_safe_stand_pos(target, place_nodes)
+				if safe then
+					return vector.new(safe.x, safe.y, safe.z)
+				end
+				return vector.new(target.x, target.y - 1, target.z)
 			end
 
 			-- No buildable nodes found, try nearest supply chest
