@@ -103,6 +103,7 @@ static void set_al_default_settings()
 	settings->setDefault("xray", "false");
 	settings->setDefault("xray_nodes", "default:stone,mcl_core:stone");
 	settings->setDefault("fullbright", "false");
+	settings->setDefault("fullbright_min_level", "15");
 	settings->setDefault("freecam", "false");
 	settings->setDefault("freelook", "false");
 	settings->setDefault("lua_control", "false");

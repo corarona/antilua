@@ -61,6 +61,7 @@ xray_nodes (X-Ray node list) string default:stone,mcl_core:stone
 
 #    Force maximum light level on all nodes.
 fullbright (Fullbright) bool false
+fullbright_min_level (Fullbright min light level) int 15 0 15
 
 #    Always render with daytime brightness.
 no_night (Bright night) bool false

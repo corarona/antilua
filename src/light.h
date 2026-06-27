@@ -42,8 +42,14 @@ extern const u8 *light_decode_table;
 // 0 <= return value <= 255
 inline u8 decode_light(u8 light)
 {
-	if (g_settings->getBool("fullbright"))
-		return 255;
+	if (g_settings->getBool("fullbright")) {
+		u16 min = g_settings->getU16("fullbright_min_level");
+		if (min >= LIGHT_SUN)
+			return 255;
+		if (light > LIGHT_SUN)
+			light = LIGHT_SUN;
+		return std::max(light_decode_table[light], light_decode_table[(u8)min]);
+	}
 	if (light > LIGHT_SUN)
 		light = LIGHT_SUN;
 	return light_decode_table[light];

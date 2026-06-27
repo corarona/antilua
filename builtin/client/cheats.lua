@@ -78,7 +78,10 @@ core.register_cheat({ name = "AutoHit", category = "Combat", setting = "autohit"
 core.register_cheat({ name = "Xray", category = "Render", setting = "xray",
 	description = "See ores and nodes through walls" })
 core.register_cheat({ name = "Fullbright", category = "Render", setting = "fullbright",
-	description = "Brighten all surfaces for full visibility" })
+	description = "Brighten surfaces to a configurable minimum light level",
+	cheat_settings = {
+		min_level = { type = "int", default = 15, min = 0, max = 15 },
+	} })
 core.register_cheat({ name = "HUDBypass", category = "Render", setting = "hud_flags_bypass",
 	description = "Bypass HUD flags set by the server" })
 core.register_cheat({ name = "NoHurtCam", category = "Render", setting = "no_hurt_cam",
