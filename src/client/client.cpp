@@ -629,8 +629,19 @@ void Client::step(float dtime)
 		if (envEvent.type == CEE_PLAYER_DAMAGE) {
 			u16 damage = envEvent.player_damage.amount;
 
-			if (envEvent.player_damage.send_to_server)
+			if (envEvent.player_damage.send_to_server) {
+				bool blocked = false;
+				if (modsLoaded())
+					blocked = m_script->on_damage_sending(damage);
+				if (blocked) {
+					// Restore HP that damageLocalPlayer already subtracted
+					LocalPlayer *player = m_env.getLocalPlayer();
+					if (player)
+						player->hp += damage;
+					continue;
+				}
 				sendDamage(damage);
+			}
 
 			// Add to ClientEvent queue
 			ClientEvent *event = new ClientEvent();

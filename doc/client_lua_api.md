@@ -351,6 +351,10 @@ Call these functions only at load time!
     * Called when server modified player's HP
 * `core.register_on_damage_taken(function(hp))`
     * Called when the local player take damages
+* `core.register_on_damage_sending(function(amount))`
+    * Called when the client is about to send damage to the server (e.g. fall damage)
+    * Return `true` to block the damage — HP is restored and no packet is sent
+    * `core.send_damage(amount)` bypasses this callback
 * `core.register_on_formspec_input(function(formname, fields))`
     * Called when a button is pressed in the local player's inventory form
     * Newest functions are called first

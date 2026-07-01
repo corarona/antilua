@@ -237,6 +237,7 @@ core.register_on_receiving_chat_message(func(msg) -> string|bool)
 core.register_on_sending_chat_message(func(msg) -> bool)
 core.register_on_chatcommand(func(msg))
 core.register_on_damage_taken(func(amount))
+core.register_on_damage_sending(func(amount) -> bool)
 core.register_on_hp_modification(func(new_hp))
 core.register_on_dignode(func(pos, node))
 core.register_on_punchnode(func(pos, node))
@@ -251,6 +252,11 @@ core.register_on_modchannel_signal(func(channel, signal))
 Return `true` from a `register_on_receiving_chat_message` handler to suppress
 the message. Return a string to replace the message with a modified version
 (e.g., `core.strip_colors(msg)` to remove color codes).
+
+Return `true` from a `register_on_damage_sending` handler to prevent the damage
+from being sent to the server. The local player's HP is restored and no damage
+effect is shown. Use `core.send_damage(amount)` to send damage explicitly
+(bypasses this callback).
 
 ### Notification Callbacks (fire-and-forget)
 

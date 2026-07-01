@@ -101,6 +101,24 @@ void ScriptApiClient::on_damage_taken(int32_t damage_amount)
 	}
 }
 
+bool ScriptApiClient::on_damage_sending(u16 amount)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	// Get core.registered_on_damage_sending
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_damage_sending");
+	// Call callbacks
+	lua_pushinteger(L, amount);
+	try {
+		runCallbacks(1, RUN_CALLBACKS_MODE_OR_SC);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+		return false;
+	}
+	return readParam<bool>(L, -1);
+}
+
 void ScriptApiClient::on_hp_modification(int32_t newhp)
 {
 	SCRIPTAPI_PRECHECKHEADER

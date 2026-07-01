@@ -33,6 +33,7 @@ public:
 	std::string on_receiving_message(const std::string &message);
 
 	void on_damage_taken(int32_t damage_amount);
+	bool on_damage_sending(u16 amount);
 	void on_hp_modification(int32_t newhp);
 	void environment_step(float dtime);
 

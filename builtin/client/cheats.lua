@@ -120,6 +120,11 @@ core.register_cheat({ name = "FastHit", category = "Player", setting = "spamclic
 	description = "Hit entities at maximum speed" })
 core.register_cheat({ name = "NoFallDamage", category = "Player", setting = "prevent_natural_damage",
 	description = "Prevent fall damage" })
+core.register_on_damage_sending(function(amount)
+	if core.settings:get_bool("prevent_natural_damage") then
+		return true
+	end
+end)
 core.register_cheat({ name = "NoForceRotate", category = "Player", setting = "no_force_rotate",
 	description = "Prevent forced rotation by server" })
 core.register_cheat({ name = "Reach", category = "Player", setting = "reach",
