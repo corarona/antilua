@@ -599,25 +599,55 @@ bool setSystemPaths()
 
 bool setSystemPaths()
 {
+	char buf[PATH_MAX];
+
+	// First try the .app bundle resource path
 	CFBundleRef main_bundle = CFBundleGetMainBundle();
 	CFURLRef resources_url = CFBundleCopyResourcesDirectoryURL(main_bundle);
-	char path[PATH_MAX];
-
-	if (CFURLGetFileSystemRepresentation(resources_url,
-			TRUE, (UInt8 *)path, PATH_MAX)) {
-		path_share = std::string(path);
-	} else {
-		warningstream << "Could not determine bundle resource path" << std::endl;
+	if (resources_url && CFURLGetFileSystemRepresentation(resources_url,
+			TRUE, (UInt8 *)buf, PATH_MAX)) {
+		path_share = std::string(buf);
 	}
-	CFRelease(resources_url);
+	if (resources_url)
+		CFRelease(resources_url);
+
+	// Fallback: probe known locations if the bundle path is missing or invalid
+	if (path_share.empty() || !fs::IsDir(path_share + DIR_DELIM "builtin")) {
+		if (path_share.empty())
+			warningstream << "Could not determine bundle resource path" << std::endl;
+		std::string bindir;
+		if (getCurrentExecPath(buf, sizeof(buf))) {
+			pathRemoveFile(buf, '/');
+			bindir = std::string(buf);
+		}
+		std::vector<std::string> trylist;
+		std::string static_sharedir = STATIC_SHAREDIR;
+		if (!static_sharedir.empty() && static_sharedir != ".")
+			trylist.push_back(static_sharedir);
+		if (!bindir.empty()) {
+			trylist.push_back(bindir + DIR_DELIM ".." DIR_DELIM "share"
+				DIR_DELIM + PROJECT_NAME);
+			trylist.push_back(bindir + DIR_DELIM "..");
+			trylist.push_back(bindir + DIR_DELIM ".." DIR_DELIM "Resources");
+		}
+		bool found = false;
+		for (const auto &trypath : trylist) {
+			if (fs::IsDir(trypath + DIR_DELIM "builtin")) {
+				path_share = trypath;
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			warningstream << "Could not find share directory" << std::endl;
+	}
 
 	auto user_path_env = getUserPathEnvVar();
 	if (user_path_env) {
 		path_user = std::move(user_path_env.value());
 	} else {
-		// TODO: luanti with migration
 		path_user = std::string(getHomeOrFail())
-			+ "/Library/Application Support/" "minetest";
+			+ "/Library/Application Support/" "antilua";
 	}
 	return true;
 }
