@@ -274,7 +274,7 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 
-		if (kill((pid_t)info.pid, 0) != 0) {
+		if (!porting::pid_alive(info.pid)) {
 			errorstream << "Detached session (PID " << info.pid
 				<< ") is no longer running." << std::endl;
 			session::remove();

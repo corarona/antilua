@@ -75,6 +75,22 @@ namespace porting
 */
 
 void signal_handler_init();
+
+// Check if a process with the given PID is alive.
+inline bool pid_alive(int pid)
+{
+#ifdef _WIN32
+	HANDLE h = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, pid);
+	if (!h)
+		return false;
+	DWORD exit_code;
+	bool alive = GetExitCodeProcess(h, &exit_code) && exit_code == STILL_ACTIVE;
+	CloseHandle(h);
+	return alive;
+#else
+	return kill(pid, 0) == 0;
+#endif
+}
 // Returns a pointer to a bool.
 // When the bool is true, program should quit.
 [[nodiscard]] volatile std::sig_atomic_t *signal_handler_killstatus();
