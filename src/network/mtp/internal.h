@@ -326,7 +326,8 @@ enum ConnectionCommandType{
 	CONCMD_ACK,
 	CONCMD_CREATE_PEER,
 	CONNCMD_RESEND_ONE,
-	CONNCMD_PEER_ID_SET
+	CONNCMD_PEER_ID_SET,
+	CONNCMD_SEND_RAW
 };
 
 // This is very similar to ConnectionEvent
@@ -351,6 +352,7 @@ struct ConnectionCommand
 	static ConnectionCommandPtr send(session_t peer_id, u8 channelnum, NetworkPacket *pkt, bool reliable);
 	static ConnectionCommandPtr ack(session_t peer_id, u8 channelnum, const Buffer<u8> &data);
 	static ConnectionCommandPtr createPeer(session_t peer_id, const Buffer<u8> &data);
+	static ConnectionCommandPtr sendRaw(session_t peer_id, Buffer<u8> data);
 
 private:
 	ConnectionCommand(ConnectionCommandType type_) :

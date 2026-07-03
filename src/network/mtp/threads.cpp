@@ -458,6 +458,25 @@ void ConnectionSendThread::processReliableCommand(ConnectionCommandPtr &c)
 }
 
 
+void ConnectionSendThread::processRawSend(ConnectionCommandPtr &c_ptr)
+{
+	ConnectionCommand &c = *c_ptr;
+	PeerHelper peer = m_connection->getPeerNoEx(c.peer_id);
+	if (!peer) {
+		LOG(errorstream << m_connection->getDesc()
+			<< " dropped raw packet for non existent peer_id: "
+			<< c.peer_id << std::endl);
+		return;
+	}
+	try {
+		m_connection->m_udpSocket.Send(peer->getAddress(),
+				*c.data, static_cast<int>(c.data.getSize()));
+	} catch (SendFailedException &e) {
+		LOG(derr_con << m_connection->getDesc()
+			<< "SendFailedException: " << e.what() << std::endl);
+	}
+}
+
 void ConnectionSendThread::processNonReliableCommand(ConnectionCommandPtr &c_ptr)
 {
 	const ConnectionCommand &c = *c_ptr;
@@ -512,6 +531,9 @@ void ConnectionSendThread::processNonReliableCommand(ConnectionCommandPtr &c_ptr
 		case CONCMD_CREATE_PEER:
 		case CONNCMD_RESEND_ONE:
 			FATAL_ERROR("Got command that should be reliable as unreliable command");
+		case CONNCMD_SEND_RAW:
+			processRawSend(c_ptr);
+			return;
 		default:
 			LOG(dout_con << m_connection->getDesc()
 				<< " Invalid command type: " << c.type << std::endl);

@@ -621,6 +621,14 @@ ConnectionCommandPtr ConnectionCommand::createPeer(session_t peer_id, const Buff
 	return c;
 }
 
+ConnectionCommandPtr ConnectionCommand::sendRaw(session_t peer_id, Buffer<u8> data)
+{
+	auto c = create(CONNCMD_SEND_RAW);
+	c->peer_id = peer_id;
+	c->data = std::move(data);
+	return c;
+}
+
 /*
 	Channel
 */
@@ -1515,6 +1523,13 @@ void Connection::Send(session_t peer_id, u8 channelnum,
 	}
 
 	putCommand(ConnectionCommand::send(peer_id, channelnum, pkt, reliable));
+}
+
+void Connection::sendRawMTP(session_t peer_id, const u8 *data, u32 size)
+{
+	Buffer<u8> buf(size);
+	memcpy(*buf, data, size);
+	putCommand(ConnectionCommand::sendRaw(peer_id, std::move(buf)));
 }
 
 Address Connection::GetPeerAddress(session_t peer_id)

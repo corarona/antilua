@@ -131,6 +131,8 @@ public:
 	~Client();
 	DISABLE_CLASS_COPY(Client);
 
+	con::IConnection &getConnection() { return *m_con; }
+
 	/*
 	 request all threads managed by client to be stopped
 	 */

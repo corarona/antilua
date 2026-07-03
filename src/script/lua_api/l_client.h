@@ -147,6 +147,12 @@ private:
 	// send_raw_packet(command, raw_payload)
 	static int l_send_raw_packet(lua_State *L);
 
+	// send_raw_mtp_packet(payload)
+	static int l_send_raw_mtp_packet(lua_State *L);
+
+	// get_peer_id()
+	static int l_get_peer_id(lua_State *L);
+
 	// read_schematic(schematic, options)
 	static int l_read_schematic(lua_State *L);
 

@@ -241,6 +241,7 @@ public:
 	void Disconnect();
 	bool ReceiveTimeoutMs(NetworkPacket *pkt, u32 timeout_ms);
 	void Send(session_t peer_id, u8 channelnum, NetworkPacket *pkt, bool reliable);
+	void sendRawMTP(session_t peer_id, const u8 *data, u32 size);
 	session_t GetPeerID() const { return m_peer_id; }
 	Address GetPeerAddress(session_t peer_id);
 	float getPeerStat(session_t peer_id, rtt_stat_type type);

@@ -66,6 +66,7 @@ private:
 
 	void processReliableCommand(ConnectionCommandPtr &c);
 	void processNonReliableCommand(ConnectionCommandPtr &c);
+	void processRawSend(ConnectionCommandPtr &c);
 	void serve(Address bind_address);
 	void connect(Address address);
 	void disconnect();

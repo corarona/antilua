@@ -60,6 +60,7 @@ public:
 	}
 
 	virtual void Send(session_t peer_id, u8 channelnum, NetworkPacket *pkt, bool reliable) = 0;
+	virtual void sendRawMTP(session_t peer_id, const u8 *data, u32 size) = 0;
 
 	virtual session_t GetPeerID() const = 0;
 	virtual Address GetPeerAddress(session_t peer_id) = 0;

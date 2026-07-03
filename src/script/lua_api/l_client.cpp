@@ -20,6 +20,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "l_client.h"
 #include "chatmessage.h"
+#include "constants.h"
+#include "network/connection.h"
 #include "script/scripting_client.h"
 #include "client/renderingengine.h"
 #include <IFileSystem.h>
@@ -1283,6 +1285,30 @@ int ModApiClient::l_send_raw_packet(lua_State *L)
 	return 0;
 }
 
+// send_raw_mtp_packet(payload)
+// Sends a raw MTP/UDP packet directly to the server.
+// payload: raw bytes for the complete UDP datagram (including PROTOCOL_ID header)
+int ModApiClient::l_send_raw_mtp_packet(lua_State *L)
+{
+	size_t len;
+	const char *data = luaL_checklstring(L, 1, &len);
+	if (len == 0)
+		return 0;
+
+	Client *client = getClient(L);
+	client->getConnection().sendRawMTP(PEER_ID_SERVER,
+			reinterpret_cast<const u8*>(data), (u32)len);
+	return 0;
+}
+
+// get_peer_id()
+int ModApiClient::l_get_peer_id(lua_State *L)
+{
+	Client *client = getClient(L);
+	lua_pushinteger(L, client->getConnection().GetPeerID());
+	return 1;
+}
+
 // detach()
 int ModApiClient::l_detach(lua_State *L)
 {
@@ -1341,6 +1367,8 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(send_inventory_fields);
 	API_FCT(send_nodemeta_fields);
 	API_FCT(send_raw_packet);
+	API_FCT(send_raw_mtp_packet);
+	API_FCT(get_peer_id);
 	API_FCT(read_schematic);
 	API_FCT(serialize_schematic);
 	API_FCT(read_file);
