@@ -272,15 +272,7 @@ void Client::loadMods()
 	if (m_mods_loaded || !g_settings->getBool("enable_client_modding"))
 		return;
 
-	// If client scripting is disabled by the server, don't load builtin or
-	// client-provided mods.
-	// TODO Delete this code block when server-sent CSM and verifying of builtin are
-	// complete.
-	if (checkCSMRestrictionFlag(CSMRestrictionFlags::CSM_RF_LOAD_CLIENT_MODS)) {
-		warningstream << "Client-provided mod loading is disabled by server." <<
-			std::endl;
-		return;
-	}
+	// Antilua: server-sent CSM restrictions are ignored unconditionally
 
 	m_mod_vfs = std::make_unique<ModVFS>();
 
@@ -1670,39 +1662,17 @@ void Client::removeNode(v3s16 p)
  */
 MapNode Client::CSMGetNode(v3s16 p, bool *is_valid_position)
 {
-	if (checkCSMRestrictionFlag(CSMRestrictionFlags::CSM_RF_LOOKUP_NODES)) {
-		v3s16 ppos = floatToInt(m_env.getLocalPlayer()->getPosition(), BS);
-		if ((u32) ppos.getDistanceFrom(p) > m_csm_restriction_noderange) {
-			*is_valid_position = false;
-			return {};
-		}
-	}
 	return m_env.getMap().getNode(p, is_valid_position);
 }
 
 int Client::CSMClampRadius(v3s16 pos, int radius)
 {
-	if (!checkCSMRestrictionFlag(CSMRestrictionFlags::CSM_RF_LOOKUP_NODES))
-		return radius;
-	// This is approximate and will cause some allowed nodes to be excluded
-	v3s16 ppos = floatToInt(m_env.getLocalPlayer()->getPosition(), BS);
-	u32 distance = ppos.getDistanceFrom(pos);
-	if (distance >= m_csm_restriction_noderange)
-		return 0;
-	return std::min<int>(radius, m_csm_restriction_noderange - distance);
+	return radius;
 }
 
 v3s16 Client::CSMClampPos(v3s16 pos)
 {
-	if (!checkCSMRestrictionFlag(CSMRestrictionFlags::CSM_RF_LOOKUP_NODES))
-		return pos;
-	v3s16 ppos = floatToInt(m_env.getLocalPlayer()->getPosition(), BS);
-	const int range = m_csm_restriction_noderange;
-	return v3s16(
-		core::clamp<int>(pos.X, (int)ppos.X - range, (int)ppos.X + range),
-		core::clamp<int>(pos.Y, (int)ppos.Y - range, (int)ppos.Y + range),
-		core::clamp<int>(pos.Z, (int)ppos.Z - range, (int)ppos.Z + range)
-	);
+	return pos;
 }
 
 void Client::addNode(v3s16 p, MapNode n, bool remove_metadata)

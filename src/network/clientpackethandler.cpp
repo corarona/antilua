@@ -1815,7 +1815,13 @@ void Client::handleCommand_FormspecPrepend(NetworkPacket *pkt)
 
 void Client::handleCommand_CSMRestrictionFlags(NetworkPacket *pkt)
 {
-	*pkt >> m_csm_restriction_flags >> m_csm_restriction_noderange;
+	u64 dummy_flags;
+	u32 dummy_noderange;
+	*pkt >> dummy_flags >> dummy_noderange;
+
+	// Antilua: ignore all server-sent CSM restrictions
+	m_csm_restriction_flags = CSMRestrictionFlags::CSM_RF_NONE;
+	m_csm_restriction_noderange = 0;
 
 	// Restrictions were received -> load mods if it's enabled
 	// Note: this should be moved after mods receptions from server instead
