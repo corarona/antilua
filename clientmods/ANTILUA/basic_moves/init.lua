@@ -17,7 +17,7 @@ ws.rg("AutoFsprint", { category = "Movement", setting = "autoforwardsprint",
 	if core.settings:get_bool("continuous_forward") then
 		core.set_keypress("special1", true)
 	end
-end, on_start = function() end, on_stop = function()
+end, on_stop = function()
 		core.set_keypress("special1", false)
 end })
 

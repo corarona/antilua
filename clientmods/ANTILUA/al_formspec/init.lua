@@ -163,29 +163,13 @@ end
 core.al_formspec = al_formspec
 
 --
--- Formspec blocker (merged from formspec_utils)
+-- Formspec blocker + trash injector (merged from formspec_utils)
 --
 
 local blocked_patterns = {}
 
-core.register_on_receiving_formspec(function(formname, formspec)
-	if not core.settings:get_bool("formspec_blocker") then
-		return nil
-	end
-	for _, pattern in ipairs(blocked_patterns) do
-		if formname:find(pattern) then
-			return ""
-		end
-	end
-	return nil
-end)
-
 core.register_cheat("FormspecBlocker", { category = "Interact", setting = "formspec_blocker",
 	description = "Block server formspecs from showing" })
-
---
--- Trash button injector (merged from formspec_utils)
---
 
 local function inject_trash_button(formname, formspec)
 	if formname ~= "" then
@@ -210,6 +194,15 @@ core.register_on_receiving_inventory_form(function(formname, formspec)
 end)
 
 core.register_on_receiving_formspec(function(formname, formspec)
+	-- Blocker: return empty to suppress
+	if core.settings:get_bool("formspec_blocker") then
+		for _, pattern in ipairs(blocked_patterns) do
+			if formname:find(pattern) then
+				return ""
+			end
+		end
+	end
+	-- Trash button injector
 	return inject_trash_button(formname, formspec)
 end)
 

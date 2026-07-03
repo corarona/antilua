@@ -49,14 +49,6 @@ function ws.get_reachable_positions(range, under)
 	return rt
 end
 
-function ws.do_area(radius, func, plane)
-	for k, v in pairs(ws.get_reachable_positions(range)) do
-		if not plane or v.y == core.localplayer:get_pos().y - 1 then
-			func(v)
-		end
-	end
-end
-
 local function between(x, y, z)
 	return y <= x and x <= z
 end

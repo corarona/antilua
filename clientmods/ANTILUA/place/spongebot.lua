@@ -1,5 +1,8 @@
 local is_spongebot = false
 
+-- Override ALL items' placement prediction to suppress the client-side
+-- prediction ghost. SpongeBot places sponges rapidly and the ghost gets
+-- confusing — disabling prediction entirely is simpler than per-item.
 local function override_prediction(enable)
 	for k, v in pairs(core.registered_items) do
 		core.override_item(k, { node_placement_prediction = enable and "" or nil })
@@ -99,17 +102,4 @@ ws.rg("Autosponge", { category = "Place", setting = "autosponge", description = 
 })
 
 
-
-local chatscore = 0
-local chatlimit = 10
-
-local function chat(msg)
-	if chatscore < chatlimit then
-		core.send_chat_message(msg)
-		chatscore = chatscore + 1
-		core.after(5, function() chatscore = math.max(0, chatscore - 1) end)
-	end
-end
-
--- (spongebot chat responses removed for public release)
 

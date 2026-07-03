@@ -216,7 +216,7 @@ core.register_globalstep(function()
 end)
 
 function autofly.warp(name)
-	local pos = autofly.get_waypoint(name)
+	local pos = poi.get_waypoint(name)
 	if pos then
 		if ws.get_dimension(pos) == "void" then return false end
 		core.localplayer:set_pos(pos)

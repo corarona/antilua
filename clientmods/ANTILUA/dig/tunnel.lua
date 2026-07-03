@@ -93,8 +93,8 @@ ws.rg("WallExcavator", {
 				local v = ws.dircoord(1, a, b)
 				local nd = core.get_node_or_nil(v)
 				local dst = vector.distance(lp, v)
-				if ws.inside_wall(v) then ws.dig(v) end
-				if not ws.inside_wall(v) and dst < 2 and (not nd or nd.name ~= "air") then
+				ws.dig(v)
+				if dst < 2 and (not nd or nd.name ~= "air") then
 					core.settings:set_bool("continuous_forward", false)
 				end
 			end

@@ -161,16 +161,9 @@ function ws.donodes(poss, func, condition)
 	return true
 end
 
-function ws.allow_dig(pos)
-	return true
-end
-
 function ws.dignodes(poss, condition)
 	return ws.donodes(poss, ws.dig, function(pos)
-		if not ws.allow_dig(pos) then
-			return false
-		end
-		if condition and condition(v) == false then return false end
+		if condition and condition(pos) == false then return false end
 		local n = core.get_node_or_nil(pos)
 		return n and n.name ~= "air" or false
 	end)
@@ -190,11 +183,6 @@ function ws.replace(pos, arg)
 		return ws.place(pos, arg)
 	end
 end
-
-local wall_pos1 = {x = -1255, y = 6, z = 792}
-local wall_pos2 = {x = -1452, y = 80, z = 981}
-local iwall_pos1 = {x = -1266, y = 6, z = 802}
-local iwall_pos2 = {x = -1442, y = 80, z = 971}
 
 function ws.in_cube(tpos, wpos1, wpos2)
 	local xmax = wpos2.x
@@ -221,18 +209,6 @@ function ws.in_cube(tpos, wpos1, wpos2)
 	return false
 end
 
-function ws.in_wall(pos)
-	if ws.in_cube(pos, wall_pos1, wall_pos2) and not ws.in_cube(pos, iwall_pos1, iwall_pos2) then
-		return true
-	end
-	return false
-end
-
-function ws.inside_wall(pos)
-	if ws.in_cube(pos, iwall_pos1, iwall_pos2) then return true end
-	return false
-end
-
 function ws.find_closest_reachable_airpocket(pos)
 	local lp = ws.dircoord(0, 0, 0)
 	local nds = core.find_nodes_near(lp, 5, {'air'})
@@ -244,21 +220,6 @@ function ws.find_closest_reachable_airpocket(pos)
 	end
 	if odst == 10 then return false end
 	return vector.add(rt, vector.new(0, -1.5, 0))
-end
-
-function ws.find_closest_pos(poss)
-	if not poss or not poss[1] then return end
-	local lp = ws.dircoord(0, 0, 0)
-	local odst = 100000
-	local rt = poss[1]
-	for k, v in pairs(poss) do
-		local dst = vector.distance(lp, v)
-		if dst < odst then
-			rt = v
-			odst = dst
-		end
-	end
-	return rt
 end
 
 -- MakeBlocks: auto-craft blocks from wielded item (extracted from emicor)

@@ -287,7 +287,6 @@ core.register_cheat("DeathWaypointLimit", {
 })
 ws.rg("DeathTP", { category = "Player", setting = "death_tp",
 	description = "Teleport to death location",
-	on_step = function() end, on_start = function() end, on_stop = function() end,
 	daughters = { "autorespawn" } })
 
 --

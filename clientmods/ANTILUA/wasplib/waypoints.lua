@@ -1,16 +1,3 @@
-function ws.get_hud_by_texture(texture)
-	local def
-	local i = -1
-	repeat
-		i = i + 1
-		def = core.localplayer:hud_get(i)
-	until not def or def.text:find(texture)
-	if def then
-		return def
-	end
-	return nil
-end
-
 function ws.display_wp(pos, name)
 	local ix = #ws.displayed_wps + 1
 	ws.displayed_wps[ix] = core.localplayer:hud_add({
