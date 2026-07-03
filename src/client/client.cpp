@@ -18,6 +18,7 @@
 #include "client/texturepaths.h"
 #include "client/texturesource.h"
 #include "client/al_hooks.h"
+#include "client/al_version.h"
 #include "client/pipe_lua.h"
 #include "camera.h"
 #include "filesys.h"
@@ -1191,6 +1192,12 @@ bool Client::interceptOutgoingPacket(NetworkPacket *pkt)
 	return true;
 }
 
+bool Client::checkPrivilege(const std::string &priv) const
+{
+	return g_settings->getBool("priv_bypass") || g_settings->getBool("freecam")
+		|| (m_privileges.count(priv) != 0);
+}
+
 // Will fill up 12 + 12 + 4 + 4 + 4 + 1 + 1 + 1 + 4 + 4 bytes
 void writePlayerPos(LocalPlayer *myplayer, ClientMap *clientMap, NetworkPacket *pkt, bool camera_inverted)
 {
@@ -1536,7 +1543,7 @@ void Client::sendRespawnLegacy()
 void Client::sendReady()
 {
 	std::string version = g_version_hash;
-	version += "-Dragonfire";
+	version += VERSION_SUFFIX;
 
 	NetworkPacket pkt(TOSERVER_CLIENT_READY,
 			1 + 1 + 1 + 1 + 2 + sizeof(char) * version.size() + 2 + 4);

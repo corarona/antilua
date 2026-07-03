@@ -89,10 +89,6 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	StorageRef::Register(L);
 	LuaMinimap::Register(L);
 	NodeMetaRef::RegisterClient(L);
-	LuaLocalPlayer::Register(L);
-	LuaCamera::Register(L);
-	LuaSky::Register(L);
-	LuaClouds::Register(L);
 	ModChannelRef::Register(L);
 	LuaSettings::Register(L);
 	ClientObjectRef::Register(L);
@@ -108,6 +104,12 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ModApiStorage::Initialize(L, top);
 	ModApiEnv::InitializeClient(L, top);
 	ModApiChannels::Initialize(L, top);
+
+	// Antilua API registrations
+	LuaLocalPlayer::Register(L);
+	LuaCamera::Register(L);
+	LuaSky::Register(L);
+	LuaClouds::Register(L);
 	ModApiParticlesLocal::Initialize(L, top);
 	ModApiClientSound::Initialize(L, top);
 	ClientSoundHandle::Register(L);

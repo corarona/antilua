@@ -21,6 +21,7 @@
 #include "irrlichttypes_bloated.h"
 #include "log_internal.h"
 #include "sky.h"
+#include "client/camera_roll.h"
 #include "gui/cheatMenu.h"
 #include "gui/toastManager.h"
 #include "util/pointedthing.h"
@@ -401,22 +402,20 @@ public:
 	bool m_camera_offset_changed = false;
 	bool m_game_focused = false;
 
+	// -- Antilua additions --
 	bool m_cheat_layer_active = false;
 	CameraMode m_freecam_prev_camera_mode = static_cast<CameraMode>(0);
 	CameraOrientation m_cam_view = {};
 	CameraOrientation m_cam_view_target = {};
 	void toggleCheatLayer();
+	std::unique_ptr<CameraRollController> m_camera_roll_controller;
+	// -- End Antilua additions --
 
 	bool m_does_lost_focus_pause_game = false;
 
 	// if true, (almost) the whole game is paused
 	// this happens in pause menu in singleplayer
 	bool m_is_paused = false;
-
-	// Camera roll auto-reset
-	f32 m_camera_roll_idle_time = 0.0f;     // seconds since last input
-	f32 m_camera_roll_at_reset_start = 0.0f;
-	f32 m_camera_roll_reset_timer = -1.0f;  // -1 = not decaying, 0+ = elapsed decay time
 
 	bool m_touch_simulate_aux1 = false;
 	bool isTouchShootlineUsed() const;

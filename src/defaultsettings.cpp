@@ -158,6 +158,21 @@ static void set_al_default_settings()
 	settings->setDefault("keymap_select_right", "KEY_RIGHT");
 	settings->setDefault("keymap_select_confirm", "SYSTEM_SCANCODE_40");
 
+	// Camera roll
+	settings->setDefault("camera_roll_speed", "90.0");
+	settings->setDefault("camera_roll_max", "180.0");
+	settings->setDefault("camera_roll_auto_reset", "true");
+	settings->setDefault("camera_roll_auto_reset_delay", "3.0");
+	settings->setDefault("camera_roll_auto_reset_duration", "0.3");
+	settings->setDefault("camera_roll_adaptive_mouse", "both");
+	settings->setDefault("pitch_wraparound", "false");
+
+	// Key binding overrides (upstream defaults: drop=Q, aux1=E)
+	settings->setDefault("keymap_drop", "");              // unbound for camera roll
+	settings->setDefault("keymap_aux1", "SYSTEM_SCANCODE_224"); // KEY_LCONTROL
+	settings->setDefault("keymap_camera_roll_left", "SYSTEM_SCANCODE_20"); // KEY_KEY_Q
+	settings->setDefault("keymap_camera_roll_right", "SYSTEM_SCANCODE_8"); // KEY_KEY_E
+
 	// Client Lua pipe
 	settings->setDefault("pipe_lua_enable", "false");
 	settings->setDefault("pipe_lua_path", "/tmp/antilua_lua");
@@ -377,13 +392,6 @@ void set_default_settings()
 	settings->setDefault("camera_smoothing", "0.0");
 	settings->setDefault("cinematic_camera_smoothing", "0.05");
 	settings->setDefault("view_bobbing_amount", "1.0");
-	settings->setDefault("camera_roll_speed", "90.0");
-	settings->setDefault("camera_roll_max", "180.0");
-	settings->setDefault("camera_roll_auto_reset", "true");
-	settings->setDefault("camera_roll_auto_reset_delay", "3.0");
-	settings->setDefault("camera_roll_auto_reset_duration", "0.3");
-	settings->setDefault("camera_roll_adaptive_mouse", "both");
-	settings->setDefault("pitch_wraparound", "false");
 	settings->setDefault("enable_3d_clouds", "true");
 	settings->setDefault("soft_clouds", "false");
 	settings->setDefault("cloud_radius", "12");

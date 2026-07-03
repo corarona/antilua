@@ -35,6 +35,7 @@
 #endif
 #if CHECK_CLIENT_BUILD()
 #include "client/clientlauncher.h"
+#include "client/al_version.h"
 #include "client/pipe_lua.h"
 #include "client/session.h"
 #endif
@@ -69,7 +70,7 @@ extern "C" {
 #endif
 
 // TODO: migration from minetest.conf
-#define CONFIGFILE "antilua.conf"
+#define CONFIGFILE AL_CONFIGFILE
 #define DEBUGFILE "debug.txt"
 #define DEFAULT_SERVER_PORT 30000
 

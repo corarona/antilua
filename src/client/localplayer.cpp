@@ -865,43 +865,11 @@ void LocalPlayer::accelerate(const v3f &target_speed, const f32 max_increase_H,
 	m_speed += d;
 }
 
-// 3D acceleration for freecam
+// 3D acceleration for freecam (delegates to accelerate)
 void LocalPlayer::accelerateFreecam(const v3f &target_speed, const f32 max_increase_H,
 	const f32 max_increase_V, const bool use_pitch)
 {
-	const f32 yaw = getYaw();
-	const f32 pitch = getPitch();
-	v3f flat_speed = m_speed;
-	flat_speed.rotateXZBy(-yaw);
-	if (use_pitch)
-		flat_speed.rotateYZBy(-pitch);
-
-	v3f d_wanted = target_speed - flat_speed;
-	v3f d;
-
-	if (max_increase_H > 0.0f) {
-		v3f d_wanted_H = d_wanted * v3f(1.0f, 0.0f, 1.0f);
-		if (d_wanted_H.getLength() > max_increase_H)
-			d += d_wanted_H.normalize() * max_increase_H;
-		else
-			d += d_wanted_H;
-	}
-
-	if (max_increase_V > 0.0f) {
-		f32 d_wanted_V = d_wanted.Y;
-		if (d_wanted_V > max_increase_V)
-			d.Y += max_increase_V;
-		else if (d_wanted_V < -max_increase_V)
-			d.Y -= max_increase_V;
-		else
-			d.Y += d_wanted_V;
-	}
-
-	if (use_pitch)
-		d.rotateYZBy(pitch);
-	d.rotateXZBy(yaw);
-
-	m_speed += d;
+	accelerate(target_speed, max_increase_H, max_increase_V, use_pitch);
 }
 
 // Freecam movement control

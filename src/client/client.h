@@ -294,8 +294,7 @@ public:
 
 	u16 getHP();
 
-	bool checkPrivilege(const std::string &priv) const
-	{ return g_settings->getBool("priv_bypass") || g_settings->getBool("freecam") || (m_privileges.count(priv) != 0); }
+	bool checkPrivilege(const std::string &priv) const;
 
 	const std::unordered_set<std::string> &getPrivilegeList() const
 	{ return m_privileges; }

@@ -7,6 +7,7 @@
 #include <cmath>
 #include <csignal>
 #include "client/al_hooks.h"
+#include "client/camera_roll.h"
 #include "client/gameui.h"
 #include "client/inputhandler.h"
 #include "client/texturepaths.h"
@@ -485,6 +486,7 @@ bool Game::startup(volatile std::sig_atomic_t *kill,
 		errorstream << "Could not allocate memory for cheat menu" << std::endl;
 		return false;
 	}
+	m_camera_roll_controller = std::make_unique<CameraRollController>();
 
 	m_rendering_engine->initialize(client, hud);
 
@@ -585,10 +587,6 @@ void Game::run()
 		// since it's invisible to the user. But it needs to be consistent.
 		updateCameraOffset();
 
-		if (!m_is_paused) {
-			m_camera_roll_idle_time += dtime;
-		}
-
 		processUserInput(dtime);
 		// Update camera before player movement to avoid camera lag of one frame
 		updateCameraDirection(&m_cam_view_target, dtime);
@@ -608,81 +606,17 @@ void Game::run()
 					cam_damp_lambda
 			);
 		}
-		// Reset camera roll idle timer on movement keys
-		if (isKeyDown(KeyType::FORWARD) || isKeyDown(KeyType::BACKWARD) ||
-			isKeyDown(KeyType::LEFT) || isKeyDown(KeyType::RIGHT) ||
-			isKeyDown(KeyType::JUMP) || isKeyDown(KeyType::SNEAK) ||
-			isKeyDown(KeyType::AUX1) || isKeyDown(KeyType::DIG) || isKeyDown(KeyType::PLACE)) {
-			m_camera_roll_idle_time = 0.0f;
-		}
 		updatePlayerControl(m_cam_view);
 
 		if (!m_is_paused) {
-			// Camera roll from keyboard input
+			LocalPlayer *player = client->getEnv().getLocalPlayer();
 			bool roll_left = isKeyDown(KeyType::CAMERA_ROLL_LEFT);
 			bool roll_right = isKeyDown(KeyType::CAMERA_ROLL_RIGHT);
-			if (roll_left || roll_right) {
-				m_camera_roll_idle_time = 0.0f;
-				LocalPlayer *player = client->getEnv().getLocalPlayer();
-				f32 roll_speed = g_settings->getFloat("camera_roll_speed", 0.0f, 720.0f);
-				f32 roll_max = g_settings->getFloat("camera_roll_max", 0.0f, 360.0f);
-				f32 current_roll = player->getCameraRoll() * core::RADTODEG;
-				if (roll_left)
-					current_roll -= roll_speed * dtime;
-				if (roll_right)
-					current_roll += roll_speed * dtime;
-				if (roll_max >= 360.0f) {
-					// continuous rotation: wrap to [-180, 180) so it keeps spinning
-					current_roll = fmod(current_roll, 360.0f);
-					if (current_roll > 180.0f)
-						current_roll -= 360.0f;
-					if (current_roll <= -180.0f)
-						current_roll += 360.0f;
-				} else {
-					// limited lean: clamp
-					current_roll = rangelim(current_roll, -roll_max, roll_max);
-				}
-				player->setCameraRoll(current_roll * core::DEGTORAD);
-			}
-
-			// Camera roll auto-reset
-			if (g_settings->getBool("camera_roll_auto_reset")) {
-				LocalPlayer *player = client->getEnv().getLocalPlayer();
-				f32 current_roll = player->getCameraRoll();
-				if (current_roll != 0.0f) {
-					f32 delay = g_settings->getFloat("camera_roll_auto_reset_delay");
-					f32 duration = g_settings->getFloat("camera_roll_auto_reset_duration");
-
-					// Any input cancels idle and any in-progress decay
-					bool any_input = (roll_left || roll_right) ||
-						isKeyDown(KeyType::FORWARD) || isKeyDown(KeyType::BACKWARD) ||
-						isKeyDown(KeyType::LEFT) || isKeyDown(KeyType::RIGHT) ||
-						isKeyDown(KeyType::JUMP) || isKeyDown(KeyType::SNEAK) ||
-						isKeyDown(KeyType::AUX1) || isKeyDown(KeyType::DIG) || isKeyDown(KeyType::PLACE);
-
-					if (any_input) {
-						m_camera_roll_idle_time = 0.0f;
-						m_camera_roll_reset_timer = -1.0f;
-					} else if (m_camera_roll_idle_time >= delay) {
-						// Idle long enough — start or continue smooth decay to 0
-						if (m_camera_roll_reset_timer < 0.0f) {
-							m_camera_roll_reset_timer = 0.0f;
-							m_camera_roll_at_reset_start = current_roll;
-						}
-						m_camera_roll_reset_timer += dtime;
-						f32 t = fmin(m_camera_roll_reset_timer / duration, 1.0f);
-						f32 smooth = t * t * (3.0f - 2.0f * t); // smoothstep
-						f32 new_roll = m_camera_roll_at_reset_start * (1.0f - smooth);
-						player->setCameraRoll(new_roll);
-						if (t >= 1.0f) {
-							player->setCameraRoll(0.0f);
-							m_camera_roll_reset_timer = -1.0f;
-						}
-					}
-				} else {
-					m_camera_roll_reset_timer = -1.0f;
-				}
-			}
+			bool any_movement = isKeyDown(KeyType::FORWARD) || isKeyDown(KeyType::BACKWARD) ||
+				isKeyDown(KeyType::LEFT) || isKeyDown(KeyType::RIGHT) ||
+				isKeyDown(KeyType::JUMP) || isKeyDown(KeyType::SNEAK) ||
+				isKeyDown(KeyType::AUX1) || isKeyDown(KeyType::DIG) || isKeyDown(KeyType::PLACE);
+			m_camera_roll_controller->step(dtime, player, roll_left, roll_right, any_movement);
 		}
 
 		updatePauseState();
@@ -2242,37 +2176,22 @@ void Game::updateCameraOrientation(CameraOrientation *cam, float dtime)
 			dist.Y = -dist.Y;
 		}
 
-		f32 dx = (f32)dist.X * m_cache_mouse_sensitivity * sens_scale;
-		f32 dy = (f32)dist.Y * m_cache_mouse_sensitivity * sens_scale;
+		f32 raw_dx = (f32)dist.X * m_cache_mouse_sensitivity * sens_scale;
+		f32 raw_dy = (f32)dist.Y * m_cache_mouse_sensitivity * sens_scale;
 
-		std::string mode = g_settings->get("camera_roll_adaptive_mouse");
-		if (mode == "both" || mode == "pitch") {
-			if (auto *player = client->getEnv().getLocalPlayer()) {
-				f32 roll = player->getCameraRoll();
-				if (roll != 0.0f) {
-					f32 cos_r = cosf(roll);
-					f32 sin_r = sinf(roll);
-				if (mode == "both") {
-					// Both axes: rotate standard (-dx, dy) response by -θ
-					cam->camera_yaw   -= dx * cos_r - dy * sin_r;
-					cam->camera_pitch += dx * sin_r + dy * fabsf(cos_r);
-				} else {
-					// Pitch only: only vertical channel adapts
-					cam->camera_yaw   -= dx;
-					cam->camera_pitch += dy * fabsf(cos_r);
-				}
-					goto roll_applied;
-				}
-			}
+		f32 yaw_delta, pitch_delta;
+		if (auto *player = client->getEnv().getLocalPlayer()) {
+			m_camera_roll_controller->applyAdaptiveMouse(player, raw_dx, raw_dy, yaw_delta, pitch_delta);
+		} else {
+			yaw_delta = -raw_dx;
+			pitch_delta = raw_dy;
 		}
-		// Fallback: no adaptation or zero roll
-		cam->camera_yaw   -= dx;
-		cam->camera_pitch += dy;
-		roll_applied: ;
+		cam->camera_yaw += yaw_delta;
+		cam->camera_pitch += pitch_delta;
 
 		if (dist.X != 0 || dist.Y != 0) {
 			input->setMousePos(center.X, center.Y);
-			m_camera_roll_idle_time = 0.0f;
+			m_camera_roll_controller->resetIdleTimer();
 			if (auto *player = client->getEnv().getLocalPlayer()) {
 				player->unlockYaw();
 				player->unlockPitch();
