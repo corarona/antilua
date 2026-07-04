@@ -15,7 +15,7 @@ movement_strategies.teleport = {
 	on_step = function(bot, lp)
 		ws.aim(bot.target_pos)
 		core.settings:set_bool("continuous_forward", false)
-		if not rhythmtp.is_moving() then
+		if rhythmtp and not rhythmtp.is_moving() then
 			rhythmtp.go_to(bot.target_pos)
 		end
 	end,
@@ -33,7 +33,7 @@ movement_strategies.server_tp = {
 	on_step = function(bot, lp)
 		ws.aim(bot.target_pos)
 		core.settings:set_bool("continuous_forward", false)
-		local now = os.clock()
+		local now = core.get_us_time() / 1000000
 		if not bot._tp_cooldown or now - bot._tp_cooldown > 0.3 then
 			bot._tp_cooldown = now
 			local p = bot.target_pos

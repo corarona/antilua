@@ -40,8 +40,8 @@ function ws.globalhacktemplate(def)
 		if not core.localplayer then return end
 		if core.settings:get_bool(setting) then
 			if tps_client and tps_client.ping and tps_client.ping > 1000 then return end
-			if nextact[setting] and nextact[setting] > os.clock() then return end
-			nextact[setting] = os.clock() + (def.delay or 0.2)
+			if nextact[setting] and nextact[setting] > core.get_us_time() / 1000000 then return end
+			nextact[setting] = core.get_us_time() / 1000000 + (def.delay or 0.2)
 			if not ghwason[setting] then
 				local ok, msg = def.on_start(def)
 				if ok ~= false then

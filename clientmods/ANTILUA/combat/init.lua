@@ -113,9 +113,9 @@ local function track_friend_hp()
 			if cached and hp < cached and not not_in_friendlist(obj) then
 				local attacker = find_closest_non_friend(obj:get_pos())
 				if attacker then
-					killaura.damage_log[attacker] = {
-						time = os.clock(),
-						damage = cached - hp,
+				killaura.damage_log[attacker] = {
+					time = core.get_us_time() / 1000000,
+					damage = cached - hp,
 					}
 				end
 			end
@@ -136,7 +136,7 @@ core.register_on_damage_taken(function(amount)
 		local name = find_closest_non_friend(p)
 		if name then
 			killaura.damage_log[name] = {
-				time = os.clock(),
+				time = core.get_us_time() / 1000000,
 				damage = amount,
 			}
 		end
@@ -470,7 +470,7 @@ core.register_on_mods_loaded(function()
 				track_friend_hp()
 			end
 
-			local now = os.clock()
+		local now = core.get_us_time() / 1000000
 			local timeout = killaura.get("retaliate_timeout")
 			for name, entry in pairs(killaura.damage_log) do
 				if now - entry.time > timeout then

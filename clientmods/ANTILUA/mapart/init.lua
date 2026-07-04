@@ -137,16 +137,6 @@ core.register_chatcommand("mapart", {
 		out_w = out_w or img.width
 		out_h = out_h or img.height
 
-		local ok, data = pcall(core.read_file, filepath)
-		if not ok or not data then
-			return false, "File not found: " .. filepath
-		end
-
-		local ok2, img = pcall(core.decode_image, data)
-		if not ok2 or not img then
-			return false, "Failed to decode image"
-		end
-
 		local pal = palette
 		if do_invonly then
 			pal = build_inv_palette()

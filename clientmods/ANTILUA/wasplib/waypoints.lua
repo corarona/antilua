@@ -16,8 +16,8 @@ function ws.clear_wp(ix)
 end
 
 function ws.clear_wps()
-	for k, v in ipairs(ws.displayed_wps) do
-		core.localplayer:hud_remove(v)
-		table.remove(ws.displayed_wps, k)
+	for k = #ws.displayed_wps, 1, -1 do
+		core.localplayer:hud_remove(ws.displayed_wps[k])
+		ws.displayed_wps[k] = nil
 	end
 end

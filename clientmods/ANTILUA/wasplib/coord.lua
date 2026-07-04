@@ -49,10 +49,6 @@ function ws.get_reachable_positions(range, under)
 	return rt
 end
 
-local function between(x, y, z)
-	return y <= x and x <= z
-end
-
 function ws.getaxis()
 	local dir = ws.getdir()
 	if dir == "north" or dir == "south" then return "z" end
@@ -74,13 +70,13 @@ end
 function ws.getdir(yaw)
 	if not core.localplayer then return "north" end
 	local rot = yaw or core.localplayer:get_yaw() % 360
-	if between(rot, 316, 360) or between(rot, 0, 45) then
+	if ws.between(rot, 316, 360) or ws.between(rot, 0, 45) then
 		return "north"
-	elseif between(rot, 136, 225) then
+	elseif ws.between(rot, 136, 225) then
 		return "south"
-	elseif between(rot, 226, 315) then
+	elseif ws.between(rot, 226, 315) then
 		return "east"
-	elseif between(rot, 46, 135) then
+	elseif ws.between(rot, 46, 135) then
 		return "west"
 	end
 end

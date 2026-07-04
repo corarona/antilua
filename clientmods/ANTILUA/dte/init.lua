@@ -14,15 +14,8 @@ local function create_tabs(selected)
 	"  LUA EDITOR   , LUA CONSOLE  ,	 FILES	 ,	STARTUP	,   FUNCTIONS   ,	 HELP	  ;"..selected..";;]"
 end
 
-local function copy_table(table)
-	local new = {}
-	for i, v in pairs(table) do
-		if type(v) == "table" then
-			v = copy_table(v)
-		end
-		new[i] = v
-	end
-	return new
+local function copy_table(t)
+	return table.copy(t)
 end
 
 
@@ -87,8 +80,10 @@ end
 -- FUNCTIONS FOR UI
 ----------
 
-function print(...)  --  replace print to output into the UI. (doesn't refresh until the script has ended)
-	params = {...}
+local _builtin_print = print
+
+function dte_print(...)  -- output into the UI (doesn't refresh until the script has ended)
+	local params = {...}
 	if #params == 1 then
 		local str = params[1]
 		if type(str) ~= "string" then
@@ -105,14 +100,14 @@ function print(...)  --  replace print to output into the UI. (doesn't refresh u
 		end
 	else
 		for i, v in pairs(params) do
-			print(v)
+			dte_print(v)
 		end
 	end
 end
 
 function safe(func)  -- run a function without crashing the game. All errors are displayed in the UI.
-	f = function(...)  -- This can be used for functions being registered with minetest, like "core.register_chat_command()"
-		status, out = pcall(func, ...)
+	local f = function(...)  -- This can be used for functions being registered with minetest, like "core.register_chat_command()"
+		local status, out = pcall(func, ...)
 		if status then
 			return out
 		else
@@ -133,7 +128,9 @@ local function run(code, name)  -- run a script
 	if name == nil then
 		name = saved_file
 	end
-	status, err = pcall(loadstring(code))  -- run
+	print = dte_print  -- temporarily redirect print to DTE output
+	local status, err = pcall(loadstring(code))  -- run
+	print = _builtin_print  -- restore original print
 	if status then
 		if saved_file == false then
 			table.insert(output, "#00ff00finished")  -- display that the script ran without errors
@@ -221,7 +218,8 @@ local function lua_editor()  -- the main formspec for editing
 	"button[0," .. data.height-3.5 .. ";1,0;run;RUN]"..
 	"button[1," .. data.height-3.5 .. ";1,0;clear;CLEAR]"..
 	"button[2," .. data.height-3.5 .. ";1,0;save;SAVE]"..
-	"dropdown[3,"..data.height-3.8 ..";3;lua_select;"..lua_files_item_str..";"..idx.."]" ..
+	"button[3.1," .. data.height-3.5 .. ";1,0;load_ext;LOAD]"..
+	"dropdown[4.2,"..data.height-3.8 ..";3;lua_select;"..lua_files_item_str..";"..idx.."]" ..
 	"textlist[0,"..data.height-3 ..";"..data.width-0.2 ..","..data.height-7 ..";output;"..output_str..";".. #output .."]"..
 	"" .. create_tabs(1)
 	return form
@@ -282,12 +280,39 @@ core.register_on_formspec_input(function(formname, fields)
 			output = {}
 			save_lua(fields.editor)
 			core.show_formspec("lua:editor", lua_editor())
+		elseif fields.load_ext then  --[LOAD] button - load external file
+			dte._pending_load = true
+			core.show_formspec("lua:load_ext",
+				"size[8,2]" ..
+				"field[0.3,0.3;7.5,1;filepath;File path (relative to worldmods/ or clientmods/):;]" ..
+				"button[0,1;3,1;load_ok;LOAD]" ..
+				"button[3,1;3,1;load_cancel;CANCEL]")
 		elseif fields.lua_select then
 			if table.indexof(lua_files, fields.lua_select) ~= -1 then
 				saved_file = fields.lua_select
 				dte.modstorage:set_string("_lua_saved", fields.lua_select)
 				core.show_formspec("lua:editor", lua_editor())
 			end
+		end
+
+	-- LOAD EXTERNAL FILE
+	----------
+	elseif formname == "lua:load_ext" then
+		if fields.load_ok and fields.filepath and fields.filepath ~= "" then
+			local ok, content = pcall(core.read_file, fields.filepath)
+			if ok and content then
+				save_lua(fields.editor)
+				saved_file = false
+				dte.modstorage:set_string("_lua_saved", "")
+				dte.modstorage:set_string("_lua_temp", content)
+				table.insert(output, "#00ff00Loaded: " .. fields.filepath)
+				core.show_formspec("lua:editor", lua_editor())
+			else
+				table.insert(output, "#ff0000Failed to load: " .. fields.filepath)
+				core.show_formspec("lua:editor", lua_editor())
+			end
+		elseif fields.load_cancel then
+			core.show_formspec("lua:editor", lua_editor())
 		end
 
 	-- STARTUP EDITOR
@@ -460,5 +485,21 @@ core.register_chatcommand("dte", {  -- register the chat command
 	description = core.gettext("open a lua IDE"),
 	func = function(parameter)
 		core.show_formspec("lua:editor", lua_editor())
+	end,
+})
+
+core.register_chatcommand("dte_load", {
+	params = "<filepath>",
+	description = "Load and execute an external Lua file",
+	func = function(param)
+		if not param or param == "" then
+			return false, "Usage: .dte_load <filepath>"
+		end
+		local ok, content = pcall(core.read_file, param)
+		if not ok or not content then
+			return false, "Failed to read: " .. param
+		end
+		run(content, param)
+		return true, "Executed: " .. param
 	end,
 })

@@ -1,11 +1,7 @@
+-- get_mapgen_setting is not available client-side, use defaults
 local water_level = 1
---tonumber(core.get_mapgen_setting("water_level"))
-
--- Calculate the maximum playable limit
 local mapgen_limit = 31007
---tonumber(core.get_mapgen_setting("mapgen_limit"))
 local chunksize = 5
---tonumber(core.get_mapgen_setting("chunksize"))
 local playable_limit = math.max(mapgen_limit - (chunksize + 1) * 16, 0)
 
 -- Parameters
