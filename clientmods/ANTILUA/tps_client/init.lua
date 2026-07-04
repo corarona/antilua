@@ -41,7 +41,7 @@ end)
 core.register_globalstep(function(dtime)
 	if tps_client.ping then
 		tps_client.ping = tps_client.ping + dtime
-		if tps_client.ping_hud then
+		if ping_hud then
 			core.localplayer:hud_change(ping_hud, "text", tostring(math.floor(tps_client.ping * 1000)))
 		end
 		local ping_ms = math.max(tps_client.ping * 1000, 1)

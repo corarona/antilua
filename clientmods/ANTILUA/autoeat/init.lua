@@ -61,7 +61,7 @@ end)
 
 local function find_hud()
 	local player = core.localplayer
-	if not player then core.after(3,find_hud) end
+	if not player then core.after(3, find_hud); return end
 	local def
 	local i = -1
 	repeat

@@ -64,7 +64,7 @@ sbots.register_bot("FishBot", {
 		end
 	end,
 	on_activate = function(self)
-		if ws.game ~= "mineclone" then
+		if not core.get_item_def("mcl_fishing:fishing_rod") then
 			ws.notify("Fishbot only works on mineclone/ia", ws.NOTIFY_ERROR)
 			return true
 		end

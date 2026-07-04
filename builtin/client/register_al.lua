@@ -94,7 +94,7 @@ function core.override_item(name, redefinition)
 		error("Attempt to override non-existent item "..name, 2)
 	end
 	local nodedef = core.get_node_def(name)
-	table.combine(itemdef, nodedef)
+	table.insert_all(itemdef, nodedef)
 
 	for k, v in pairs(redefinition) do
 		rawset(itemdef, k, v)

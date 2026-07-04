@@ -50,13 +50,19 @@ end})
 
 core.register_cheat("PointedMeta", { category = "DevTools",
 	description = "Show metadata of pointed node",
-	func = function() dumpmetaat(core.get_pointed_thing().under) end})
+	func = function()
+		local pt = core.get_pointed_thing()
+		if pt and pt.under then dumpmetaat(pt.under) end
+	end})
 core.register_cheat("PosMeta", { category = "DevTools",
 	description = "Show position metadata",
 	func = function() dumpmetaat(core.localplayer:get_pos()) end})
 core.register_cheat("PointedDef", { category = "DevTools",
 	description = "Show node definition of pointed node",
-	func = function() dumpdefat(core.get_pointed_thing().under) end})
+	func = function()
+		local pt = core.get_pointed_thing()
+		if pt and pt.under then dumpdefat(pt.under) end
+	end})
 
 if core.register_on_receive_particlespawner then
 	core.register_on_receive_particlespawner(function(params)
