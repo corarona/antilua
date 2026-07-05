@@ -41,7 +41,7 @@ sbots.register_bot("AutoMiner", {
 	find_pos = function(self, pos)
 		parse_lava_nodes()
 		local search_range = tonumber(core.settings:get("autominer.search_range")) or 50
-		self.target = sbots.find_nearest(pos, search_range, nlist.get(nlist.selected), pos_ok)
+		self.target = sbots.find_nearest(pos, nlist.get(nlist.selected), search_range, pos_ok)
 		return self.target
 	end,
 	do_pos = function(self, pos)
@@ -109,10 +109,16 @@ sbots.register_bot("AutoMiner", {
 		end
 	end,
 	on_activate = function(self)
+		self._prev_autoeat = core.settings:get_bool("autoeat")
 		core.settings:set_bool("autoeat", true)
 		core.settings:set_bool("dighead", true)
 		parse_lava_nodes()
 		self.target = nil
+	end,
+	on_deactivate = function(self)
+		if self._prev_autoeat ~= nil then
+			core.settings:set_bool("autoeat", self._prev_autoeat)
+		end
 	end,
 	landing_distance = 0,
 	stand_waiting = false,

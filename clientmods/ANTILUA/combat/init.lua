@@ -245,6 +245,24 @@ local function update_target_hud(closest)
 	core.localplayer:hud_change(killaura.hud_id, "text", text)
 end
 
+local function hit_objects(radius, filter)
+	local pl = core.localplayer
+	local lp = pl:get_pos()
+	local closest_obj = nil
+	local closest_dist = math.huge
+	for _, obj in pairs(core.get_objects_inside_radius(lp, radius)) do
+		if not filter or filter(obj) then
+			killaura.punch_object(obj)
+			local dist = vector.distance(lp, obj:get_pos())
+			if dist < closest_dist then
+				closest_obj = obj
+				closest_dist = dist
+			end
+		end
+	end
+	return closest_obj
+end
+
 ws.rg("Killaura", {
 	category = "Combat",
 	setting = "killaura",
@@ -264,7 +282,7 @@ ws.rg("Killaura", {
 	on_step = function(self, dtime)
 		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
 
-		local now = os.clock()
+		local now = core.get_us_time() / 1000000
 		local timeout = killaura.get("retaliate_timeout")
 		for name, entry in pairs(killaura.damage_log) do
 			if now - entry.time > timeout then
@@ -303,24 +321,6 @@ ws.rg("Killaura", {
 	},
 	get_formspec = build_formspec,
 })
-
-local function hit_objects(radius, filter)
-	local pl = core.localplayer
-	local lp = pl:get_pos()
-	local closest_obj = nil
-	local closest_dist = math.huge
-	for _, obj in pairs(core.get_objects_inside_radius(lp, radius)) do
-		if not filter or filter(obj) then
-			killaura.punch_object(obj)
-			local dist = vector.distance(lp, obj:get_pos())
-			if dist < closest_dist then
-				closest_obj = obj
-				closest_dist = dist
-			end
-		end
-	end
-	return closest_obj
-end
 
 local function rm_item(list, input, tl_field, items)
 	if input and input ~= "" then

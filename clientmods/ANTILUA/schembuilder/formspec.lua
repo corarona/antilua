@@ -89,7 +89,6 @@ function show_browser_form(tab)
 			for _, d in ipairs(downloads) do
 				table.insert(entries, core.formspec_escape(d.name .. " (" .. d.size_x .. "x" .. d.size_y .. "x" .. d.size_z .. ")"))
 			end
-			local y = results and results > 0 and 3 or 3
 			fs = fs .. "label[0,8.5;Downloads:]" ..
 				"textlist[0,9;8,1.5;bx_downloads;" .. table.concat(entries, ",") .. ";0]" ..
 				"button[8.2,9;1.6,0.8;bx_load_dl;Load]"

@@ -268,7 +268,7 @@ core.register_on_death(function()
 			core.after(0.1, function()
 				local n = core.get_node_or_nil(poi.death_pos)
 				if n and n.name == "bones:bones" then
-					ws.dig_node(poi.death_pos)
+					ws.dig(poi.death_pos)
 				end
 			end)
 		end)
