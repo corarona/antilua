@@ -175,6 +175,60 @@ end
 
 
 ----------
+-- LUA CONSOLE (REPL)
+----------
+
+local console_output = {}
+local console_history = {}
+local console_history_idx = 0
+
+local function console_form()
+	local output_str = ""
+	for i, v in ipairs(console_output) do
+		if i ~= 1 then output_str = output_str .. "," end
+		output_str = output_str .. F(v)
+	end
+
+	local form = ""..
+	"size["..data.width..","..data.height.."]" ..
+	"textlist[0,0;"..data.width-0.2 ..","..data.height-2.5 ..";console_out;"..output_str..";".. #console_output .."]" ..
+	"field[0,"..data.height-2.2 ..";"..data.width-4 ..",1;console_expr;Lua expression;]" ..
+	"field_close_on_enter[console_expr;true]" ..
+	"button["..data.width-3.5 ..","..data.height-2.5 ..";2,0.8;console_run;RUN]" ..
+	"button["..data.width-1.5 ..","..data.height-2.5 ..";1,0.8;console_clear;CLEAR]" ..
+	"" .. create_tabs(2)
+	return form
+end
+
+local function run_console(expr)
+	if expr == "" then return end
+	table.insert(console_history, expr)
+	console_history_idx = #console_history + 1
+	table.insert(console_output, "#888888> " .. expr)
+	local func, load_err = loadstring("return " .. expr)
+	if not func then
+		-- Try as statement (not expression)
+		func, load_err = loadstring(expr)
+	end
+	if not func then
+		table.insert(console_output, "#ff4444" .. load_err)
+	else
+		local ok, result = pcall(func)
+		if ok then
+			if result ~= nil then
+				table.insert(console_output, "#00cc00" .. dump(result))
+			else
+				table.insert(console_output, "#666666nil")
+			end
+		else
+			table.insert(console_output, "#ff4444" .. result)
+		end
+	end
+	core.show_formspec("lua:console", console_form())
+end
+
+
+----------
 -- FORM DEFINITIONS
 ----------
 
@@ -315,6 +369,17 @@ core.register_on_formspec_input(function(formname, fields)
 			core.show_formspec("lua:editor", lua_editor())
 		end
 
+	-- LUA CONSOLE
+	----------
+	elseif formname == "lua:console" then
+		if fields.console_run or fields.key_enter_field == "console_expr" then
+			local expr = fields.console_expr or ""
+			run_console(expr)
+		elseif fields.console_clear then
+			console_output = {}
+			core.show_formspec("lua:console", console_form())
+		end
+
 	-- STARTUP EDITOR
 	----------
 	elseif formname == "lua:startup" then  -- double click a file to remove it from the list
@@ -416,6 +481,8 @@ core.register_on_formspec_input(function(formname, fields)
 	if fields._option_tabs_ then
 		if fields._option_tabs_ == "1" then
 			core.show_formspec("lua:editor", lua_editor())
+		elseif fields._option_tabs_ == "2" then
+			core.show_formspec("lua:console", console_form())
 		elseif fields._option_tabs_ == "3" then
 			core.show_formspec("files:viewer", file_viewer())
 		elseif fields._option_tabs_ == "4" then
