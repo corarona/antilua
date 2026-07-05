@@ -48,13 +48,13 @@ CheatMenu::CheatMenu(Client *client) : PanelOverlay(), m_client(client)
 	FontMode fontMode = fontStringToEnum(g_settings->get("cheat_menu_font"));
 
 	m_bg_color = parseHexColor(g_settings->get("theme_bg"), g_settings->getU32("theme_bg_alpha"));
-	m_active_bg_color = parseHexColor(g_settings->get("theme_active_bg"), 210);
+	m_active_bg_color = parseHexColor(g_settings->get("theme_active_bg"), g_settings->getU32("theme_active_bg_alpha"));
 	m_font_color = parseHexColor(g_settings->get("theme_text"), g_settings->getU32("theme_text_alpha"));
 	m_selected_font_color = parseHexColor(g_settings->get("theme_selected_text"));
-	m_panel_bg = parseHexColor(g_settings->get("theme_panel_bg"), 230);
-	m_title_bg = parseHexColor(g_settings->get("theme_title_bg"), 230);
-	m_border_color = parseHexColor(g_settings->get("theme_border"), 230);
-	m_item_bg = parseHexColor(g_settings->get("theme_item_bg"), 200);
+	m_panel_bg = parseHexColor(g_settings->get("theme_panel_bg"), g_settings->getU32("theme_panel_bg_alpha"));
+	m_title_bg = parseHexColor(g_settings->get("theme_title_bg"), g_settings->getU32("theme_title_bg_alpha"));
+	m_border_color = parseHexColor(g_settings->get("theme_border"), g_settings->getU32("theme_border_alpha"));
+	m_item_bg = parseHexColor(g_settings->get("theme_item_bg"), g_settings->getU32("theme_item_bg_alpha"));
 
 	m_head_height = g_settings->getU32("cheat_menu_head_height");
 	m_entry_height = g_settings->getU32("cheat_menu_entry_height");

@@ -93,6 +93,12 @@ static void set_al_default_settings()
 	settings->setDefault("theme_bad", "#ff4444");
 	settings->setDefault("theme_warning", "#ffff44");
 	settings->setDefault("theme_info", "#4488ff");
+	// Panel opacity defaults (80% = 204/255)
+	settings->setDefault("theme_panel_bg_alpha", "204");
+	settings->setDefault("theme_title_bg_alpha", "204");
+	settings->setDefault("theme_border_alpha", "204");
+	settings->setDefault("theme_item_bg_alpha", "204");
+	settings->setDefault("theme_active_bg_alpha", "204");
 	// Non-color cheat menu settings (kept for structural layout)
 	settings->setDefault("cheat_menu_font", "FM_Standard");
 	settings->setDefault("cheat_menu_head_height", "50");
