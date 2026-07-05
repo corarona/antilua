@@ -10,8 +10,10 @@ ws.hotbar_slot = 8
 local nextact = {}
 local ghwason = {}
 
--- No-op stub for legacy register_list_command calls
-function core.register_list_command() end
+-- Deprecated stub for legacy register_list_command calls
+function core.register_list_command()
+	core.log("deprecated", "core.register_list_command() is deprecated, use nlist directly")
+end
 
 dofile(core.get_modpath("wasplib") .. "/settings.lua")
 dofile(core.get_modpath("wasplib") .. "/coord.lua")

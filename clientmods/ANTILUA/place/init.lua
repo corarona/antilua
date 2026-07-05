@@ -266,7 +266,6 @@ ws.rg("BlockSources", {
 		local positions = core.find_nodes_near(lp, 5, targets, true)
 		for i, p in pairs(positions) do
 			if i > npt then return end
-			if p.y < 2 and p.x > 250 and p.z > 250 then return end
 			if use_wielded then
 				ws.place(p, multiscaff_node)
 			else
