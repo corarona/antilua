@@ -127,6 +127,7 @@ static void set_al_default_settings()
 	settings->setDefault("no_slow", "false");
 	settings->setDefault("float_above_parent", "false");
 	settings->setDefault("cheat_hud", "true");
+	settings->setDefault("cheat_hud.speed", "1.0");
 	settings->setDefault("node_esp_nodes", "");
 	settings->setDefault("jetpack", "false");
 	settings->setDefault("autohit", "false");

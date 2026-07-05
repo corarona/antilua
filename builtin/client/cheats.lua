@@ -87,7 +87,10 @@ core.register_cheat({ name = "HUDBypass", category = "Render", setting = "hud_fl
 core.register_cheat({ name = "NoHurtCam", category = "Render", setting = "no_hurt_cam",
 	description = "Disable hurt camera effects" })
 core.register_cheat({ name = "CheatHUD", category = "Render", setting = "cheat_hud",
-	description = "Show active cheat indicators on screen" })
+	description = "Show active cheat indicators on screen",
+	cheat_settings = {
+		speed = { type = "number", default = 1.0, min = 0.1, max = 10.0 },
+	} })
 core.register_cheat({ name = "EntityHitboxes", category = "Render", setting = "enable_entity_esp",
 	description = "Highlight entity hitboxes" })
 core.register_cheat({ name = "EntityWallhack", category = "Render", setting = "enable_entity_wallhack",

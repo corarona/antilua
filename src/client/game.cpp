@@ -3770,7 +3770,7 @@ void Game::updateFrame(ProfilerGraph *graph, RunStats *stats, f32 dtime,
 		==================== Drawing begins ====================
 	*/
 	if (device->isWindowVisible())
-		drawScene(graph, stats);
+		drawScene(graph, stats, dtime);
 	/*
 		==================== End scene ====================
 	*/
@@ -3859,7 +3859,7 @@ void Game::updateShadows()
 	shadow->getDirectionalLight().updateFrustum(camera, client);
 }
 
-void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
+void Game::drawScene(ProfilerGraph *graph, RunStats *stats, f32 dtime)
 {
 	ZoneScoped;
 
@@ -3924,7 +3924,7 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats)
 		Cheat menu HUD indicators (drawn after formspecs — non-overlapping corner text)
 	*/
 	if (this->m_cheat_menu && g_settings->getBool("cheat_hud"))
-		this->m_cheat_menu->drawHUD(this->driver, this->runData.time_from_last_punch);
+		this->m_cheat_menu->drawHUD(this->driver, dtime);
 
 	/*
 		Profiler graph

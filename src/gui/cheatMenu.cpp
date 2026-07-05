@@ -265,7 +265,9 @@ void CheatMenu::onLayerClosed()
 void CheatMenu::drawHUD(video::IVideoDriver *driver, double dtime)
 {
 	CHEAT_MENU_GET_SCRIPTPTR
-	m_rainbow_offset += dtime;
+	float speed = g_settings->getFloat("cheat_hud.speed", 0.0f, 10.0f);
+	if (speed <= 0) speed = 1.0f;
+	m_rainbow_offset += dtime * speed;
 	m_rainbow_offset = fmod(m_rainbow_offset, 6.0f);
 
 	std::vector<std::string> enabled;

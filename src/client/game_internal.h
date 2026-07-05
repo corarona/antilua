@@ -229,7 +229,7 @@ protected:
 			const CameraOrientation &cam);
 	void updateClouds(float dtime);
 	void updateShadows();
-	void drawScene(ProfilerGraph *graph, RunStats *stats);
+	void drawScene(ProfilerGraph *graph, RunStats *stats, f32 dtime);
 
 	// Misc
 	void showOverlayMessage(const char *msg, float dtime, int percent,
