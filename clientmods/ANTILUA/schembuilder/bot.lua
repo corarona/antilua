@@ -446,7 +446,7 @@ if sbots and sbots.register_bot then
 			end
 
 			local cooldown = tonumber(core.settings:get("schembuilderbot.place_cooldown")) or 0.1
-			if self._last_place_time and os.clock() - self._last_place_time < cooldown then
+			if self._last_place_time and core.get_us_time() / 1000000 - self._last_place_time < cooldown then
 				return false
 			end
 			local batch = tonumber(core.settings:get("schembuilderbot.batch_size")) or 8
@@ -469,7 +469,7 @@ if sbots and sbots.register_bot then
 			end
 			local place_item = is_random and pick_random_block() or target_entry.name
 			if place_item and ws.place(target_entry, place_item) then
-				self._last_place_time = os.clock()
+				self._last_place_time = core.get_us_time() / 1000000
 				for i = #place_nodes, 1, -1 do
 					if place_nodes[i] == target_entry then
 						table.remove(place_nodes, i)

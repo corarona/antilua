@@ -5,7 +5,9 @@ local is_spongebot = false
 -- confusing — disabling prediction entirely is simpler than per-item.
 local function override_prediction(enable)
 	for k, v in pairs(core.registered_items) do
-		core.override_item(k, { node_placement_prediction = enable and "" or nil })
+		if v.node_placement_prediction and v.node_placement_prediction ~= "" then
+			core.override_item(k, { node_placement_prediction = enable and "" or nil })
+		end
 	end
 end
 

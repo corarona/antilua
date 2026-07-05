@@ -56,6 +56,16 @@ local reg_funcs = {formspec_input={}, chatcommands={}, on_connect={}, joinplayer
 
 local selected_files = {0, 0}
 
+-- UI file system stubs (not yet implemented)
+local current_ui_file = nil
+local function load_UI(name)
+	current_ui_file = name
+	core.log("action", "[dte] UI file loading not yet implemented: " .. tostring(name))
+end
+local function reload_ui()
+	core.log("action", "[dte] UI reload not yet implemented")
+end
+
 ----------
 -- FILE READING AND SAVING
 ----------
@@ -358,9 +368,9 @@ core.register_on_formspec_input(function(formname, fields)
 	----------
 	if formname == "files:viewer" then
 		if fields.del_lua then
-			name = lua_files[selected_files[1] ]
+			local name = lua_files[selected_files[1] ]
 			table.remove(lua_files, selected_files[1])
-			files_str = ""
+			local files_str = ""
 			for i, v in pairs(lua_files) do
 				if v ~= "" then
 					files_str = files_str..v..","  -- remove the file from the list
@@ -377,9 +387,9 @@ core.register_on_formspec_input(function(formname, fields)
 			core.show_formspec("files:viewer", file_viewer())
 
 		elseif fields.del_ui then
-			name = ui_files[selected_files[2] ]
+			local name = ui_files[selected_files[2] ]
 			table.remove(ui_files, selected_files[2])
-			files_str = ""
+			local files_str = ""
 			for i, v in pairs(ui_files) do
 				if v ~= "" then
 					files_str = files_str..v..","  -- remove the file from the list

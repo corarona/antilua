@@ -14,7 +14,7 @@ function ws.aim(tpos)
 	core.localplayer:set_pitch(pitch)
 end
 
-function ws.gaim(tpos, v, g)
+function ws.gaim(tpos, v)
 	if not tpos then return end
 	local atan, pi, pow, sqrt = math.atan, math.pi, math.pow, math.sqrt
 	local player = core.localplayer

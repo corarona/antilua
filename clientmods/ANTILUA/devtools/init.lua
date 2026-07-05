@@ -66,6 +66,7 @@ core.register_cheat("PointedDef", { category = "DevTools",
 
 if core.register_on_receive_particlespawner then
 	core.register_on_receive_particlespawner(function(params)
+		if not core.localplayer then return end
 		if not vector.equals(vector.round(params.minpos),vector.zero()) and vector.distance(ws.dircoord(0,0,0),params.minpos) > 256 then
 			if core.global_exists("poi") and not poi.has_wp_near(params.minpos) then
 				poi.set_waypoint(vector.round(params.minpos), "Leaked Particle coord from "..os.date("%Y-%m-%d %H:%M:%S").." ("..params.texture..")")
@@ -76,6 +77,7 @@ if core.register_on_receive_particlespawner then
 end
 
 core.register_on_play_sound(function(p)
+	if not core.localplayer then return end
 	if p.pos then
 		if not vector.equals(vector.round(p.pos),vector.zero()) and vector.distance(ws.dircoord(0,0,0),p.pos) > 256 then
 			if core.global_exists("poi") and not poi.has_wp_near(p.pos) then

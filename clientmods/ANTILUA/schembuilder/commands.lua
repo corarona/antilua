@@ -1,3 +1,5 @@
+PARTICLE_TTL = PARTICLE_TTL or 600
+
 function do_schembuild(param, use_pos)
 	if param == "" then
 		return false, "Need an argument to load"

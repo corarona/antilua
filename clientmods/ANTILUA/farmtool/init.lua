@@ -30,6 +30,7 @@ local seeds = {
 
 local water = {
 	"mcl_core:water_source", "mcl_core:river_water_source",
+	"default:water_source", "default:river_water_source",
 }
 
 local waterbowl = {

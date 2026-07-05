@@ -236,9 +236,14 @@ core.register_globalstep(function(dtime)
 	end
 end)
 
--- Recipe detector: polls craft grid for changes
+-- Recipe detector: polls craft grid for changes (throttled)
 local LAST_GRID = {}
-core.register_globalstep(function()
+local detect_timer = 0
+core.register_globalstep(function(dtime)
+	detect_timer = detect_timer + dtime
+	if detect_timer < 0.2 then return end
+	detect_timer = 0
+
 	local inv = core.get_inventory("current_player")
 	if not inv then
 		return

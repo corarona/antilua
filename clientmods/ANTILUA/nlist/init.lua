@@ -55,7 +55,7 @@ function nlist.clear(list)
 end
 
 function nlist.delete(list)
-	storage:set_string(list, nil)
+	storage:set_string(list, "")
 	return true
 end
 

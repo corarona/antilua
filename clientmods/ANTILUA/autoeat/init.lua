@@ -44,10 +44,10 @@ end
 
 function autoeat.get_hunger()
 	if hud_id then
-		return core.localplayer:hud_get(hud_id).number
-	else
-		return 20
+		local def = core.localplayer and core.localplayer:hud_get(hud_id)
+		if def then return def.number end
 	end
+	return 20
 end
 
 core.register_globalstep(function(dtime)

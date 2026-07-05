@@ -96,15 +96,17 @@ core.register_cheat("MovementDisplay", { category = "Render", setting = "movemen
 --
 
 local ignore_nodes = {}
+local ignore_set = {}
 if nlist and nlist.get then
 	ignore_nodes = nlist.get("block_logger_ignore")
+	for _, v in ipairs(ignore_nodes) do ignore_set[v] = true end
 end
 
 core.register_on_dignode(function(pos, node)
 	if not core.settings:get_bool("block_logger") then
 		return false
 	end
-	if table.indexof(ignore_nodes, node.name) ~= -1 then
+	if ignore_set[node.name] then
 		return false
 	end
 	storage:set_int(k("blocks_dug:" .. node.name), storage:get_int(k("blocks_dug:" .. node.name)) + 1)
@@ -115,7 +117,7 @@ core.register_on_node_add(function(pos, node)
 	if not core.settings:get_bool("block_logger") then
 		return
 	end
-	if table.indexof(ignore_nodes, node.name) ~= -1 then
+	if ignore_set[node.name] then
 		return
 	end
 	storage:set_int(k("blocks_placed:" .. node.name), storage:get_int(k("blocks_placed:" .. node.name)) + 1)
@@ -155,7 +157,7 @@ local function collect_stats(storage, key_match)
 	return items
 end
 
-core.registered_chatcommands["blockstats"] = {
+core.register_chatcommand("blockstats", {
 	params = "",
 	description = "Show per-server block and entity stats",
 	func = function()
@@ -203,7 +205,7 @@ core.registered_chatcommands["blockstats"] = {
 		end
 		return true
 	end,
-}
+})
 
 core.register_cheat("BlockStats", { category = "Info",
 	description = "Show block placement statistics",
