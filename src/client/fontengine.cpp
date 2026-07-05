@@ -6,6 +6,8 @@
 
 #include "client/renderingengine.h"
 #include "settings.h"
+#include "porting.h"
+#include "filesys.h"
 #include "irrlicht_changes/CGUITTFont.h"
 #include "util/numeric.h" // rangelim
 #include "exceptions.h"
@@ -230,8 +232,10 @@ gui::SGUITTFace *FontEngine::getOrLoadFace(const std::string &filename)
 		return it->second.get();
 
 	irr_ptr<gui::SGUITTFace> face(gui::SGUITTFace::loadFace(filename));
-	if (!face)
+	if (!face) {
+		errorstream << "FontEngine: Failed to load font: " << filename << std::endl;
 		return nullptr;
+	}
 	auto *ret = face.get();
 	m_local_faces.emplace(filename, std::move(face));
 	return ret;
@@ -319,16 +323,27 @@ gui::IGUIFont *FontEngine::initFont(FontSpec spec)
 		g_settings->get(path_setting),
 		Settings::getLayer(SL_DEFAULTS)->get(path_setting)
 	};
-	for (const std::string &font_path : fallback_settings) {
+
+	// Antilua: add hardcoded last-resort fallback to bundled fonts
+	std::string last_resort;
+	if (spec.mode == _FM_Fallback)
+		last_resort = porting::getDataPath("fonts" DIR_DELIM "DroidSansFallbackFull.ttf");
+	else
+		last_resort = porting::getDataPath("fonts" DIR_DELIM "unifont.ttf");
+
+	const std::string font_paths[] = {fallback_settings[0], fallback_settings[1], last_resort};
+	for (const auto &font_path : font_paths) {
 		infostream << "Creating new font: " << font_path.c_str()
 				<< " " << size << "pt" << std::endl;
 
 		if (auto *face = getOrLoadFace(font_path)) {
+			infostream << "FontEngine: Loaded font '" << font_path
+				<< "' (" << size << "pt)" << std::endl;
 			return createFont(face);
 		}
 
 		errorstream << "FontEngine: Cannot load '" << font_path <<
-			"'. Trying to fall back to another path." << std::endl;
+			"' (setting: " << path_setting << "). Trying to fall back." << std::endl;
 	}
 	return nullptr;
 }
