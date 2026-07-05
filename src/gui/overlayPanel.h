@@ -42,6 +42,7 @@ public:
 	void autoTilePanels(v2u32 screen_size);
 	void snapPanel(int idx);
 	bool overlapsAny(int idx, s32 tx, s32 ty);
+	void rearrangePanels();
 
 protected:
 	// Subclasses implement panel content

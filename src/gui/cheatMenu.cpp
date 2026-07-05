@@ -79,6 +79,7 @@ void CheatMenu::createCategoryPanels()
 		cp.id = "_cat_" + std::to_string(i);
 		cp.title = script->m_cheat_categories[i]->m_name;
 		cp.selected_category = (int)i;
+		cp.w = m_entry_width > 0 ? m_entry_width : 220;
 		m_panels.push_back(cp);
 	}
 }

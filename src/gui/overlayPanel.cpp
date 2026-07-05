@@ -118,6 +118,14 @@ void PanelOverlay::drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool sh
 		m_categories_initialized = true;
 	}
 
+	// Allow Lua to trigger a rearrange via setting
+	if (g_settings->getBool("cheat_menu_rearrange")) {
+		g_settings->setBool("cheat_menu_rearrange", false);
+		rearrangePanels();
+		m_categories_initialized = true;
+		autoTilePanels(m_screen_size);
+	}
+
 	for (auto &panel : m_panels) {
 		s32 &x = panel.x, &y = panel.y;
 		s32 w = panel.w;
@@ -142,11 +150,19 @@ void PanelOverlay::drawPinned(video::IVideoDriver *driver, v2s32 mouse_pos)
 	m_screen_size = driver->getScreenSize();
 	for (auto &panel : m_panels) {
 		if (panel.pinned) {
+			s32 &x = panel.x, &y = panel.y;
+			s32 w = panel.w;
 			panel.h = panel.title_h + getPanelContentHeight(panel);
+			s32 h = panel.h;
+
+			if (x + w > (s32)m_screen_size.X) x = m_screen_size.X - w;
+			if (y + h > (s32)m_screen_size.Y) y = m_screen_size.Y - h;
+			if (x < 0) x = 0;
+			if (y < 0) y = 0;
+
 			drawPanelChrome(driver, panel, mouse_pos);
-			s32 iy = panel.y + panel.title_h + m_gap;
-			drawPanelContent(driver, panel, panel.x, iy, panel.w,
-				panel.h - panel.title_h - m_gap, mouse_pos);
+			s32 iy = y + panel.title_h + m_gap;
+			drawPanelContent(driver, panel, x, iy, w, h - panel.title_h - m_gap, mouse_pos);
 		}
 	}
 }
@@ -157,6 +173,13 @@ void PanelOverlay::autoTilePanels(v2u32 screen_size)
 
 	for (auto &panel : m_panels)
 		panel.h = panel.title_h + getPanelContentHeight(panel);
+
+	// Sort indices by height (tallest first) for better packing
+	std::vector<size_t> order(m_panels.size());
+	for (size_t i = 0; i < order.size(); i++) order[i] = i;
+	std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b) {
+		return m_panels[a].h > m_panels[b].h;
+	});
 
 	std::vector<bool> placed(m_panels.size(), false);
 
@@ -185,8 +208,8 @@ void PanelOverlay::autoTilePanels(v2u32 screen_size)
 		}
 	}
 
-	// Pass 2: Place unpinned panels using edge-snapping packer
-	for (size_t i = 0; i < m_panels.size(); i++) {
+	// Pass 2: Place unpinned panels (tallest first) using edge-snapping packer
+	for (auto i : order) {
 		if (placed[i])
 			continue;
 
@@ -270,31 +293,92 @@ void PanelOverlay::snapPanel(int idx)
 	if (!overlapsAny(idx, ox, oy))
 		return;
 
-	const s32 step = 5;
-	s32 x = ox, y = oy;
-	for (s32 radius = step; radius < (s32)std::max(ss.X, ss.Y); radius += step) {
-		x = ox + radius;
-		y = oy;
-		if (x + pw < (s32)ss.X - margin && !overlapsAny(idx, x, y)) {
-			panel.x = x; panel.y = y; panel.detached = true; return;
-		}
-		x = ox;
-		y = oy + radius;
-		if (y + ph < (s32)ss.Y - margin && !overlapsAny(idx, x, y)) {
-			panel.x = x; panel.y = y; panel.detached = true; return;
-		}
-		x = ox - radius;
-		y = oy;
-		if (x >= margin && !overlapsAny(idx, x, y)) {
-			panel.x = x; panel.y = y; panel.detached = true; return;
-		}
-		x = ox;
-		y = oy - radius;
-		if (y >= 60 && !overlapsAny(idx, x, y)) {
-			panel.x = x; panel.y = y; panel.detached = true; return;
-		}
+	// Build set of placed panel indices (all except this one)
+	std::vector<bool> placed(m_panels.size(), false);
+	for (size_t j = 0; j < m_panels.size(); j++) {
+		if ((s32)j != idx)
+			placed[j] = true;
 	}
 
+	// Use the same edge-snapping packer as autoTilePanels
+	auto overlaps_ex = [&](s32 tx, s32 ty) -> bool {
+		for (size_t j = 0; j < m_panels.size(); j++) {
+			if ((s32)j == idx || !placed[j]) continue;
+			auto &p = m_panels[j];
+			if (tx + pw > p.x && tx < p.x + p.w &&
+					ty + ph > p.y && ty < p.y + p.h)
+				return true;
+		}
+		return false;
+	};
+
+	// Collect candidate Y positions from placed panel edges
+	std::vector<s32> ys = {60};
+	for (size_t j = 0; j < m_panels.size(); j++) {
+		if (!placed[j]) continue;
+		s32 by = m_panels[j].y + m_panels[j].h + m_gap;
+		if (by + ph <= (s32)ss.Y - margin)
+			ys.push_back(by);
+		// Also try placing above
+		s32 ty2 = m_panels[j].y - ph - m_gap;
+		if (ty2 >= 60)
+			ys.push_back(ty2);
+	}
+	// Also try the drop position Y and nearby
+	ys.push_back(oy);
+	if (oy + ph + m_gap < (s32)ss.Y) ys.push_back(oy + ph + m_gap);
+	if (oy - ph - m_gap >= 60) ys.push_back(oy - ph - m_gap);
+
+	std::sort(ys.begin(), ys.end());
+	ys.erase(std::unique(ys.begin(), ys.end()), ys.end());
+
+	bool found = false;
+	s32 best_x = margin, best_y = 60;
+	s32 best_dist = INT32_MAX;
+
+	for (auto cy : ys) {
+		// Collect candidate X positions from placed panel edges
+		std::vector<s32> xs = {margin};
+		for (size_t j = 0; j < m_panels.size(); j++) {
+			if (!placed[j]) continue;
+			auto &p = m_panels[j];
+			if (cy < p.y + p.h && cy + ph > p.y) {
+				s32 rx = p.x + p.w + m_gap;
+				if (rx + pw <= (s32)ss.X - margin)
+					xs.push_back(rx);
+				s32 lx = p.x - pw - m_gap;
+				if (lx >= margin)
+					xs.push_back(lx);
+			}
+		}
+		xs.push_back(ox);
+		std::sort(xs.begin(), xs.end());
+		xs.erase(std::unique(xs.begin(), xs.end()), xs.end());
+
+		for (auto cx : xs) {
+			if (!overlaps_ex(cx, cy)) {
+				// Prefer positions closest to original drop location
+				s32 dist = abs(cx - ox) + abs(cy - oy);
+				if (dist < best_dist) {
+					best_x = cx;
+					best_y = cy;
+					best_dist = dist;
+					found = true;
+					if (dist == 0) break; // exact position works
+				}
+			}
+		}
+		if (found && best_dist == 0) break;
+	}
+
+	if (found) {
+		panel.x = best_x;
+		panel.y = best_y;
+		panel.detached = true;
+		return;
+	}
+
+	// Fallback: stagger
 	panel.x = 10 + idx * 30;
 	panel.y = 60 + idx * 30;
 	panel.detached = true;
@@ -347,8 +431,13 @@ void PanelOverlay::handleMouse(v2s32 pos, bool left_down)
 			}
 			s32 rsx = fx - 16;
 			if (pointInRect(pos.X, pos.Y, rsx, y, 16, panel.title_h)) {
-				panel.x = 10 + (s32)pi * 30;
-				panel.y = 60 + (s32)pi * 30;
+				// Reset: clear saved position and find a non-overlapping spot
+				panel.x = 10;
+				panel.y = 60;
+				panel.pinned = false;
+				panel.detached = false;
+				g_settings->remove("panel_pos_" + panel.id);
+				snapPanel((s32)pi);
 				savePanelPositions();
 				return;
 			}
@@ -409,4 +498,18 @@ void PanelOverlay::savePanelPositions()
 		if (panel.pinned) val += ",pinned";
 		g_settings->set(key, val);
 	}
+}
+
+void PanelOverlay::rearrangePanels()
+{
+	// Clear all saved positions
+	for (auto &panel : m_panels) {
+		g_settings->remove("panel_pos_" + panel.id);
+		panel.x = 0;
+		panel.y = 0;
+		panel.pinned = false;
+		panel.detached = false;
+	}
+	// Re-tile from scratch
+	m_categories_initialized = false;
 }
