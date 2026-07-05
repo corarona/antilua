@@ -128,3 +128,11 @@ core.register_chatcommand("setpitch", {
 		end
 	end
 })
+
+core.register_chatcommand("cheat_rearrange", {
+	description = "Rearrange all cheat menu panels to non-overlapping positions",
+	func = function()
+		core.settings:set_bool("cheat_menu_rearrange", true)
+		return true, "Rearranging cheat panels..."
+	end,
+})

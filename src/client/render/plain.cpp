@@ -243,7 +243,9 @@ void DrawHUD::run(PipelineContext &context)
 		context.client->getCamera()->drawNametags();
 	}
 
-	// Draw cheat menu panels before formspecs so formspecs render on top
+	context.device->getGUIEnvironment()->drawAll();
+
+	// Draw cheat menu panels after GUI/env so they render above chat
 	if (g_cheat_menu) {
 		video::IVideoDriver *driver = context.device->getVideoDriver();
 		v2s32 mouse_pos = context.device->getCursorControl()->getPosition();
@@ -259,8 +261,6 @@ void DrawHUD::run(PipelineContext &context)
 		}
 		g_cheat_menu->drawPinned(driver, mouse_pos);
 	}
-
-	context.device->getGUIEnvironment()->drawAll();
 }
 
 
