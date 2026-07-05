@@ -11,7 +11,7 @@ local F = core.formspec_escape  -- shorten the function
 
 local function create_tabs(selected)
 	return "tabheader[0,0;_option_tabs_;" ..
-	"  LUA EDITOR   , LUA CONSOLE  ,	 FILES	 ,	STARTUP	,   FUNCTIONS   ,	 HELP	  ;"..selected..";;]"
+	"  LUA EDITOR   , LUA CONSOLE  ,	 FILES	 ,	STARTUP	  ;"..selected..";;]"
 end
 
 local function copy_table(t)
@@ -49,22 +49,8 @@ local lua_startup = split(dte.modstorage:get_string("_lua_startup"), ",")  -- th
 
 local lua_files = split(dte.modstorage:get_string("_lua_files_list"), ",")  -- the list of names of all saved files
 
-local ui_files = split(dte.modstorage:get_string("_UI_files_list"), ",")  -- UI files list
 
-local reg_funcs = {formspec_input={}, chatcommands={}, on_connect={}, joinplayer={}, sending_chat_message={}, recieving_chat_message={}}
-
-
-local selected_files = {0, 0}
-
--- UI file system stubs (not yet implemented)
-local current_ui_file = nil
-local function load_UI(name)
-	current_ui_file = name
-	core.log("action", "[dte] UI file loading not yet implemented: " .. tostring(name))
-end
-local function reload_ui()
-	core.log("action", "[dte] UI reload not yet implemented")
-end
+local selected_file = 0
 
 ----------
 -- FILE READING AND SAVING
@@ -243,20 +229,14 @@ local function file_viewer()  -- created with the formspec editor!
 		lua_files_item_str = lua_files_item_str .. F(item)
 	end
 
-	local ui_select_item_str = ""
-	for i, item in pairs(ui_files) do
-		if i ~= 1 then ui_select_item_str = ui_select_item_str.."," end
-		ui_select_item_str = ui_select_item_str .. F(item)
-	end
-
 	local form = "" ..
 	"size["..data.width..","..data.height.."]" ..
-	"textlist[-0.2,0.2;"..data.width/2.02- -0.2 ..","..data.height- 1 ..";lua_select;"..lua_files_item_str.."]" ..
-	"label[-0.2,-0.2;LUA FILES]" ..
+	"textlist[0,0.2;"..data.width-0.1 ..","..data.height- 1.8 ..";lua_select;"..lua_files_item_str.."]" ..
+	"label[0,0;LUA FILES]" ..
 	"field[0.1,"..data.height- 0.2 ..";3,1;new_lua;NEW;]" ..
 	"field_close_on_enter[new_lua;false]" ..
 	"button[2.6,"..data.height- 0.5 ..";0.5,1;add_lua;+]" ..
-	"label["..data.width/2.4 ..","..data.height- 0.8 ..";Double click a file to open it]" ..
+	"label[3.2,"..data.height- 0.8 ..";Double click a file to open it]" ..
 	"button[3.1,"..data.height- 0.5 ..";1.1,1;del_lua;DELETE]" ..
 	"" .. create_tabs(3)
 
@@ -368,8 +348,8 @@ core.register_on_formspec_input(function(formname, fields)
 	----------
 	if formname == "files:viewer" then
 		if fields.del_lua then
-			local name = lua_files[selected_files[1] ]
-			table.remove(lua_files, selected_files[1])
+			local name = lua_files[selected_file]
+			table.remove(lua_files, selected_file)
 			local files_str = ""
 			for i, v in pairs(lua_files) do
 				if v ~= "" then
@@ -386,23 +366,6 @@ core.register_on_formspec_input(function(formname, fields)
 			dte.modstorage:set_string("_lua_files_list", files_str)
 			core.show_formspec("files:viewer", file_viewer())
 
-		elseif fields.del_ui then
-			local name = ui_files[selected_files[2] ]
-			table.remove(ui_files, selected_files[2])
-			local files_str = ""
-			for i, v in pairs(ui_files) do
-				if v ~= "" then
-					files_str = files_str..v..","  -- remove the file from the list
-				end
-			end
-
-			if name == current_ui_file then  -- clear the editing area if the file was loaded
-				load_UI("new")
-			end
-
-			dte.modstorage:set_string("_UI_files_list", files_str)
-			core.show_formspec("files:viewer", file_viewer())
-
 		elseif fields.lua_select then  -- click on a file to select it, double click to open it
 			local index = tonumber(string.sub(fields.lua_select, 5))
 			if string.sub(fields.lua_select, 1, 3) == "DCL" then
@@ -411,17 +374,7 @@ core.register_on_formspec_input(function(formname, fields)
 				dte.modstorage:set_string("_lua_saved", saved_file)
 				core.show_formspec("lua:editor", lua_editor())
 			else
-				selected_files[1] = index
-				core.show_formspec("files:viewer", file_viewer())
-			end
-
-		elseif fields.ui_select then  -- click on a file to select it, double click to open it
-			local index = tonumber(string.sub(fields.ui_select, 5))
-			if string.sub(fields.ui_select, 1, 3) == "DCL" then
-				load_UI(ui_files[index])
-				reload_ui()
-			else
-				selected_files[2] = index
+				selected_file = index
 				core.show_formspec("files:viewer", file_viewer())
 			end
 
@@ -435,7 +388,7 @@ core.register_on_formspec_input(function(formname, fields)
 			end
 			if not exist then
 				table.insert(lua_files, fields.new_lua)
-				selected_files[1] = #lua_files
+				selected_file = #lua_files
 
 				files_str = ""
 				for i, v in pairs(lua_files) do
@@ -447,29 +400,6 @@ core.register_on_formspec_input(function(formname, fields)
 				saved_file = fields.new_lua
 				core.show_formspec("lua:editor", lua_editor())
 			end
-
-		elseif fields.key_enter_field == "new_ui" or fields.add_ui then
-			local exist = false
-			for i, v in pairs(ui_files) do
-				if v == fields.new_ui then
-					exist = true
-					selected_files[2] = i
-				end
-			end
-			if not exist then
-				table.insert(ui_files, fields.new_ui)
-				selected_files[2] = #ui_files
-
-				files_str = ""
-				for i, v in pairs(ui_files) do
-					if v ~= "" then
-						files_str = files_str..v..","
-					end
-				end
-				dte.modstorage:set_string("_UI_files_list", files_str)
-				load_UI(fields.new_ui)
-				reload_ui()
-			end
 		end
 	end
 
@@ -480,9 +410,6 @@ core.register_on_formspec_input(function(formname, fields)
 			core.show_formspec("files:viewer", file_viewer())
 		elseif fields._option_tabs_ == "4" then
 			core.show_formspec("lua:startup", startup_form())
-		else
-			core.show_formspec("lua:unknown",
-			"size["..data.width..","..data.height.."]label[1,1;COMING SOON]"..create_tabs(fields._option_tabs_))
 		end
 
 	end
