@@ -38,6 +38,8 @@ local split = function (str, splitter)  -- a function to split a string into a l
 end
 
 
+dofile(dte.modpath .. "/syntax.lua")
+
 local output = {}  -- the output for errors, prints, etc
 
 local saved_file = dte.modstorage:get_string("_lua_saved")  -- remember what file is currently being edited
@@ -278,8 +280,9 @@ local function lua_editor()  -- the main formspec for editing
 	"button[0," .. data.height-3.5 .. ";1,0;run;RUN]"..
 	"button[1," .. data.height-3.5 .. ";1,0;clear;CLEAR]"..
 	"button[2," .. data.height-3.5 .. ";1,0;save;SAVE]"..
-	"button[3.1," .. data.height-3.5 .. ";1,0;load_ext;LOAD]"..
-	"dropdown[4.2,"..data.height-3.8 ..";3;lua_select;"..lua_files_item_str..";"..idx.."]" ..
+	"button[3.1," .. data.height-3.5 .. ";1,0;preview;PREVIEW]"..
+	"button[4.2," .. data.height-3.5 .. ";1,0;load_ext;LOAD]"..
+	"dropdown[5.3,"..data.height-3.8 ..";3;lua_select;"..lua_files_item_str..";"..idx.."]" ..
 	"textlist[0,"..data.height-3 ..";"..data.width-0.2 ..","..data.height-7 ..";output;"..output_str..";".. #output .."]"..
 	"" .. create_tabs(1)
 	return form
@@ -333,6 +336,15 @@ core.register_on_formspec_input(function(formname, fields)
 		elseif fields.clear then  --[CLEAR] button
 			output = {}
 			save_lua(fields.editor)
+			core.show_formspec("lua:editor", lua_editor())
+		elseif fields.preview then  --[PREVIEW] button - syntax colorize
+			save_lua(fields.editor)
+			local code = load_lua()
+			local colorized = colorize(code)
+			output = {}
+			for _, entry in ipairs(colorized) do
+				table.insert(output, entry.color .. entry.line)
+			end
 			core.show_formspec("lua:editor", lua_editor())
 		elseif fields.load_ext then  --[LOAD] button - load external file
 			dte._pending_load = true
