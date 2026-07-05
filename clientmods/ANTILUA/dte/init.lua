@@ -2,10 +2,11 @@ dte = {
 	modstorage = core.get_mod_storage("dte"),
 	modpath = core.get_modpath(core.get_current_modname())
 }
+if core.settings:get("dte_width") == nil then core.settings:set("dte_width", "15") end
+if core.settings:get("dte_height") == nil then core.settings:set("dte_height", "10") end
 local data = {  -- window size
-	width = 15,
-	height = 10,
-
+	width = tonumber(core.settings:get("dte_width")) or 15,
+	height = tonumber(core.settings:get("dte_height")) or 10,
 }
 local F = core.formspec_escape  -- shorten the function
 

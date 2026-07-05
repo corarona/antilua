@@ -2608,3 +2608,28 @@ show_technical_names (Show technical names) bool false
 
 #    Controlled by a checkbox in the settings menu.
 show_advanced (Show advanced settings) bool false
+
+[*Antilua Cheat Menu Theme] [client]
+
+#    Opacity of the cheat menu panel background (0 = transparent, 255 = opaque).
+theme_panel_bg_alpha (Panel background opacity) int 204 0 255
+
+#    Opacity of the cheat menu panel title bar (0 = transparent, 255 = opaque).
+theme_title_bg_alpha (Title bar opacity) int 204 0 255
+
+#    Opacity of the cheat menu panel border (0 = transparent, 255 = opaque).
+theme_border_alpha (Border opacity) int 204 0 255
+
+#    Opacity of the cheat menu panel item background (0 = transparent, 255 = opaque).
+theme_item_bg_alpha (Item background opacity) int 204 0 255
+
+#    Opacity of the active/hovered cheat menu item background (0 = transparent, 255 = opaque).
+theme_active_bg_alpha (Active item background opacity) int 204 0 255
+
+[*Antilua DTE] [client]
+
+#    Width of the DTE formspec window.
+dte_width (DTE window width) float 15 8 40
+
+#    Height of the DTE formspec window.
+dte_height (DTE window height) float 10 6 30
