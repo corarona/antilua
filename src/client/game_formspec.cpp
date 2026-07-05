@@ -358,7 +358,7 @@ void GameFormSpec::showPlayerInventory(const std::string *fs_override)
 	fs_src.release(); // owned by GUIFormSpecMenu
 }
 
-#define SIZE_TAG "size[11,5.5,true]" // Fixed size (ignored in touchscreen mode)
+#define SIZE_TAG "size[11,6.5,true]" // Fixed size (ignored in touchscreen mode)
 
 void GameFormSpec::showPauseMenu()
 {
@@ -385,7 +385,7 @@ void GameFormSpec::showPauseMenu()
 	float ypos = simple_singleplayer_mode ? 0.7f : 0.1f;
 	std::ostringstream os;
 
-	os << "formspec_version[1]" << SIZE_TAG
+	os << "formspec_version[1]" << SIZE_TAG << "noprepend[]"
 		<< "button_exit[4," << (ypos++) << ";3,0.5;btn_continue;"
 		// TRANSLATORS: Pause menu button, try to keep the translation short
 		<< strgettext("Continue") << "]";
