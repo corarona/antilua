@@ -125,26 +125,35 @@ local function run(code, name)  -- run a script
 		name = saved_file
 	end
 	print = dte_print  -- temporarily redirect print to DTE output
-	local status, err = pcall(loadstring(code))  -- run
-	print = _builtin_print  -- restore original print
-	if status then
+	local func, load_err = loadstring(code)
+	if not func then
+		-- Syntax error during loading
 		if saved_file == false then
-			table.insert(output, "#00ff00finished")  -- display that the script ran without errors
+			table.insert(output, "#ff0000Syntax Error:  "..load_err)
+			core.log("Error (unsaved):  "..load_err)
 		else
-			table.insert(output, "#00ff00"..name..":  finished")  -- display which script, if it was saved
+			table.insert(output, "#ff0000"..name..": Syntax Error:  "..load_err)
+			core.log("Error ("..name.."):  "..load_err)
 		end
 	else
-		if err == "attempt to call a nil value" then
-			err = "Syntax Error"
-		end
-		if saved_file == false then
-			table.insert(output, "#ff0000Error:  "..err)  -- display errors
-			core.log("Error (unsaved):  "..err)
+		local status, err = pcall(func)
+		if status then
+			if saved_file == false then
+				table.insert(output, "#00ff00finished")
+			else
+				table.insert(output, "#00ff00"..name..":  finished")
+			end
 		else
-			table.insert(output, "#ff0000"..name..": Error:  "..err)
-			core.log("Error ("..name.."):  "..err)
+			if saved_file == false then
+				table.insert(output, "#ff0000Error:  "..err)
+				core.log("Error (unsaved):  "..err)
+			else
+				table.insert(output, "#ff0000"..name..": Error:  "..err)
+				core.log("Error ("..name.."):  "..err)
+			end
 		end
 	end
+	print = _builtin_print  -- restore original print
 end
 
 local function on_startup()  -- ran on startup. Runs all scripts registered for startup
