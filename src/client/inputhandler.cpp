@@ -294,8 +294,8 @@ bool MyEventReceiver::OnEvent(const SEvent &event)
 
 	// Remember whether each key is down or up
 	if (event.EventType == EET_KEY_INPUT_EVENT) {
-		// Capture character input when cheat layer is active
-		if (g_cheat_layer_active && event.KeyInput.PressedDown) {
+		// Capture character input when cheat layer or quick palette is active
+		if ((g_cheat_layer_active || g_quick_palette_active) && event.KeyInput.PressedDown) {
 			if (event.KeyInput.Char >= 32) {
 				cheat_char = event.KeyInput.Char;
 				cheat_char_avail = true;

@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 CheatMenu *g_cheat_menu = nullptr;
 bool g_cheat_layer_active = false;
+bool g_quick_palette_active = false;
 bool g_show_minimal_debug = false;
 
 static bool isCatPanel(const OverlayPanel &p) { return p.id.find("_cat_") == 0; }
@@ -822,10 +823,12 @@ void CheatMenu::toggleQuickPalette()
 {
 	if (m_quick_palette_active) {
 		m_quick_palette_active = false;
+		g_quick_palette_active = false;
 	} else {
 		m_quick_palette_text.clear();
 		m_quick_palette_selected = 0;
 		m_quick_palette_active = true;
+		g_quick_palette_active = true;
 	}
 }
 
