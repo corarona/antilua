@@ -60,6 +60,9 @@ public:
 	bool hasSearchText() const { return !m_search_text.empty(); }
 	const std::string &getSearchText() const { return m_search_text; }
 
+	// Supermenu
+	void createSupermenuPanel();
+
 	// Quick Access Palette
 	void toggleQuickPalette();
 	void drawQuickPalette(video::IVideoDriver *driver);
@@ -94,6 +97,10 @@ private:
 	bool m_quick_palette_active = false;
 	std::string m_quick_palette_text;
 	int m_quick_palette_selected = 0;
+
+	// Supermenu
+	int m_super_level = 0;
+	int m_super_selected_category = 0;
 
 	// Favorites
 	bool isFavorite(const std::string &setting) const;

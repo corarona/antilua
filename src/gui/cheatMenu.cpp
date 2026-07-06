@@ -35,6 +35,7 @@ bool g_show_minimal_debug = false;
 
 static bool isCatPanel(const OverlayPanel &p) { return p.id.find("_cat_") == 0; }
 static bool isFavPanel(const OverlayPanel &p) { return p.id == "_fav_0"; }
+static bool isSuperPanel(const OverlayPanel &p) { return p.id == "_super_0"; }
 
 static std::set<std::string> getFavoritesSet()
 {
@@ -123,6 +124,8 @@ void CheatMenu::createCategoryPanels()
 		m_panels.push_back(fp);
 	}
 
+	createSupermenuPanel();
+
 	m_search_text.clear();
 }
 
@@ -133,7 +136,19 @@ s32 CheatMenu::getPanelContentHeight(const OverlayPanel &panel)
 		return 0;
 
 	s32 count = 0;
-	if (isFavPanel(panel)) {
+	if (isSuperPanel(panel)) {
+		if (m_super_level == 0) {
+			for (auto &cat : script->m_cheat_categories)
+				if (matchesSearch(cat->m_name, m_search_text))
+					count++;
+		} else {
+			count = 1; // back button
+			if (m_super_selected_category >= 0 && (size_t)m_super_selected_category < script->m_cheat_categories.size())
+				for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats)
+					if (matchesSearch(cheat->m_name, m_search_text))
+						count++;
+		}
+	} else if (isFavPanel(panel)) {
 		for (auto &cat : script->m_cheat_categories)
 			for (auto &cheat : cat->m_cheats)
 				if (isFavorite(cheat->m_setting) && matchesSearch(cheat->m_name, m_search_text))
@@ -151,9 +166,72 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 	OverlayPanel &panel, s32 content_x, s32 content_y,
 	s32 content_w, s32 content_h, v2s32 mouse_pos)
 {
-	if (!isCatPanel(panel) && !isFavPanel(panel))
+	if (!isCatPanel(panel) && !isFavPanel(panel) && !isSuperPanel(panel))
 		return;
 	CHEAT_MENU_GET_SCRIPTPTR
+
+	// Supermenu panel with two-level navigation
+	if (isSuperPanel(panel)) {
+		auto fill_bg = [&](s32 iy, bool selected) {
+			video::SColor cbg = selected ? m_active_bg_color : m_item_bg;
+			driver->draw2DRectangle(cbg,
+				core::rect<s32>(content_x + 1, iy, content_x + content_w - 1, iy + m_entry_height));
+		};
+
+		s32 iy = content_y;
+		int chi = 0;
+
+		if (m_super_level == 0) {
+			// Level 0: list categories
+			for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
+				auto &cat = script->m_cheat_categories[ci];
+				if (!matchesSearch(cat->m_name, m_search_text))
+					continue;
+				bool selected = (chi == panel.selected_cheat);
+				if (pointInRect(mouse_pos.X, mouse_pos.Y, content_x, iy, content_w, m_entry_height))
+					panel.selected_cheat = chi;
+				fill_bg(iy, selected);
+				drawText("> " + cat->m_name, content_x + 5,
+					iy + (m_entry_height - m_fontsize.Y) / 2,
+					selected ? m_selected_font_color : m_font_color);
+				iy += m_entry_height + m_gap;
+				chi++;
+			}
+		} else {
+			// Level 1: back button + cheats in selected category
+			// Back button
+			bool back_sel = (panel.selected_cheat == 0);
+			if (pointInRect(mouse_pos.X, mouse_pos.Y, content_x, iy, content_w, m_entry_height))
+				panel.selected_cheat = 0;
+			fill_bg(iy, back_sel);
+			drawText("\u2190 Categories", content_x + 5,
+				iy + (m_entry_height - m_fontsize.Y) / 2,
+				back_sel ? m_selected_font_color : m_font_color);
+			iy += m_entry_height + m_gap;
+			chi = 1;
+
+			// Cheats
+			if (m_super_selected_category >= 0 && (size_t)m_super_selected_category < script->m_cheat_categories.size()) {
+				for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats) {
+					if (!matchesSearch(cheat->m_name, m_search_text))
+						continue;
+					bool selected = (chi == panel.selected_cheat);
+					if (pointInRect(mouse_pos.X, mouse_pos.Y, content_x, iy, content_w, m_entry_height))
+						panel.selected_cheat = chi;
+					bool enabled = cheat->is_enabled();
+					fill_bg(iy, selected);
+					std::string txt = enabled ? "[x] " : "[ ] ";
+					txt += cheat->m_name;
+					drawText(txt, content_x + 5,
+						iy + (m_entry_height - m_fontsize.Y) / 2,
+						selected ? m_selected_font_color : m_font_color);
+					iy += m_entry_height + m_gap;
+					chi++;
+				}
+			}
+		}
+		return;
+	}
 
 	// Collect the cheats to draw based on panel type
 	struct DrawEntry {
@@ -290,9 +368,55 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 	if (panel_idx >= m_panels.size())
 		return;
 	auto &panel = m_panels[panel_idx];
-	if (!isCatPanel(panel) && !isFavPanel(panel))
+	if (!isCatPanel(panel) && !isFavPanel(panel) && !isSuperPanel(panel))
 		return;
 	CHEAT_MENU_GET_SCRIPTPTR
+
+	// Supermenu panel
+	if (isSuperPanel(panel)) {
+		s32 iy = cy;
+		int chi = 0;
+		if (m_super_level == 0) {
+			for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
+				if (!matchesSearch(script->m_cheat_categories[ci]->m_name, m_search_text))
+					continue;
+				if (pointInRect(pos.X, pos.Y, panel.x, iy, panel.w, m_entry_height)) {
+					m_super_level = 1;
+					m_super_selected_category = (int)ci;
+					panel.selected_cheat = 0;
+					m_panels[panel_idx].title = script->m_cheat_categories[ci]->m_name;
+					return;
+				}
+				iy += m_entry_height + m_gap;
+				chi++;
+			}
+		} else {
+			// Back button
+			if (pointInRect(pos.X, pos.Y, panel.x, iy, panel.w, m_entry_height)) {
+				m_super_level = 0;
+				panel.selected_cheat = chi;
+				m_panels[panel_idx].title = "Menu";
+				return;
+			}
+			iy += m_entry_height + m_gap;
+
+			// Cheats
+			if (m_super_selected_category >= 0 && (size_t)m_super_selected_category < script->m_cheat_categories.size()) {
+				for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats) {
+					if (!matchesSearch(cheat->m_name, m_search_text))
+						continue;
+					if (pointInRect(pos.X, pos.Y, panel.x, iy, panel.w, m_entry_height)) {
+						panel.selected_cheat = chi;
+						script->toggle_cheat(cheat);
+						return;
+					}
+					iy += m_entry_height + m_gap;
+					chi++;
+				}
+			}
+		}
+		return;
+	}
 
 	// Collect entries
 	struct Entry {
@@ -379,7 +503,7 @@ void CheatMenu::onLayerClosed()
 	}
 
 	for (s32 i = (s32)m_panels.size() - 1; i >= 0; i--) {
-		if ((isCatPanel(m_panels[i]) || isFavPanel(m_panels[i])) && !m_panels[i].pinned)
+		if ((isCatPanel(m_panels[i]) || isFavPanel(m_panels[i]) || isSuperPanel(m_panels[i])) && !m_panels[i].pinned)
 			m_panels.erase(m_panels.begin() + i);
 	}
 }
@@ -442,6 +566,23 @@ void CheatMenu::selectUp()
 		int max = countFavoritedCheats(script) - 1;
 		panel->selected_cheat--;
 		if (panel->selected_cheat < 0) panel->selected_cheat = max;
+	} else if (isSuperPanel(*panel)) {
+		int max = 1;
+		if (m_super_level == 0) {
+			max = 0;
+			for (auto &cat : script->m_cheat_categories)
+				if (matchesSearch(cat->m_name, m_search_text))
+					max++;
+			max--;
+		} else {
+			max = 0;
+			if (m_super_selected_category >= 0 && (size_t)m_super_selected_category < script->m_cheat_categories.size())
+				for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats)
+					if (matchesSearch(cheat->m_name, m_search_text))
+						max++;
+		}
+		panel->selected_cheat--;
+		if (panel->selected_cheat < 0) panel->selected_cheat = max;
 	}
 }
 
@@ -459,6 +600,23 @@ void CheatMenu::selectDown()
 		if (panel->selected_cheat > max) panel->selected_cheat = 0;
 	} else if (isFavPanel(*panel)) {
 		int max = countFavoritedCheats(script) - 1;
+		panel->selected_cheat++;
+		if (panel->selected_cheat > max) panel->selected_cheat = 0;
+	} else if (isSuperPanel(*panel)) {
+		int max = 1;
+		if (m_super_level == 0) {
+			max = 0;
+			for (auto &cat : script->m_cheat_categories)
+				if (matchesSearch(cat->m_name, m_search_text))
+					max++;
+			max--;
+		} else {
+			max = 0;
+			if (m_super_selected_category >= 0 && (size_t)m_super_selected_category < script->m_cheat_categories.size())
+				for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats)
+					if (matchesSearch(cheat->m_name, m_search_text))
+						max++;
+		}
 		panel->selected_cheat++;
 		if (panel->selected_cheat > max) panel->selected_cheat = 0;
 	}
@@ -514,6 +672,41 @@ void CheatMenu::selectConfirm()
 						return;
 					}
 					idx++;
+				}
+			}
+		}
+	} else if (isSuperPanel(*panel)) {
+		if (m_super_level == 0) {
+			int cat_idx = 0;
+			for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
+				if (!matchesSearch(script->m_cheat_categories[ci]->m_name, m_search_text))
+					continue;
+				if (cat_idx == panel->selected_cheat) {
+					m_super_level = 1;
+					m_super_selected_category = (int)ci;
+					panel->selected_cheat = 0;
+					panel->title = script->m_cheat_categories[ci]->m_name;
+					return;
+				}
+				cat_idx++;
+			}
+		} else {
+			if (panel->selected_cheat == 0) {
+				m_super_level = 0;
+				panel->selected_cheat = 0;
+				panel->title = "Menu";
+				return;
+			}
+			int cheat_idx = 1;
+			if (m_super_selected_category >= 0 && (size_t)m_super_selected_category < script->m_cheat_categories.size()) {
+				for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats) {
+					if (!matchesSearch(cheat->m_name, m_search_text))
+						continue;
+					if (cheat_idx == panel->selected_cheat) {
+						script->toggle_cheat(cheat);
+						return;
+					}
+					cheat_idx++;
 				}
 			}
 		}
@@ -768,4 +961,15 @@ void CheatMenu::paletteConfirm()
 			}
 			idx++;
 		}
+}
+
+void CheatMenu::createSupermenuPanel()
+{
+	OverlayPanel sp;
+	sp.id = "_super_0";
+	sp.title = "Menu";
+	sp.w = m_entry_width > 0 ? m_entry_width : 220;
+	sp.pinned = true;
+	m_panels.push_back(sp);
+	m_super_level = 0;
 }
