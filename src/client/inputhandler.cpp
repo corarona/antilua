@@ -98,6 +98,7 @@ void MyEventReceiver::reloadKeybindings()
 	keybindings[KeyType::SELECT_LEFT] = getKeySetting("keymap_select_left");
 	keybindings[KeyType::SELECT_RIGHT] = getKeySetting("keymap_select_right");
 	keybindings[KeyType::SELECT_CONFIRM] = getKeySetting("keymap_select_confirm");
+	keybindings[KeyType::QUICK_SELECT_MENU] = getKeySetting("keymap_quick_select_menu");
 
 	keybindings[KeyType::QUICKTUNE_NEXT] = getKeySetting("keymap_quicktune_next");
 	keybindings[KeyType::QUICKTUNE_PREV] = getKeySetting("keymap_quicktune_prev");

@@ -60,6 +60,15 @@ public:
 	bool hasSearchText() const { return !m_search_text.empty(); }
 	const std::string &getSearchText() const { return m_search_text; }
 
+	// Quick Access Palette
+	void toggleQuickPalette();
+	void drawQuickPalette(video::IVideoDriver *driver);
+	void pollQuickPaletteInput();
+	bool isQuickPaletteActive() const { return m_quick_palette_active; }
+	void paletteUp();
+	void paletteDown();
+	void paletteConfirm();
+
 protected:
 	void initPanels() override { createCategoryPanels(); }
 	s32 getPanelContentHeight(const OverlayPanel &panel) override;
@@ -80,6 +89,11 @@ private:
 
 	// Search bar
 	std::string m_search_text;
+
+	// Quick Access Palette
+	bool m_quick_palette_active = false;
+	std::string m_quick_palette_text;
+	int m_quick_palette_selected = 0;
 
 	// Favorites
 	bool isFavorite(const std::string &setting) const;

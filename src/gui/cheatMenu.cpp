@@ -574,7 +574,7 @@ void CheatMenu::drawSearchBar(video::IVideoDriver *driver)
 
 bool CheatMenu::pollInput()
 {
-	if (!g_cheat_layer_active)
+	if (!g_cheat_layer_active && !m_quick_palette_active)
 		return false;
 
 	auto *device = RenderingEngine::get_raw_device();
@@ -585,6 +585,26 @@ bool CheatMenu::pollInput()
 
 	receiver->consumeCheatChar();
 	wchar_t c = receiver->cheat_char;
+
+	if (m_quick_palette_active) {
+		if (c == 8) {
+			if (!m_quick_palette_text.empty())
+				m_quick_palette_text.pop_back();
+		} else if (c == 27) {
+			if (!m_quick_palette_text.empty()) {
+				m_quick_palette_text.clear();
+			} else {
+				m_quick_palette_active = false;
+				if (auto *device = RenderingEngine::get_raw_device())
+					if (auto *cur = device->getCursorControl())
+						cur->setVisible(false);
+			}
+		} else if (c >= 32) {
+			m_quick_palette_text += (char)c;
+		}
+		m_quick_palette_selected = 0;
+		return false;
+	}
 
 	if (c == 8) {
 		if (!m_search_text.empty())
@@ -599,4 +619,153 @@ bool CheatMenu::pollInput()
 		m_search_text += (char)c;
 	}
 	return false;
+}
+
+void CheatMenu::toggleQuickPalette()
+{
+	if (m_quick_palette_active) {
+		m_quick_palette_active = false;
+	} else {
+		m_quick_palette_text.clear();
+		m_quick_palette_selected = 0;
+		m_quick_palette_active = true;
+	}
+}
+
+void CheatMenu::drawQuickPalette(video::IVideoDriver *driver)
+{
+	if (!m_quick_palette_active)
+		return;
+
+	auto ss = driver->getScreenSize();
+	driver->draw2DRectangle(video::SColor(180, 0, 0, 0),
+		core::rect<s32>(0, 0, ss.Width, ss.Height));
+
+	s32 pw = 450;
+	s32 ph = 400;
+	s32 px = ((s32)ss.Width - pw) / 2;
+	s32 py = ((s32)ss.Height - ph) / 2;
+
+	drawRoundedRect(driver, px, py, pw, ph, m_panel_bg, m_bg_color);
+
+	// Search field
+	s32 search_y = py + 10;
+	driver->draw2DRectangle(m_item_bg,
+		core::rect<s32>(px + 8, search_y, px + pw - 8, search_y + 34));
+	std::string display = m_quick_palette_text.empty()
+		? "Search cheats..."
+		: "\u2315 " + m_quick_palette_text;
+	drawText(display, px + 14, search_y + (34 - m_fontsize.Y) / 2,
+		m_selected_font_color);
+
+	// Collect matching entries
+	ClientScripting *script = m_client->getScript();
+	std::vector<ScriptApiCheatsCheat *> entries;
+	if (script && script->m_cheats_loaded) {
+		for (auto &cat : script->m_cheat_categories)
+			for (auto &cheat : cat->m_cheats)
+				if (matchesSearch(cheat->m_name, m_quick_palette_text))
+					entries.push_back(cheat);
+	}
+
+	// Results list
+	s32 list_y = search_y + 42;
+	int idx = 0;
+	auto clip_bottom = py + ph - 10;
+	for (auto *cheat : entries) {
+		if (list_y + m_entry_height > clip_bottom) break;
+
+		bool selected = (idx == m_quick_palette_selected);
+		video::SColor cbg = selected ? m_active_bg_color : m_item_bg;
+		driver->draw2DRectangle(cbg,
+			core::rect<s32>(px + 1, list_y, px + pw - 1, list_y + m_entry_height));
+
+		std::string txt = cheat->is_enabled() ? "[x] " : "[ ] ";
+		txt += cheat->m_name;
+		drawText(txt, px + 10, list_y + (m_entry_height - m_fontsize.Y) / 2,
+			selected ? m_selected_font_color : m_font_color);
+
+		list_y += m_entry_height + m_gap;
+		idx++;
+	}
+}
+
+void CheatMenu::pollQuickPaletteInput()
+{
+	if (!m_quick_palette_active)
+		return;
+
+	auto *device = RenderingEngine::get_raw_device();
+	auto *receiver = static_cast<MyEventReceiver *>(device->getEventReceiver());
+	if (!receiver->cheat_char_avail)
+		return;
+
+	receiver->consumeCheatChar();
+	wchar_t c = receiver->cheat_char;
+
+	if (c == 8) {
+		if (!m_quick_palette_text.empty())
+			m_quick_palette_text.pop_back();
+	} else if (c == 27) {
+		if (!m_quick_palette_text.empty())
+			m_quick_palette_text.clear();
+		else
+			m_quick_palette_active = false;
+	} else if (c >= 32) {
+		m_quick_palette_text += (char)c;
+	}
+	m_quick_palette_selected = 0;
+}
+
+void CheatMenu::paletteUp()
+{
+	if (!m_quick_palette_active) return;
+	ClientScripting *script = m_client->getScript();
+	if (!script || !script->m_cheats_loaded) return;
+
+	int count = 0;
+	for (auto &cat : script->m_cheat_categories)
+		for (auto &cheat : cat->m_cheats)
+			if (matchesSearch(cheat->m_name, m_quick_palette_text))
+				count++;
+
+	if (count <= 0) return;
+	m_quick_palette_selected--;
+	if (m_quick_palette_selected < 0) m_quick_palette_selected = count - 1;
+}
+
+void CheatMenu::paletteDown()
+{
+	if (!m_quick_palette_active) return;
+	ClientScripting *script = m_client->getScript();
+	if (!script || !script->m_cheats_loaded) return;
+
+	int count = 0;
+	for (auto &cat : script->m_cheat_categories)
+		for (auto &cheat : cat->m_cheats)
+			if (matchesSearch(cheat->m_name, m_quick_palette_text))
+				count++;
+
+	if (count <= 0) return;
+	m_quick_palette_selected++;
+	if (m_quick_palette_selected >= count) m_quick_palette_selected = 0;
+}
+
+void CheatMenu::paletteConfirm()
+{
+	if (!m_quick_palette_active) return;
+	ClientScripting *script = m_client->getScript();
+	if (!script || !script->m_cheats_loaded) return;
+
+	int idx = 0;
+	for (auto &cat : script->m_cheat_categories)
+		for (auto &cheat : cat->m_cheats) {
+			if (!matchesSearch(cheat->m_name, m_quick_palette_text))
+				continue;
+			if (idx == m_quick_palette_selected) {
+				script->toggle_cheat(cheat);
+				return;
+			}
+			idx++;
+		}
 }

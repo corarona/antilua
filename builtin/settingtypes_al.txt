@@ -171,6 +171,9 @@ cheat_menu_favorites (Cheat menu favorites) string
 #    Open/close the cheat menu overlay.
 keymap_toggle_cheat_menu (Toggle cheat menu) key SYSTEM_SCANCODE_43
 
+#    Open/close the quick select palette.
+keymap_quick_select_menu (Quick select menu) key SYSTEM_SCANCODE_53
+
 #    Toggle killaura on/off.
 keymap_toggle_killaura (Toggle killaura) key KEY_KEY_X
 

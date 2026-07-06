@@ -1578,10 +1578,14 @@ void Game::processKeyInput()
 	} else if (wasKeyDown(KeyType::QUICKTUNE_DEC)) {
 		quicktune->dec();
 	} else if (wasKeyDown(KeyType::SELECT_UP)) {
-		if (m_cheat_menu)
+		if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
+			m_cheat_menu->paletteUp();
+		else if (m_cheat_menu)
 			m_cheat_menu->selectUp();
 	} else if (wasKeyDown(KeyType::SELECT_DOWN)) {
-		if (m_cheat_menu)
+		if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
+			m_cheat_menu->paletteDown();
+		else if (m_cheat_menu)
 			m_cheat_menu->selectDown();
 	} else if (wasKeyDown(KeyType::SELECT_LEFT)) {
 		if (m_cheat_menu)
@@ -1590,8 +1594,25 @@ void Game::processKeyInput()
 		if (m_cheat_menu)
 			m_cheat_menu->selectRight();
 	} else if (wasKeyPressed(KeyType::SELECT_CONFIRM)) {
-		if (m_cheat_menu)
+		if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
+			m_cheat_menu->paletteConfirm();
+		else if (m_cheat_menu)
 			m_cheat_menu->selectConfirm();
+	} else if (wasKeyPressed(KeyType::QUICK_SELECT_MENU)) {
+		if (m_cheat_menu) {
+			m_cheat_menu->toggleQuickPalette();
+			if (m_cheat_menu->isQuickPaletteActive()) {
+				if (m_cheat_layer_active)
+					toggleCheatLayer();
+				if (auto *cur = device->getCursorControl())
+					cur->setVisible(true);
+			} else {
+				if (!m_cheat_layer_active) {
+					if (auto *cur = device->getCursorControl())
+						cur->setVisible(false);
+				}
+			}
+		}
 	}
 
 	if (!isKeyDown(KeyType::JUMP) && runData.reset_jump_timer) {
@@ -1632,6 +1653,10 @@ void Game::processKeyInput()
 	// Poll cheat menu search bar input
 	if (m_cheat_layer_active && m_cheat_menu && m_cheat_menu->pollInput())
 		toggleCheatLayer();
+
+	// Poll quick palette input
+	if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
+		m_cheat_menu->pollQuickPaletteInput();
 }
 
 void Game::processItemSelection(u16 *new_playeritem)

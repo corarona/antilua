@@ -167,6 +167,7 @@ static void set_al_default_settings()
 	settings->setDefault("keymap_select_left", "KEY_LEFT");
 	settings->setDefault("keymap_select_right", "KEY_RIGHT");
 	settings->setDefault("keymap_select_confirm", "SYSTEM_SCANCODE_40");
+	settings->setDefault("keymap_quick_select_menu", "SYSTEM_SCANCODE_53");
 
 	// Camera roll
 	settings->setDefault("camera_roll_speed", "90.0");
