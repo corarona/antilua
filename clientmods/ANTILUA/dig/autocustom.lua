@@ -14,5 +14,4 @@ coroutine.wrap(function()
 	end
 end)()
 
-core.register_list_command("digcustom", "Configure custom auto-dig nodes", "digcustom_nodes")
 core.register_cheat("DigCustom", { category = "Dig", setting = "digcustom", description = "Custom digging pattern" })
