@@ -292,7 +292,28 @@ bool MyEventReceiver::OnEvent(const SEvent &event)
 	}
 
 	// Remember whether each key is down or up
-	if (g_touchcontrols && event.EventType == EET_TOUCH_INPUT_EVENT) {
+	if (event.EventType == EET_KEY_INPUT_EVENT) {
+		// Capture character input when cheat layer is active
+		if (g_cheat_layer_active && event.KeyInput.PressedDown) {
+			if (event.KeyInput.Char >= 32) {
+				cheat_char = event.KeyInput.Char;
+				cheat_char_avail = true;
+			} else if (event.KeyInput.Key == KEY_BACK) {
+				cheat_char = 8;
+				cheat_char_avail = true;
+			} else if (event.KeyInput.Key == KEY_RETURN) {
+				cheat_char = 13;
+				cheat_char_avail = true;
+			} else if (event.KeyInput.Key == KEY_ESCAPE) {
+				cheat_char = 27;
+				cheat_char_avail = true;
+			}
+		}
+
+		KeyPress keyCode(event.KeyInput);
+		if (setKeyDown(keyCode, event.KeyInput.PressedDown))
+			return true;
+	} else if (g_touchcontrols && event.EventType == EET_TOUCH_INPUT_EVENT) {
 		// In case of touchcontrols, we have to handle different events
 		g_touchcontrols->translateEvent(event);
 		return true;

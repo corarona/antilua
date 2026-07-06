@@ -1628,6 +1628,10 @@ void Game::processKeyInput()
 		cheat_key_was_down = cheat_key_down;
 		g_cheat_layer_active = m_cheat_layer_active;
 	}
+
+	// Poll cheat menu search bar input
+	if (m_cheat_layer_active && m_cheat_menu && m_cheat_menu->pollInput())
+		toggleCheatLayer();
 }
 
 void Game::processItemSelection(u16 *new_playeritem)

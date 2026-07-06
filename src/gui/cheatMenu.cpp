@@ -23,6 +23,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "cheatMenu.h"
 #include "settings.h"
 #include "util/string.h"
+#include "client/renderingengine.h"
+#include "client/inputhandler.h"
 #include <algorithm>
 #include <set>
 #include <sstream>
@@ -46,6 +48,17 @@ static std::set<std::string> getFavoritesSet()
 				result.insert(item);
 	}
 	return result;
+}
+
+static bool matchesSearch(const std::string &name, const std::string &search)
+{
+	if (search.empty())
+		return true;
+	std::string n = name;
+	std::string s = search;
+	std::transform(n.begin(), n.end(), n.begin(), ::tolower);
+	std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+	return n.find(s) != std::string::npos;
 }
 
 static video::SColor parseHexColor(const std::string &hex, u32 alpha = 255)
@@ -109,6 +122,8 @@ void CheatMenu::createCategoryPanels()
 		fp.pinned = true;
 		m_panels.push_back(fp);
 	}
+
+	m_search_text.clear();
 }
 
 s32 CheatMenu::getPanelContentHeight(const OverlayPanel &panel)
@@ -117,14 +132,19 @@ s32 CheatMenu::getPanelContentHeight(const OverlayPanel &panel)
 	if (!script || !script->m_cheats_loaded)
 		return 0;
 
-	if (isFavPanel(panel))
-		return countFavoritedCheats(script) * (m_entry_height + m_gap);
-
-	if (!isCatPanel(panel))
-		return 0;
-	if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size())
-		return (s32)script->m_cheat_categories[panel.selected_category]->m_cheats.size() * (m_entry_height + m_gap);
-	return 0;
+	s32 count = 0;
+	if (isFavPanel(panel)) {
+		for (auto &cat : script->m_cheat_categories)
+			for (auto &cheat : cat->m_cheats)
+				if (isFavorite(cheat->m_setting) && matchesSearch(cheat->m_name, m_search_text))
+					count++;
+	} else if (isCatPanel(panel) && panel.selected_category >= 0 &&
+			(size_t)panel.selected_category < script->m_cheat_categories.size()) {
+		for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats)
+			if (matchesSearch(cheat->m_name, m_search_text))
+				count++;
+	}
+	return count * (m_entry_height + m_gap);
 }
 
 void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
@@ -147,13 +167,14 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 	if (isFavPanel(panel)) {
 		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
 			for (auto &cheat : script->m_cheat_categories[ci]->m_cheats) {
-				if (favs.count(cheat->m_setting))
+				if (favs.count(cheat->m_setting) && matchesSearch(cheat->m_name, m_search_text))
 					entries.push_back({cheat, (int)ci});
 			}
 		}
 	} else if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 		for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats)
-			entries.push_back({cheat, panel.selected_category});
+			if (matchesSearch(cheat->m_name, m_search_text))
+				entries.push_back({cheat, panel.selected_category});
 	}
 
 	int chi = 0;
@@ -284,11 +305,12 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 	if (isFavPanel(panel)) {
 		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++)
 			for (auto &cheat : script->m_cheat_categories[ci]->m_cheats)
-				if (favs.count(cheat->m_setting))
+				if (favs.count(cheat->m_setting) && matchesSearch(cheat->m_name, m_search_text))
 					entries.push_back({cheat});
 	} else if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
 		for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats)
-			entries.push_back({cheat});
+			if (matchesSearch(cheat->m_name, m_search_text))
+				entries.push_back({cheat});
 	}
 
 	s32 iy = cy;
@@ -524,4 +546,57 @@ int CheatMenu::countFavoritedCheats(ClientScripting *script) const
 			if (isFavorite(cheat->m_setting))
 				count++;
 	return count;
+}
+
+void CheatMenu::drawSearchBar(video::IVideoDriver *driver)
+{
+	auto ss = driver->getScreenSize();
+	s32 bar_w = 400;
+	s32 bar_h = 34;
+	s32 bar_x = ((s32)ss.Width - bar_w) / 2;
+	s32 bar_y = 8;
+
+	driver->draw2DRectangle(m_panel_bg,
+		core::rect<s32>(bar_x - 2, bar_y - 2, bar_x + bar_w + 2, bar_y + bar_h + 2));
+
+	driver->draw2DRectangle(m_item_bg,
+		core::rect<s32>(bar_x, bar_y, bar_x + bar_w, bar_y + bar_h));
+
+	std::string display;
+	if (m_search_text.empty())
+		display = "Search cheats... (\u2386 to clear)";
+	else
+		display = "\u2315 " + m_search_text;
+
+	drawText(display, bar_x + 8, bar_y + (bar_h - m_fontsize.Y) / 2,
+		m_search_text.empty() ? m_font_color : m_selected_font_color);
+}
+
+bool CheatMenu::pollInput()
+{
+	if (!g_cheat_layer_active)
+		return false;
+
+	auto *device = RenderingEngine::get_raw_device();
+	auto *receiver = static_cast<MyEventReceiver *>(device->getEventReceiver());
+
+	if (!receiver->cheat_char_avail)
+		return false;
+
+	receiver->consumeCheatChar();
+	wchar_t c = receiver->cheat_char;
+
+	if (c == 8) {
+		if (!m_search_text.empty())
+			m_search_text.pop_back();
+	} else if (c == 27) {
+		if (!m_search_text.empty()) {
+			m_search_text.clear();
+		} else {
+			return true;
+		}
+	} else if (c >= 32) {
+		m_search_text += (char)c;
+	}
+	return false;
 }

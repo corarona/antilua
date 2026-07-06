@@ -256,6 +256,7 @@ void DrawHUD::run(PipelineContext &context)
 				driver->draw2DRectangle(video::SColor(140, 0, 0, 0),
 					core::rect<s32>(0, 0, ss.X, ss.Y));
 			}
+			g_cheat_menu->drawSearchBar(driver);
 			g_cheat_menu->drawAll(driver, mouse_pos,
 				g_show_minimal_debug);
 		}

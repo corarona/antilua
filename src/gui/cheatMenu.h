@@ -55,6 +55,11 @@ public:
 	void selectRight();
 	void selectConfirm();
 
+	void drawSearchBar(video::IVideoDriver *driver);
+	bool pollInput();
+	bool hasSearchText() const { return !m_search_text.empty(); }
+	const std::string &getSearchText() const { return m_search_text; }
+
 protected:
 	void initPanels() override { createCategoryPanels(); }
 	s32 getPanelContentHeight(const OverlayPanel &panel) override;
@@ -72,6 +77,9 @@ private:
 	std::string m_tooltip_text;
 	s32 m_tooltip_x = 0, m_tooltip_y = 0;
 	u64 m_hover_start = 0;
+
+	// Search bar
+	std::string m_search_text;
 
 	// Favorites
 	bool isFavorite(const std::string &setting) const;

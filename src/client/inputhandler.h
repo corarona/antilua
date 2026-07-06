@@ -106,6 +106,11 @@ public:
 
 	PointerType getLastPointerType() { return last_pointer_type; }
 
+	// Character input buffer for cheat menu search bar
+	wchar_t cheat_char = 0;
+	bool cheat_char_avail = false;
+	void consumeCheatChar() { cheat_char_avail = false; }
+
 private:
 	void listenForKey(KeyPress keyCode, GameKeyType action)
 	{
