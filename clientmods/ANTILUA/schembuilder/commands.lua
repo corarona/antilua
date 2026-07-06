@@ -1,4 +1,4 @@
-PARTICLE_TTL = PARTICLE_TTL or 600
+local PARTICLE_TTL = 600
 
 function do_schembuild(param, use_pos)
 	if param == "" then
