@@ -39,7 +39,7 @@ public:
 	void handleMouse(v2s32 pos, bool left_down);
 	void onLayerClosed();
 
-	void autoTilePanels(v2u32 screen_size);
+	virtual void autoTilePanels(v2u32 screen_size);
 	void snapPanel(int idx);
 	bool overlapsAny(int idx, s32 tx, s32 ty);
 	void rearrangePanels();

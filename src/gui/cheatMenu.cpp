@@ -120,8 +120,8 @@ void CheatMenu::createCategoryPanels()
 		fp.id = "_fav_0";
 		fp.title = "Favorites";
 		fp.w = m_entry_width > 0 ? m_entry_width : 220;
-		fp.pinned = true;
 		m_panels.push_back(fp);
+		g_settings->remove("panel_pos__fav_0");
 	}
 
 	createSupermenuPanel();
@@ -501,6 +501,10 @@ void CheatMenu::onLayerClosed()
 			}
 		}
 	}
+
+	// Remove saved positions for fav and super panels so they always reset to left
+	g_settings->remove("panel_pos__fav_0");
+	g_settings->remove("panel_pos__super_0");
 
 	for (s32 i = (s32)m_panels.size() - 1; i >= 0; i--) {
 		if ((isCatPanel(m_panels[i]) || isFavPanel(m_panels[i]) || isSuperPanel(m_panels[i])) && !m_panels[i].pinned)
@@ -969,7 +973,18 @@ void CheatMenu::createSupermenuPanel()
 	sp.id = "_super_0";
 	sp.title = "Menu";
 	sp.w = m_entry_width > 0 ? m_entry_width : 220;
-	sp.pinned = true;
 	m_panels.push_back(sp);
+	g_settings->remove("panel_pos__super_0");
 	m_super_level = 0;
+}
+
+void CheatMenu::autoTilePanels(v2u32 screen_size)
+{
+	PanelOverlay::autoTilePanels(screen_size);
+	for (auto &p : m_panels) {
+		if (isFavPanel(p) || isSuperPanel(p)) {
+			p.x = 10;
+			p.detached = false;
+		}
+	}
 }

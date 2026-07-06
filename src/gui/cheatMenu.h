@@ -79,6 +79,7 @@ protected:
 		OverlayPanel &panel, s32 content_x, s32 content_y,
 		s32 content_w, s32 content_h, v2s32 mouse_pos) override;
 	void handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32 cy, s32 cw) override;
+	void autoTilePanels(v2u32 screen_size) override;
 
 private:
 	Client *m_client;
