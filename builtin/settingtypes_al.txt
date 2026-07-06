@@ -163,6 +163,9 @@ detached_camera (Detached camera) bool false
 #    Use toggle mode (press TAB to open/close) instead of hold-to-show.
 cheat_menu_toggle_mode (Cheat menu toggle mode) bool false
 
+#    Comma-separated list of favorited cheat settings for the favorites panel.
+cheat_menu_favorites (Cheat menu favorites) string
+
 #    ---- Key Bindings ----
 
 #    Open/close the cheat menu overlay.

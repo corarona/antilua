@@ -72,4 +72,9 @@ private:
 	std::string m_tooltip_text;
 	s32 m_tooltip_x = 0, m_tooltip_y = 0;
 	u64 m_hover_start = 0;
+
+	// Favorites
+	bool isFavorite(const std::string &setting) const;
+	void toggleFavorite(const std::string &setting);
+	int countFavoritedCheats(ClientScripting *script) const;
 };

@@ -25,12 +25,28 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "util/string.h"
 #include <algorithm>
 #include <set>
+#include <sstream>
 
 CheatMenu *g_cheat_menu = nullptr;
 bool g_cheat_layer_active = false;
 bool g_show_minimal_debug = false;
 
 static bool isCatPanel(const OverlayPanel &p) { return p.id.find("_cat_") == 0; }
+static bool isFavPanel(const OverlayPanel &p) { return p.id == "_fav_0"; }
+
+static std::set<std::string> getFavoritesSet()
+{
+	std::set<std::string> result;
+	std::string val;
+	if (g_settings->getNoEx("cheat_menu_favorites", val) && !val.empty()) {
+		std::istringstream ss(val);
+		std::string item;
+		while (std::getline(ss, item, ','))
+			if (!item.empty())
+				result.insert(item);
+	}
+	return result;
+}
 
 static video::SColor parseHexColor(const std::string &hex, u32 alpha = 255)
 {
@@ -82,14 +98,29 @@ void CheatMenu::createCategoryPanels()
 		cp.w = m_entry_width > 0 ? m_entry_width : 220;
 		m_panels.push_back(cp);
 	}
+
+	// Create favorites panel if any favorites exist
+	auto favs = getFavoritesSet();
+	if (!favs.empty()) {
+		OverlayPanel fp;
+		fp.id = "_fav_0";
+		fp.title = "Favorites";
+		fp.w = m_entry_width > 0 ? m_entry_width : 220;
+		fp.pinned = true;
+		m_panels.push_back(fp);
+	}
 }
 
 s32 CheatMenu::getPanelContentHeight(const OverlayPanel &panel)
 {
-	if (!isCatPanel(panel))
-		return 0;
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded)
+		return 0;
+
+	if (isFavPanel(panel))
+		return countFavoritedCheats(script) * (m_entry_height + m_gap);
+
+	if (!isCatPanel(panel))
 		return 0;
 	if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size())
 		return (s32)script->m_cheat_categories[panel.selected_category]->m_cheats.size() * (m_entry_height + m_gap);
@@ -100,71 +131,98 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 	OverlayPanel &panel, s32 content_x, s32 content_y,
 	s32 content_w, s32 content_h, v2s32 mouse_pos)
 {
-	if (!isCatPanel(panel))
+	if (!isCatPanel(panel) && !isFavPanel(panel))
 		return;
 	CHEAT_MENU_GET_SCRIPTPTR
 
-	int chi = 0;
-	if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
-		s32 iy = content_y;
-		for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
-			if (pointInRect(mouse_pos.X, mouse_pos.Y, content_x, iy, content_w, m_entry_height))
-				panel.selected_cheat = chi;
+	// Collect the cheats to draw based on panel type
+	struct DrawEntry {
+		ScriptApiCheatsCheat *cheat;
+		int category_idx;
+	};
+	std::vector<DrawEntry> entries;
 
-			bool enabled = cheat->is_enabled();
-			bool has_set = false;
-			std::string tooltip_desc;
-			lua_State *L = m_client->getScript()->getLuaState();
-			lua_getglobal(L, "core");
-			lua_getfield(L, -1, "cheat_defs");
-			lua_getfield(L, -1, cheat->m_setting.c_str());
-			if (lua_istable(L, -1)) {
-				lua_getfield(L, -1, "cheat_settings");
-				has_set = lua_istable(L, -1) || lua_isfunction(L, -1);
-				lua_pop(L, 1);
-				lua_getfield(L, -1, "description");
-				if (lua_isstring(L, -1)) tooltip_desc = lua_tostring(L, -1);
-				lua_pop(L, 1);
+	auto favs = getFavoritesSet();
+
+	if (isFavPanel(panel)) {
+		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
+			for (auto &cheat : script->m_cheat_categories[ci]->m_cheats) {
+				if (favs.count(cheat->m_setting))
+					entries.push_back({cheat, (int)ci});
 			}
-			lua_pop(L, 3);
-
-			if (pointInRect(mouse_pos.X, mouse_pos.Y, content_x, iy, content_w, m_entry_height) && !tooltip_desc.empty()) {
-				m_tooltip_text = tooltip_desc;
-				m_tooltip_x = mouse_pos.X;
-				m_tooltip_y = mouse_pos.Y;
-				if (m_hover_start == 0) m_hover_start = porting::getTimeMs();
-			}
-
-			video::SColor cbg = enabled ? m_active_bg_color : m_item_bg;
-			driver->draw2DRectangle(cbg, core::rect<s32>(content_x + 1, iy, content_x + content_w - 1, iy + m_entry_height));
-
-			std::string txt = enabled ? "[x] " : "[ ] ";
-			txt += cheat->m_name;
-			drawText(txt, content_x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,
-				(chi == panel.selected_cheat) ? m_selected_font_color : m_font_color);
-
-			if (has_set) {
-				s32 sbx = content_x + content_w - 18;
-				bool hov = pointInRect(mouse_pos.X, mouse_pos.Y, sbx, iy, 16, m_entry_height);
-				video::SColor sbtn = hov ? m_active_bg_color : m_item_bg;
-				driver->draw2DRectangle(sbtn, core::rect<s32>(sbx, iy, sbx + 16, iy + m_entry_height));
-				drawText("\u2699", sbx + 3, iy + (m_entry_height - m_fontsize.Y) / 2,
-					m_selected_font_color);
-			}
-
-			iy += m_entry_height + m_gap;
-			chi++;
 		}
+	} else if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
+		for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats)
+			entries.push_back({cheat, panel.selected_category});
+	}
+
+	int chi = 0;
+	s32 iy = content_y;
+	for (auto &de : entries) {
+		auto *cheat = de.cheat;
+		if (pointInRect(mouse_pos.X, mouse_pos.Y, content_x, iy, content_w, m_entry_height))
+			panel.selected_cheat = chi;
+
+		bool enabled = cheat->is_enabled();
+		bool has_set = false;
+		std::string tooltip_desc;
+		lua_State *L = m_client->getScript()->getLuaState();
+		lua_getglobal(L, "core");
+		lua_getfield(L, -1, "cheat_defs");
+		lua_getfield(L, -1, cheat->m_setting.c_str());
+		if (lua_istable(L, -1)) {
+			lua_getfield(L, -1, "cheat_settings");
+			has_set = lua_istable(L, -1) || lua_isfunction(L, -1);
+			lua_pop(L, 1);
+			lua_getfield(L, -1, "description");
+			if (lua_isstring(L, -1)) tooltip_desc = lua_tostring(L, -1);
+			lua_pop(L, 1);
+		}
+		lua_pop(L, 3);
+
+		if (pointInRect(mouse_pos.X, mouse_pos.Y, content_x, iy, content_w, m_entry_height) && !tooltip_desc.empty()) {
+			m_tooltip_text = tooltip_desc;
+			m_tooltip_x = mouse_pos.X;
+			m_tooltip_y = mouse_pos.Y;
+			if (m_hover_start == 0) m_hover_start = porting::getTimeMs();
+		}
+
+		video::SColor cbg = enabled ? m_active_bg_color : m_item_bg;
+		driver->draw2DRectangle(cbg, core::rect<s32>(content_x + 1, iy, content_x + content_w - 1, iy + m_entry_height));
+
+		std::string txt = enabled ? "[x] " : "[ ] ";
+		txt += cheat->m_name;
+		drawText(txt, content_x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,
+			(chi == panel.selected_cheat) ? m_selected_font_color : m_font_color);
+
+		// Star icon (far right)
+		s32 star_x = content_x + content_w - 18;
+		bool star_hov = pointInRect(mouse_pos.X, mouse_pos.Y, star_x, iy, 16, m_entry_height);
+		video::SColor sbtn = star_hov ? m_active_bg_color : m_item_bg;
+		driver->draw2DRectangle(sbtn, core::rect<s32>(star_x, iy, star_x + 16, iy + m_entry_height));
+		drawText(favs.count(cheat->m_setting) ? "\u2605" : "\u2606", star_x + 3,
+			iy + (m_entry_height - m_fontsize.Y) / 2, m_selected_font_color);
+
+		// Gear icon (left of star, if has settings)
+		if (has_set) {
+			s32 gear_x = content_x + content_w - 36;
+			bool gear_hov = pointInRect(mouse_pos.X, mouse_pos.Y, gear_x, iy, 16, m_entry_height);
+			video::SColor gbtn = gear_hov ? m_active_bg_color : m_item_bg;
+			driver->draw2DRectangle(gbtn, core::rect<s32>(gear_x, iy, gear_x + 16, iy + m_entry_height));
+			drawText("\u2699", gear_x + 3, iy + (m_entry_height - m_fontsize.Y) / 2,
+				m_selected_font_color);
+		}
+
+		iy += m_entry_height + m_gap;
+		chi++;
 	}
 
 	if (m_hover_start > 0.0) {
 		bool hovering = false;
 		for (auto &p : m_panels) {
-			if (!isCatPanel(p)) continue;
-			if (p.selected_category < 0 || (size_t)p.selected_category >= script->m_cheat_categories.size())
-				continue;
+			if (!isCatPanel(p) && !isFavPanel(p)) continue;
 			s32 iy2 = p.y + p.title_h + m_gap;
-			for ([[maybe_unused]] auto &ch : script->m_cheat_categories[p.selected_category]->m_cheats) {
+			for ([[maybe_unused]] auto &de2 : entries) {
 				if (pointInRect(mouse_pos.X, mouse_pos.Y, p.x, iy2, p.w, m_entry_height)) {
 					hovering = true; break;
 				}
@@ -211,27 +269,67 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 	if (panel_idx >= m_panels.size())
 		return;
 	auto &panel = m_panels[panel_idx];
-	if (!isCatPanel(panel))
+	if (!isCatPanel(panel) && !isFavPanel(panel))
 		return;
 	CHEAT_MENU_GET_SCRIPTPTR
 
+	// Collect entries
+	struct Entry {
+		ScriptApiCheatsCheat *cheat;
+	};
+	std::vector<Entry> entries;
+
+	auto favs = getFavoritesSet();
+
+	if (isFavPanel(panel)) {
+		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++)
+			for (auto &cheat : script->m_cheat_categories[ci]->m_cheats)
+				if (favs.count(cheat->m_setting))
+					entries.push_back({cheat});
+	} else if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
+		for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats)
+			entries.push_back({cheat});
+	}
+
 	s32 iy = cy;
 	int chi = 0;
-	if (panel.selected_category >= 0 && (size_t)panel.selected_category < script->m_cheat_categories.size()) {
-		for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats) {
-			if (pointInRect(pos.X, pos.Y, panel.x, iy, panel.w, m_entry_height)) {
-				s32 sbx = panel.x + panel.w - 18;
-				if (pointInRect(pos.X, pos.Y, sbx, iy, 16, m_entry_height)) {
-					script->show_cheat_settings(cheat->m_setting);
-				} else {
-					panel.selected_cheat = chi;
-					script->toggle_cheat(cheat);
-				}
+	for (auto &e : entries) {
+		if (pointInRect(pos.X, pos.Y, panel.x, iy, panel.w, m_entry_height)) {
+			// Star zone (far right)
+			s32 star_x = panel.x + panel.w - 18;
+			if (pointInRect(pos.X, pos.Y, star_x, iy, 16, m_entry_height)) {
+				toggleFavorite(e.cheat->m_setting);
 				return;
 			}
-			iy += m_entry_height + m_gap;
-			chi++;
+
+			// Gear zone (left of star)
+			bool has_set = false;
+			lua_State *L = m_client->getScript()->getLuaState();
+			lua_getglobal(L, "core");
+			lua_getfield(L, -1, "cheat_defs");
+			lua_getfield(L, -1, e.cheat->m_setting.c_str());
+			if (lua_istable(L, -1)) {
+				lua_getfield(L, -1, "cheat_settings");
+				has_set = lua_istable(L, -1) || lua_isfunction(L, -1);
+				lua_pop(L, 1);
+			}
+			lua_pop(L, 3);
+
+			if (has_set) {
+				s32 gear_x = panel.x + panel.w - 36;
+				if (pointInRect(pos.X, pos.Y, gear_x, iy, 16, m_entry_height)) {
+					script->show_cheat_settings(e.cheat->m_setting);
+					return;
+				}
+			}
+
+			// Main area: toggle cheat
+			panel.selected_cheat = chi;
+			script->toggle_cheat(e.cheat);
+			return;
 		}
+		iy += m_entry_height + m_gap;
+		chi++;
 	}
 }
 
@@ -258,9 +356,10 @@ void CheatMenu::onLayerClosed()
 		}
 	}
 
-	for (s32 i = (s32)m_panels.size() - 1; i >= 0; i--)
-		if (isCatPanel(m_panels[i]) && !m_panels[i].pinned)
+	for (s32 i = (s32)m_panels.size() - 1; i >= 0; i--) {
+		if ((isCatPanel(m_panels[i]) || isFavPanel(m_panels[i])) && !m_panels[i].pinned)
 			m_panels.erase(m_panels.begin() + i);
+	}
 }
 
 void CheatMenu::drawHUD(video::IVideoDriver *driver, double dtime)
@@ -317,6 +416,10 @@ void CheatMenu::selectUp()
 		int max = (int)script->m_cheat_categories[panel->selected_category]->m_cheats.size() - 1;
 		panel->selected_cheat--;
 		if (panel->selected_cheat < 0) panel->selected_cheat = max;
+	} else if (isFavPanel(*panel)) {
+		int max = countFavoritedCheats(script) - 1;
+		panel->selected_cheat--;
+		if (panel->selected_cheat < 0) panel->selected_cheat = max;
 	}
 }
 
@@ -330,6 +433,10 @@ void CheatMenu::selectDown()
 
 	if (isCatPanel(*panel)) {
 		int max = (int)script->m_cheat_categories[panel->selected_category]->m_cheats.size() - 1;
+		panel->selected_cheat++;
+		if (panel->selected_cheat > max) panel->selected_cheat = 0;
+	} else if (isFavPanel(*panel)) {
+		int max = countFavoritedCheats(script) - 1;
 		panel->selected_cheat++;
 		if (panel->selected_cheat > max) panel->selected_cheat = 0;
 	}
@@ -375,5 +482,46 @@ void CheatMenu::selectConfirm()
 				script->toggle_cheat(cheat);
 			}
 		}
+	} else if (isFavPanel(*panel)) {
+		int idx = 0;
+		for (auto &cat : script->m_cheat_categories) {
+			for (auto &cheat : cat->m_cheats) {
+				if (isFavorite(cheat->m_setting)) {
+					if (idx == panel->selected_cheat) {
+						script->toggle_cheat(cheat);
+						return;
+					}
+					idx++;
+				}
+			}
+		}
 	}
+}
+
+bool CheatMenu::isFavorite(const std::string &setting) const
+{
+	auto favs = getFavoritesSet();
+	return favs.count(setting) > 0;
+}
+
+void CheatMenu::toggleFavorite(const std::string &setting)
+{
+	lua_State *L = m_client->getScript()->getLuaState();
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "toggle_favorite");
+	if (lua_isfunction(L, -1)) {
+		lua_pushstring(L, setting.c_str());
+		lua_call(L, 1, 0);
+	}
+	lua_pop(L, 2);
+}
+
+int CheatMenu::countFavoritedCheats(ClientScripting *script) const
+{
+	int count = 0;
+	for (auto &cat : script->m_cheat_categories)
+		for (auto &cheat : cat->m_cheats)
+			if (isFavorite(cheat->m_setting))
+				count++;
+	return count;
 }
