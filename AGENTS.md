@@ -95,6 +95,8 @@ headless and reports results instead.
   logical change, compile, and pass tests independently
 - **Fix all errors and warnings as soon as it makes sense** — do not put them
   off for later
+- **New settings** must be added to both `src/defaultsettings.cpp` (C++ default)
+  and `builtin/settingtypes_al.txt` (type definition for the settings UI)
 
 ## Key directories
 - **Engine**: This repo. C++ core + Irrlicht fork.

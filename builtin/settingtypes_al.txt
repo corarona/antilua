@@ -160,6 +160,9 @@ lua_control (Lua control) bool false
 #    Experimental: separate camera from player.
 detached_camera (Detached camera) bool false
 
+#    Use toggle mode (press TAB to open/close) instead of hold-to-show.
+cheat_menu_toggle_mode (Cheat menu toggle mode) bool false
+
 #    ---- Key Bindings ----
 
 #    Open/close the cheat menu overlay.
