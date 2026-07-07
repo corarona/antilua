@@ -1,3 +1,5 @@
+[*Antilua] [client]
+
 #    Show active cheat names on the HUD.
 cheat_hud (Cheat HUD) bool true
 
@@ -166,87 +168,55 @@ cheat_menu_toggle_mode (Cheat menu toggle mode) bool false
 #    Comma-separated list of favorited cheat settings for the favorites panel.
 cheat_menu_favorites (Cheat menu favorites) string
 
-#    Theme: background color of the cheat menu overlay.
-theme_bg (Overlay background) string #121212
-
-#    Theme: background color of cheat menu panels.
-theme_panel_bg (Panel background) string #000000
-
-#    Theme: background color of the panel title bar.
-theme_title_bg (Title bar background) string #32324b
-
-#    Theme: border color of panels.
-theme_border (Border color) string #0a0a0a
-
-#    Theme: background color of inactive cheat items.
-theme_item_bg (Item background) string #000000
-
-#    Theme: background color of active/enabled cheat items.
-theme_active_bg (Active item background) string #2d2d37
-
-#    ---- Key Bindings ----
-
-#    Open/close the cheat menu overlay.
-keymap_toggle_cheat_menu (Toggle cheat menu) key SYSTEM_SCANCODE_43
-
-#    Open/close the quick select palette.
-keymap_quick_select_menu (Quick select menu) key SYSTEM_SCANCODE_53
-
-#    Toggle killaura on/off.
-keymap_toggle_killaura (Toggle killaura) key KEY_KEY_X
-
-#    Toggle freecam on/off.
-keymap_toggle_freecam (Toggle freecam) key KEY_KEY_G
-
-#    Toggle scaffold assist on/off.
-keymap_toggle_scaffold (Toggle scaffold) key KEY_KEY_Y
-
-#    Open ender chest inventory.
-keymap_enderchest (Ender chest) key KEY_KEY_H
-
-#    Cheat menu navigation: select up.
-keymap_select_up (Cheat menu up) key KEY_UP
-
-#    Cheat menu navigation: select down.
-keymap_select_down (Cheat menu down) key KEY_DOWN
-
-#    Cheat menu navigation: go back.
-keymap_select_left (Cheat menu left) key KEY_LEFT
-
-#    Cheat menu navigation: enter category / confirm.
-keymap_select_right (Cheat menu right) key KEY_RIGHT
-
-#    Cheat menu navigation: toggle selected cheat.
-keymap_select_confirm (Cheat menu confirm) key SYSTEM_SCANCODE_40
-
-#    ---- Cheat Menu Styling ----
+[*Antilua Cheat Menu Theme] [client]
 
 #    Font type for the cheat menu text.
 cheat_menu_font (Cheat menu font) string FM_Standard
 
-#    Background color of the cheat menu (R,G,B).
-cheat_menu_bg_color (Cheat menu bg color) string (45,45,68)
+#    Background color of the cheat menu overlay (hex #RRGGBB).
+theme_bg (Overlay background) string #121212
 
-#    Background opacity of the cheat menu (0-255).
-cheat_menu_bg_color_alpha (Cheat menu bg opacity) int 173 0 255
+#    Background opacity of the overlay (0-255).
+theme_bg_alpha (Overlay background opacity) int 191 0 255
 
-#    Active/hovered item background color (R,G,B).
-cheat_menu_active_bg_color (Cheat menu active bg color) string (0,0,0)
+#    Background color of cheat menu panels (hex #RRGGBB).
+theme_panel_bg (Panel background) string #000000
 
-#    Active/hovered item opacity (0-255).
-cheat_menu_active_bg_color_alpha (Cheat menu active bg opacity) int 210 0 255
+#    Panel background opacity (0-255).
+theme_panel_bg_alpha (Panel background opacity) int 204 0 255
 
-#    Font color for cheat menu labels (R,G,B).
-cheat_menu_font_color (Cheat menu font color) string (255,255,255)
+#    Background color of the panel title bar (hex #RRGGBB).
+theme_title_bg (Title bar background) string #32324b
+
+#    Title bar opacity (0-255).
+theme_title_bg_alpha (Title bar opacity) int 204 0 255
+
+#    Panel border highlight color (hex #RRGGBB).
+theme_border (Border color) string #0a0a0a
+
+#    Panel border opacity (0-255).
+theme_border_alpha (Border opacity) int 204 0 255
+
+#    Background color of inactive cheat items (hex #RRGGBB).
+theme_item_bg (Item background) string #000000
+
+#    Item background opacity (0-255).
+theme_item_bg_alpha (Item background opacity) int 204 0 255
+
+#    Background color of active/enabled cheat items (hex #RRGGBB).
+theme_active_bg (Active item background) string #2d2d37
+
+#    Active item background opacity (0-255).
+theme_active_bg_alpha (Active item background opacity) int 204 0 255
+
+#    Normal font color (hex #RRGGBB).
+theme_text (Normal text color) string #00cc00
 
 #    Font opacity (0-255).
-cheat_menu_font_color_alpha (Cheat menu font opacity) int 195 0 255
+theme_text_alpha (Normal text opacity) int 255 0 255
 
-#    Selected category/cheat font color (R,G,B).
-cheat_menu_selected_font_color (Cheat menu selected color) string (255,255,255)
-
-#    Selected category/cheat font opacity (0-255).
-cheat_menu_selected_font_color_alpha (Cheat menu selected opacity) int 235 0 255
+#    Selected/highlighted font color (hex #RRGGBB).
+theme_selected_text (Selected text color) string #ffffff
 
 #    Height of the category header row in pixels.
 cheat_menu_head_height (Cheat menu head height) int 50 10 200
@@ -257,28 +227,10 @@ cheat_menu_entry_height (Cheat menu entry height) int 35 10 200
 #    Width of the cheat menu in pixels.
 cheat_menu_entry_width (Cheat menu entry width) int 200 50 500
 
-#    Panel background color (R,G,B) for the cheat layer panels.
-cheat_menu_panel_bg (Panel background) string (30,30,45)
+[*Antilua DTE] [client]
 
-#    Title bar background color (R,G,B).
-cheat_menu_title_bg (Title bar background) string (50,50,75)
+#    Width of the DTE formspec window.
+dte_width (DTE window width) float 15 8 40
 
-#    Panel border highlight color (R,G,B).
-cheat_menu_border (Panel border) string (70,70,100)
-
-#    Even-row item background (R,G,B).
-cheat_menu_item_bg (Item background) string (55,55,75)
-
-#    Odd-row item background (R,G,B).
-cheat_menu_item_bg_alt (Item background alt) string (45,45,65)
-
-#    ---- Node ESP ----
-
-#    Comma-separated list of node names to highlight with Node ESP.
-node_esp_nodes (Node ESP nodes) string
-
-#    Highlight specified nodes within range.
-enable_node_esp (Node ESP) bool false
-
-#    Draw tracer lines to specified nodes within range.
-enable_node_tracers (Node tracers) bool false
+#    Height of the DTE formspec window.
+dte_height (DTE window height) float 10 6 30
