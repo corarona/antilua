@@ -83,8 +83,8 @@ static void set_al_default_settings()
 	settings->setDefault("theme_panel_bg", "#000000");
 	settings->setDefault("theme_title_bg", "#32324b");
 	settings->setDefault("theme_border", "#0a0a0a");
-	settings->setDefault("theme_item_bg", "#2d2d37");
-	settings->setDefault("theme_item_bg_alt", "#2d2d41");
+	settings->setDefault("theme_item_bg", "#000000");
+	settings->setDefault("theme_item_bg_alt", "#0a0a0a");
 	settings->setDefault("theme_active_bg", "#2d2d37");
 	settings->setDefault("theme_text", "#00cc00");
 	settings->setDefault("theme_text_alpha", "255");

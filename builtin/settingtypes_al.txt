@@ -179,7 +179,7 @@ theme_title_bg (Title bar background) string #32324b
 theme_border (Border color) string #0a0a0a
 
 #    Theme: background color of inactive cheat items.
-theme_item_bg (Item background) string #2d2d37
+theme_item_bg (Item background) string #000000
 
 #    Theme: background color of active/enabled cheat items.
 theme_active_bg (Active item background) string #2d2d37
