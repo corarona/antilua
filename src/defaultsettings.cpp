@@ -80,12 +80,12 @@ static void set_al_default_settings()
 	// Theme (replaces cheat_menu_* color settings)
 	settings->setDefault("theme_bg", "#121212");
 	settings->setDefault("theme_bg_alpha", "191");
-	settings->setDefault("theme_panel_bg", "#1e1e2e");
+	settings->setDefault("theme_panel_bg", "#000000");
 	settings->setDefault("theme_title_bg", "#32324b");
 	settings->setDefault("theme_border", "#0a0a0a");
 	settings->setDefault("theme_item_bg", "#2d2d37");
 	settings->setDefault("theme_item_bg_alt", "#2d2d41");
-	settings->setDefault("theme_active_bg", "#000000");
+	settings->setDefault("theme_active_bg", "#2d2d37");
 	settings->setDefault("theme_text", "#00cc00");
 	settings->setDefault("theme_text_alpha", "255");
 	settings->setDefault("theme_selected_text", "#ffffff");
