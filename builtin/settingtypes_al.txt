@@ -166,6 +166,24 @@ cheat_menu_toggle_mode (Cheat menu toggle mode) bool false
 #    Comma-separated list of favorited cheat settings for the favorites panel.
 cheat_menu_favorites (Cheat menu favorites) string
 
+#    Theme: background color of the cheat menu overlay.
+theme_bg (Overlay background) string #121212
+
+#    Theme: background color of cheat menu panels.
+theme_panel_bg (Panel background) string #000000
+
+#    Theme: background color of the panel title bar.
+theme_title_bg (Title bar background) string #32324b
+
+#    Theme: border color of panels.
+theme_border (Border color) string #0a0a0a
+
+#    Theme: background color of inactive cheat items.
+theme_item_bg (Item background) string #2d2d37
+
+#    Theme: background color of active/enabled cheat items.
+theme_active_bg (Active item background) string #2d2d37
+
 #    ---- Key Bindings ----
 
 #    Open/close the cheat menu overlay.
