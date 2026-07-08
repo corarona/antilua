@@ -146,7 +146,7 @@ local function show_index(filter)
 		sy = sy + 0.6
 	end
 	fs = fs .. "scroll_container_end[]"
-	fs = fs .. "button[3.5,11.2;2,0.8;__close;Close]"
+	fs = fs .. "button_exit[3.5,11.2;2,0.8;;Close]"
 	core.show_formspec("help:index|" .. filter, fs)
 end
 
@@ -186,17 +186,22 @@ core.show_cheat_help = show_cheat_help
 core.register_on_formspec_input(function(formname, fields)
 	if formname:find("^help:index") then
 		local filter = formname:match("^help:index%|(.+)$") or ""
-		if fields.__search or fields.filter then
-			show_index(fields.filter or filter)
-			return
-		end
-		if fields.__close then return end
+
+		-- Mod button clicks
 		for raw in pairs(fields) do
 			if raw:find("^mod|") then
 				show_readme(raw:sub(5))
 				return
 			end
 		end
+
+		-- Filter: Go button or Enter in filter field
+		if fields.__search or (fields.filter and fields.filter ~= filter) then
+			show_index(fields.filter or filter)
+			return
+		end
+
+		return
 	end
 	local modname = formname:match("^help:readme%|(.+)$")
 	if modname then
