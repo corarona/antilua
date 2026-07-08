@@ -72,7 +72,7 @@ local function show_keybinds()
 		end
 	end
 
-	local fs = "formspec_version[4]size[13,12,true]"
+	local fs = "formspec_version[4]size[13,12,true]no_prepend[]"
 	fs = fs .. "label[0,0;Key Bindings]"
 	local y = 0.6
 	local order = {"Cheat Menu", "Cheat Toggles", "Movement", "Interaction", "Camera", "UI", "Other"}
@@ -130,26 +130,23 @@ local function show_index(filter)
 		end
 	end
 
-	local h = math.min(#results, 18)
-	local fs = "formspec_version[4]size[9," .. (2 + h) .. ",true]"
+	local fs = "formspec_version[4]size[9,12,true]no_prepend[]"
 	fs = fs .. "field[0,0;6.5,0.8;filter;Filter:;" .. core.formspec_escape(filter) .. "]"
 	fs = fs .. "button[7,0;1.7,0.8;__search;Go]"
-	fs = fs .. "label[0,0.9;Help — Select a mod]"
-	local y = 1.5
+	fs = fs .. "label[0,0.9;Help \226\128\148 Select a mod]"
+	fs = fs .. "scroll_container[0,1.5;9,9.5;mscroll;vertical]"
+	local sy = 0
 	for i, entry in ipairs(results) do
-		if i > 18 then
-			fs = fs .. "label[0," .. y .. ";... (+" .. (#results - 18) .. " more)]"
-			break
-		end
 		local label = entry.name
 		if entry.note then
 			label = label .. " (\226\128\164" .. entry.note .. ")"
 		end
-		fs = fs .. "button[0," .. y .. ";9,0.6;mod|" .. entry.name .. ";"
+		fs = fs .. "button[0," .. sy .. ";9,0.6;mod|" .. entry.name .. ";"
 			.. core.formspec_escape(label) .. "]"
-		y = y + 0.6
+		sy = sy + 0.6
 	end
-	fs = fs .. "button[3.5," .. (y + 0.3) .. ";2,0.8;__close;Close]"
+	fs = fs .. "scroll_container_end[]"
+	fs = fs .. "button[3.5,11.2;2,0.8;__close;Close]"
 	core.show_formspec("help:index|" .. filter, fs)
 end
 
@@ -165,7 +162,7 @@ local function show_readme(modname)
 	if #text > 32000 then
 		text = text:sub(1, 32000) .. "\n\n[... truncated ...]"
 	end
-	local fs = "formspec_version[4]size[10,11,true]"
+	local fs = "formspec_version[4]size[10,11,true]no_prepend[]"
 	fs = fs .. "button[0,0;2,0.7;__back;< Back]"
 	fs = fs .. "label[2.5,0.15;" .. core.formspec_escape(modname) .. " README]"
 	fs = fs .. "textarea[0,0.8;10,9.5;;;" .. core.formspec_escape(text) .. "]"
