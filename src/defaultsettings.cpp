@@ -191,7 +191,6 @@ static void set_al_default_settings()
 #else
 	settings->setDefault("pipe_lua_path", "/tmp/antilua_lua");
 #endif
-	settings->setDefault("pipe_lua_path", "/tmp/antilua_lua");
 }
 
 void set_default_settings()
