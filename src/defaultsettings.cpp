@@ -186,6 +186,11 @@ static void set_al_default_settings()
 
 	// Client Lua pipe
 	settings->setDefault("pipe_lua_enable", "false");
+#ifdef _WIN32
+	settings->setDefault("pipe_lua_path", "\\\\.\\pipe\\antilua_lua");
+#else
+	settings->setDefault("pipe_lua_path", "/tmp/antilua_lua");
+#endif
 	settings->setDefault("pipe_lua_path", "/tmp/antilua_lua");
 }
 

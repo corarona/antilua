@@ -14,10 +14,12 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#else
+#include "filesys.h"
 #endif
 
 ClientLuaPipe::ClientLuaPipe(Client *client, const std::string &path)
-	: m_client(client), m_path(path), m_fd(-1)
+	: m_client(client), m_path(path), m_fd(kInvalidFd)
 {
 #ifndef _WIN32
 	// Create FIFO; ignore EEXIST
@@ -29,7 +31,16 @@ ClientLuaPipe::ClientLuaPipe(Client *client, const std::string &path)
 			<< m_path << std::endl;
 	}
 #else
-	warningstream << "ClientLuaPipe: not supported on Windows" << std::endl;
+	m_fd = CreateNamedPipeA(m_path.c_str(), PIPE_ACCESS_INBOUND,
+		PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_NOWAIT,
+		PIPE_UNLIMITED_INSTANCES, 4096, 4096, 0, nullptr);
+
+	if (m_fd == INVALID_HANDLE_VALUE) {
+		warningstream << "ClientLuaPipe: failed creating pipe at "
+			<< m_path << std::endl;
+	} else {
+		ConnectNamedPipe(m_fd, nullptr);
+	}
 #endif
 }
 
@@ -39,6 +50,11 @@ ClientLuaPipe::~ClientLuaPipe()
 	if (m_fd >= 0)
 		close(m_fd);
 	unlink(m_path.c_str());
+#else
+	if (m_fd != INVALID_HANDLE_VALUE) {
+		DisconnectNamedPipe(m_fd);
+		CloseHandle(m_fd);
+	}
 #endif
 }
 
@@ -47,11 +63,31 @@ void ClientLuaPipe::process()
 #ifndef _WIN32
 	if (m_fd < 0)
 		return;
+#else
+	if (m_fd == INVALID_HANDLE_VALUE)
+		return;
+#endif
 
 	char buf[4096];
+
+#ifdef _WIN32
+	DWORD n = 0;
+	BOOL ok = ReadFile(m_fd, buf, sizeof(buf) - 1, &n, nullptr);
+	if (!ok) {
+		if (GetLastError() == ERROR_BROKEN_PIPE) {
+			DisconnectNamedPipe(m_fd);
+			ConnectNamedPipe(m_fd, nullptr);
+		}
+		return;
+	}
+
+	if (n == 0)
+		return;
+#else
 	ssize_t n = read(m_fd, buf, sizeof(buf) - 1);
 	if (n <= 0)
 		return;
+#endif
 
 	buf[n] = '\0';
 	m_buf.append(buf, n);
@@ -60,10 +96,13 @@ void ClientLuaPipe::process()
 	while ((pos = m_buf.find('\n')) != std::string::npos) {
 		std::string line = m_buf.substr(0, pos);
 		m_buf.erase(0, pos + 1);
+#ifdef _WIN32
+		while (!line.empty() && line.back() == '\r')
+			line.pop_back();
+#endif
 		if (!line.empty())
 			processLine(line);
 	}
-#endif
 }
 
 void ClientLuaPipe::writeResult(const std::string &file, bool ok,
@@ -102,8 +141,14 @@ void ClientLuaPipe::processLine(const std::string &line)
 
 	std::string code = root["code"].asString();
 	std::string response_file = root.get("file", "").asString();
-	if (response_file.empty())
-		response_file = "/tmp/antilua_lua_response";
+	if (response_file.empty()) {
+#ifdef _WIN32
+		static const std::string fallback = fs::TempPath() + "\\antilua_lua_response";
+  	response_file = fallback;
+#else
+  	response_file = "/tmp/antilua_lua_response";
+#endif
+	}
 
 	lua_State *L = m_client->getScript()->getLuaState();
 	if (!L) {
@@ -171,7 +216,6 @@ void ClientLuaPipe::processLine(const std::string &line)
 bool ClientLuaPipe::sendCommand(const std::string &pipe_path,
 	const std::string &code, const std::string &response_file)
 {
-#ifndef _WIN32
 	Json::Value root;
 	root["code"] = code;
 	if (!response_file.empty())
@@ -181,6 +225,7 @@ bool ClientLuaPipe::sendCommand(const std::string &pipe_path,
 	builder["indentation"] = "";
 	std::string json = Json::writeString(builder, root) + "\n";
 
+#ifndef _WIN32
 	int fd = open(pipe_path.c_str(), O_WRONLY | O_NONBLOCK);
 	if (fd < 0)
 		return false;
@@ -189,6 +234,17 @@ bool ClientLuaPipe::sendCommand(const std::string &pipe_path,
 	close(fd);
 	return written == (ssize_t)json.size();
 #else
-	return false;
+	HANDLE fd = CreateFileA(pipe_path.c_str(), GENERIC_WRITE,
+		FILE_SHARE_READ | FILE_SHARE_WRITE,
+		nullptr, OPEN_EXISTING, 0, nullptr);
+
+	if (fd == INVALID_HANDLE_VALUE)
+		return false;
+
+	DWORD size = (DWORD)json.size();
+	DWORD written = 0;
+	BOOL ok = WriteFile(fd, json.data(), size, &written, nullptr);
+	CloseHandle(fd);
+	return ok && written == size;
 #endif
 }

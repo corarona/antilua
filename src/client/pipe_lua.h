@@ -4,6 +4,14 @@
 #pragma once
 
 #include <string>
+#ifdef _WIN32
+#include <windows.h>
+inline const HANDLE kInvalidFd = INVALID_HANDLE_VALUE;
+using PipeHandle = HANDLE;
+#else
+inline const int kInvalidFd = -1;
+using PipeHandle = int;
+#endif
 
 class Client;
 
@@ -11,7 +19,7 @@ class ClientLuaPipe
 {
 	Client *m_client;
 	std::string m_path;
-	int m_fd;
+	PipeHandle m_fd;
 	std::string m_buf;
 
 	void processLine(const std::string &line);
