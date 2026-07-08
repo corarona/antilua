@@ -210,7 +210,8 @@ function core.show_cheat_settings_form(setting, use_auto)
 			y = y + 1.1
 		end
 	end
-	fs = fs .. "button_exit[1.5," .. (y + 0.3) .. ";2,0.8;;Save]"
+	fs = fs .. "button[0.5," .. (y + 0.3) .. ";1.5,0.8;__help;?]"
+	fs = fs .. "button_exit[3," .. (y + 0.3) .. ";2,0.8;;Save]"
 
 	core.show_formspec("cheat_settings:" .. setting, fs)
 end
@@ -227,6 +228,20 @@ core.register_on_formspec_input(function(formname, fields)
 			setting = formname:sub(16)
 		end
 		core.show_cheat_settings_form(setting, true)
+		return
+	end
+
+	-- Help button — open the relevant README
+	if fields.__help then
+		local setting
+		if formname:find(":custom$") then
+			setting = formname:sub(16, -8)
+		else
+			setting = formname:sub(16)
+		end
+		if core.show_cheat_help then
+			core.show_cheat_help(setting)
+		end
 		return
 	end
 

@@ -216,4 +216,62 @@ function M.list_mods()
 	return mods
 end
 
+-- Build setting → mod lookup index
+local setting_to_mod = {}
+local setting_index_built = false
+
+local function build_setting_index()
+	if setting_index_built then return end
+	setting_index_built = true
+	local mods = M.list_mods()
+	for _, modname in ipairs(mods) do
+		local md = M.read_readme(modname)
+		if md then
+			local cheats = M.parse_cheats_table(md)
+			for _, entry in ipairs(cheats) do
+				if entry.setting then
+					setting_to_mod[entry.setting] = modname
+				end
+			end
+		end
+	end
+end
+
+-- Find which mod and section a cheat setting belongs to
+function M.find_cheat(setting)
+	build_setting_index()
+	local modname = setting_to_mod[setting]
+	if not modname then return nil end
+	return {mod = modname, section = "## Cheats"}
+end
+
+-- Search across all READMEs for mods and cheats matching query
+function M.search(query)
+	if not query or query == "" then return {} end
+	local results = {}
+	local q = query:lower()
+	local mods = M.list_mods()
+	for _, modname in ipairs(mods) do
+		local md = M.read_readme(modname)
+		if md then
+			if modname:lower():find(q, 1, true) then
+				table.insert(results, {type = "mod", name = modname})
+			end
+			local cheats = M.parse_cheats_table(md)
+			for _, entry in ipairs(cheats) do
+				if entry.cheat:lower():find(q, 1, true) or
+				   (entry.description and entry.description:lower():find(q, 1, true)) then
+					table.insert(results, {type = "cheat", mod = modname,
+						name = entry.cheat, setting = entry.setting})
+				end
+			end
+		end
+	end
+	table.sort(results, function(a, b)
+		if a.type ~= b.type then return a.type < b.type end
+		return a.name < b.name
+	end)
+	return results
+end
+
 return M
