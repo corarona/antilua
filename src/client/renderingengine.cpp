@@ -27,6 +27,9 @@
 #include "irr_ptr.h"
 #include "session.h"
 #include "settings.h"
+#ifdef _WIN32
+#include <windows.h>
+#endif
 
 RenderingEngine *RenderingEngine::s_singleton = nullptr;
 
@@ -403,6 +406,11 @@ void RenderingEngine::initialize(Client *client, Hud *hud)
 void RenderingEngine::setDetached(bool v)
 {
 	m_detached = v;
+#ifdef _WIN32
+	// currently required unless the window will remain painted on the screen after hidden
+	if (m_detached && m_device->isWindowVisible() && !m_device->isWindowMinimized())
+		m_device->minimizeWindow();
+#endif
 	m_device->setWindowVisible(!v);
 	if (v) {
 		// Only write the pipe path if the feature is actually enabled,
@@ -411,9 +419,17 @@ void RenderingEngine::setDetached(bool v)
 		if (g_settings->getBool("pipe_lua_enable")) {
 			pipe_path = g_settings->get("pipe_lua_path");
 			if (pipe_path.empty())
+#ifdef _WIN32
+				pipe_path = "\\\\.\\pipe\\antilua_lua";
+#else
 				pipe_path = "/tmp/antilua_lua";
+#endif
 		}
+#ifdef _WIN32
+		session::write(GetCurrentProcessId(), pipe_path);
+#else
 		session::write(getpid(), pipe_path);
+#endif
 	} else {
 		session::remove();
 	}

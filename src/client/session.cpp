@@ -16,6 +16,9 @@ namespace session {
 
 std::string getSessionDir()
 {
+#ifdef _WIN32
+	return fs::TempPath() + "\\antilua";
+#endif
 	// Try XDG_RUNTIME_DIR first
 	const char *runtime = std::getenv("XDG_RUNTIME_DIR");
 	if (runtime && runtime[0])
@@ -34,7 +37,7 @@ static std::string sessionFilePath()
 	return getSessionDir() + "/session";
 }
 
-void write(int pid, const std::string &pipe_lua_path)
+void write(pid_type pid, const std::string &pipe_lua_path)
 {
 	std::string dir = getSessionDir();
 	if (!fs::CreateAllDirs(dir)) {
