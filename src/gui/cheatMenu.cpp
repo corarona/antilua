@@ -983,11 +983,113 @@ void CheatMenu::createSupermenuPanel()
 
 void CheatMenu::autoTilePanels(v2u32 screen_size)
 {
-	PanelOverlay::autoTilePanels(screen_size);
-	for (auto &p : m_panels) {
-		if (isFavPanel(p) || isSuperPanel(p)) {
-			p.x = 10;
-			p.detached = false;
+	s32 margin = 10;
+
+	// Compute panel heights
+	for (auto &panel : m_panels)
+		panel.h = panel.title_h + getPanelContentHeight(panel);
+
+	// Left column reserved for fav and super
+	s32 left_col_x = margin;
+
+	// Stack special panels vertically in left column
+	s32 left_y = 60;
+	for (auto &panel : m_panels) {
+		if (isFavPanel(panel) || isSuperPanel(panel)) {
+			panel.x = left_col_x;
+			panel.y = left_y;
+			panel.detached = false;
+			left_y += panel.h + m_gap;
 		}
+	}
+
+	// Collect non-special panels and sort by height (tallest first)
+	std::vector<size_t> order;
+	for (size_t i = 0; i < m_panels.size(); i++) {
+		if (!isFavPanel(m_panels[i]) && !isSuperPanel(m_panels[i]))
+			order.push_back(i);
+	}
+	std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b) {
+		return m_panels[a].h > m_panels[b].h;
+	});
+
+	// Mark special panels as already placed
+	std::vector<bool> placed(m_panels.size(), false);
+	for (size_t i = 0; i < m_panels.size(); i++) {
+		if (isFavPanel(m_panels[i]) || isSuperPanel(m_panels[i]))
+			placed[i] = true;
+	}
+
+	auto overlaps = [&](size_t idx, s32 tx, s32 ty) -> bool {
+		for (size_t j = 0; j < m_panels.size(); j++) {
+			if (!placed[j] || j == idx) continue;
+			auto &p = m_panels[j];
+			if (tx + m_panels[idx].w > p.x && tx < p.x + p.w &&
+					ty + m_panels[idx].h > p.y && ty < p.y + p.h)
+				return true;
+		}
+		return false;
+	};
+
+	s32 right_start = margin;
+	for (auto &p : m_panels) {
+		if (isFavPanel(p) || isSuperPanel(p))
+			right_start = std::max(right_start, p.x + p.w + m_gap);
+	}
+
+	// Edge-snapping packer for remaining panels, starting from right_start
+	for (auto i : order) {
+		s32 px = right_start, py = 60;
+		bool found = false;
+
+		// Try saved position (must be at or right of right_start)
+		OverlayPanel saved;
+		saved.id = m_panels[i].id;
+		loadPanelPosition(saved);
+		if ((saved.x != 0 || saved.y != 0) && saved.x >= right_start && !overlaps(i, saved.x, saved.y)) {
+			px = saved.x;
+			py = saved.y;
+			found = true;
+		}
+
+		if (!found) {
+			std::vector<s32> ys = {60};
+			for (size_t j = 0; j < m_panels.size(); j++) {
+				if (!placed[j]) continue;
+				s32 by = m_panels[j].y + m_panels[j].h + m_gap;
+				if (by + m_panels[i].h <= (s32)screen_size.Y)
+					ys.push_back(by);
+			}
+			std::sort(ys.begin(), ys.end());
+
+			for (auto cy : ys) {
+				std::vector<s32> xs = {right_start};
+				for (size_t j = 0; j < m_panels.size(); j++) {
+					if (!placed[j]) continue;
+					auto &p = m_panels[j];
+					if (cy < p.y + p.h && cy + m_panels[i].h > p.y) {
+						s32 rx = p.x + p.w + m_gap;
+						if (rx + m_panels[i].w <= (s32)screen_size.X - margin)
+							xs.push_back(rx);
+					}
+				}
+				std::sort(xs.begin(), xs.end());
+
+				for (auto cx : xs) {
+					if (!overlaps(i, cx, cy)) {
+						px = cx;
+						py = cy;
+						found = true;
+						break;
+					}
+				}
+				if (found) break;
+			}
+		}
+
+		m_panels[i].x = px;
+		m_panels[i].y = py;
+		m_panels[i].detached = false;
+		placed[i] = true;
 	}
 }
