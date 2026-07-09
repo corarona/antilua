@@ -330,5 +330,6 @@ private:
 
 	/// Update the parent chain so getPosition() returns an up to date position.
 	void updateParentChain() const;
+	bool m_enable_shaders = true;
 
 };

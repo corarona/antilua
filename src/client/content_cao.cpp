@@ -881,10 +881,7 @@ void GenericCAO::updateLight(u32 day_night_ratio)
 		} else {
 			if (light_at_pos < min_level)
 				light_at_pos = min_level;
-			if (ffp_isEnabled())
-				light = encode_light(light_at_pos, m_prop.glow);
-			else
-				ffp_blendDayNight(&light, light_at_pos, day_night_ratio);
+			light = encode_light(light_at_pos, m_prop.glow);
 		}
 	}
 

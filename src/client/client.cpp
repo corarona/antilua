@@ -1153,8 +1153,10 @@ bool Client::interceptIncomingPacket(NetworkPacket *pkt)
 	u16 command = pkt->getCommand();
 	u32 size = pkt->getSize();
 	std::string payload;
-	if (size > 0)
-		payload.assign(pkt->getString(0), size);
+	if (size > 0) {
+		pkt->seek(0);
+		payload = pkt->readRawString(size);
+	}
 	RawPacketHookResult result = AlClientHooks::on_raw_packet_received(
 			this, command, payload);
 	if (result.drop)
@@ -1172,8 +1174,10 @@ bool Client::interceptOutgoingPacket(NetworkPacket *pkt)
 	u16 command = pkt->getCommand();
 	u32 size = pkt->getSize();
 	std::string payload;
-	if (size > 0)
-		payload.assign(pkt->getString(0), size);
+	if (size > 0) {
+		pkt->seek(0);
+		payload = pkt->readRawString(size);
+	}
 	RawPacketHookResult result = AlClientHooks::on_raw_packet_sending(
 			this, command, payload);
 	if (result.drop)
