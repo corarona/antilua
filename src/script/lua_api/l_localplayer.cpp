@@ -510,16 +510,6 @@ int LuaLocalPlayer::l_get_object(lua_State *L)
 		return 0;
 
 	ClientObjectRef::create(L, cao);
-
-	lua_newtable(L);
-	u32 id = 0;
-	for (auto const &elem : player->csm_hud.getElements()) {
-		if (elem != nullptr) {
-			push_hud_element(L, elem.get());
-			lua_rawseti(L, -2, id);
-		}
-		++id;
-	}
 	return 1;
 }
 
