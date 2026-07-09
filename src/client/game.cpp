@@ -1480,7 +1480,8 @@ void Game::processKeyInput()
 		if (g_settings->getBool("continuous_forward"))
 			toggleAutoforward();
 	} else if (wasKeyDown(KeyType::INVENTORY)) {
-		m_game_formspec.showPlayerInventory(nullptr);
+		if (!m_cheat_layer_active && !(m_cheat_menu && m_cheat_menu->isQuickPaletteActive()))
+			m_game_formspec.showPlayerInventory(nullptr);
 	} else if (input->cancelPressed()) {
 #ifdef __ANDROID__
 		m_android_chat_open = false;
@@ -1489,16 +1490,21 @@ void Game::processKeyInput()
 			m_game_formspec.showPauseMenu();
 		}
 	} else if (wasKeyDown(KeyType::CHAT)) {
-		openConsole(0.2, L"");
+		if (!m_cheat_layer_active && !(m_cheat_menu && m_cheat_menu->isQuickPaletteActive()))
+			openConsole(0.2, L"");
 	} else if (wasKeyDown(KeyType::CMD)) {
-		openConsole(0.2, L"/");
+		if (!m_cheat_layer_active && !(m_cheat_menu && m_cheat_menu->isQuickPaletteActive()))
+			openConsole(0.2, L"/");
 	} else if (wasKeyDown(KeyType::CMD_LOCAL)) {
-		if (client->modsLoaded())
+		if (m_cheat_layer_active || (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())) {
+			// skip — cheat menu/palette is active
+		} else if (client->modsLoaded())
 			openConsole(0.2, L".");
 		else
 			m_game_ui->showTranslatedStatusText("Client side scripting is disabled");
 	} else if (wasKeyDown(KeyType::CONSOLE)) {
-		openConsole(core::clamp(g_settings->getFloat("console_height"), 0.1f, 1.0f));
+		if (!m_cheat_layer_active && !(m_cheat_menu && m_cheat_menu->isQuickPaletteActive()))
+			openConsole(core::clamp(g_settings->getFloat("console_height"), 0.1f, 1.0f));
 	} else if (wasKeyDown(KeyType::FREEMOVE)) {
 		toggleFreeMove();
 	} else if (wasKeyDown(KeyType::JUMP)) {

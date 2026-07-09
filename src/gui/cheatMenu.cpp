@@ -26,6 +26,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/renderingengine.h"
 #include "client/inputhandler.h"
 #include <algorithm>
+#include <cmath>
 #include <set>
 #include <sstream>
 
@@ -519,7 +520,7 @@ void CheatMenu::drawHUD(video::IVideoDriver *driver, double dtime)
 	float speed = g_settings->getFloat("cheat_hud.speed", 0.0f, 10.0f);
 	if (speed <= 0) speed = 1.0f;
 	m_rainbow_offset += dtime * speed;
-	m_rainbow_offset = fmod(m_rainbow_offset, 6.0f);
+	m_rainbow_offset = std::fmod(m_rainbow_offset, 6.0f);
 
 	std::vector<std::string> enabled;
 	for (auto &cat : script->m_cheat_categories)
@@ -535,7 +536,7 @@ void CheatMenu::drawHUD(video::IVideoDriver *driver, double dtime)
 	for (auto &name : enabled) {
 		f32 h = (f32)i * 2.0f / (f32)enabled.size() - m_rainbow_offset;
 		if (h < 0) h = 6.0f + h;
-		f32 xv = (1 - fabs(fmod(h, 2.0f) - 1.0f)) * 255.0f;
+		f32 xv = (1 - std::abs(std::fmod(h, 2.0f) - 1.0f)) * 255.0f;
 		video::SColor col;
 		switch ((int)h) {
 			case 0: col = video::SColor(255, 255, xv, 0); break;
@@ -825,6 +826,12 @@ void CheatMenu::toggleQuickPalette()
 		m_quick_palette_active = false;
 		g_quick_palette_active = false;
 	} else {
+		// Clear any stale character from the ~ key that opened the palette
+		auto *device = RenderingEngine::get_raw_device();
+		if (device) {
+			auto *receiver = static_cast<MyEventReceiver *>(device->getEventReceiver());
+			receiver->consumeCheatChar();
+		}
 		m_quick_palette_text.clear();
 		m_quick_palette_selected = 0;
 		m_quick_palette_active = true;

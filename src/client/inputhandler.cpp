@@ -296,7 +296,17 @@ bool MyEventReceiver::OnEvent(const SEvent &event)
 	if (event.EventType == EET_KEY_INPUT_EVENT) {
 		// Capture character input when cheat layer or quick palette is active
 		if ((g_cheat_layer_active || g_quick_palette_active) && event.KeyInput.PressedDown) {
-			if (event.KeyInput.Char >= 32) {
+			// Skip capture for toggle/action keys that have character codes
+			bool is_action = false;
+			{
+				auto it = keysListenedFor.find(KeyPress(event.KeyInput));
+				if (it != keysListenedFor.end()) {
+					auto act = it->second;
+					if (act == KeyType::TOGGLE_CHEAT_MENU || act == KeyType::QUICK_SELECT_MENU)
+						is_action = true;
+				}
+			}
+			if (!is_action && event.KeyInput.Char >= 32) {
 				cheat_char = event.KeyInput.Char;
 				cheat_char_avail = true;
 			} else if (event.KeyInput.Key == KEY_BACK) {
