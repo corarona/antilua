@@ -1,0 +1,7 @@
+local pos = core.localplayer:get_pos()
+local below = core.get_node_or_nil({x = pos.x, y = pos.y - 1, z = pos.z})
+local near1 = core.get_node_or_nil({x = pos.x + 1, y = pos.y, z = pos.z})
+local near2 = core.get_node_or_nil({x = pos.x - 1, y = pos.y, z = pos.z})
+local near3 = core.get_node_or_nil({x = pos.x, y = pos.y, z = pos.z + 1})
+local near4 = core.get_node_or_nil({x = pos.x, y = pos.y, z = pos.z - 1})
+return "pos=" .. dump(pos) .. " below=" .. (below and below.name or "nil") .. " nearby: " .. (near1 and near1.name or "nil") .. ", " .. (near2 and near2.name or "nil") .. ", " .. (near3 and near3.name or "nil") .. ", " .. (near4 and near4.name or "nil")
