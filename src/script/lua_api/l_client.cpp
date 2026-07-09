@@ -216,6 +216,12 @@ int ModApiClient::l_show_formspec(lua_State *L)
 int ModApiClient::l_send_respawn(lua_State *L)
 {
 	getClient(L)->sendRespawnLegacy();
+	// Modern servers (protocol 46+): close the death formspec to trigger
+	// player:respawn() via death_screen.lua on_playerReceiveFields.
+	// Harmless if the server is old (packet ignored, no formspec state).
+	StringMap fields;
+	fields["quit"] = "true";
+	getClient(L)->sendInventoryFields("__builtin:death", fields);
 	return 0;
 }
 
