@@ -876,7 +876,6 @@ int ModApiClient::l_create_client_entity(lua_State *L)
 	GenericCAO *raw_obj = obj.get();
 
 	raw_obj->setPos(pos);
-	raw_obj->setShadersEnabled(g_settings->getBool("enable_shaders"));
 	raw_obj->setVisible(true);
 
 	if (lua_istable(L, 2)) {

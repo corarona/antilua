@@ -6,5 +6,4 @@ set(BUILTIN_COMMON_SETTINGS_SRCS
 	common/settings/init.lua
 	common/settings/settingtypes.lua
 	common/settings/shadows_component.lua
-	common/settings/shader_warning_component.lua
 	PARENT_SCOPE)

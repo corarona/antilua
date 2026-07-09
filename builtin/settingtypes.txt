@@ -705,11 +705,6 @@ enable_raytraced_culling (Enable Raytraced Culling) bool true
 
 [*Effects]
 
-#    Enable shaders (experimental).
-#    When disabled, the game will not use GLSL shaders for rendering
-#    and fall back to the fixed-function pipeline (requires OpenGL 1.4+).
-enable_shaders (Enable shaders) bool true
-
 #    Enable caching of node meshes.
 enable_mesh_cache (Enable mesh cache) bool true
 
