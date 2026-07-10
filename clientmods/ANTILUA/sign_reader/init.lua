@@ -11,14 +11,14 @@ end
 local function utf8char(cp)
 	if cp < 128 then return string.char(cp)
 	elseif cp < 2048 then
-		return string.char(192 + cp // 64, 128 + cp % 64)
+		return string.char(192 + math.floor(cp / 64), 128 + cp % 64)
 	elseif cp < 65536 then
 		return string.char(
-			224 + cp // 4096, 128 + cp // 64 % 64, 128 + cp % 64)
+			224 + math.floor(cp / 4096), 128 + math.floor(cp / 64 % 64), 128 + cp % 64)
 	else
 		return string.char(
-			240 + cp // 262144, 128 + cp // 4096 % 64,
-			128 + cp // 64 % 64, 128 + cp % 64)
+			240 + math.floor(cp / 262144), 128 + math.floor(cp / 4096 % 64),
+			128 + math.floor(cp / 64 % 64), 128 + cp % 64)
 	end
 end
 
