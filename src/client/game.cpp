@@ -398,6 +398,8 @@ Game::Game() :
 
 	g_settings->registerChangedCallback("fullbright",
 		&updateAllMapBlocksCallback, this);
+	g_settings->registerChangedCallback("fullbright_min_level",
+		&updateAllMapBlocksCallback, this);
 	g_settings->registerChangedCallback("xray",
 		&updateAllMapBlocksCallback, this);
 	g_settings->registerChangedCallback("xray_nodes",

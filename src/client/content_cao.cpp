@@ -874,17 +874,6 @@ void GenericCAO::updateLight(u32 day_night_ratio)
 	// based on the entity glow.
 	light = encode_light(light_at_pos, m_prop.glow);
 
-	if (g_settings->getBool("fullbright")) {
-		u16 min_level = g_settings->getU16("fullbright_min_level");
-		if (min_level >= LIGHT_SUN) {
-			light = video::SColor(0xFFFFFFFF);
-		} else {
-			if (light_at_pos < min_level)
-				light_at_pos = min_level;
-			light = encode_light(light_at_pos, m_prop.glow);
-		}
-	}
-
 	if (light != m_last_light) {
 		m_last_light = light;
 		setNodeLight(light);
