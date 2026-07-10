@@ -43,7 +43,7 @@ extern const u8 *light_decode_table;
 inline u8 decode_light(u8 light)
 {
 	if (g_settings->getBool("fullbright")) {
-		u16 min = g_settings->getU16("fullbright_min_level");
+		u16 min = g_settings->getU16("fullbright.min_level");
 		if (min >= LIGHT_SUN)
 			return 255;
 		if (light > LIGHT_SUN)
