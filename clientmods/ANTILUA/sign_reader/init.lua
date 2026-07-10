@@ -97,7 +97,12 @@ ws.rg("SignReader", {
 		end
 
 		local node = core.get_node_or_nil(pos)
-		if not node or core.get_item_group(node.name, "sign") < 1 then
+		if not node then
+			remove_hud()
+			return
+		end
+		local def = core.get_node_def(node.name)
+		if not def or not def.groups or not def.groups.sign then
 			remove_hud()
 			return
 		end
