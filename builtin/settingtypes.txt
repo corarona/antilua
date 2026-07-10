@@ -2604,10 +2604,4 @@ show_technical_names (Show technical names) bool false
 #    Controlled by a checkbox in the settings menu.
 show_advanced (Show advanced settings) bool false
 
-[*Antilua DTE] [client]
 
-#    Width of the DTE formspec window.
-dte_width (DTE window width) float 15 8 40
-
-#    Height of the DTE formspec window.
-dte_height (DTE window height) float 10 6 30

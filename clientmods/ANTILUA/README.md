@@ -30,7 +30,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 
 | Mod | Description |
 |-----|-------------|
-| **inventory** | Unified inventory mod: AutoRefill, AutoEject, DumpFull, AutoTorch, AutoSort, AutoBlock. `.craft`, `.openlist` commands. Punch-to-open-node-inventory. |
+| **inventory** | Unified inventory mod: AutoRefill, AutoEject, DumpFull, AutoSort, AutoBlock. `.craft`, `.openlist` commands. Punch-to-open-node-inventory. |
 | **autocraft** | Automatic crafting system. Custom GUI, recipe memory, auto-craft loop. `.autocraft`, `.autocraft_list`, `.autocraft_clear`. |
 | **autoeat** | Auto-eat food when hunger drops. Settings for threshold and cooldown. |
 | **invsaver** | Save inventory to ender chest on low HP, restore on respawn. |
@@ -47,7 +47,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 | Mod | Description |
 |-----|-------------|
 | **dig** | Dig timing library + auto-dig + bulk dig operations. DigCustom, Excavator, Nuke, Digcyl (sponge dig), IceBreaker. |
-| **place** | Block placement cheats: MultiScaff, PlaceOn, Highway, BlockWater/BlockLava, WallIn, SkyPltfrm, PCeiling, SpongeBot, AutoCombatLog. |
+| **place** | Block placement cheats: MultiScaff, PlaceOn, BlockWater/BlockLava, SpongeBot, AutoCombatLog. |
 
 ### Farming / Bots
 
@@ -75,7 +75,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 | **always_day** | Lock time-of-day to a fixed value. |
 | **clean_hud** | Hide server HUD elements (health, breath, etc). |
 | **hudlocker** | HUD change notifier — alerts when server modifies HUD. |
-| **skylocker** | Lock sky/cloud parameters against server changes. |
+
 | **tps_client** | Server TPS and ping HUD display. Exports `tps_client.tps`, `tps_client.ping`. |
 
 ### Logging / Events

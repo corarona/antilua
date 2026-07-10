@@ -53,23 +53,6 @@ end
 
 -- anti_tower removed during modpack consolidation
 
-function test_antilua_walls(T)
-	T.run("place_wallin cheat setting exists", function()
-		local val = core.settings:get("place_wallin")
-		T.assert(val ~= nil, "setting 'place_wallin' should exist")
-	end)
-
-	T.run("place_skypltfrm cheat setting exists", function()
-		local val = core.settings:get("place_skypltfrm")
-		T.assert(val ~= nil, "setting 'place_skypltfrm' should exist")
-	end)
-
-	T.run("pceiling cheat setting exists", function()
-		local val = core.settings:get("pceiling")
-		T.assert(val ~= nil, "setting 'pceiling' should exist")
-	end)
-end
-
 function test_antilua_autoevade(T)
 	T.run("autoevade cheat setting exists", function()
 		local val = core.settings:get("autoevade")
@@ -162,27 +145,9 @@ function test_formspec_blocker(T)
 	end)
 end
 
-function test_entity_logger(T)
-	T.run("entity_logger setting exists", function()
-		T.assert(type(core.settings:get("entity_logger")) == "string")
-	end)
-end
-
-function test_world_observer(T)
-	T.run("world_observer setting exists", function()
-		T.assert(type(core.settings:get("world_observer")) == "string")
-	end)
-end
-
 function test_movement_display(T)
 	T.run("movement_display setting exists", function()
 		T.assert(type(core.settings:get("movement_display")) == "string")
-	end)
-end
-
-function test_breath_alert(T)
-	T.run("breath_alert setting exists", function()
-		T.assert(type(core.settings:get("breath_alert")) == "string")
 	end)
 end
 

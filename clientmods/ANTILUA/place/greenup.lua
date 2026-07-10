@@ -19,24 +19,4 @@ ws.rg("PlaceOn", { category = "Place", setting = "placeon", description = "Place
 	},
 })
 
-ws.rg("TorchUp", { category = "Place", setting = "torchup", description = "Place torches on walls and ceilings",
-	on_step = function(self)
-		local range = tonumber(core.settings:get(self.setting .. ".range")) or 4
-		local threshold = tonumber(core.settings:get(self.setting .. ".light_threshold")) or 8
-		local node = core.settings:get(self.setting .. ".node") or "mcl_torches:torch"
-		local pos = ws.dircoord(0, 0, 0)
-		local poss = core.find_nodes_near_under_air_except(pos, range, {node})
-		for _, v in pairs(poss) do
-			local ab = vector.offset(v, 0, 1, 0)
-			local li = core.get_node_light(ab, 0.0)
-			if li and li < threshold then
-				ws.place(ab, node)
-			end
-		end
-	end,
-	cheat_settings = {
-		range = { type = "number", default = 4, min = 1, max = 20 },
-		light_threshold = { type = "number", default = 8, min = 0, max = 15 },
-		node = { type = "string", default = "mcl_torches:torch" },
-	},
-})
+

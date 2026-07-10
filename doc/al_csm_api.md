@@ -475,8 +475,6 @@ Additional cheats registered by client-side mods (ANTILUA modpack):
 | **Render** | AlwaysDay | `always_day` | `always_day` mod |
 | | CleanHUD | `clean_hud` | `clean_hud` mod |
 | | StripChatColors | `strip_chat_colors` | `wasplib` |
-| | EntityLogger | `entity_logger` | `event_logger` mod |
-| | WorldObserver | `world_observer` | `event_logger` mod |
 | | MovementDisplay | `movement_display` | `event_logger` mod |
 | | POIShowNames | `poi_shownames` | `poi` mod |
 | **Player** | AutoRespawn | `autorespawn` | Engine (Lua builtin) |
@@ -486,10 +484,8 @@ Additional cheats registered by client-side mods (ANTILUA modpack):
 | | DeathWaypoints | `auto_death_waypoint` | `poi` mod |
 | | AutoScreenshot | `auto_screenshot` | `poi` mod |
 | | DeathTP | `death_tp` | `poi` mod |
-| | BreathAlert | `breath_alert` | `event_logger` mod |
 | **Place** | MultiScaff (Scaffold) | `scaffold` | `place` mod (key Y) |
 | | Reap | `farmtool_reap` | `farmtool` mod |
-| | AutoTorch | `auto_torch` | `inventory` mod |
 | **Inventory** | AutoRefill | `autorefill` | `inventory` mod |
 | | AutoEject | `autoeject` | `inventory` mod |
 | | ChestStealer | `chest_stealer` | `inventory` mod |

@@ -45,7 +45,7 @@ clientmods/ANTILUA/
 ├── headsaver/            # NEW: extracted from emicor
 ├── invsaver/             # NEW: extracted from emicor
 ├── antitower/            # NEW: extracted from emicor
-├── walls/                # NEW: extracted from emicor (wallin+skypltfrm+pceiling)
+
 ├── autoevade/            # NEW: extracted from emicor
 ```
 

@@ -66,7 +66,6 @@ local mpath = core.get_modpath(core.get_current_modname())
 dofile(mpath .. "/bot_tools.lua")
 dofile(mpath .. "/spongebot.lua")
 dofile(mpath .. "/greenup.lua")
-dofile(mpath .. "/walls.lua")
 
 local function mscaffold(self, f)
 	f = f or 0
@@ -110,50 +109,9 @@ ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "B
 	},
 })
 
-ws.rg('MScaffModulo', { category = 'Place', setting = 'multiscaffm', description = "Scaffold with spaced placement",
-	on_step = function(self)
-		if not self._node then return end
-		ws.switch_to_item(self._node)
-		local width = tonumber(core.settings:get("multiscaffm.width")) or 5
-		local depth = tonumber(core.settings:get("multiscaffm.depth")) or 1
-		local mod = tonumber(core.settings:get("multiscaffm.mod")) or 1
-		local n = math.floor(width / 2)
-		for i = -n, n do
-			for j = (depth * -1), -1 do
-				local p = vector.round(ws.dircoord(0, j, i))
-				if p.z % mod == 0 then
-					if p.x % mod ~= 0 then
-						core.place_node(p)
-					end
-				else
-					if p.x % mod == 0 then
-						core.place_node(p)
-					end
-				end
-			end
-		end
-	end,
-	on_start = function(self)
-		self._node = core.localplayer:get_wielded_item():get_name()
-	end,
-})
 
 
 
-scaffold.register_template_scaffold("WallScaffold", "place_five_down", function(pos)
-	scaffold.place_if_able(ws.dircoord(0, -1, 0))
-	scaffold.place_if_able(ws.dircoord(0, -2, 0))
-	scaffold.place_if_able(ws.dircoord(0, -3, 0))
-	scaffold.place_if_able(ws.dircoord(0, -4, 0))
-	scaffold.place_if_able(ws.dircoord(0, -5, 0))
-end, nil, nil, "Place wall scaffold below")
-
-
-scaffold.register_template_scaffold("headTriScaff", "place_three_wide_head", function(pos)
-	scaffold.place_if_able(ws.dircoord(0, 3, 0))
-	scaffold.place_if_able(ws.dircoord(0, 3, 1))
-	scaffold.place_if_able(ws.dircoord(0, 3, -1))
-end, nil, nil, "Place three-wide scaffold at head level")
 
 scaffold.register_template_scaffold("RandomScaff", "place_rnd", function()
 	local below=ws.dircoord(0,-1,0)
@@ -168,66 +126,6 @@ end, nil, nil, "Place random block scaffold")
 
 
 
-local function is_lantern(pos)
-   local dir=ws.getdir()
-   pos=vector.round(pos)
-   if dir == "north" or dir == "south" then
-		if pos.z % 8 == 0 then
-			return true
-		end
-   else
-		if pos.x % 8 == 0 then
-			return true
-		end
-   end
-   return false
-end
-
-ws.rg("Highway", { category = "Place", setting = "highwaymaker", description = "Build a road beneath you",
-	on_step = function(self)
-		for i = -2, 2 do
-			mscaffold(i)
-			local lightblock = "mcl_ocean:sea_lantern"
-			local dir = ws.getdir()
-			local lp = vector.round(ws.dircoord(0, 0, 0))
-			local pl = is_lantern(lp)
-			if pl then
-				local lpos = ws.dircoord(0, 3, 0)
-				local nd = core.get_node_or_nil(lpos)
-				if nd and nd.name ~= lightblock then
-					ws.dig(lpos)
-					ws.place(lpos, lightblock, 5)
-				end
-			end
-		end
-	end,
-	on_start = function(self)
-		core.settings:set("place.width", "5")
-		core.settings:set("place.depth", "3")
-		self._node = core.localplayer:get_wielded_item():get_name()
-	end,
-	daughters = {'block_sources'},
-	delay = 0.05,
-})
-
-ws.rg("HighwayZ", { category = "Place", setting = "highwayz", description = "Build a road along the Z axis",
-	on_step = function(self)
-		local npt = ws.get_nodes_per_tick()
-		local positions = {
-			ws.dircoord(0, 0, 1),
-			ws.dircoord(1, 0, 1),
-			ws.dircoord(2, 1, 1),
-			ws.dircoord(-2, 1, 1),
-			ws.dircoord(-2, 0, 1),
-			ws.dircoord(-1, 0, 1),
-			ws.dircoord(2, 0, 1),
-		}
-		for i, p in pairs(positions) do
-			if i > npt then break end
-			if p then core.place_node(p) end
-		end
-	end,
-})
 
 ws.rg("BlockSources", {
 	category = "Place",
@@ -303,53 +201,5 @@ ws.rg("PlaceOnTop", { category = "Place", setting = "place_on_top", description 
 
 
 
-ws.rg("LanternTBM", { category = "Place", setting = "place_ltbm", description = "Place lanterns on ceilings",
-	on_step = function(self)
-		local dir = ws.getdir()
-		local lp = vector.round(ws.dircoord(0, 0, 0))
-		local pl = is_lantern(lp)
-		local ypos = tonumber(core.settings:get("place_ltbm.depth")) or 1
-		if self._node and pl then
-			local lpos = ws.dircoord(0, ypos, 0)
-			local nd = core.get_node_or_nil(lpos)
-			if nd and nd.name ~= self._node then
-				ws.dig(lpos)
-				ws.place(lpos, self._node, 5)
-			end
-		end
-	end,
-	on_start = function(self)
-		self._node = core.localplayer:get_wielded_item():get_name()
-	end,
-})
 
-local mossable = {
-	"mcl_core:stone",
-	"mcl_core:diorite",
-	"mcl_core:andesite",
-	"mcl_core:granite",
-}
-
-ws.rg("AutoMoss", {
-	category = "Place",
-	setting = "automoss",
-	description = "Auto-place mossy variants of blocks",
-	on_step = function()
-		local p = core.localplayer:get_pos()
-		local pos1 = vector.offset(p, -4, -4, -4)
-		local pos2 = vector.offset(p, 4, 4, 4)
-		local moss = core.find_nodes_in_area_under_air(pos1, pos2, {"mcl_lush_caves:moss"})
-		if moss and #moss > 0 then
-			for _, v in pairs(moss) do
-				local sp1 = vector.offset(v, -4, -4, -4)
-				local sp2 = vector.offset(v, 4, 4, 4)
-				local stonz = core.find_nodes_in_area_under_air(sp1, sp2, mossable)
-				if stonz and #stonz > 0 then
-					core.switch_to_item("mcl_bone_meal:bone_meal")
-					core.place_node(v)
-				end
-			end
-		end
-	end,
-})
 

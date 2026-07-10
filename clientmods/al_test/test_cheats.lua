@@ -14,7 +14,7 @@ function test_cheat_settings(T)
 		"enable_entity_esp", "enable_entity_tracers",
 		"enable_player_esp", "enable_player_tracers",
 		"player_radar", "chest_stealer", "auto_death_waypoint", "auto_death_waypoint_max",
-		"auto_torch", "auto_sort", "block_logger", "chat_alerts",
+		"auto_sort", "block_logger", "chat_alerts",
 		"name_colorizer", "auto_screenshot", "light_overlay",
 		"enable_node_esp",
 		"autojump", "continuous_forward",

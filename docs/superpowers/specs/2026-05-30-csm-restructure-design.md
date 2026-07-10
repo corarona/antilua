@@ -94,11 +94,10 @@ place/
 ├── mod.conf
 ├── init.lua          (constraint system — now in wasplib; template system; place/build cheats)
 ├── blocks.lua        (BlockWater, BlockLava, BlockSources, BlockLavaSources, PlaceOnTop)
-├── build.lua         (Highway, HighwayZ, LanternTBM, MultiScaff, MScaffModulo, PlaceOn)
-├── walls.lua         (WallIn, SkyPltfrm, PCeiling — from old walls mod)
+├── build.lua         (MultiScaff, PlaceOn)
 ├── spongebot.lua     (SpongeBot, Autosponge — DigFreeSponge + Digcyl moved to dig)
 ├── bot_tools.lua     (AutoCombatLog)
-└── greenup.lua       (PlaceOn, TorchUp)
+└── greenup.lua       (PlaceOn)
 ```
 
 ### litematica — renamed from gregon_litematica
@@ -120,7 +119,7 @@ Simple rename of the directory and `mod.conf`.
 | SortToWorld | **Remove** (niche, experimental) |
 | EInvTaker | **Remove** (entity inventory theft exploit) |
 | NoWaterStop | Keep |
-| AutoMoss | **Move to `place`** |
+| AutoMoss | **Remove** |
 | Pyramid | **Remove** (experimental) |
 
 Also strip commented-out code blocks and dead experiments.
@@ -180,7 +179,7 @@ load_mod_litematica = true
 | 2 | Create `inv_open` mod: merge open_inv + enderchest + punchinv | ~1 new file |
 | 3 | Add constraint system + helpers to wasplib; merge headsaver, lavaalarm, lockview | wasplib/ + subfiles |
 | 4 | Rename `scaffold` → `place`: remove railscaffold.lua, remove dig cheats, add walls, add automoss | directory rename + file edits |
-| 5 | Clean `devtools`: remove experimental cheats, move AutoMoss to place | devtools/init.lua + place/ |
+| 5 | Clean `devtools`: remove experimental cheats | devtools/init.lua |
 | 6 | Rename `gregon_litematica` → `litematica` | directory rename + mod.conf |
 | 7 | Delete removed mod directories | 7 directories |
 | 8 | Convert old-style ws.rg() to new-style | ~20 registrations across all mods |
