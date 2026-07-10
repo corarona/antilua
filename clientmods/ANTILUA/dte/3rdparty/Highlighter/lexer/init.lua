@@ -286,7 +286,7 @@ function lexer.navigator()
 
 		local minimumLength, maximumLength = 0, math.min(#previousSource, #SourceString)
 		while minimumLength < maximumLength do
-			local mid = (minimumLength + maximumLength + 1) // 2
+			local mid = math.floor((minimumLength + maximumLength + 1) / 2)
 
 			if
 				string.byte(previousSource, mid) == string.byte(SourceString, mid) -- cheap check of last character

@@ -19,16 +19,14 @@ function load_schematic_nodes(value, pos)
 		if ok and schem and schem.data then
 			nodes = {}
 			for _, entry in ipairs(schem.data) do
-				if entry.name == "air" or entry.prob == 0 then
-					goto skip
+				if entry.name ~= "air" and entry.prob ~= 0 then
+					table.insert(nodes, {
+						x = pos.x + (entry.x or 0),
+						y = pos.y + (entry.y or 0),
+						z = pos.z + (entry.z or 0),
+						name = entry.name,
+					})
 				end
-				table.insert(nodes, {
-					x = pos.x + (entry.x or 0),
-					y = pos.y + (entry.y or 0),
-					z = pos.z + (entry.z or 0),
-					name = entry.name,
-				})
-				::skip::
 			end
 			count = #nodes
 			if count > 0 then
@@ -49,11 +47,11 @@ function load_schematic_nodes(value, pos)
 		place_nodes = {}
 		local ox, oy, oz = pos.x, pos.y, pos.z
 		for _, entry in ipairs(we_nodes) do
-			if entry.name == "air" then goto skip2 end
-			entry.x, entry.y, entry.z = ox + entry.x, oy + entry.y, oz + entry.z
-			table.insert(place_nodes, entry)
-			add_preview_if_needed(entry, entry.name)
-			::skip2::
+			if entry.name ~= "air" then
+				entry.x, entry.y, entry.z = ox + entry.x, oy + entry.y, oz + entry.z
+				table.insert(place_nodes, entry)
+				add_preview_if_needed(entry, entry.name)
+			end
 		end
 		if #place_nodes > 0 then
 			ws.notify("Loaded " .. #place_nodes .. " nodes", ws.NOTIFY_INFO)

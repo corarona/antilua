@@ -9,15 +9,6 @@ local ACTIVE = false
 
 local SETTING = "rhythmtp"
 
-local function get(key, default)
-	local full = SETTING .. "." .. key
-	local v = core.settings:get(full)
-	if v then
-		return tonumber(v) or default
-	end
-	return default
-end
-
 local function step()
 	if not ACTIVE then
 		MOVING = false
@@ -45,10 +36,10 @@ local function step()
 		return
 	end
 
-	local budget = get("budget", 10)
-	local h_speed = get("h_speed", 4.0)
-	local vup_speed = get("vup_speed", 26.0)
-	local drain = get("drain_factor", 0.98)
+	local budget = ws.get_number("rhythmtp", "budget", 10)
+	local h_speed = ws.get_number("rhythmtp", "h_speed", 4.0)
+	local vup_speed = ws.get_number("rhythmtp", "vup_speed", 26.0)
+	local drain = ws.get_number("rhythmtp", "drain_factor", 0.98)
 
 	budget = math.max(1, math.min(14, budget))
 	drain = math.max(0.5, math.min(1, drain))
@@ -103,7 +94,7 @@ local function go_forward(dist)
 	if ACTIVE then
 		return
 	end
-	dist = dist or get("dist", 100)
+	dist = dist or ws.get_number("rhythmtp", "dist", 100)
 	local player = core.localplayer
 	if not player then
 		return

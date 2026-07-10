@@ -3,12 +3,6 @@ autoeat.lock = false
 
 local autodupe = rawget(_G, "autodupe")
 local hud_id = nil
-
-local function get_float(name, default)
-	local v = core.settings:get("autoeat." .. name)
-	return tonumber(v) or default
-end
-
 local etime = 0
 
 function autoeat.eat()
@@ -53,7 +47,7 @@ end
 core.register_globalstep(function(dtime)
 	if not core.localplayer then return end
 	etime = etime + dtime
-	if autoeat.lock or core.settings:get_bool("autoeat") and etime >= get_float("cooldown", 0.5) and autoeat.get_hunger() < get_float("hunger", 9) then
+	if autoeat.lock or core.settings:get_bool("autoeat") and etime >= ws.get_number("autoeat", "cooldown", 0.5) and autoeat.get_hunger() < ws.get_number("autoeat", "hunger", 9) then
 		etime = 0
 		autoeat.eat()
 	end

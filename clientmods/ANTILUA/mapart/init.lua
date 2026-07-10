@@ -7,7 +7,8 @@ else
 end
 
 -- Module-scoped palette shared by all sub-files
-palette = {}
+mapart = {}
+mapart.palette = {}
 
 local function load_palette()
 	local json_path = modpath .. "/colors.json"
@@ -33,11 +34,11 @@ local function load_palette()
 		return false
 	end
 
-	palette = {}
+	mapart.palette = {}
 	for node_name, color_data in pairs(colors) do
 		if type(color_data) ~= "table" then
 		elseif type(color_data[1]) == "number" then
-			table.insert(palette, {
+			table.insert(mapart.palette, {
 				name = node_name,
 				param2 = 0,
 				r = color_data[1],
@@ -46,7 +47,7 @@ local function load_palette()
 			})
 		elseif type(color_data[1]) == "table" then
 			for param2, entry in ipairs(color_data) do
-				table.insert(palette, {
+				table.insert(mapart.palette, {
 					name = node_name,
 					param2 = param2 - 1,
 					r = entry[1],
@@ -56,7 +57,7 @@ local function load_palette()
 			end
 		end
 	end
-	core.log("mapart: loaded " .. #palette .. " palette entries")
+	core.log("mapart: loaded " .. #mapart.palette .. " palette entries")
 
 	if nlist and nlist.get then
 		local exclude = nlist.get("mapart_exclude")
@@ -66,16 +67,16 @@ local function load_palette()
 				exclude_set[v] = true
 			end
 			local filtered = {}
-			for _, entry in ipairs(palette) do
+			for _, entry in ipairs(mapart.palette) do
 				if not exclude_set[entry.name] then
 					table.insert(filtered, entry)
 				end
 			end
-			palette = filtered
+			mapart.palette = filtered
 		end
 	end
 
-	ws.notify("mapart: loaded " .. #palette .. " palette entries", ws.NOTIFY_INFO)
+	ws.notify("mapart: loaded " .. #mapart.palette .. " palette entries", ws.NOTIFY_INFO)
 	return true
 end
 
@@ -100,6 +101,9 @@ core.register_chatcommand("mapart", {
 		end
 
 		local filepath = parts[1]
+		if filepath:find("..") then
+			return false, "Invalid path"
+		end
 		local out_w, out_h
 		local do_dither = false
 		local do_gamma = false
@@ -137,7 +141,7 @@ core.register_chatcommand("mapart", {
 		out_w = out_w or img.width
 		out_h = out_h or img.height
 
-		local pal = palette
+		local pal = mapart.palette
 		if do_invonly then
 			pal = build_inv_palette()
 			if not pal or #pal == 0 then
@@ -200,6 +204,9 @@ core.register_chatcommand("mapart_wall", {
 		end
 
 		local filepath = parts[1]
+		if filepath:find("..") then
+			return false, "Invalid path"
+		end
 		local dir = "x"
 		local do_dither = false
 		local do_gamma = false
@@ -241,7 +248,7 @@ core.register_chatcommand("mapart_wall", {
 		out_w = out_w or img.width
 		out_h = out_h or img.height
 
-		local pal = palette
+		local pal = mapart.palette
 		if do_invonly then
 			pal = build_inv_palette()
 			if not pal or #pal == 0 then
@@ -279,6 +286,9 @@ core.register_chatcommand("test_encode_png", {
 	func = function(param)
 		if param == "" then
 			return false, "Usage: /test_encode_png <path>"
+		end
+		if param:find("..") then
+			return false, "Invalid path"
 		end
 		local ok, data = pcall(core.read_file, param)
 		if not ok or not data then

@@ -1,13 +1,3 @@
-local function get_number(key, default)
-	return tonumber(core.settings:get("item_esp." .. key)) or default
-end
-
-local function get_bool(key, default)
-	local v = core.settings:get("item_esp." .. key)
-	if v == "" then return default end
-	return v == "true"
-end
-
 local nametags = {}
 
 local function build_label(le)
@@ -15,7 +5,7 @@ local function build_label(le)
 	if not is or is == "" then return nil end
 	local def = core.get_item_def(is)
 	local name = def and def.description or is
-	if get_bool("show_count", true) then
+	if ws.get_bool("item_esp", "show_count", true) then
 		local count = le.itemcount or 1
 		if count > 1 then
 			name = name .. " x" .. count
@@ -26,7 +16,7 @@ end
 
 local function namespace()
 	if not core.localplayer then return end
-	local range = get_number("range", 32)
+	local range = ws.get_number("item_esp", "range", 32)
 	local objs = core.get_nearby_objects(range)
 	local seen = {}
 

@@ -149,7 +149,6 @@ ws.rg("PlaceLiteM", {
 					end
 				end
 			end
-			::continue::
 		end
 		if changed then
 			update_hud()

@@ -1,13 +1,3 @@
-local function get_number(key, default)
-	return tonumber(core.settings:get("sign_reader." .. key)) or default
-end
-
-local function get_bool(key, default)
-	local v = core.settings:get("sign_reader." .. key)
-	if v == "" then return default end
-	return v == "true"
-end
-
 local function utf8char(cp)
 	if cp < 128 then return string.char(cp)
 	elseif cp < 2048 then
@@ -82,7 +72,7 @@ ws.rg("SignReader", {
 
 	on_step = function()
 		if not core.localplayer then return end
-		local range = get_number("range", 10)
+		local range = ws.get_number("sign_reader", "range", 10)
 		local pt = core.get_pointed_thing()
 		if not pt or pt.type ~= "node" then
 			remove_hud()
@@ -130,7 +120,7 @@ ws.rg("SignReader", {
 			world_pos = pos,
 		})
 
-		if get_bool("log", false) then
+		if ws.get_bool("sign_reader", "log", false) then
 			append_log(pos, text)
 		end
 	end,

@@ -67,8 +67,6 @@ ws.rg("SkyPltfrm", { category = "Place", setting = "place_skypltfrm", descriptio
 	},
 })
 
-local multiscaff_node
-
 local function get_nodes_over_air(pos, range, nodes)
 	local nds = core.find_nodes_near(pos, range, nodes)
 	local rt = {}
@@ -82,14 +80,17 @@ end
 
 ws.rg("PCeiling", { category = "Place", setting = "pceiling", description = "Place ceiling above you",
 	on_step = function(self)
-		if not multiscaff_node then return end
+		if not self._node then return end
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 4
 		local lp = ws.dircoord(0, 0, 0)
 		local nds = get_nodes_over_air(lp, range, nlist.get(nlist.selected))
 		for k, v in pairs(nds) do
 			local pos = ws.dircoord(0, -1, 0, v)
-			ws.place(pos, multiscaff_node)
+			ws.place(pos, self._node)
 		end
+	end,
+	on_start = function(self)
+		self._node = core.localplayer:get_wielded_item():get_name()
 	end,
 	on_start = function(self)
 		multiscaff_node = core.localplayer:get_wielded_item():get_name()

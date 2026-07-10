@@ -13,6 +13,9 @@ function do_schembuild(param, use_pos)
 	-- file:<path> — load an MTS file from disk
 	if param:match("^file:") then
 		local filepath = param:sub(6)
+		if filepath:find("..") then
+			return false, "Invalid path"
+		end
 		local ok, data = pcall(core.read_file, filepath)
 		if not ok or not data then
 			return false, "File not found: " .. filepath
@@ -24,11 +27,11 @@ function do_schembuild(param, use_pos)
 		clear_supply_chests()
 		place_nodes = {}
 		for _, entry in ipairs(schem.data) do
-			if entry.name == "air" or entry.prob == 0 then goto skip_file end
-			local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name}
-			table.insert(place_nodes, node)
-			add_preview_if_needed(node, node.name)
-			::skip_file::
+			if entry.name ~= "air" and entry.prob ~= 0 then
+				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name}
+				table.insert(place_nodes, node)
+				add_preview_if_needed(node, node.name)
+			end
 		end
 		ws.notify("Loaded " .. #place_nodes .. " nodes from " .. filepath, ws.NOTIFY_INFO)
 		core.after(0.1, update_hud)

@@ -171,6 +171,7 @@ core.register_chatcommand("find_strongholds", {
 			return
 		end
 
+		if not core.localplayer then return end
 		local lp = core.localplayer:get_pos()
 		local sp = init_strongholds(seed)
 		table.sort(sp, function(a, b)

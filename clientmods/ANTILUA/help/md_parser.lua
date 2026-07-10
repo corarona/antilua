@@ -35,7 +35,6 @@ function M.to_plaintext(md_text)
 	for line in md_text:gmatch("[^\n]+") do
 		local trimmed = line:match("^%s*(.-)%s*$")
 
-		-- Code blocks
 		if trimmed:match("^```") then
 			in_code_block = not in_code_block
 			if in_code_block then
@@ -45,27 +44,13 @@ function M.to_plaintext(md_text)
 				table.insert(lines, "  └────────────────────────────")
 				table.insert(lines, "")
 			end
-			goto continue
-		end
-		if in_code_block then
+		elseif in_code_block then
 			table.insert(lines, "  │ " .. line)
-			goto continue
-		end
-
-		-- Skip HTML comments
-		if trimmed:match("^<!%-%-") then
-			goto continue
-		end
-
-		-- Horizontal rule
-		if trimmed:match("^[-*_ ]+$") and #trimmed >= 3 then
+		elseif trimmed:match("^<!%-%-") then
+		elseif trimmed:match("^[-*_ ]+$") and #trimmed >= 3 then
 			table.insert(lines, "  ────────────────────────────")
-			goto continue
-		end
-
-		-- Headings
-		local _, _, hashes, htext = trimmed:find("^(#+)%s*(.-)%s*$")
-		if hashes then
+		elseif trimmed:match("^(#+)%s*(.-)%s*$") then
+			local _, _, hashes, htext = trimmed:find("^(#+)%s*(.-)%s*$")
 			local level = #hashes
 			local text = strip_markdown(htext:match("^%s*(.-)%s*$"))
 			if level == 1 then
@@ -82,61 +67,38 @@ function M.to_plaintext(md_text)
 				table.insert(lines, "    " .. text)
 				table.insert(lines, "")
 			end
-			goto continue
-		end
-
-		-- Unordered list items
-		local item = trimmed:match("^%s*[-*]%s+(.-)$")
-		if item then
+		elseif trimmed:match("^%s*[-*]%s+(.-)$") then
+			local item = trimmed:match("^%s*[-*]%s+(.-)$")
 			table.insert(lines, "  • " .. strip_markdown(item))
-			goto continue
-		end
-
-		-- Ordered list items
-		local oitem = trimmed:match("^%s*%d+[%.%)]%s+(.-)$")
-		if oitem then
+		elseif trimmed:match("^%s*%d+[%.%)]%s+(.-)$") then
+			local oitem = trimmed:match("^%s*%d+[%.%)]%s+(.-)$")
 			table.insert(lines, "    " .. strip_markdown(oitem))
-			goto continue
-		end
-
-		-- Table (| ... |)
-		if trimmed:match("^|") then
-			-- Skip separator rows (| --- | --- |)
+		elseif trimmed:match("^|") then
 			if not trimmed:match("|%s*[-]+%s*|") then
 				local cells = {}
 				for cell in trimmed:gmatch("|([^|]*)") do
 					table.insert(cells, strip_markdown(cell:match("^%s*(.-)%s*$")))
 				end
-				local row_text = "  " .. table.concat(cells, " │ ")
-				table.insert(lines, row_text)
+				table.insert(lines, "  " .. table.concat(cells, " │ "))
 			end
-			goto continue
-		end
-
-		-- Blank line
-		if trimmed == "" then
+		elseif trimmed == "" then
 			table.insert(lines, "")
-			goto continue
-		end
-
-		-- Regular paragraph text
-		local text = strip_markdown(trimmed)
-		if #text > 0 then
-			-- Word-wrap at ~72 chars
-			while #text > 72 do
-				local break_at = text:sub(1, 72):match("^.*%s")
-				if not break_at then
-					break_at = text:sub(1, 72)
-				end
-				table.insert(lines, "  " .. break_at:match("^%s*(.-)%s*$"))
-				text = text:sub(#break_at + 1)
-			end
+		else
+			local text = strip_markdown(trimmed)
 			if #text > 0 then
-				table.insert(lines, "  " .. text)
+				while #text > 72 do
+					local break_at = text:sub(1, 72):match("^.*%s")
+					if not break_at then
+						break_at = text:sub(1, 72)
+					end
+					table.insert(lines, "  " .. break_at:match("^%s*(.-)%s*$"))
+					text = text:sub(#break_at + 1)
+				end
+				if #text > 0 then
+					table.insert(lines, "  " .. text)
+				end
 			end
 		end
-
-		::continue::
 	end
 
 	return table.concat(lines, "\n")
@@ -152,26 +114,11 @@ function M.parse_cheats_table(md_text)
 	for line in md_text:gmatch("[^\n]+") do
 		local trimmed = line:match("^%s*(.-)%s*$")
 
-		-- Section detection
 		if trimmed:match("^##%s+Cheats") then
 			in_cheats_section = true
-			goto continue
-		end
-		if in_cheats_section and trimmed:match("^##") then
-			-- Next section, stop looking
+		elseif in_cheats_section and trimmed:match("^##") then
 			break
-		end
-		if not in_cheats_section then
-			goto continue
-		end
-
-		-- Skip table header separator (| --- | --- |)
-		if trimmed:match("^|%s*[-]+%s*|") then
-			goto continue
-		end
-
-		-- Parse table row: | Cheat | Setting | Description |
-		if trimmed:match("^|") then
+		elseif in_cheats_section and not trimmed:match("^|%s*[-]+%s*|") and trimmed:match("^|") then
 			local cells = {}
 			for cell in trimmed:gmatch("|([^|]*)") do
 				table.insert(cells, cell:match("^%s*(.-)%s*$"))
@@ -181,7 +128,6 @@ function M.parse_cheats_table(md_text)
 				local setting = cells[2]
 				local desc = cells[3]
 				if setting ~= "Setting" and setting ~= "" then
-					-- (func) means one-shot cheat without a setting
 					if setting == "(func)" then
 						setting = nil
 					end
@@ -193,8 +139,6 @@ function M.parse_cheats_table(md_text)
 				end
 			end
 		end
-
-		::continue::
 	end
 
 	return results

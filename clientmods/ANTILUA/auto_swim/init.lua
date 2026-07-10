@@ -1,7 +1,3 @@
-local function get_int(key, default)
-	return tonumber(core.settings:get("auto_swim." .. key)) or default
-end
-
 local function swim_up()
 	if not core.localplayer then return end
 	local pos = core.localplayer:get_pos()
@@ -18,7 +14,7 @@ local function check_and_swim()
 	if not core.localplayer then return end
 	if not core.localplayer:is_in_liquid() then return end
 	local breath = core.localplayer:get_breath()
-	local threshold = get_int("breath_threshold", 3)
+	local threshold = ws.get_number("auto_swim", "breath_threshold", 3)
 	if breath <= threshold then
 		swim_up()
 	end

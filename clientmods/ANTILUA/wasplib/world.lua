@@ -352,29 +352,28 @@ function ws.loot_list(items, range, max_per_scan)
 		if moved >= max_per_scan then break end
 		local loc = "nodemeta:" .. cpos.x .. "," .. cpos.y .. "," .. cpos.z
 		local inv = core.get_inventory(loc)
-		if not inv then goto next_container end
-
-		for listname, stacks in pairs(inv) do
-			if moved >= max_per_scan then break end
-			for idx, stack in ipairs(stacks) do
+		if inv then
+			for listname, stacks in pairs(inv) do
 				if moved >= max_per_scan then break end
-				if not stack:is_empty() then
-					local name = stack:get_name()
-					if needed[name] then
-						for slot = 1, main_size do
-							local plstack = plinv.main[slot]
-							if plstack:is_empty() then
-								ws.move_stack(loc, listname, idx,
-									"current_player", "main", slot)
-								moved = moved + 1
-								break
+				for idx, stack in ipairs(stacks) do
+					if moved >= max_per_scan then break end
+					if not stack:is_empty() then
+						local name = stack:get_name()
+						if needed[name] then
+							for slot = 1, main_size do
+								local plstack = plinv.main[slot]
+								if plstack:is_empty() then
+									ws.move_stack(loc, listname, idx,
+										"current_player", "main", slot)
+									moved = moved + 1
+									break
+								end
 							end
 						end
 					end
 				end
 			end
 		end
-		::next_container::
 	end
 	return moved
 end

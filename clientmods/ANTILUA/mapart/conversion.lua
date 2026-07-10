@@ -45,7 +45,7 @@ local function build_inv_palette()
 		end
 	end
 	local filtered = {}
-	for _, entry in ipairs(palette) do
+	for _, entry in ipairs(mapart.palette) do
 		if types[entry.name] then
 			table.insert(filtered, entry)
 		end
@@ -62,7 +62,7 @@ local function image_to_schem(width, height, pixel_data, opts)
 	local out_h = opts.height or 128
 	local use_dither = opts.dither or false
 	local use_gamma = opts.gamma or false
-	local pal = opts.palette or palette
+	local pal = opts.palette or mapart.palette
 	local use_bilinear = opts.filter == "bilinear"
 	local errors = {}
 	if use_dither then
@@ -93,32 +93,30 @@ local function image_to_schem(width, height, pixel_data, opts)
 					prob = 0,
 					param2 = 0,
 				})
-				goto skip_floor
-			end
-
-			local best = find_closest(r, g, b, use_gamma, pal)
-			if best then
-				local dr = (r or 0) - best.r
-				local dg = (g or 0) - best.g
-				local db = (b or 0) - best.b
-
-				if use_dither then
-					floyd_steinberg(errors, out_w, out_h, x, z, dr, dg, db)
-				end
-
-				table.insert(schem.data, {
-					name = best.name,
-					prob = 254,
-					param2 = best.param2,
-				})
 			else
-				table.insert(schem.data, {
-					name = "air",
-					prob = 0,
-					param2 = 0,
-				})
+				local best = find_closest(r, g, b, use_gamma, pal)
+				if best then
+					local dr = (r or 0) - best.r
+					local dg = (g or 0) - best.g
+					local db = (b or 0) - best.b
+
+					if use_dither then
+						floyd_steinberg(errors, out_w, out_h, x, z, dr, dg, db)
+					end
+
+					table.insert(schem.data, {
+						name = best.name,
+						prob = 254,
+						param2 = best.param2,
+					})
+				else
+					table.insert(schem.data, {
+						name = "air",
+						prob = 0,
+						param2 = 0,
+					})
+				end
 			end
-			::skip_floor::
 		end
 	end
 
@@ -132,7 +130,7 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 	local out_h = opts.height or height
 	local use_dither = opts.dither or false
 	local use_gamma = opts.gamma or false
-	local pal = opts.palette or palette
+	local pal = opts.palette or mapart.palette
 	local dir = opts.direction or "x"
 	local use_bilinear = opts.filter == "bilinear"
 
@@ -157,17 +155,16 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 				end
 				if a < 128 then
 					table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
-					goto skip_wall_x
-				end
-				local best = find_closest(r, g, b, use_gamma, pal)
-				if best then
-					local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-					if use_dither then floyd_steinberg(errors, out_w, out_h, x, y, dr, dg, db) end
-					table.insert(schem.data, { name = best.name, prob = 254, param2 = best.param2 })
 				else
-					table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
+					local best = find_closest(r, g, b, use_gamma, pal)
+					if best then
+						local dr = r - best.r; local dg = g - best.g; local db = b - best.b
+						if use_dither then floyd_steinberg(errors, out_w, out_h, x, y, dr, dg, db) end
+						table.insert(schem.data, { name = best.name, prob = 254, param2 = best.param2 })
+					else
+						table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
+					end
 				end
-				::skip_wall_x::
 			end
 		end
 	else
@@ -183,17 +180,16 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 				end
 				if a < 128 then
 					table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
-					goto skip_wall_z
-				end
-				local best = find_closest(r, g, b, use_gamma, pal)
-				if best then
-					local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-					if use_dither then floyd_steinberg(errors, out_w, out_h, z, y, dr, dg, db) end
-					table.insert(schem.data, { name = best.name, prob = 254, param2 = best.param2 })
 				else
-					table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
+					local best = find_closest(r, g, b, use_gamma, pal)
+					if best then
+						local dr = r - best.r; local dg = g - best.g; local db = b - best.b
+						if use_dither then floyd_steinberg(errors, out_w, out_h, z, y, dr, dg, db) end
+						table.insert(schem.data, { name = best.name, prob = 254, param2 = best.param2 })
+					else
+						table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
+					end
 				end
-				::skip_wall_z::
 			end
 		end
 	end

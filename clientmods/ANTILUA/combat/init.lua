@@ -6,7 +6,7 @@ local killaura = {
 }
 
 function killaura.get(key)
-	return tonumber(core.settings:get("killaura." .. key)) or killaura[key]
+	return ws.get_number("killaura", key) or killaura[key]
 end
 
 function killaura.punch_object(obj)

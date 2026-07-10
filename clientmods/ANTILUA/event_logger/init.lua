@@ -130,20 +130,6 @@ core.register_cheat("BlockLogger", { category = "Info", setting = "block_logger"
 -- Stats display
 --
 
-local function sorted_pairs(t)
-	local keys = {}
-	for k in pairs(t) do
-		table.insert(keys, k)
-	end
-	table.sort(keys)
-	local i = 0
-	return function()
-		i = i + 1
-		local k = keys[i]
-		if k then return k, t[k] end
-	end
-end
-
 local function collect_stats(storage, key_match)
 	local items = {}
 	for key, val in pairs(storage:to_table().fields) do

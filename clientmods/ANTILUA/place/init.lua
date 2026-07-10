@@ -4,7 +4,7 @@
 scaffold = {}
 
 function scaffold.setting(key)
-	return tonumber(core.settings:get("place." .. key))
+	return ws.get_number("place", key)
 end
 
 scaffold.in_cube = ws.in_cube
@@ -68,11 +68,9 @@ dofile(mpath .. "/spongebot.lua")
 dofile(mpath .. "/greenup.lua")
 dofile(mpath .. "/walls.lua")
 
-local multiscaff_node = nil
-
-local function mscaffold(f)
+local function mscaffold(self, f)
 	f = f or 0
-	if not multiscaff_node then return end
+	if not self._node then return end
 	local width = tonumber(core.settings:get("scaffold.width")) or 5
 	local depth = tonumber(core.settings:get("scaffold.depth")) or 1
 	local above = tonumber(core.settings:get("scaffold.above")) or 0
@@ -89,7 +87,7 @@ local function mscaffold(f)
 				local p = ws.dircoord(fo, j, i)
 				local nd = p and core.get_node_or_nil(p)
 				if nd then
-					ws.place(p, {multiscaff_node})
+					ws.place(p, {self._node})
 				end
 			end
 		end
@@ -99,12 +97,10 @@ end
 ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "Build scaffold beneath you",
 	on_step = function(self, dtime)
 		if tps_client and tonumber(tps_client.ping) and tps_client.ping > (tps_client and tps_client.ping_tolerance or 0.5) then return end
-		mscaffold(0)
+		mscaffold(self, 0)
 	end,
 	on_start = function(self)
-		multiscaff_node = core.localplayer:get_wielded_item():get_name()
-	end,
-	on_stop = function(self)
+		self._node = core.localplayer:get_wielded_item():get_name()
 	end,
 	cheat_settings = {
 		width = { type = "number", default = 5, min = 1, max = 50 },
@@ -116,8 +112,8 @@ ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "B
 
 ws.rg('MScaffModulo', { category = 'Place', setting = 'multiscaffm', description = "Scaffold with spaced placement",
 	on_step = function(self)
-		if not multiscaff_node then return end
-		ws.switch_to_item(multiscaff_node)
+		if not self._node then return end
+		ws.switch_to_item(self._node)
 		local width = tonumber(core.settings:get("multiscaffm.width")) or 5
 		local depth = tonumber(core.settings:get("multiscaffm.depth")) or 1
 		local mod = tonumber(core.settings:get("multiscaffm.mod")) or 1
@@ -138,9 +134,7 @@ ws.rg('MScaffModulo', { category = 'Place', setting = 'multiscaffm', description
 		end
 	end,
 	on_start = function(self)
-		multiscaff_node = core.localplayer:get_wielded_item():get_name()
-	end,
-	on_stop = function(self)
+		self._node = core.localplayer:get_wielded_item():get_name()
 	end,
 })
 
@@ -210,7 +204,7 @@ ws.rg("Highway", { category = "Place", setting = "highwaymaker", description = "
 	on_start = function(self)
 		core.settings:set("place.width", "5")
 		core.settings:set("place.depth", "3")
-		multiscaff_node = core.localplayer:get_wielded_item():get_name()
+		self._node = core.localplayer:get_wielded_item():get_name()
 	end,
 	daughters = {'block_sources'},
 	delay = 0.05,
@@ -267,15 +261,15 @@ ws.rg("BlockSources", {
 		for i, p in pairs(positions) do
 			if i > npt then return end
 			if use_wielded then
-				ws.place(p, multiscaff_node)
+				ws.place(p, self._node)
 			else
 				core.place_node(p)
 			end
 		end
 	end,
 	on_start = function(self)
-		multiscaff_node = core.localplayer:get_wielded_item():get_name()
-		if not multiscaff_node then return true end
+		self._node = core.localplayer:get_wielded_item():get_name()
+		if not self._node then return true end
 	end,
 	cheat_settings = {
 		block_water = { type = "bool", default = true },
@@ -287,49 +281,45 @@ ws.rg("BlockSources", {
 
 ws.rg("PlaceOnTop", { category = "Place", setting = "place_on_top", description = "Place on top of pointed node",
 	on_step = function(self)
-		if not multiscaff_node then return end
+		if not self._node then return end
 		local npt = ws.get_nodes_per_tick()
 		local lp = ws.dircoord(0, 0, 0)
 		local item = core.localplayer:get_wielded_item():get_name()
 		if not item then return end
-		local positions = core.find_nodes_near_under_air_except(lp, 5, {multiscaff_node}, true)
+		local positions = core.find_nodes_near_under_air_except(lp, 5, {self._node}, true)
 		for i, p in pairs(positions) do
 			if i > npt then break end
-			ws.place(vector.add(p, {x = 0, y = 1, z = 0}), multiscaff_node)
+			ws.place(vector.add(p, {x = 0, y = 1, z = 0}), self._node)
 		end
 	end,
 	on_start = function(self)
 		if not core.localplayer then return true end
 		local it = core.localplayer:get_wielded_item()
 		if it.type ~= "node" then return true end
-		multiscaff_node = it:get_name()
-		if not multiscaff_node then return true end
-		-- nodes_per_tick now read directly from settings
+		self._node = it:get_name()
+		if not self._node then return true end
 	end,
 })
 
 
 
-local lightblock = nil
 ws.rg("LanternTBM", { category = "Place", setting = "place_ltbm", description = "Place lanterns on ceilings",
 	on_step = function(self)
 		local dir = ws.getdir()
 		local lp = vector.round(ws.dircoord(0, 0, 0))
 		local pl = is_lantern(lp)
 		local ypos = tonumber(core.settings:get("place_ltbm.depth")) or 1
-		if lightblock and pl then
+		if self._node and pl then
 			local lpos = ws.dircoord(0, ypos, 0)
 			local nd = core.get_node_or_nil(lpos)
-			if nd and nd.name ~= lightblock then
+			if nd and nd.name ~= self._node then
 				ws.dig(lpos)
-				ws.place(lpos, lightblock, 5)
+				ws.place(lpos, self._node, 5)
 			end
 		end
 	end,
 	on_start = function(self)
-		lightblock = core.localplayer:get_wielded_item():get_name()
-	end,
-	on_stop = function(self)
+		self._node = core.localplayer:get_wielded_item():get_name()
 	end,
 })
 

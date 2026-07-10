@@ -86,6 +86,16 @@ function ws.string_to_pos(pos)
 	return pos
 end
 
+function ws.get_number(setting, key, default)
+	return tonumber(core.settings:get(setting .. "." .. key)) or default
+end
+
+function ws.get_bool(setting, key, default)
+	local v = core.settings:get(setting .. "." .. key)
+	if v == "" then return default end
+	return v == "true"
+end
+
 function ws.between(x, y, z)
 	return y <= x and x <= z
 end

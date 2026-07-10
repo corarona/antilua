@@ -105,7 +105,7 @@ handle_mapart_events = function(fields)
 								pixels[#pixels + 1] = 0; pixels[#pixels + 1] = 0
 								pixels[#pixels + 1] = 0; pixels[#pixels + 1] = 0
 							else
-								local best = find_closest(r, g, b, false, palette)
+								local best = find_closest(r, g, b, false, mapart.palette)
 								if best then
 									pixels[#pixels + 1] = best.r
 									pixels[#pixels + 1] = best.g
@@ -169,7 +169,7 @@ handle_mapart_events = function(fields)
 		s.mode = mode
 		s.filter = filter
 
-		local pal = palette
+		local pal = mapart.palette
 		if do_invonly then
 			pal = build_inv_palette()
 			if not pal or #pal == 0 then

@@ -9,7 +9,7 @@ end
 
 -- Find closest palette entry (RGB Euclidean distance)
 local function find_closest(r, g, b, use_gamma, pal_override)
-	local pal = pal_override or palette
+	local pal = pal_override or mapart.palette
 	local best_idx, best_dist = nil, math.huge
 	for i, entry in ipairs(pal) do
 		local dr, dg, db

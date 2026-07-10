@@ -119,26 +119,20 @@ local function fill_grid(recipe)
 
 	for i = 1, 9 do
 		local needed = recipe.grid[i]
-		if not needed or needed:is_empty() then
-			goto continue
+		if needed and not needed:is_empty() then
+			local cur = inv.craft[i]
+			local cur_count = (cur and not cur:is_empty() and cur:get_name() == needed:get_name()) and cur:get_count() or 0
+			local need = needed:get_count()
+
+			if cur_count < need then
+				local missing = need - cur_count
+				local slots = find_slots(inv, needed:get_name(), missing)
+				if not slots then
+					return false
+				end
+				ws.move_stack("current_player", "main", slots[1].idx, "current_player", "craft", i, missing)
+			end
 		end
-
-		local cur = inv.craft[i]
-		local cur_count = (cur and not cur:is_empty() and cur:get_name() == needed:get_name()) and cur:get_count() or 0
-		local need = needed:get_count()
-
-		if cur_count >= need then
-			goto continue
-		end
-
-		local missing = need - cur_count
-		local slots = find_slots(inv, needed:get_name(), missing)
-		if not slots then
-			return false
-		end
-
-		ws.move_stack("current_player", "main", slots[1].idx, "current_player", "craft", i, missing)
-		::continue::
 	end
 	return true
 end

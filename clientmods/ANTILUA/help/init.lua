@@ -77,20 +77,20 @@ local function show_keybinds()
 	local y = 0.6
 	local order = {"Cheat Menu", "Cheat Toggles", "Movement", "Interaction", "Camera", "UI", "Other"}
 	for _, cat in ipairs(order) do
-		if not cats[cat] then goto skip end
-		table.sort(cats[cat])
-		fs = fs .. "label[0," .. y .. ";■ " .. cat .. "]"
-		y = y + 0.55
-		for _, name in ipairs(cats[cat]) do
-			if y > 11 then break end
-			local val = core.settings:get(name) or ""
-			local action = name:gsub("^keymap_", "")
-			fs = fs .. "label[0.5," .. y .. ";" .. core.formspec_escape(action) .. "]"
-			fs = fs .. "label[7," .. y .. ";" .. core.formspec_escape(format_key(val)) .. "]"
-			y = y + 0.45
+		if cats[cat] then
+			table.sort(cats[cat])
+			fs = fs .. "label[0," .. y .. ";■ " .. cat .. "]"
+			y = y + 0.55
+			for _, name in ipairs(cats[cat]) do
+				if y > 11 then break end
+				local val = core.settings:get(name) or ""
+				local action = name:gsub("^keymap_", "")
+				fs = fs .. "label[0.5," .. y .. ";" .. core.formspec_escape(action) .. "]"
+				fs = fs .. "label[7," .. y .. ";" .. core.formspec_escape(format_key(val)) .. "]"
+				y = y + 0.45
+			end
+			y = y + 0.25
 		end
-		y = y + 0.25
-		::skip::
 	end
 	fs = fs .. "button[5," .. math.min(y + 0.3, 11.5) .. ";3,0.8;__close;Close]"
 	core.show_formspec("help:keybinds", fs)

@@ -1,4 +1,5 @@
 local function invrestore()
+	if not core.localplayer then core.after(1, invrestore) return end
 	local hp = core.localplayer:get_hp()
 	if hp > 0 then
 		ws.ectoinv()
