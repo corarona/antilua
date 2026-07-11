@@ -172,7 +172,7 @@ core.register_cheat("FormspecBlocker", { category = "Interact", setting = "forms
 	description = "Block server formspecs from showing" })
 
 local function inject_trash_button(formname, formspec)
-	if formname ~= "" then
+	if not formspec or formname ~= "" then
 		return nil
 	end
 	local btn = "button[7.5,4.5;1,0.5;trash;Trash]"
