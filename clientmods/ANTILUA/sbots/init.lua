@@ -259,8 +259,18 @@ if nlist then
 		end,
 		do_pos = function(self, pos)
 			local nn = core.find_nodes_near(pos, ws.range or 4, nlist.get(nlist.selected), true)
-			if not nn or #nn == 0 then return true end
-			for _, v in pairs(nn) do ws.dig(v) end
+			return not nn or #nn == 0
+		end,
+		do_step = function(self, dtime)
+			local pos = core.localplayer:get_pos()
+			if not pos then return end
+			local nn = core.find_nodes_near(pos, ws.range or 4, nlist.get(nlist.selected), true)
+			if not nn then return end
+			local npt = ws.get_nodes_per_tick()
+			for i, v in ipairs(nn) do
+				if i > npt then break end
+				ws.dig(v)
+			end
 		end,
 	})
 end
