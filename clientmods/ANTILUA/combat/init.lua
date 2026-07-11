@@ -65,6 +65,12 @@ local function is_mob(obj)
 		and (m:find("mobs_mc") or m:find("extra_mobs"))
 end
 
+local function is_hostile_mob(obj)
+	if not is_mob(obj) then return false end
+	local le = obj:get_luaentity()
+	return le and le.type == "monster"
+end
+
 local function get_target_name(obj)
 	if obj:is_player() then
 		return obj:get_name()
@@ -164,30 +170,47 @@ core.register_on_damage_taken(function(amount)
 	end)
 end)
 
+local function mob_filter(obj)
+	if not is_mob(obj) then return false end
+	local attack_all = core.settings:get_bool("killaura.attack_all_mobs")
+	local attack_hostile = core.settings:get_bool("killaura.attack_hostile_mobs")
+	if attack_all then return true end
+	if attack_hostile and is_hostile_mob(obj) then return true end
+	return false
+end
+
 local function make_filter(mode)
 	mode = resolve_mode(mode)
 	if mode == "aggressive" then
 		return function(obj)
-			return obj and not obj:is_local_player()
-				and (obj:is_player() and not_in_friendlist(obj) or is_mob(obj))
+			if not obj or obj:is_local_player() then return false end
+			if obj:is_player() and not_in_friendlist(obj) then return true end
+			return mob_filter(obj)
 		end
 	elseif mode == "neutral" then
 		return function(obj)
-			return obj and obj:is_player() and in_enemylist(obj) and not obj:is_local_player()
+			if obj and obj:is_player() and in_enemylist(obj) and not obj:is_local_player() then
+				return true
+			end
+			return mob_filter(obj)
 		end
 	elseif mode == "retaliate" then
 		return function(obj)
 			if not obj or obj:is_local_player() then return false end
-			if not obj:is_player() then return false end
-			if in_enemylist(obj) then return true end
-			return not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil
+			if obj:is_player() then
+				if in_enemylist(obj) then return true end
+				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then return true end
+			end
+			return mob_filter(obj)
 		end
 	elseif mode == "guard" then
 		return function(obj)
 			if not obj or obj:is_local_player() then return false end
-			if not obj:is_player() then return false end
-			if in_enemylist(obj) then return true end
-			return not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil
+			if obj:is_player() then
+				if in_enemylist(obj) then return true end
+				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then return true end
+			end
+			return mob_filter(obj)
 		end
 	elseif mode == "hunter" then
 		local threshold = killaura.get("hunter_threshold")
@@ -197,7 +220,8 @@ local function make_filter(mode)
 				local hp = obj:get_hp() or 0
 				if hp > 0 and hp < threshold then return true end
 			end
-			return in_enemylist(obj)
+			if in_enemylist(obj) then return true end
+			return mob_filter(obj)
 		end
 	end
 end
@@ -333,6 +357,8 @@ ws.rg("Killaura", {
 	cheat_settings = {
 		hit_y = { type = "number", default = -0.1, min = -5, max = 5 },
 		range = { type = "number", default = 10, min = 1, max = 30 },
+		attack_hostile_mobs = { type = "bool", default = false },
+		attack_all_mobs = { type = "bool", default = false },
 		target_mode = {
 			type = "enum",
 			default = "aggressive",
