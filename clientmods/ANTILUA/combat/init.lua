@@ -58,17 +58,30 @@ local function in_enemylist(obj)
 end
 
 local function is_mob(obj)
-	local p = obj and obj:get_properties()
-	local r = obj and obj:get_rotation()
-	local m = p and p.mesh
-	return p and r and r.z == 0 and m
-		and (m:find("mobs_mc") or m:find("extra_mobs"))
+	if not obj then return false end
+	local name = obj:get_name() or ""
+	return name:find("mobs_mc:") == 1 or name:find("extra_mobs:") == 1
 end
 
+local PASSIVE_MOBS = {
+	"mobs_mc:cow", "mobs_mc:sheep", "mobs_mc:chicken", "mobs_mc:pig",
+	"mobs_mc:rabbit", "mobs_mc:horse", "mobs_mc:donkey", "mobs_mc:mule",
+	"mobs_mc:llama", "mobs_mc:parrot", "mobs_mc:ocelot", "mobs_mc:cat",
+	"mobs_mc:wolf", "mobs_mc:fox", "mobs_mc:panda", "mobs_mc:polar_bear",
+	"mobs_mc:villager", "mobs_mc:iron_golem", "mobs_mc:snowman",
+	"mobs_mc:squid", "mobs_mc:dolphin", "mobs_mc:turtle", "mobs_mc:bat",
+	"mobs_mc:salmon", "mobs_mc:cod", "mobs_mc:tropical_fish",
+	"mobs_mc:pufferfish", "mobs_mc:axolotl", "mobs_mc:goat",
+	"mobs_mc:bee", "mobs_mc:strider",
+}
+
 local function is_hostile_mob(obj)
-	if not is_mob(obj) then return false end
-	local le = obj:get_luaentity()
-	return le and le.type == "monster"
+	local name = obj and obj:get_name() or ""
+	if name:find("mobs_mc:") ~= 1 then return false end
+	for _, p in ipairs(PASSIVE_MOBS) do
+		if name == p then return false end
+	end
+	return true
 end
 
 local function get_target_name(obj)
