@@ -258,7 +258,7 @@ if nlist then
 			return sbots.find_nearest(pos, nlist.get(nlist.selected), 60)
 		end,
 		do_pos = function(self, pos)
-			local nn = core.find_nodes_near(pos, 1, nlist.get(nlist.selected), true)
+			local nn = core.find_nodes_near(pos, ws.range or 4, nlist.get(nlist.selected), true)
 			if not nn or #nn == 0 then return true end
 			for _, v in pairs(nn) do ws.dig(v) end
 		end,
