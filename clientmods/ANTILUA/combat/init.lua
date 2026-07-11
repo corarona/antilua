@@ -1,23 +1,44 @@
 local killaura = {
-	hph = 1,
 	hit_y = -0.1,
 	damage_log = {},
 	friend_hp_cache = {},
+}
+
+local punch_ctx = {
+	obj = nil,
+	remaining = 0,
+	max_burst = 8,
+	interval = 0.05,
 }
 
 function killaura.get(key)
 	return ws.get_number("killaura", key) or killaura[key]
 end
 
-function killaura.punch_object(obj)
-	local pos = core.localplayer:get_pos()
-	local lv = core.localplayer:get_velocity()
-	core.localplayer:set_velocity(vector.new(0, killaura.get("hit_y"), 0))
-	for i = 1, killaura.get("hph") do
-		obj:punch()
+local function do_punch_step()
+	if not punch_ctx.obj then return end
+	if not core.localplayer then return end
+	if not punch_ctx.obj:get_pos() then
+		punch_ctx.obj = nil
+		return
 	end
-	core.localplayer:set_velocity(lv)
-	core.localplayer:set_pos(pos)
+	punch_ctx.obj:punch()
+	punch_ctx.remaining = punch_ctx.remaining - 1
+	if punch_ctx.remaining > 0 then
+		core.after(punch_ctx.interval, do_punch_step)
+	end
+end
+
+function killaura.queue_punches(obj, count)
+	if not obj or not obj:get_pos() then return end
+	if punch_ctx.obj and punch_ctx.obj ~= obj then
+		punch_ctx.remaining = 0
+	end
+	punch_ctx.obj = obj
+	punch_ctx.remaining = count
+	if punch_ctx.remaining > 0 then
+		core.after(0, do_punch_step)
+	end
 end
 
 local function not_in_friendlist(obj)
@@ -184,7 +205,7 @@ end
 -- Expose killaura helpers for PatrolGuard bot and external mods
 _G.killaura = {
 	get = killaura.get,
-	punch_object = killaura.punch_object,
+	queue_punches = killaura.queue_punches,
 	make_filter = make_filter,
 	resolve_mode = resolve_mode,
 	not_in_friendlist = not_in_friendlist,
@@ -252,13 +273,15 @@ local function hit_objects(radius, filter)
 	local closest_dist = math.huge
 	for _, obj in pairs(core.get_objects_inside_radius(lp, radius)) do
 		if not filter or filter(obj) then
-			killaura.punch_object(obj)
 			local dist = vector.distance(lp, obj:get_pos())
 			if dist < closest_dist then
 				closest_obj = obj
 				closest_dist = dist
 			end
 		end
+	end
+	if closest_obj then
+		killaura.queue_punches(closest_obj, 8)
 	end
 	return closest_obj
 end
@@ -308,7 +331,6 @@ ws.rg("Killaura", {
 		end
 	end,
 	cheat_settings = {
-		hph = { type = "number", default = 1, min = 1, max = 10 },
 		hit_y = { type = "number", default = -0.1, min = -5, max = 5 },
 		range = { type = "number", default = 10, min = 1, max = 30 },
 		target_mode = {
@@ -455,14 +477,22 @@ core.register_on_mods_loaded(function()
 		do_pos = function(self, pos)
 			local mode = resolve_mode(core.settings:get("killaura.target_mode"))
 			local filter = make_filter(mode)
-			local any_hit = false
+			local target = nil
+			local closest = math.huge
 			for _, obj in pairs(core.get_objects_inside_radius(pos, 5)) do
 				if filter and filter(obj) then
-					killaura.punch_object(obj)
-					any_hit = true
+					local d = vector.distance(pos, obj:get_pos())
+					if d < closest then
+						closest = d
+						target = obj
+					end
 				end
 			end
-			return not any_hit
+			if target then
+				killaura.queue_punches(target, 8)
+				return false
+			end
+			return true
 		end,
 		do_step = function(self, dtime)
 			local mode = resolve_mode(core.settings:get("killaura.target_mode"))
