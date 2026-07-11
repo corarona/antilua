@@ -15,6 +15,16 @@ core.register_on_death(function()
 	end
 end)
 
+-- Modern servers (protocol 46+) handle death via __builtin:death formspec
+-- instead of the legacy DEATHSCREEN packet, so register_on_death won't fire.
+-- Intercept the formspec to auto-respawn.
+core.register_on_receiving_formspec(function(formname, formspec)
+	if formname == "__builtin:death" and core.settings:get_bool("autorespawn") then
+		core.send_respawn()
+		return ""
+	end
+end)
+
 core.register_on_formspec_input(function(formname, fields)
 	if formname == "builtin:death" then
 		if fields.btn_ghost_mode then
