@@ -255,7 +255,7 @@ if nlist then
 	sbots.register_bot("listDigBot", {
 		description = "Bot that digs nodes from a list",
 		find_pos = function(self, pos)
-			return sbots.find_nearest(pos, 60, nlist.get(nlist.selected))
+			return sbots.find_nearest(pos, nlist.get(nlist.selected), 60)
 		end,
 		do_pos = function(self, pos)
 			local nn = core.find_nodes_near(pos, 1, nlist.get(nlist.selected), true)
