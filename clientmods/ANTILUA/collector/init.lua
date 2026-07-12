@@ -25,18 +25,20 @@ local function get_excess_slots()
 		end
 	end
 	local slots = {}
-	local seen_excess = {}
+	local remaining = {}
 	for i, stack in ipairs(inv.main) do
 		if not stack:is_empty() then
 			local name = stack:get_name()
 			if name ~= "mcl_chests:chest" and name ~= "mcl_chests:chest_trapped"
 					and not name:find("^mcl_shulker") then
 				local init_total = initial_counts[name] or 0
-				if current_counts[name] > init_total and not seen_excess[name] then
-					table.insert(slots, {idx = i, name = name,
-						count = stack:get_count(),
-						excess = current_counts[name] - init_total})
-					seen_excess[name] = true
+				local extra = current_counts[name] - init_total
+				if extra > 0 then
+					local to_move = math.min(stack:get_count(), extra - (remaining[name] or 0))
+					if to_move > 0 then
+						table.insert(slots, {idx = i, count = to_move})
+						remaining[name] = (remaining[name] or 0) + to_move
+					end
 				end
 			end
 		end
@@ -130,7 +132,7 @@ sbots.register_bot("ItemCollector", {
 				end
 				local slot = table.remove(self._deposit_pending)
 				local cloc = "nodemeta:" .. self._chest_pos.x .. "," .. self._chest_pos.y .. "," .. self._chest_pos.z
-				ws.move_stack("current_player", "main", slot.idx, cloc, "main", slot.idx)
+				ws.move_stack("current_player", "main", slot.idx, cloc, "main", slot.idx, slot.count)
 			end
 			return
 		end
