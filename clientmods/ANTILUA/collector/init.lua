@@ -17,23 +17,27 @@ end
 local function get_excess_slots()
 	local inv = core.get_inventory("current_player")
 	if not inv then return {} end
-	-- Find slots whose item+count exceed the initial total for that item
 	local current_counts = {}
-	local slots = {}
-	for i, stack in ipairs(inv.main) do
+	for _, stack in ipairs(inv.main) do
 		if not stack:is_empty() then
 			local name = stack:get_name()
 			current_counts[name] = (current_counts[name] or 0) + stack:get_count()
 		end
 	end
+	local slots = {}
+	local seen_excess = {}
 	for i, stack in ipairs(inv.main) do
 		if not stack:is_empty() then
 			local name = stack:get_name()
-			local init_total = initial_counts[name] or 0
-			if current_counts[name] > init_total then
-				table.insert(slots, {idx = i, name = name,
-					count = stack:get_count(),
-					excess = current_counts[name] - init_total})
+			if name ~= "mcl_chests:chest" and name ~= "mcl_chests:chest_trapped"
+					and not name:find("^mcl_shulker") then
+				local init_total = initial_counts[name] or 0
+				if current_counts[name] > init_total and not seen_excess[name] then
+					table.insert(slots, {idx = i, name = name,
+						count = stack:get_count(),
+						excess = current_counts[name] - init_total})
+					seen_excess[name] = true
+				end
 			end
 		end
 	end
