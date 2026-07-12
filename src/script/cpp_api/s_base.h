@@ -61,6 +61,9 @@ class Environment;
 class GUIEngine;
 class SSCSMEnvironment;
 class ServerActiveObject;
+#if CHECK_CLIENT_BUILD()
+class ClientActiveObject;
+#endif
 struct PlayerHPChangeReason;
 struct ModVFS;
 
@@ -89,6 +92,10 @@ public:
 	/* object */
 	void addObjectReference(ServerActiveObject *cobj);
 	void removeObjectReference(ServerActiveObject *cobj);
+#if CHECK_CLIENT_BUILD()
+	void addClientObjectRef(ClientActiveObject *cobj);
+	void removeClientObjectRef(ClientActiveObject *cobj);
+#endif
 
 	ScriptingType getType() { return m_type; }
 

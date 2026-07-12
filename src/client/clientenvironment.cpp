@@ -306,6 +306,8 @@ u16 ClientEnvironment::addActiveObject(std::unique_ptr<ClientActiveObject> objec
 	if (!m_ao_manager.registerObject(std::move(object)))
 		return 0;
 
+	if (m_script)
+		m_script->addClientObjectRef(obj);
 	obj->addToScene(m_texturesource, m_client->getSceneManager());
 
 	// Update lighting immediately
@@ -360,6 +362,12 @@ void ClientEnvironment::addActiveObject(u16 id, u8 type,
 
 void ClientEnvironment::removeActiveObject(u16 id)
 {
+	// Remove from Lua object refs before the object is destroyed
+	if (m_script) {
+		if (auto *obj = getActiveObject(id))
+			m_script->removeClientObjectRef(obj);
+	}
+
 	// Get current attachment childs to detach them visually
 	std::unordered_set<ClientActiveObject::object_t> attachment_childs;
 	if (auto *obj = getActiveObject(id))

@@ -16,6 +16,7 @@
 #include "client/client.h"
 #include "client/mod_vfs.h"
 #include "sscsm/sscsm_environment.h"
+#include "lua_api/l_clientobject.h"
 #endif
 
 #if BUILD_WITH_TRACY
@@ -498,6 +499,48 @@ void ScriptApiBase::removeObjectReference(ServerActiveObject *cobj)
 	lua_pushnil(L);
 	lua_setfield(L, objectstable, cobj->getGUID().c_str());
 }
+
+#if CHECK_CLIENT_BUILD()
+void ScriptApiBase::addClientObjectRef(ClientActiveObject *cobj)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	ClientObjectRef::create(L, cobj);
+	int object = lua_gettop(L);
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "object_refs");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	int objtable = lua_gettop(L);
+
+	lua_pushinteger(L, cobj->getId());
+	lua_pushvalue(L, object);
+	lua_settable(L, objtable);
+
+	lua_pop(L, 2); // core, object_refs
+}
+
+void ScriptApiBase::removeClientObjectRef(ClientActiveObject *cobj)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "object_refs");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	int objtable = lua_gettop(L);
+
+	lua_pushinteger(L, cobj->getId());
+	lua_gettable(L, objtable);
+	ClientObjectRef::set_null(L);
+	lua_pop(L, 1);
+
+	lua_pushinteger(L, cobj->getId());
+	lua_pushnil(L);
+	lua_settable(L, objtable);
+
+	lua_pop(L, 2); // core, object_refs
+}
+#endif
 
 void ScriptApiBase::objectrefGetOrCreate(lua_State *L, ServerActiveObject *cobj)
 {
