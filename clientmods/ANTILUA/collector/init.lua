@@ -131,10 +131,16 @@ sbots.register_bot("ItemCollector", {
 			return
 		end
 
-		local excess = get_excess_slots()
-		if #excess > 0 then
-			self._deposit_phase = 1
-			self.stage = 0
+		local inv = core.get_inventory("current_player")
+		if inv then
+			local free = 0
+			for _, stack in ipairs(inv.main) do
+				if stack:is_empty() then free = free + 1 end
+			end
+			if free <= 2 and #get_excess_slots() > 0 then
+				self._deposit_phase = 1
+				self.stage = 0
+			end
 		end
 	end,
 	on_activate = function(self)
