@@ -410,112 +410,139 @@ end)
 -- PatrolGuard bot (deferred until all mods loaded so sbots/poi exist)
 --
 
-core.register_on_mods_loaded(function()
-	if not sbots or not poi then
-		return
-	end
 
-	sbots.register_bot("PatrolGuard", {
-		description = "Patrol area and engage targets using killaura strategy",
-		cheat_settings = {
-			scan_range = { type = "number", default = 50, min = 10, max = 200 },
-			target_mode = {
-				type = "enum",
-				default = "aggressive",
-				values = {"aggressive", "neutral", "retaliate", "guard", "hunter"},
-			},
-			patrol_waypoints = { type = "string", default = "" },
-			patrol_radius = { type = "number", default = 50, min = 10, max = 500 },
+sbots.register_bot("PatrolGuard", {
+	description = "Patrol area and engage targets using killaura strategy",
+	cheat_settings = {
+		scan_range = { type = "number", default = 50, min = 10, max = 200 },
+		target_mode = {
+			type = "enum",
+			default = "aggressive",
+			values = {"aggressive", "neutral", "retaliate", "guard", "hunter"},
 		},
-		movement = "walk",
-		stand_waiting = true,
-		moving_target = true,
-		landing_distance = 3,
-		find_pos = function(self, pos)
-			local mode = resolve_mode(core.settings:get("killaura.target_mode"))
-			local filter = make_filter(mode)
-			local scan_range = tonumber(core.settings:get("patrolguard.scan_range")) or 50
+		patrol_waypoints = { type = "string", default = "" },
+		patrol_radius = { type = "number", default = 50, min = 10, max = 500 },
+	},
+	movement = "walk",
+	stand_waiting = true,
+	moving_target = true,
+	landing_distance = 3,
+	find_pos = function(self, pos)
+		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
+		local filter = make_filter(mode)
+		local scan_range = tonumber(core.settings:get("patrolguard.scan_range")) or 50
 
-			local closest = nil
-			local closest_dist = math.huge
-			for _, obj in pairs(core.get_objects_inside_radius(pos, scan_range)) do
-				if filter and filter(obj) then
-					local d = vector.distance(pos, obj:get_pos())
-					if d < closest_dist then
-						closest = obj
-						closest_dist = d
-					end
+		local closest = nil
+		local closest_dist = math.huge
+		for _, obj in pairs(core.get_objects_inside_radius(pos, scan_range)) do
+			if filter and filter(obj) then
+				local d = vector.distance(pos, obj:get_pos())
+				if d < closest_dist then
+					closest = obj
+					closest_dist = d
 				end
 			end
-			if closest then
-				return closest:get_pos()
-			end
+		end
+		if closest then
+			return closest:get_pos()
+		end
 
-			local wp_str = core.settings:get("patrolguard.patrol_waypoints") or ""
-			local wps = {}
-			for name in wp_str:gmatch("[^,]+") do
-				local t = name:match("^%s*(.-)%s*$")
-				if t and #t > 0 then
-					table.insert(wps, t)
-				end
+		local wp_str = core.settings:get("patrolguard.patrol_waypoints") or ""
+		local wps = {}
+		for name in wp_str:gmatch("[^,]+") do
+			local t = name:match("^%s*(.-)%s*$")
+			if t and #t > 0 then
+				table.insert(wps, t)
 			end
-			if #wps > 0 then
-				if not self._patrol_idx then self._patrol_idx = 0 end
-				self._patrol_idx = self._patrol_idx + 1
-				if self._patrol_idx > #wps then
-					self._patrol_idx = 1
-				end
-				local wp_pos = poi.get_waypoint(wps[self._patrol_idx])
-				if wp_pos then
-					return wp_pos
-				end
+		end
+		if #wps > 0 then
+			if not self._patrol_idx then self._patrol_idx = 0 end
+			self._patrol_idx = self._patrol_idx + 1
+			if self._patrol_idx > #wps then
+				self._patrol_idx = 1
 			end
+			local wp_pos = poi.get_waypoint(wps[self._patrol_idx])
+			if wp_pos then
+				return wp_pos
+			end
+		end
 
-			local radius = tonumber(core.settings:get("patrolguard.patrol_radius")) or 50
-			local origin = self.orig_pos or pos
-			return {
-				x = origin.x + math.random(-radius, radius),
-				y = origin.y,
-				z = origin.z + math.random(-radius, radius),
-			}
-		end,
-		update_pos = function(self, pos)
-			local mode = resolve_mode(core.settings:get("killaura.target_mode"))
-			local filter = make_filter(mode)
-			local scan_range = tonumber(core.settings:get("patrolguard.scan_range")) or 50
+		local radius = tonumber(core.settings:get("patrolguard.patrol_radius")) or 50
+		local origin = self.orig_pos or pos
+		return {
+			x = origin.x + math.random(-radius, radius),
+			y = origin.y,
+			z = origin.z + math.random(-radius, radius),
+		}
+	end,
+	update_pos = function(self, pos)
+		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
+		local filter = make_filter(mode)
+		local scan_range = tonumber(core.settings:get("patrolguard.scan_range")) or 50
 
-			for _, obj in pairs(core.get_objects_inside_radius(pos, scan_range)) do
-				if filter and filter(obj) then
-					return obj:get_pos()
-				end
+		for _, obj in pairs(core.get_objects_inside_radius(pos, scan_range)) do
+			if filter and filter(obj) then
+				return obj:get_pos()
 			end
-			return self.target_pos
-		end,
-		do_pos = function(self, pos)
-			local mode = resolve_mode(core.settings:get("killaura.target_mode"))
-			local filter = make_filter(mode)
-			local any_hit = false
-			for _, obj in pairs(core.get_objects_inside_radius(pos, 5)) do
-				if filter and filter(obj) then
-					killaura.punch_object(obj)
-					any_hit = true
-				end
+		end
+		return self.target_pos
+	end,
+	do_pos = function(self, pos)
+		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
+		local filter = make_filter(mode)
+		local any_hit = false
+		for _, obj in pairs(core.get_objects_inside_radius(pos, 5)) do
+			if filter and filter(obj) then
+				killaura.punch_object(obj)
+				any_hit = true
 			end
-			return not any_hit
-		end,
-		do_step = function(self, dtime)
-			local mode = resolve_mode(core.settings:get("killaura.target_mode"))
-			if mode == "guard" then
-				track_friend_hp()
-			end
+		end
+		return not any_hit
+	end,
+	do_step = function(self, dtime)
+		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
+		if mode == "guard" then
+			track_friend_hp()
+		end
 
-		local now = core.get_us_time() / 1000000
-			local timeout = killaura.get("retaliate_timeout")
-			for name, entry in pairs(killaura.damage_log) do
-				if now - entry.time > timeout then
-					killaura.damage_log[name] = nil
-				end
+	local now = core.get_us_time() / 1000000
+		local timeout = killaura.get("retaliate_timeout")
+		for name, entry in pairs(killaura.damage_log) do
+			if now - entry.time > timeout then
+				killaura.damage_log[name] = nil
 			end
-		end,
-	})
-end)
+		end
+	end,
+})
+
+sbots.register_bot("KillauraBot", {
+	description = "Hunt and attack targets using killaura logic",
+	movement = "walk",
+	stand_waiting = true,
+	moving_target = true,
+	landing_distance = tonumber(core.settings:get("killaura.range")) or 10,
+	find_pos = function(self, pos)
+		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
+		local filter = make_filter(mode)
+		local range = tonumber(core.settings:get("killaurabot.scan_range")) or 50
+		local closest, closest_d = nil, math.huge
+		for _, obj in pairs(core.get_objects_inside_radius(pos, range)) do
+			if filter and filter(obj) then
+				local d = vector.distance(pos, obj:get_pos())
+				if d < closest_d then closest, closest_d = obj, d end
+			end
+		end
+		return closest and closest:get_pos()
+	end,
+	do_pos = function(self, pos)
+		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
+		local filter = make_filter(mode)
+		for _, obj in pairs(core.get_objects_inside_radius(pos, killaura.get("range"))) do
+			if filter and filter(obj) then return false end
+		end
+		return true
+	end,
+	cheat_settings = {
+		scan_range = { type = "number", default = 50, min = 10, max = 200 },
+	},
+})
