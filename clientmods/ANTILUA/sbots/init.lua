@@ -1,6 +1,6 @@
 sbots = {}
 
-local death_positions = {}  -- bot_name → {x, y, z}
+local death_pos = nil  -- single death position for the local player
 
 local movement_strategies = {}
 
@@ -171,16 +171,15 @@ function sbots.register_bot(name, def)
 			-- Death return: if pending, set target and check arrival
 			if not bot._return_target and bot.active and
 					core.settings:get_bool(bot._setting .. ".return_after_death", true) then
-				local dp = death_positions[bot._setting]
-				if dp and vector.distance(lp, dp) >= 3 then
-					bot._return_target = dp
-				elseif dp then
-					death_positions[bot._setting] = nil
+				if death_pos and vector.distance(lp, death_pos) >= 3 then
+					bot._return_target = death_pos
+				elseif death_pos then
+					death_pos = nil
 				end
 			end
 			if bot._return_target and vector.distance(lp, bot._return_target) < 3 then
 				bot._return_target = nil
-				death_positions[bot._setting] = nil
+				death_pos = nil
 			end
 
 			if bot.stage == 0 then
@@ -206,7 +205,7 @@ function sbots.register_bot(name, def)
 				if not bot.target_pos then return end
 				if bot._return_target and vector.distance(lp, bot._return_target) < 3 then
 					bot._return_target = nil
-					death_positions[bot._setting] = nil
+					death_pos = nil
 					bot.stage = 0
 					return
 				end
@@ -281,9 +280,10 @@ end
 core.register_on_death(function()
 	if not core.localplayer then return end
 	local pos = vector.round(core.localplayer:get_pos())
-	for name, bot in pairs(registered_bots) do
+	for _, bot in pairs(registered_bots) do
 		if bot.active and core.settings:get_bool(bot._setting .. ".return_after_death", true) then
-			death_positions[name] = pos
+			death_pos = pos
+			break
 		end
 	end
 end)
