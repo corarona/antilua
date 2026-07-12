@@ -515,6 +515,22 @@ sbots.register_bot("PatrolGuard", {
 	end,
 })
 
+local function is_projectile(obj)
+	if not obj then return false end
+	local name = obj:get_name() or ""
+	if name == "mcl_bows:arrow_entity" then return true end
+	if name == "mcl_throwing:snowball_entity" or name == "mcl_throwing:egg_entity"
+			or name == "mcl_throwing:ender_pearl_entity" then return true end
+	if name == "mcl_tridents:trident" or name == "mcl_experience:bottle" then return true end
+	if name:find("^mcl_potions:.*_splash_flying$") then return true end
+	if name:find("^mcl_potions:.*_lingering_flying$") then return true end
+	if name:find("^mobs_mc:.*fireball$") or name == "mobs_mc:dragon_fireball" then return true end
+	if name:find("^mobs_mc:wither_skull") then return true end
+	if name == "mobs_mc:shulker_bullet" then return true end
+	if name == "mobs_mc:llama_spit" then return true end
+	return false
+end
+
 sbots.register_bot("KillauraBot", {
 	description = "Hunt and attack targets using killaura logic",
 	movement = "walk",
@@ -542,7 +558,26 @@ sbots.register_bot("KillauraBot", {
 		end
 		return true
 	end,
+	do_step = function(self, dtime)
+		if not core.settings:get_bool("killaurabot.projectile_evade") then return end
+		local lp = core.localplayer:get_pos()
+		if not lp then return end
+		local range = tonumber(core.settings:get("killaurabot.evade_range")) or 5
+		for _, obj in pairs(core.get_objects_inside_radius(lp, range)) do
+			if is_projectile(obj) then
+				local ppos = obj:get_pos()
+				if ppos then
+					local dir = vector.direction(lp, ppos)
+					local evade = vector.add(lp, {x = dir.z * 3, y = 0.5, z = -dir.x * 3})
+					core.localplayer:set_pos(evade)
+				end
+				break
+			end
+		end
+	end,
 	cheat_settings = {
 		scan_range = { type = "number", default = 50, min = 10, max = 200 },
+		projectile_evade = { type = "bool", default = false },
+		evade_range = { type = "number", default = 5, min = 2, max = 15 },
 	},
 })
