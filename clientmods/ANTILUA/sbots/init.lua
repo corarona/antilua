@@ -1,5 +1,7 @@
 sbots = {}
 
+local death_positions = {}  -- bot_name → {x, y, z}
+
 local movement_strategies = {}
 
 movement_strategies.walk = {
@@ -151,6 +153,7 @@ function sbots.register_bot(name, def)
 	}
 	bot_settings.patrol_waypoints = { type = "string", default = "" }
 	bot_settings.patrol_cycle = { type = "bool", default = true }
+	bot_settings.return_after_death = { type = "bool", default = true }
 
 	def._setting = tn:lower()
 	registered_bots[tn] = def
@@ -164,8 +167,26 @@ function sbots.register_bot(name, def)
 			if not bot then return end
 			local strategy = movement_strategies[bot.movement] or movement_strategies.walk
 			local lp = core.localplayer:get_pos()
+
+			-- Death return: if pending, set target and check arrival
+			if not bot._return_target and bot.active and
+					core.settings:get_bool(bot._setting .. ".return_after_death", true) then
+				local dp = death_positions[bot._setting]
+				if dp and vector.distance(lp, dp) >= 3 then
+					bot._return_target = dp
+				elseif dp then
+					death_positions[bot._setting] = nil
+				end
+			end
+			if bot._return_target and vector.distance(lp, bot._return_target) < 3 then
+				bot._return_target = nil
+				death_positions[bot._setting] = nil
+			end
+
 			if bot.stage == 0 then
-				if strategy.on_find then
+				if bot._return_target then
+					bot.target_pos = bot._return_target
+				elseif strategy.on_find then
 					bot.target_pos = strategy.on_find(bot, lp)
 				else
 					bot.target_pos = bot:find_pos(lp)
@@ -183,6 +204,12 @@ function sbots.register_bot(name, def)
 				end
 			elseif bot.stage == 1 then
 				if not bot.target_pos then return end
+				if bot._return_target and vector.distance(lp, bot._return_target) < 3 then
+					bot._return_target = nil
+					death_positions[bot._setting] = nil
+					bot.stage = 0
+					return
+				end
 				strategy.on_step(bot, lp)
 				if strategy.requires_movement and
 						vector.distance(lp, bot.target_pos) < bot.landing_distance then
@@ -250,6 +277,16 @@ function sbots.register_bot(name, def)
 		cheat_settings = bot_settings,
 	})
 end
+
+core.register_on_death(function()
+	if not core.localplayer then return end
+	local pos = vector.round(core.localplayer:get_pos())
+	for name, bot in pairs(registered_bots) do
+		if bot.active and core.settings:get_bool(bot._setting .. ".return_after_death", true) then
+			death_positions[name] = pos
+		end
+	end
+end)
 
 if nlist then
 	sbots.register_bot("listDigBot", {
