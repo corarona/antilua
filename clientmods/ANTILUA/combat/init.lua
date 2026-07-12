@@ -37,11 +37,30 @@ local function in_enemylist(obj)
 end
 
 local function is_mob(obj)
-	local p = obj and obj:get_properties()
-	local r = obj and obj:get_rotation()
-	local m = p and p.mesh
-	return p and r and r.z == 0 and m
-		and (m:find("mobs_mc") or m:find("extra_mobs"))
+	if not obj then return false end
+	local name = obj:get_name() or ""
+	return name:find("mobs_mc:") == 1 or name:find("extra_mobs:") == 1
+end
+
+local PASSIVE_MOBS = {
+	"mobs_mc:cow", "mobs_mc:sheep", "mobs_mc:chicken", "mobs_mc:pig",
+	"mobs_mc:rabbit", "mobs_mc:horse", "mobs_mc:donkey", "mobs_mc:mule",
+	"mobs_mc:llama", "mobs_mc:parrot", "mobs_mc:ocelot", "mobs_mc:cat",
+	"mobs_mc:wolf", "mobs_mc:fox", "mobs_mc:panda", "mobs_mc:polar_bear",
+	"mobs_mc:villager", "mobs_mc:iron_golem", "mobs_mc:snowman",
+	"mobs_mc:squid", "mobs_mc:dolphin", "mobs_mc:turtle", "mobs_mc:bat",
+	"mobs_mc:salmon", "mobs_mc:cod", "mobs_mc:tropical_fish",
+	"mobs_mc:pufferfish", "mobs_mc:axolotl", "mobs_mc:goat", "mobs_mc:bee",
+	"mobs_mc:strider",
+}
+
+local function is_hostile_mob(obj)
+	local name = obj and obj:get_name() or ""
+	if name:find("mobs_mc:") ~= 1 then return false end
+	for _, p in ipairs(PASSIVE_MOBS) do
+		if name == p then return false end
+	end
+	return true
 end
 
 local function get_target_name(obj)
@@ -143,30 +162,47 @@ core.register_on_damage_taken(function(amount)
 	end)
 end)
 
+local function mob_filter(obj)
+	if not is_mob(obj) then return false end
+	local attack_all = core.settings:get_bool("killaura.attack_all_mobs")
+	local attack_hostile = core.settings:get_bool("killaura.attack_hostile_mobs")
+	if attack_all then return true end
+	if attack_hostile and is_hostile_mob(obj) then return true end
+	return false
+end
+
 local function make_filter(mode)
 	mode = resolve_mode(mode)
 	if mode == "aggressive" then
 		return function(obj)
-			return obj and not obj:is_local_player()
-				and (obj:is_player() and not_in_friendlist(obj) or is_mob(obj))
+			if not obj or obj:is_local_player() then return false end
+			if obj:is_player() and not_in_friendlist(obj) then return true end
+			return mob_filter(obj)
 		end
 	elseif mode == "neutral" then
 		return function(obj)
-			return obj and obj:is_player() and in_enemylist(obj) and not obj:is_local_player()
+			if obj and obj:is_player() and in_enemylist(obj) and not obj:is_local_player() then
+				return true
+			end
+			return mob_filter(obj)
 		end
 	elseif mode == "retaliate" then
 		return function(obj)
 			if not obj or obj:is_local_player() then return false end
-			if not obj:is_player() then return false end
-			if in_enemylist(obj) then return true end
-			return not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil
+			if obj:is_player() then
+				if in_enemylist(obj) then return true end
+				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then return true end
+			end
+			return mob_filter(obj)
 		end
 	elseif mode == "guard" then
 		return function(obj)
 			if not obj or obj:is_local_player() then return false end
-			if not obj:is_player() then return false end
-			if in_enemylist(obj) then return true end
-			return not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil
+			if obj:is_player() then
+				if in_enemylist(obj) then return true end
+				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then return true end
+			end
+			return mob_filter(obj)
 		end
 	elseif mode == "hunter" then
 		local threshold = killaura.get("hunter_threshold")
@@ -176,7 +212,8 @@ local function make_filter(mode)
 				local hp = obj:get_hp() or 0
 				if hp > 0 and hp < threshold then return true end
 			end
-			return in_enemylist(obj)
+			if in_enemylist(obj) then return true end
+			return mob_filter(obj)
 		end
 	end
 end
@@ -311,6 +348,8 @@ ws.rg("Killaura", {
 		hph = { type = "number", default = 1, min = 1, max = 10 },
 		hit_y = { type = "number", default = -0.1, min = -5, max = 5 },
 		range = { type = "number", default = 10, min = 1, max = 30 },
+		attack_hostile_mobs = { type = "bool", default = false },
+		attack_all_mobs = { type = "bool", default = false },
 		target_mode = {
 			type = "enum",
 			default = "aggressive",
