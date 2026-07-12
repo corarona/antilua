@@ -36,9 +36,26 @@ local function in_enemylist(obj)
 		or table.indexof(enemies, obj:get_properties().nametag) ~= -1
 end
 
+local function is_projectile(obj)
+	if not obj then return false end
+	local name = obj:get_name() or ""
+	if name == "mcl_bows:arrow_entity" then return true end
+	if name == "mcl_throwing:snowball_entity" or name == "mcl_throwing:egg_entity"
+			or name == "mcl_throwing:ender_pearl_entity" then return true end
+	if name == "mcl_tridents:trident" or name == "mcl_experience:bottle" then return true end
+	if name:find("^mcl_potions:.*_splash_flying$") then return true end
+	if name:find("^mcl_potions:.*_lingering_flying$") then return true end
+	if name:find("^mobs_mc:.*fireball$") or name == "mobs_mc:dragon_fireball" then return true end
+	if name:find("^mobs_mc:wither_skull") then return true end
+	if name == "mobs_mc:shulker_bullet" then return true end
+	if name == "mobs_mc:llama_spit" then return true end
+	return false
+end
+
 local function is_mob(obj)
 	if not obj then return false end
 	local name = obj:get_name() or ""
+	if is_projectile(obj) then return false end
 	return name:find("mobs_mc:") == 1 or name:find("extra_mobs:") == 1
 end
 
@@ -514,22 +531,6 @@ sbots.register_bot("PatrolGuard", {
 		end
 	end,
 })
-
-local function is_projectile(obj)
-	if not obj then return false end
-	local name = obj:get_name() or ""
-	if name == "mcl_bows:arrow_entity" then return true end
-	if name == "mcl_throwing:snowball_entity" or name == "mcl_throwing:egg_entity"
-			or name == "mcl_throwing:ender_pearl_entity" then return true end
-	if name == "mcl_tridents:trident" or name == "mcl_experience:bottle" then return true end
-	if name:find("^mcl_potions:.*_splash_flying$") then return true end
-	if name:find("^mcl_potions:.*_lingering_flying$") then return true end
-	if name:find("^mobs_mc:.*fireball$") or name == "mobs_mc:dragon_fireball" then return true end
-	if name:find("^mobs_mc:wither_skull") then return true end
-	if name == "mobs_mc:shulker_bullet" then return true end
-	if name == "mobs_mc:llama_spit" then return true end
-	return false
-end
 
 sbots.register_bot("KillauraBot", {
 	description = "Hunt and attack targets using killaura logic",
