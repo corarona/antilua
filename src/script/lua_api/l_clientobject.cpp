@@ -221,7 +221,7 @@ int ClientObjectRef::l_punch(lua_State *L)
 	GenericCAO *gcao = get_generic_cao(ref, L);
 	if (!gcao)
 		return 0;
-	PointedThing pointed(gcao->getId(), v3f(0, 0, 0), v3f(0, 0, 0), v3f(0, 0, 0), 0, PointabilityType::POINTABLE_NOT);
+	PointedThing pointed(gcao->getId(), v3f(0, 0, 0), v3f(0, 0, 0), v3f(0, 0, 0), 0, PointabilityType::POINTABLE);
 	getClient(L)->interact(INTERACT_START_DIGGING, pointed);
 	return 0;
 }
@@ -232,7 +232,7 @@ int ClientObjectRef::l_rightclick(lua_State *L)
 	GenericCAO *gcao = get_generic_cao(ref, L);
 	if (!gcao)
 		return 0;
-	PointedThing pointed(gcao->getId(), v3f(0, 0, 0), v3f(0, 0, 0), v3f(0, 0, 0), 0, PointabilityType::POINTABLE_NOT);
+	PointedThing pointed(gcao->getId(), v3f(0, 0, 0), v3f(0, 0, 0), v3f(0, 0, 0), 0, PointabilityType::POINTABLE);
 	getClient(L)->interact(INTERACT_PLACE, pointed);
 	return 0;
 }

@@ -14,6 +14,7 @@ ws.rg("Killaura", {
 	setting = "killaura",
 	description = "Auto-attack nearby entities",
 	on_step = function()
+		core.log("loL")
 		local lp = core.localplayer:get_pos()
 		if not lp then return end
 		local range = tonumber(core.settings:get("killaura.range")) or 5
