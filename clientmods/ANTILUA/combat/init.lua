@@ -539,6 +539,11 @@ sbots.register_bot("KillauraBot", {
 	moving_target = true,
 	landing_distance = tonumber(core.settings:get("killaura.range")) or 10,
 	find_pos = function(self, pos)
+		if core.settings:get_bool("killaurabot.lock_target") and self._locked_obj then
+			local lp = self._locked_obj:get_pos()
+			if lp then return lp end
+			self._locked_obj = nil
+		end
 		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
 		local filter = make_filter(mode)
 		local range = tonumber(core.settings:get("killaurabot.scan_range")) or 50
@@ -554,6 +559,27 @@ sbots.register_bot("KillauraBot", {
 	do_pos = function(self, pos)
 		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
 		local filter = make_filter(mode)
+		local lock = core.settings:get_bool("killaurabot.lock_target")
+		if lock then
+			if not self._locked_obj then
+				local closest, closest_d = nil, math.huge
+				for _, obj in pairs(core.get_objects_inside_radius(pos, killaura.get("range"))) do
+					if filter and filter(obj) then
+						local d = vector.distance(pos, obj:get_pos())
+						if d < closest_d then closest, closest_d = obj, d end
+					end
+				end
+				if closest then self._locked_obj = closest end
+			end
+			if self._locked_obj then
+				local lp = self._locked_obj:get_pos()
+				if lp and vector.distance(pos, lp) <= killaura.get("range") then
+					return false
+				end
+				self._locked_obj = nil
+				return true
+			end
+		end
 		for _, obj in pairs(core.get_objects_inside_radius(pos, killaura.get("range"))) do
 			if filter and filter(obj) then return false end
 		end
@@ -580,5 +606,6 @@ sbots.register_bot("KillauraBot", {
 		scan_range = { type = "number", default = 50, min = 10, max = 200 },
 		projectile_evade = { type = "bool", default = false },
 		evade_range = { type = "number", default = 5, min = 2, max = 15 },
+		lock_target = { type = "bool", default = false },
 	},
 })
