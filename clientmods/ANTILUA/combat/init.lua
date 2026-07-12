@@ -541,7 +541,9 @@ sbots.register_bot("KillauraBot", {
 	find_pos = function(self, pos)
 		if core.settings:get_bool("killaurabot.lock_target") and self._locked_obj then
 			local lp = self._locked_obj:get_pos()
-			if lp then return lp end
+			if lp and vector.distance(pos, lp) <= (tonumber(core.settings:get("killaurabot.scan_range")) or 50) then
+				return lp
+			end
 			self._locked_obj = nil
 		end
 		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
