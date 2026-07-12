@@ -105,13 +105,55 @@ ws.rg("ItemCollector", {
 			if not ws.switch_to_item(chest_item) then
 				return
 			end
-			local below = vector.round(vector.offset(lp, 0, -1, 0))
-			local under = core.get_node_or_nil(below)
-			if under and under.name == "air" then
-				below = vector.round(lp)
+
+			-- Find an air node above a solid node nearby, or any air node
+			local found = nil
+			local rlp = vector.round(lp)
+			for dy = 0, -3, -1 do
+			for dx = -2, 2 do
+			for dz = -2, 2 do
+				local p = vector.add(rlp, {x = dx, y = dy, z = dz})
+				local node = core.get_node_or_nil(p)
+				if node and core.get_item_def(node.name) and
+						core.get_item_def(node.name).walkable then
+					local above = vector.offset(p, 0, 1, 0)
+					local an = core.get_node_or_nil(above)
+					if an and an.name == "air" then
+						found = above
+						break
+					end
+				end
 			end
-			ws.place(below, chest_item)
-			chest_pos = below
+			if found then break end
+			end
+			if found then break end
+			end
+
+			if not found then
+				-- Fallback: any air node nearby
+				for dx = -2, 2 do
+				for dz = -2, 2 do
+				for dy = 0, -2, -1 do
+					local p = vector.add(rlp, {x = dx, y = dy, z = dz})
+					local node = core.get_node_or_nil(p)
+					if node and node.name == "air" then
+						found = p
+						break
+					end
+				end
+				if found then break end
+				end
+				if found then break end
+				end
+			end
+
+			if not found then
+				ws.place(vector.round(lp), chest_item)
+				chest_pos = vector.round(lp)
+			else
+				ws.place(found, chest_item)
+				chest_pos = found
+			end
 			state = S.DEPOSIT
 			pending_transfers = nil
 		end
