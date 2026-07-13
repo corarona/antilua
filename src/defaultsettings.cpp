@@ -118,6 +118,7 @@ static void set_al_default_settings()
 	settings->setDefault("prevent_natural_damage", "true");
 	settings->setDefault("no_hurt_cam", "false");
 	settings->setDefault("reach", "true");
+	settings->setDefault("reach.range", "6.6");
 	settings->setDefault("hud_flags_bypass", "true");
 	settings->setDefault("antiknockback", "false");
 	settings->setDefault("entity_speed", "false");

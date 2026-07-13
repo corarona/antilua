@@ -131,7 +131,10 @@ end)
 core.register_cheat({ name = "NoForceRotate", category = "Player", setting = "no_force_rotate",
 	description = "Prevent forced rotation by server" })
 core.register_cheat({ name = "Reach", category = "Player", setting = "reach",
-	description = "Extend interaction distance" })
+	description = "Extend interaction range beyond normal tool range",
+	cheat_settings = {
+		range = { type = "number", default = 6.6, min = 1.0, max = 100.0 },
+	} })
 core.register_cheat({ name = "PointAll", category = "Player", setting = "point_all",
 	description = "Point at any reachable node or entity" })
 core.register_cheat({ name = "PrivBypass", category = "Player", setting = "priv_bypass",

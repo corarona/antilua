@@ -146,6 +146,7 @@ no_force_rotate (No force rotate) bool false
 #    Extended interaction range.
 #    Affects digging, placing, and entity interaction.
 reach (Extended reach) bool true
+reach.range (Reach range) float 6.6 1.0 100
 
 #    Bypass privilege checks for fly/fast/noclip on the server.
 priv_bypass (Privilege bypass) bool true

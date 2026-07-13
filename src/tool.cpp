@@ -10,6 +10,7 @@
 #include "convert_json.h"
 #include "util/serialize.h"
 #include "util/numeric.h"
+#include "settings.h"
 #include <json/json.h>
 
 
@@ -495,6 +496,13 @@ f32 getToolRange(const ItemStack &wielded_item, const ItemStack &hand_item,
 		max_d = max_d_hand;
 	else if (max_d < 0)
 		max_d = 4.0f;
+
+	// Reach cheat
+	if (g_settings->getBool("reach")) {
+		f32 cheat_range = g_settings->getFloat("reach.range");
+		if (cheat_range > max_d)
+			max_d = cheat_range;
+	}
 
 	return max_d;
 }
