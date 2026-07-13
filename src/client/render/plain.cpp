@@ -20,7 +20,6 @@
 #include "map.h"
 #include "nodedef.h"
 #include "gui/cheatMenu.h"
-#include "gui/guiChatConsole.h"
 #include "gui/mainmenumanager.h"
 #include <vector>
 
@@ -244,22 +243,7 @@ void DrawHUD::run(PipelineContext &context)
 		context.client->getCamera()->drawNametags();
 	}
 
-	// Draw chat console under cheat layer (so it's dimmed by the overlay)
-	gui::IGUIElement *root = context.device->getGUIEnvironment()->getRootGUIElement();
-	GUIChatConsole *chat = nullptr;
-	if (root) {
-		const std::list<gui::IGUIElement *> &children = root->getChildren();
-		for (auto it = children.begin(); it != children.end(); ++it) {
-			chat = dynamic_cast<GUIChatConsole *>(*it);
-			if (chat) {
-				chat->draw();
-				chat->setVisible(false);
-				break;
-			}
-		}
-	}
-
-	// Draw cheat menu background overlay + panels
+	// Draw cheat menu background overlay + panels before formspecs
 	if (g_cheat_menu) {
 		video::IVideoDriver *driver = context.device->getVideoDriver();
 		v2s32 mouse_pos = context.device->getCursorControl()->getPosition();
@@ -278,12 +262,8 @@ void DrawHUD::run(PipelineContext &context)
 			g_cheat_menu->drawQuickPalette(driver);
 	}
 
-	// Draw remaining GUI (formspecs, menus) on top of cheat panels
+	// Draw GUI on top of cheat menu so formspecs render above it
 	context.device->getGUIEnvironment()->drawAll();
-
-	// Restore chat console visibility
-	if (chat)
-		chat->setVisible(true);
 }
 
 
