@@ -11,15 +11,14 @@ function killaura.get(key)
 	return ws.get_number("killaura", key) or killaura[key]
 end
 
-function killaura.punch_object(obj)
-	local pos = core.localplayer:get_pos()
-	local lv = core.localplayer:get_velocity()
-	core.localplayer:set_velocity(vector.new(0, killaura.get("hit_y"), 0))
-	for i = 1, killaura.get("hph") do
-		obj:punch()
+local function expire_damage_log()
+	local now = core.get_us_time() / 1000000
+	local timeout = killaura.get("retaliate_timeout")
+	for name, entry in pairs(killaura.damage_log) do
+		if now - entry.time > timeout then
+			killaura.damage_log[name] = nil
+		end
 	end
-	core.localplayer:set_velocity(lv)
-	core.localplayer:set_pos(pos)
 end
 
 local function not_in_friendlist(obj)
@@ -190,86 +189,42 @@ local function mob_filter(obj)
 	return false
 end
 
+local function target_check(obj)
+	return target_obj == nil or obj == target_obj
+end
+
+local PLAYER_CHECKS = {
+	aggressive = function(obj) return not_in_friendlist(obj) end,
+	neutral = function(obj) return in_enemylist(obj) end,
+	retaliate = function(obj)
+		return in_enemylist(obj) or (not_in_friendlist(obj) and killaura.damage_log[obj:get_name()])
+	end,
+	guard = function(obj)
+		return in_enemylist(obj) or (not_in_friendlist(obj) and killaura.damage_log[obj:get_name()])
+	end,
+	hunter = function(obj)
+		local hp = obj:get_hp() or 0
+		return in_enemylist(obj) or (not_in_friendlist(obj) and hp > 0 and hp < killaura.get("hunter_threshold"))
+	end,
+}
+
 local function make_filter(mode)
-	mode = resolve_mode(mode)
-	if mode == "aggressive" then
-		return function(obj)
-			if not obj or obj:is_local_player() then return false end
-			if obj:is_player() and not_in_friendlist(obj) then
-				return target_obj == nil or obj == target_obj
-			end
-			if mob_filter(obj) then
-				return target_obj == nil or obj == target_obj
-			end
-			return false
+	local check = PLAYER_CHECKS[resolve_mode(mode)]
+	return function(obj)
+		if not obj or obj:is_local_player() then return false end
+		if obj:is_player() and check(obj) then
+			return target_check(obj)
 		end
-	elseif mode == "neutral" then
-		return function(obj)
-			if obj and obj:is_player() and in_enemylist(obj) and not obj:is_local_player() then
-				return target_obj == nil or obj == target_obj
-			end
-			if mob_filter(obj) then
-				return target_obj == nil or obj == target_obj
-			end
-			return false
+		if mob_filter(obj) then
+			return target_check(obj)
 		end
-	elseif mode == "retaliate" then
-		return function(obj)
-			if not obj or obj:is_local_player() then return false end
-			if obj:is_player() then
-				if in_enemylist(obj) then
-					return target_obj == nil or obj == target_obj
-				end
-				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then
-					return target_obj == nil or obj == target_obj
-				end
-			end
-			if mob_filter(obj) then
-				return target_obj == nil or obj == target_obj
-			end
-			return false
-		end
-	elseif mode == "guard" then
-		return function(obj)
-			if not obj or obj:is_local_player() then return false end
-			if obj:is_player() then
-				if in_enemylist(obj) then
-					return target_obj == nil or obj == target_obj
-				end
-				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then
-					return target_obj == nil or obj == target_obj
-				end
-			end
-			if mob_filter(obj) then
-				return target_obj == nil or obj == target_obj
-			end
-			return false
-		end
-	elseif mode == "hunter" then
-		local threshold = killaura.get("hunter_threshold")
-		return function(obj)
-			if not obj or obj:is_local_player() then return false end
-			if obj:is_player() and not_in_friendlist(obj) then
-				local hp = obj:get_hp() or 0
-				if hp > 0 and hp < threshold then
-					return target_obj == nil or obj == target_obj
-				end
-			end
-			if in_enemylist(obj) then
-				return target_obj == nil or obj == target_obj
-			end
-			if mob_filter(obj) then
-				return target_obj == nil or obj == target_obj
-			end
-			return false
-		end
+		return false
 	end
 end
 
 -- Expose killaura helpers for PatrolGuard bot and external mods
 _G.killaura = {
 	get = killaura.get,
-	punch_object = killaura.punch_object,
 	make_filter = make_filter,
 	resolve_mode = resolve_mode,
 	not_in_friendlist = not_in_friendlist,
@@ -366,24 +321,12 @@ ws.rg("Killaura", {
 	end,
 	on_step = function(self, dtime)
 		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
-
-		local now = core.get_us_time() / 1000000
-		local timeout = killaura.get("retaliate_timeout")
-		for name, entry in pairs(killaura.damage_log) do
-			if now - entry.time > timeout then
-				killaura.damage_log[name] = nil
-			end
-		end
-
+		expire_damage_log()
 		if mode == "guard" then
 			track_friend_hp()
 		end
-
 		local filter = make_filter(mode)
-		local closest = nil
-		if filter then
-			closest = hit_objects(killaura.get("range"), filter)
-		end
+		local closest = filter and hit_objects(killaura.get("range"), filter)
 		update_target_hud(closest)
 	end,
 	on_stop = function(self)
@@ -458,44 +401,29 @@ core.register_chatcommand("target", {
 	params = "[name]",
 	description = "Target a specific player or mob by name. Without arguments, clear target and attack everything.",
 	func = function(param)
-		if param == nil or param == "" then
-			target_obj = nil
-			core.display_chat_message("Target cleared — attacking all targets.")
-			return true
-		end
-		local trimmed = param:match("^%s*(.-)%s*$")
-		if trimmed == "" then
+		local trimmed = param and param:match("^%s*(.-)%s*$")
+		if not trimmed or trimmed == "" then
 			target_obj = nil
 			core.display_chat_message("Target cleared — attacking all targets.")
 			return true
 		end
 		local lp = core.localplayer and core.localplayer:get_pos()
 		if not lp then return true end
-		-- First try exact player name match
-		local found = nil
+		local tlower = trimmed:lower()
 		for _, obj in pairs(core.get_objects_inside_radius(lp, 100)) do
-			if obj:is_player() and obj:get_name():lower() == trimmed:lower() then
-				found = obj
-				break
+			local olower = (obj:get_name() or ""):lower()
+			if obj:is_player() and olower == tlower then
+				target_obj = obj
+				core.display_chat_message("Now targeting player: " .. (obj:get_name() or "?"))
+				return true
+			end
+			if olower:find(tlower, 1, true) then
+				target_obj = obj
+				core.display_chat_message("Now targeting entity: " .. (obj:get_name() or "?"))
+				return true
 			end
 		end
-		if not found then
-			-- Fallback: any entity with name containing the string
-			for _, obj in pairs(core.get_objects_inside_radius(lp, 100)) do
-				local name = obj:get_name() or ""
-				if name:lower():find(trimmed:lower(), 1, true) then
-					found = obj
-					break
-				end
-			end
-		end
-		if found then
-			target_obj = found
-			local label = found:is_player() and "player" or "entity"
-			core.display_chat_message("Now targeting " .. label .. ": " .. (found:get_name() or "?"))
-		else
-			core.display_chat_message("No entity found matching: " .. trimmed)
-		end
+		core.display_chat_message("No entity found matching: " .. trimmed)
 		return true
 	end,
 })
@@ -584,27 +512,19 @@ sbots.register_bot("PatrolGuard", {
 	do_pos = function(self, pos)
 		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
 		local filter = make_filter(mode)
-		local any_hit = false
 		for _, obj in pairs(core.get_objects_inside_radius(pos, 5)) do
 			if filter and filter(obj) then
-				killaura.punch_object(obj)
-				any_hit = true
+				obj:punch()
+				return false
 			end
 		end
-		return not any_hit
+		return true
 	end,
 	do_step = function(self, dtime)
+		expire_damage_log()
 		local mode = resolve_mode(core.settings:get("killaura.target_mode"))
 		if mode == "guard" then
 			track_friend_hp()
-		end
-
-	local now = core.get_us_time() / 1000000
-		local timeout = killaura.get("retaliate_timeout")
-		for name, entry in pairs(killaura.damage_log) do
-			if now - entry.time > timeout then
-				killaura.damage_log[name] = nil
-			end
 		end
 	end,
 })

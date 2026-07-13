@@ -30,10 +30,6 @@ function test_combat(T)
 		core.settings:set("killaura.target_mode", orig or "aggressive")
 	end)
 
-	T.run("killaura.punch_object exists", function()
-		T.assert(type(killaura.punch_object) == "function")
-	end)
-
 	T.run("killaura.get exists and returns defaults", function()
 		T.assert(type(killaura.get) == "function")
 		T.assert(killaura.get("hph") == 1)
