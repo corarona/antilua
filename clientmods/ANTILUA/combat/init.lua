@@ -1,4 +1,4 @@
-local target_filter = nil  -- set via .target command; string pattern or nil
+local target_obj = nil  -- set via .target command; targeted object ref or nil
 
 local killaura = {
 	hph = 1,
@@ -196,20 +196,20 @@ local function make_filter(mode)
 		return function(obj)
 			if not obj or obj:is_local_player() then return false end
 			if obj:is_player() and not_in_friendlist(obj) then
-				return target_filter == nil or obj:get_name():lower():find(target_filter:lower(), 1, true) ~= nil
+				return target_obj == nil or obj == target_obj
 			end
 			if mob_filter(obj) then
-				return target_filter == nil or (obj:get_name() or ""):lower():find(target_filter:lower(), 1, true) ~= nil
+				return target_obj == nil or obj == target_obj
 			end
 			return false
 		end
 	elseif mode == "neutral" then
 		return function(obj)
 			if obj and obj:is_player() and in_enemylist(obj) and not obj:is_local_player() then
-				return target_filter == nil or obj:get_name():lower():find(target_filter:lower(), 1, true) ~= nil
+				return target_obj == nil or obj == target_obj
 			end
 			if mob_filter(obj) then
-				return target_filter == nil or (obj:get_name() or ""):lower():find(target_filter:lower(), 1, true) ~= nil
+				return target_obj == nil or obj == target_obj
 			end
 			return false
 		end
@@ -218,14 +218,14 @@ local function make_filter(mode)
 			if not obj or obj:is_local_player() then return false end
 			if obj:is_player() then
 				if in_enemylist(obj) then
-					return target_filter == nil or obj:get_name():lower():find(target_filter:lower(), 1, true) ~= nil
+					return target_obj == nil or obj == target_obj
 				end
 				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then
-					return target_filter == nil or obj:get_name():lower():find(target_filter:lower(), 1, true) ~= nil
+					return target_obj == nil or obj == target_obj
 				end
 			end
 			if mob_filter(obj) then
-				return target_filter == nil or (obj:get_name() or ""):lower():find(target_filter:lower(), 1, true) ~= nil
+				return target_obj == nil or obj == target_obj
 			end
 			return false
 		end
@@ -234,14 +234,14 @@ local function make_filter(mode)
 			if not obj or obj:is_local_player() then return false end
 			if obj:is_player() then
 				if in_enemylist(obj) then
-					return target_filter == nil or obj:get_name():lower():find(target_filter:lower(), 1, true) ~= nil
+					return target_obj == nil or obj == target_obj
 				end
 				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then
-					return target_filter == nil or obj:get_name():lower():find(target_filter:lower(), 1, true) ~= nil
+					return target_obj == nil or obj == target_obj
 				end
 			end
 			if mob_filter(obj) then
-				return target_filter == nil or (obj:get_name() or ""):lower():find(target_filter:lower(), 1, true) ~= nil
+				return target_obj == nil or obj == target_obj
 			end
 			return false
 		end
@@ -252,14 +252,14 @@ local function make_filter(mode)
 			if obj:is_player() and not_in_friendlist(obj) then
 				local hp = obj:get_hp() or 0
 				if hp > 0 and hp < threshold then
-					return target_filter == nil or obj:get_name():lower():find(target_filter:lower(), 1, true) ~= nil
+					return target_obj == nil or obj == target_obj
 				end
 			end
 			if in_enemylist(obj) then
-				return target_filter == nil or obj:get_name():lower():find(target_filter:lower(), 1, true) ~= nil
+				return target_obj == nil or obj == target_obj
 			end
 			if mob_filter(obj) then
-				return target_filter == nil or (obj:get_name() or ""):lower():find(target_filter:lower(), 1, true) ~= nil
+				return target_obj == nil or obj == target_obj
 			end
 			return false
 		end
@@ -456,21 +456,46 @@ end)
 
 core.register_chatcommand("target", {
 	params = "[name]",
-	description = "Only target entities whose name contains <name>. Without arguments, target everything.",
+	description = "Target a specific player or mob by name. Without arguments, clear target and attack everything.",
 	func = function(param)
 		if param == nil or param == "" then
-			target_filter = nil
-			core.display_chat_message("Target filter cleared — attacking all targets.")
+			target_obj = nil
+			core.display_chat_message("Target cleared — attacking all targets.")
 			return true
 		end
 		local trimmed = param:match("^%s*(.-)%s*$")
 		if trimmed == "" then
-			target_filter = nil
-			core.display_chat_message("Target filter cleared — attacking all targets.")
+			target_obj = nil
+			core.display_chat_message("Target cleared — attacking all targets.")
 			return true
 		end
-		target_filter = trimmed
-		core.display_chat_message("Now targeting entities matching: " .. trimmed)
+		local lp = core.localplayer and core.localplayer:get_pos()
+		if not lp then return true end
+		-- First try exact player name match
+		local found = nil
+		for _, obj in pairs(core.get_objects_inside_radius(lp, 100)) do
+			if obj:is_player() and obj:get_name():lower() == trimmed:lower() then
+				found = obj
+				break
+			end
+		end
+		if not found then
+			-- Fallback: any entity with name containing the string
+			for _, obj in pairs(core.get_objects_inside_radius(lp, 100)) do
+				local name = obj:get_name() or ""
+				if name:lower():find(trimmed:lower(), 1, true) then
+					found = obj
+					break
+				end
+			end
+		end
+		if found then
+			target_obj = found
+			local label = found:is_player() and "player" or "entity"
+			core.display_chat_message("Now targeting " .. label .. ": " .. (found:get_name() or "?"))
+		else
+			core.display_chat_message("No entity found matching: " .. trimmed)
+		end
 		return true
 	end,
 })
