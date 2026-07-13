@@ -532,6 +532,28 @@ sbots.register_bot("PatrolGuard", {
 	end,
 })
 
+local function find_safe_pos(target, hover_h)
+	local tries = {
+		{x = 0, y = 0, z = 0},
+		{x = 2, y = 0, z = 0}, {x = -2, y = 0, z = 0},
+		{x = 0, y = 0, z = 2}, {x = 0, y = 0, z = -2},
+		{x = 2, y = 0, z = 2}, {x = -2, y = 0, z = -2},
+		{x = 2, y = 0, z = -2}, {x = -2, y = 0, z = 2},
+		{x = 0, y = 1, z = 0}, {x = 0, y = -1, z = 0},
+		{x = 3, y = 0, z = 0}, {x = -3, y = 0, z = 0},
+		{x = 0, y = 0, z = 3}, {x = 0, y = 0, z = -3},
+	}
+	for _, t in ipairs(tries) do
+		local tp = vector.add(target, {x = t.x, y = hover_h, z = t.z})
+		local feet = core.get_node_or_nil(tp)
+		local head = core.get_node_or_nil(vector.offset(tp, 0, 1, 0))
+		if feet and head and feet.name == "air" and head.name == "air" then
+			return tp
+		end
+	end
+	return nil
+end
+
 sbots.register_bot("KillauraBot", {
 	description = "Hunt and attack targets using killaura logic",
 	movement = "walk",
@@ -588,19 +610,59 @@ sbots.register_bot("KillauraBot", {
 		return true
 	end,
 	do_step = function(self, dtime)
-		if not core.settings:get_bool("killaurabot.projectile_evade") then return end
 		local lp = core.localplayer:get_pos()
 		if not lp then return end
-		local range = tonumber(core.settings:get("killaurabot.evade_range")) or 5
-		for _, obj in pairs(core.get_objects_inside_radius(lp, range)) do
-			if is_projectile(obj) then
-				local ppos = obj:get_pos()
-				if ppos then
-					local dir = vector.direction(lp, ppos)
-					local evade = vector.add(lp, {x = dir.z * 3, y = 0.5, z = -dir.x * 3})
-					core.localplayer:set_pos(evade)
+
+		-- Projectile evaade
+		if core.settings:get_bool("killaurabot.projectile_evade") then
+			local range = tonumber(core.settings:get("killaurabot.evade_range")) or 5
+			for _, obj in pairs(core.get_objects_inside_radius(lp, range)) do
+				if is_projectile(obj) then
+					local ppos = obj:get_pos()
+					if ppos then
+						local dir = vector.direction(lp, ppos)
+						local evade = vector.add(lp, {x = dir.z * 3, y = 0.5, z = -dir.x * 3})
+						core.localplayer:set_pos(evade)
+					end
+					break
 				end
-				break
+			end
+		end
+
+		-- Fly attack mode
+		if not core.settings:get_bool("killaurabot.fly_attack") then return end
+		if not self._locked_obj then return end
+		local tgt = self._locked_obj:get_pos()
+		if not tgt then return end
+		local h = tonumber(core.settings:get("killaurabot.fly_height")) or 12
+
+		self._fly_t = (self._fly_t or 0) + dtime
+
+		if not self._diving then
+			core.localplayer:set_velocity(vector.new(0, 0, 0))
+			local hover_pos = find_safe_pos(tgt, h)
+			if not hover_pos then
+				hover_pos = vector.add(tgt, {x = 0, y = h, z = 0})
+			end
+			core.localplayer:set_pos(hover_pos)
+			ws.aim(tgt)
+			if self._fly_t > 0.3 then
+				self._diving = true
+				self._fly_t = 0
+			end
+		else
+			if self._fly_t < 0.001 then
+				core.localplayer:set_velocity(vector.new(0, -5, 0))
+				local dive_pos = find_safe_pos(tgt, 0)
+				if not dive_pos then
+					dive_pos = tgt
+				end
+				core.localplayer:set_pos(dive_pos)
+			end
+			if self._fly_t > 0.4 then
+				core.localplayer:set_velocity(vector.new(0, 0, 0))
+				self._diving = false
+				self._fly_t = 0
 			end
 		end
 	end,
@@ -609,5 +671,7 @@ sbots.register_bot("KillauraBot", {
 		projectile_evade = { type = "bool", default = false },
 		evade_range = { type = "number", default = 5, min = 2, max = 15 },
 		lock_target = { type = "bool", default = false },
+		fly_attack = { type = "bool", default = false },
+		fly_height = { type = "number", default = 12, min = 5, max = 30 },
 	},
 })
