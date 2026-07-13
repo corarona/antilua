@@ -1,3 +1,5 @@
+local target_filter = nil  -- set via .target command; string pattern or nil
+
 local killaura = {
 	hph = 1,
 	hit_y = -0.1,
@@ -188,49 +190,61 @@ local function mob_filter(obj)
 	return false
 end
 
+local function matches_target(obj)
+	if not target_filter then return true end
+	if obj:is_player() then
+		return obj:get_name():lower():find(target_filter:lower(), 1, true)
+	end
+	local name = obj:get_name() or ""
+	return name:lower():find(target_filter:lower(), 1, true)
+end
+
 local function make_filter(mode)
 	mode = resolve_mode(mode)
 	if mode == "aggressive" then
 		return function(obj)
 			if not obj or obj:is_local_player() then return false end
-			if obj:is_player() and not_in_friendlist(obj) then return true end
-			return mob_filter(obj)
+			if obj:is_player() and not_in_friendlist(obj) and matches_target(obj) then return true end
+			return mob_filter(obj) and matches_target(obj)
 		end
 	elseif mode == "neutral" then
 		return function(obj)
-			if obj and obj:is_player() and in_enemylist(obj) and not obj:is_local_player() then
+			if obj and obj:is_player() and in_enemylist(obj) and not obj:is_local_player()
+					and matches_target(obj) then
 				return true
 			end
-			return mob_filter(obj)
+			return mob_filter(obj) and matches_target(obj)
 		end
 	elseif mode == "retaliate" then
 		return function(obj)
 			if not obj or obj:is_local_player() then return false end
 			if obj:is_player() then
-				if in_enemylist(obj) then return true end
-				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then return true end
+				if in_enemylist(obj) and matches_target(obj) then return true end
+				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil
+						and matches_target(obj) then return true end
 			end
-			return mob_filter(obj)
+			return mob_filter(obj) and matches_target(obj)
 		end
 	elseif mode == "guard" then
 		return function(obj)
 			if not obj or obj:is_local_player() then return false end
 			if obj:is_player() then
-				if in_enemylist(obj) then return true end
-				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil then return true end
+				if in_enemylist(obj) and matches_target(obj) then return true end
+				if not_in_friendlist(obj) and killaura.damage_log[obj:get_name()] ~= nil
+						and matches_target(obj) then return true end
 			end
-			return mob_filter(obj)
+			return mob_filter(obj) and matches_target(obj)
 		end
 	elseif mode == "hunter" then
 		local threshold = killaura.get("hunter_threshold")
 		return function(obj)
 			if not obj or obj:is_local_player() then return false end
-			if obj:is_player() and not_in_friendlist(obj) then
+			if obj:is_player() and not_in_friendlist(obj) and matches_target(obj) then
 				local hp = obj:get_hp() or 0
 				if hp > 0 and hp < threshold then return true end
 			end
-			if in_enemylist(obj) then return true end
-			return mob_filter(obj)
+			if in_enemylist(obj) and matches_target(obj) then return true end
+			return mob_filter(obj) and matches_target(obj)
 		end
 	end
 end
@@ -422,6 +436,22 @@ core.register_on_formspec_input(function(formname, fields)
 
 	core.show_cheat_settings_form("killaura")
 end)
+
+core.register_chatcommand("target", {
+	params = "[name]",
+	description = "Only target entities whose name contains <name>. Without arguments, target everything.",
+	func = function(param)
+		param = param:trim()
+		if param == "" then
+			target_filter = nil
+			core.display_chat_message("Target filter cleared — attacking all targets.")
+		else
+			target_filter = param
+			core.display_chat_message("Targeting entities matching: " .. param)
+		end
+		return true
+	end,
+})
 
 --
 -- PatrolGuard bot (deferred until all mods loaded so sbots/poi exist)
