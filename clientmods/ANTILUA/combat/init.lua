@@ -682,11 +682,11 @@ sbots.register_bot("KillauraBot", {
 		else
 			if self._fly_t < 0.001 then
 				core.localplayer:set_velocity(vector.new(0, -5, 0))
-				local dive_pos = find_safe_pos(tgt, 0)
-				if not dive_pos then
-					dive_pos = tgt
-				end
-				core.localplayer:set_pos(dive_pos)
+				core.localplayer:set_pos(vector.add(tgt, {x = 0, y = 0.5, z = 0}))
+			end
+			-- Punch the target directly each tick while in dive
+			if self._locked_obj and self._locked_obj:get_pos() then
+				self._locked_obj:punch()
 			end
 			if self._fly_t > 0.4 then
 				core.localplayer:set_velocity(vector.new(0, 0, 0))
