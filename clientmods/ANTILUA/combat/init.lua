@@ -555,7 +555,7 @@ sbots.register_bot("KillauraBot", {
 	movement = "walk",
 	stand_waiting = true,
 	moving_target = true,
-	landing_distance = tonumber(core.settings:get("killaura.range")) or 10,
+	landing_distance = 5,
 	find_pos = function(self, pos)
 		if core.settings:get_bool("killaurabot.lock_target") and self._locked_obj then
 			local lp = self._locked_obj:get_pos()
