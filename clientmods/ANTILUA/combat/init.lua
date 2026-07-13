@@ -292,7 +292,7 @@ local function hit_objects(radius, filter)
 	local closest_dist = math.huge
 	for _, obj in pairs(core.get_objects_inside_radius(lp, radius)) do
 		if not filter or filter(obj) then
-			killaura.punch_object(obj)
+			obj:punch()
 			local dist = vector.distance(lp, obj:get_pos())
 			if dist < closest_dist then
 				closest_obj = obj
