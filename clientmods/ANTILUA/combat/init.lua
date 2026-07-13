@@ -545,9 +545,8 @@ local function find_safe_pos(target, hover_h)
 	}
 	for _, t in ipairs(tries) do
 		local tp = vector.add(target, {x = t.x, y = hover_h, z = t.z})
-		local feet = core.get_node_or_nil(tp)
 		local head = core.get_node_or_nil(vector.offset(tp, 0, 1, 0))
-		if feet and head and feet.name == "air" and head.name == "air" then
+		if head and head.name == "air" then
 			return tp
 		end
 	end
