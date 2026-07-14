@@ -87,6 +87,7 @@ CheatMenu::CheatMenu(Client *client) : PanelOverlay(), m_client(client)
 	m_title_bg = parseHexColor(g_settings->get("theme_title_bg"), g_settings->getU32("theme_title_bg_alpha"));
 	m_border_color = parseHexColor(g_settings->get("theme_border"), g_settings->getU32("theme_border_alpha"));
 	m_item_bg = parseHexColor(g_settings->get("theme_item_bg"), g_settings->getU32("theme_item_bg_alpha"));
+	m_tooltip_bg = parseHexColor(g_settings->get("theme_tooltip_bg"), g_settings->getU32("theme_panel_bg_alpha"));
 
 	m_head_height = g_settings->getU32("cheat_menu_head_height");
 	m_entry_height = g_settings->getU32("cheat_menu_entry_height");
@@ -106,12 +107,24 @@ void CheatMenu::createCategoryPanels()
 {
 	CHEAT_MENU_GET_SCRIPTPTR
 	m_panels.clear();
-	for (size_t i = 0; i < script->m_cheat_categories.size(); i++) {
+	size_t n = script->m_cheat_categories.size();
+	for (size_t i = 0; i < n; i++) {
 		OverlayPanel cp;
 		cp.id = "_cat_" + std::to_string(i);
 		cp.title = script->m_cheat_categories[i]->m_name;
 		cp.selected_category = (int)i;
 		cp.w = m_entry_width > 0 ? m_entry_width : 220;
+		cp.title_h = m_head_height;
+
+		// Per-category header tint — same color family as m_title_bg
+		if (n > 1) {
+			float t = (float)i / (float)(n - 1);
+			float hueDeg = (t - 0.5f) * 60.0f;
+			float satDelta = (t - 0.5f) * 0.1f;
+			cp.title_color = shiftHue(m_title_bg, hueDeg, satDelta);
+			cp.title_color_set = true;
+		}
+
 		m_panels.push_back(cp);
 	}
 
@@ -122,6 +135,7 @@ void CheatMenu::createCategoryPanels()
 		fp.id = "_fav_0";
 		fp.title = "Favorites";
 		fp.w = m_entry_width > 0 ? m_entry_width : 220;
+		fp.title_h = m_head_height;
 		m_panels.push_back(fp);
 		g_settings->remove("panel_pos__fav_0");
 	}
@@ -358,7 +372,7 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 			if (ty + th > (s32)driver->getScreenSize().Height) ty = m_tooltip_y - th - 10;
 			if (ty < 0) ty = m_tooltip_y + 10;
 
-			driver->draw2DRectangle(m_panel_bg,
+			driver->draw2DRectangle(m_tooltip_bg,
 				core::rect<s32>(tx, ty, tx + tw, ty + th));
 			drawText(wrapped, tx + 8, ty + 8, m_font_color);
 		}
@@ -983,6 +997,7 @@ void CheatMenu::createSupermenuPanel()
 	sp.id = "_super_0";
 	sp.title = "Menu";
 	sp.w = m_entry_width > 0 ? m_entry_width : 220;
+	sp.title_h = m_head_height;
 	m_panels.push_back(sp);
 	g_settings->remove("panel_pos__super_0");
 	m_super_level = 0;

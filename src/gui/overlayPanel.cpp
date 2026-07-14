@@ -8,6 +8,65 @@
 #include <algorithm>
 #include <cstdlib>
 
+namespace {
+
+void rgbToHsl(const video::SColor &color, float &h, float &s, float &l)
+{
+	float r = color.getRed() / 255.0f;
+	float g = color.getGreen() / 255.0f;
+	float b = color.getBlue() / 255.0f;
+
+	float max = std::max({r, g, b});
+	float min = std::min({r, g, b});
+	float d = max - min;
+
+	l = (max + min) / 2.0f;
+
+	if (d == 0.0f) {
+		h = 0.0f;
+		s = 0.0f;
+	} else {
+		s = (l > 0.5f) ? d / (2.0f - max - min) : d / (max + min);
+
+		if (max == r)
+			h = (g - b) / d + (g < b ? 6.0f : 0.0f);
+		else if (max == g)
+			h = (b - r) / d + 2.0f;
+		else
+			h = (r - g) / d + 4.0f;
+
+		h /= 6.0f;
+	}
+}
+
+video::SColor hslToRgb(float h, float s, float l, u32 alpha = 255)
+{
+	auto hue2rgb = [](float p, float q, float t) -> float {
+		if (t < 0.0f) t += 1.0f;
+		if (t > 1.0f) t -= 1.0f;
+		if (t < 1.0f / 6.0f) return p + (q - p) * 6.0f * t;
+		if (t < 1.0f / 2.0f) return q;
+		if (t < 2.0f / 3.0f) return p + (q - p) * (2.0f / 3.0f - t) * 6.0f;
+		return p;
+	};
+
+	if (s == 0.0f) {
+		u8 val = (u8)(l * 255.0f);
+		return video::SColor(alpha, val, val, val);
+	}
+
+	float q = l < 0.5f ? l * (1.0f + s) : l + s - l * s;
+	float p = 2.0f * l - q;
+
+	u8 r = (u8)(hue2rgb(p, q, h + 1.0f / 3.0f) * 255.0f);
+	u8 g = (u8)(hue2rgb(p, q, h) * 255.0f);
+	u8 b = (u8)(hue2rgb(p, q, h - 1.0f / 3.0f) * 255.0f);
+
+	return video::SColor(alpha, r, g, b);
+}
+
+} // anonymous namespace
+
 PanelOverlay::PanelOverlay()
 {
 	m_font = g_fontengine->getFont(FONT_SIZE_UNSPECIFIED, FM_Standard);
@@ -18,6 +77,20 @@ PanelOverlay::PanelOverlay()
 	}
 	m_fontsize.X = MYMAX(m_fontsize.X, 1);
 	m_fontsize.Y = MYMAX(m_fontsize.Y, 1);
+}
+
+video::SColor PanelOverlay::shiftHue(const video::SColor &color, float hueDeg, float satDelta)
+{
+	float h, s, l;
+	rgbToHsl(color, h, s, l);
+
+	h += hueDeg / 360.0f;
+	if (h < 0.0f) h += 1.0f;
+	if (h >= 1.0f) h -= 1.0f;
+
+	s = std::clamp(s + satDelta, 0.0f, 1.0f);
+
+	return hslToRgb(h, s, l, color.getAlpha());
 }
 
 FontMode PanelOverlay::fontStringToEnum(const std::string &str)
@@ -81,7 +154,9 @@ void PanelOverlay::drawPanelChrome(video::IVideoDriver *driver,
 
 	drawRoundedRect(driver, x, y, w, h, m_panel_bg, video::SColor(0, 0, 0, 0));
 	drawRoundedBorder(driver, x, y, w, h, m_border_color);
-	driver->draw2DRectangle(m_title_bg, core::rect<s32>(x + 4, y + 1, x + w - 4, y + panel.title_h));
+
+	video::SColor titleColor = panel.title_color_set ? panel.title_color : m_title_bg;
+	driver->draw2DRectangle(titleColor, core::rect<s32>(x + 4, y + 1, x + w - 4, y + panel.title_h));
 
 	drawText(panel.title.empty() ? panel.id : panel.title,
 		x + 5, y + (panel.title_h - m_fontsize.Y) / 2, m_font_color);
@@ -90,7 +165,8 @@ void PanelOverlay::drawPanelChrome(video::IVideoDriver *driver,
 	panel.hover_pin = pointInRect(mouse_pos.X, mouse_pos.Y, pin_x, y, 16, panel.title_h);
 	driver->draw2DRectangle(panel.hover_pin ? m_item_bg : m_panel_bg,
 		core::rect<s32>(pin_x, y, pin_x + 16, y + panel.title_h));
-	drawText(panel.pinned ? "P" : "p", pin_x + 3, y + 4,
+	drawText(panel.pinned ? "\U0001F4CC" : "\u25CB", pin_x + 3,
+		y + (panel.title_h - m_fontsize.Y) / 2,
 		panel.pinned ? m_selected_font_color : m_font_color);
 
 	s32 fw = 16;
@@ -98,12 +174,16 @@ void PanelOverlay::drawPanelChrome(video::IVideoDriver *driver,
 	panel.hover_focus = pointInRect(mouse_pos.X, mouse_pos.Y, fx, y, fw, panel.title_h);
 	driver->draw2DRectangle(panel.hover_focus ? m_item_bg : m_panel_bg,
 		core::rect<s32>(fx, y, fx + fw, y + panel.title_h));
-	drawText(panel.keyboard_focus ? "K" : "k", fx + 3, y + 4,
+	drawText(panel.keyboard_focus ? "\u2328" : "\u25CC", fx + 3,
+		y + (panel.title_h - m_fontsize.Y) / 2,
 		panel.keyboard_focus ? m_selected_font_color : m_font_color);
 
 	s32 rsx = fx - 16;
-	driver->draw2DRectangle(m_panel_bg, core::rect<s32>(rsx, y, rsx + 16, y + panel.title_h));
-	drawText("R", rsx + 3, y + 4, m_font_color);
+	panel.hover_reset = pointInRect(mouse_pos.X, mouse_pos.Y, rsx, y, 16, panel.title_h);
+	driver->draw2DRectangle(panel.hover_reset ? m_item_bg : m_panel_bg,
+		core::rect<s32>(rsx, y, rsx + 16, y + panel.title_h));
+	drawText("\u21BB", rsx + 3,
+		y + (panel.title_h - m_fontsize.Y) / 2, m_font_color);
 
 	panel.hover_title = pointInRect(mouse_pos.X, mouse_pos.Y, x, y, w, panel.title_h);
 }

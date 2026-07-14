@@ -25,6 +25,9 @@ struct OverlayPanel {
 	bool hover_title = false;
 	bool hover_pin = false;
 	bool hover_focus = false;
+	bool hover_reset = false;
+	video::SColor title_color;
+	bool title_color_set = false;
 };
 
 class PanelOverlay
@@ -88,6 +91,7 @@ protected:
 	s32 m_drag_off_x = 0, m_drag_off_y = 0;
 
 	FontMode fontStringToEnum(const std::string &str);
+	static video::SColor shiftHue(const video::SColor &color, float hueDeg, float satDelta = 0.0f);
 	void drawRoundedRect(video::IVideoDriver *driver, s32 x, s32 y, s32 w, s32 h,
 		video::SColor fill, video::SColor bg, s32 r = 4);
 	void drawRoundedBorder(video::IVideoDriver *driver, s32 x, s32 y, s32 w, s32 h,

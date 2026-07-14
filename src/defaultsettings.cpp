@@ -81,7 +81,7 @@ static void set_al_default_settings()
 	settings->setDefault("theme_bg", "#121212");
 	settings->setDefault("theme_bg_alpha", "191");
 	settings->setDefault("theme_panel_bg", "#000000");
-	settings->setDefault("theme_title_bg", "#32324b");
+	settings->setDefault("theme_title_bg", "#1a4a1a");
 	settings->setDefault("theme_border", "#0a0a0a");
 	settings->setDefault("theme_item_bg", "#000000");
 	settings->setDefault("theme_item_bg_alt", "#0a0a0a");
@@ -89,6 +89,7 @@ static void set_al_default_settings()
 	settings->setDefault("theme_text", "#00cc00");
 	settings->setDefault("theme_text_alpha", "255");
 	settings->setDefault("theme_selected_text", "#ffffff");
+	settings->setDefault("theme_tooltip_bg", "#000000");
 	settings->setDefault("theme_good", "#44ff44");
 	settings->setDefault("theme_bad", "#ff4444");
 	settings->setDefault("theme_warning", "#ffff44");
@@ -101,7 +102,7 @@ static void set_al_default_settings()
 	settings->setDefault("theme_active_bg_alpha", "204");
 	// Non-color cheat menu settings (kept for structural layout)
 	settings->setDefault("cheat_menu_font", "FM_Standard");
-	settings->setDefault("cheat_menu_head_height", "50");
+	settings->setDefault("cheat_menu_head_height", "33");
 	settings->setDefault("cheat_menu_entry_height", "35");
 	settings->setDefault("cheat_menu_entry_width", "200");
 

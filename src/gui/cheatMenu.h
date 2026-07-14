@@ -85,6 +85,8 @@ protected:
 private:
 	Client *m_client;
 
+	video::SColor m_tooltip_bg;
+
 	float m_rainbow_offset = 0.0;
 
 	// Tooltip state

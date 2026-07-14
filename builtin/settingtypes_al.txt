@@ -187,7 +187,7 @@ theme_panel_bg (Panel background) string #000000
 theme_panel_bg_alpha (Panel background opacity) int 204 0 255
 
 #    Background color of the panel title bar (hex #RRGGBB).
-theme_title_bg (Title bar background) string #32324b
+theme_title_bg (Title bar background) string #1a4a1a
 
 #    Title bar opacity (0-255).
 theme_title_bg_alpha (Title bar opacity) int 204 0 255
@@ -219,8 +219,11 @@ theme_text_alpha (Normal text opacity) int 255 0 255
 #    Selected/highlighted font color (hex #RRGGBB).
 theme_selected_text (Selected text color) string #ffffff
 
+#    Tooltip background color (hex #RRGGBB).
+theme_tooltip_bg (Tooltip background) string #000000
+
 #    Height of the category header row in pixels.
-cheat_menu_head_height (Cheat menu head height) int 50 10 200
+cheat_menu_head_height (Cheat menu head height) int 33 10 200
 
 #    Height of each cheat entry in pixels.
 cheat_menu_entry_height (Cheat menu entry height) int 35 10 200
