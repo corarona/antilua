@@ -99,7 +99,7 @@ end
 core.register_chatcommand("profile", {
 	params = "save|load|list|delete [name]",
 	description = "Manage cheat profiles",
-	func = function(name, param)
+	func = function(param)
 		param = param or ""
 		local parts = {}
 		for p in param:gmatch("%S+") do
