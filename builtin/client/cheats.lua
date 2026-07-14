@@ -100,6 +100,7 @@ core.register_chatcommand("profile", {
 	params = "save|load|list|delete [name]",
 	description = "Manage cheat profiles",
 	func = function(name, param)
+		param = param or ""
 		local parts = {}
 		for p in param:gmatch("%S+") do
 			table.insert(parts, p)
