@@ -12,6 +12,7 @@ local state = {
 	grid_new = core.settings:get_bool("mapart_grid_new", false),
 	mode = "floor",
 	filter = "nearest",
+	max_colors = 0,
 	status = "",
 }
 
@@ -46,7 +47,9 @@ get_mapart_tab = function(fs, tab)
 		"dropdown[5,6.2;3.5;mapart_filter;Nearest,Bilinear;" .. (s.filter == "bilinear" and 2 or 1) .. "]" ..
 		"checkbox[5,6.9;mapart_dither;Dither;" .. (s.dither and "true" or "false") .. "]" ..
 		"checkbox[5,7.6;mapart_gamma;Gamma;" .. (s.gamma and "true" or "false") .. "]" ..
-		"checkbox[5,8.3;mapart_invonly;Inventory only;" .. (s.invonly and "true" or "false") .. "]"
+		"checkbox[5,8.3;mapart_invonly;Inventory only;" .. (s.invonly and "true" or "false") .. "]" ..
+		"field[5.5,8.8;1.5,0.6;mapart_colors;;" .. (s.max_colors > 0 and s.max_colors or "") .. "]" ..
+		"label[5,8.5;Colors (0=all)]"
 
 	if s.mode == "floor" then
 		fs = fs .. "checkbox[5,9.0;mapart_grid_new;New grid;" .. (s.grid_new and "true" or "false") .. "]"
@@ -161,6 +164,8 @@ handle_mapart_events = function(fields)
 		local filter_names = { "nearest", "bilinear" }
 		local filter = filter_names[tonumber(fields.mapart_filter) or 1]
 
+		local max_colors = tonumber(fields.mapart_colors) or 0
+		s.max_colors = max_colors
 		s.out_w = out_w
 		s.out_h = out_h
 		s.dither = do_dither
@@ -176,6 +181,9 @@ handle_mapart_events = function(fields)
 				s.status = "No usable blocks in inventory"
 				return true
 			end
+		end
+		if max_colors > 0 and #pal > max_colors then
+			pal = reduce_palette(pal, max_colors)
 		end
 
 		s.status = "Converting..."

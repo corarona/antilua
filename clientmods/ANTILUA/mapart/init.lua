@@ -9,6 +9,7 @@ end
 -- Module-scoped palette shared by all sub-files
 mapart = {}
 mapart.palette = {}
+mapart.max_colors = tonumber(core.settings:get("mapart_max_colors")) or 0
 
 local function load_palette()
 	local json_path = modpath .. "/colors.json"
@@ -87,8 +88,16 @@ dofile(vfspath .. "/conversion.lua")
 dofile(vfspath .. "/gui.lua")
 
 
+local function apply_max_colors(pal)
+	local maxc = mapart.max_colors
+	if maxc and maxc > 0 and #pal > maxc then
+		return reduce_palette(pal, maxc)
+	end
+	return pal
+end
+
 core.register_chatcommand("mapart", {
-	params = "<path> [width] [height] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear]",
+	params = "<path> [width] [height] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear] [--colors N]",
 	description = "Convert a PNG image to an MTS schematic using map colors",
 	func = function(param)
 		if param == "" then
@@ -110,6 +119,7 @@ core.register_chatcommand("mapart", {
 		local do_invonly = false
 		local do_grid_new = core.settings:get_bool("mapart_grid_new", false)
 		local filter = "nearest"
+		local max_colors = mapart.max_colors
 
 		for i = 2, #parts do
 			if parts[i] == "--dither" then
@@ -118,6 +128,9 @@ core.register_chatcommand("mapart", {
 				do_gamma = true
 			elseif parts[i] == "--invonly" then
 				do_invonly = true
+			elseif parts[i] == "--colors" then
+				max_colors = tonumber(parts[i + 1]) or max_colors
+				i = i + 1
 			elseif parts[i] == "--filter" then
 				filter = parts[i + 1] or "nearest"
 				i = i + 1
@@ -148,6 +161,7 @@ core.register_chatcommand("mapart", {
 				return false, "No usable blocks in inventory"
 			end
 		end
+		pal = apply_max_colors(pal)
 
 		local schem = image_to_schem(img.width, img.height, img.data, {
 			width = out_w,
@@ -191,7 +205,7 @@ core.register_chatcommand("mapart", {
 })
 
 core.register_chatcommand("mapart_wall", {
-	params = "<path> [width] [height] [--direction x|z] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear]",
+	params = "<path> [width] [height] [--direction x|z] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear] [--colors N]",
 	description = "Convert a PNG image to a vertical wall MTS schematic",
 	func = function(param)
 		if param == "" then
@@ -212,6 +226,7 @@ core.register_chatcommand("mapart_wall", {
 		local do_gamma = false
 		local do_invonly = false
 		local filter = "nearest"
+		local max_colors = mapart.max_colors
 		local args = {}
 
 		for i = 2, #parts do
@@ -221,6 +236,9 @@ core.register_chatcommand("mapart_wall", {
 				do_gamma = true
 			elseif parts[i] == "--invonly" then
 				do_invonly = true
+			elseif parts[i] == "--colors" then
+				max_colors = tonumber(parts[i + 1]) or max_colors
+				i = i + 1
 			elseif parts[i] == "--direction" then
 				dir = parts[i + 1] or "x"
 				i = i + 1
@@ -255,6 +273,7 @@ core.register_chatcommand("mapart_wall", {
 				return false, "No usable blocks in inventory"
 			end
 		end
+		pal = apply_max_colors(pal)
 
 		local schem = image_to_wall_schem(img.width, img.height, img.data, {
 			width = out_w,
