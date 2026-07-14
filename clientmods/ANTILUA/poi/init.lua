@@ -1,12 +1,21 @@
 poi = {}
 local storage = core.get_mod_storage("poi")
-local stprefix = "POI-"
+local stprefix = "POI-singleplayer:"
+
+if core.settings:get("poi_show_all_waypoints") == nil then
+	core.settings:set("poi_show_all_waypoints", "false")
+end
+
 core.register_on_connect(function()
 	local info = core.get_server_info()
 	if info and info.address then
-		stprefix = "POI-" .. info.address .. ":"
+		stprefix = "POI-" .. info.address .. ":" .. info.port .. ":"
 	end
 end)
+
+local function show_all_enabled()
+	return core.settings:get_bool("poi_show_all_waypoints")
+end
 
 local DISTANCE_NEAR = 256
 
@@ -57,14 +66,23 @@ end
 --
 
 local function full_key(name)
+	if show_all_enabled() and name:find(":") then
+		return "POI-" .. tostring(name)
+	end
 	return stprefix .. tostring(name)
 end
 
 local function color_key(name)
+	if show_all_enabled() and name:find(":") then
+		return "POI-" .. tostring(name) .. "_color"
+	end
 	return stprefix .. tostring(name) .. "_color"
 end
 
 local function group_key(name)
+	if show_all_enabled() and name:find(":") then
+		return "POI-" .. tostring(name) .. "_group"
+	end
 	return stprefix .. tostring(name) .. "_group"
 end
 
@@ -85,10 +103,11 @@ function poi.set_group(name, group)
 end
 
 function poi.getwps()
+	local prefix = show_all_enabled() and "POI-" or stprefix
 	local wp = {}
 	for name, _ in pairs(storage:to_table().fields) do
-		if name:sub(1, #stprefix) == stprefix then
-			local short = name:sub(#stprefix + 1)
+		if name:sub(1, #prefix) == prefix then
+			local short = name:sub(#prefix + 1)
 			if not short:match("_ss$") and not short:match("_color$") and not short:match("_group$") then
 				table.insert(wp, short)
 			end
@@ -302,14 +321,16 @@ local function wp_distance(name)
 end
 
 local function get_screenshot(name)
-	local ss = storage:get_string(stprefix .. tostring(name) .. "_ss")
+	local prefix = show_all_enabled() and name:find(":") and "POI-" or stprefix
+	local ss = storage:get_string(prefix .. tostring(name) .. "_ss")
 	return (ss ~= "") and ss or nil
 end
 
 local function get_unique_groups()
+	local prefix = show_all_enabled() and "POI-" or stprefix
 	local groups = {}
 	for key, value in pairs(storage:to_table().fields) do
-		if key:sub(1, #stprefix) == stprefix and key:match("_group$") then
+		if key:sub(1, #prefix) == prefix and key:match("_group$") then
 			if value and value ~= "" then
 				groups[value] = true
 			end
@@ -332,6 +353,9 @@ function poi.display_formspec()
 		"background9[1,1;1,1;blank.png;true;7]",
 		af.label(0.25, 0.5, "Waypoint list")
 	)
+
+	sb:add(af.checkbox(0.25, 0.2, "poi_show_all", "Show all servers",
+		core.settings:get_bool("poi_show_all_waypoints")))
 
 	-- Group filter dropdown
 	local groups = get_unique_groups()
@@ -508,6 +532,13 @@ core.register_on_formspec_input(function(formname, fields)
 			poi.display_formspec()
 			return true
 		end
+	end
+
+	-- Show all servers checkbox
+	if fields.poi_show_all ~= nil then
+		core.settings:set_bool("poi_show_all_waypoints", fields.poi_show_all == "true")
+		poi.display_formspec()
+		return true
 	end
 
 	local name
