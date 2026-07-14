@@ -87,6 +87,7 @@ enum
 	GUI_ID_KEY_SELECT_LEFT_BUTTON,
 	GUI_ID_KEY_SELECT_RIGHT_BUTTON,
 	GUI_ID_KEY_SELECT_CONFIRM_BUTTON,
+	GUI_ID_KEY_QUICK_SELECT_BUTTON,
 	// other
 	GUI_ID_CB_AUX1_DESCENDS,
 	GUI_ID_CB_DOUBLETAP_JUMP,
@@ -441,4 +442,5 @@ void GUIKeyChangeMenu::init_keys()
 	this->add_key(GUI_ID_KEY_SELECT_LEFT_BUTTON,    wstrgettext("C. Menu Left"),     "keymap_select_left");
 	this->add_key(GUI_ID_KEY_SELECT_RIGHT_BUTTON,   wstrgettext("C. Menu Right"),    "keymap_select_right");
 	this->add_key(GUI_ID_KEY_SELECT_CONFIRM_BUTTON, wstrgettext("C. Menu Enter"),    "keymap_select_confirm");
+	this->add_key(GUI_ID_KEY_QUICK_SELECT_BUTTON,   wstrgettext("Quick Select"),     "keymap_quick_select_menu");
 }
