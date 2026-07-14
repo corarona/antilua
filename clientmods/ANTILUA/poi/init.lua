@@ -354,8 +354,8 @@ function poi.display_formspec()
 		af.label(0.25, 0.5, "Waypoint list")
 	)
 
-	sb:add(af.checkbox(0.25, 0.2, "poi_show_all", "Show all servers",
-		core.settings:get_bool("poi_show_all_waypoints")))
+	sb:add("checkbox[0.25,0.2;poi_show_all;Show all servers;"
+		.. (core.settings:get_bool("poi_show_all_waypoints") and "true" or "false") .. "]")
 
 	-- Group filter dropdown
 	local groups = get_unique_groups()
