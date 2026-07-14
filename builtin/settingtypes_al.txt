@@ -169,6 +169,9 @@ cheat_menu_toggle_mode (Cheat menu toggle mode) bool false
 #    Comma-separated list of favorited cheat settings for the favorites panel.
 cheat_menu_favorites (Cheat menu favorites) string
 
+#    Key to toggle the cheat menu.
+keymap_toggle_cheat_menu (Toggle cheat menu) key SYSTEM_SCANCODE_43
+
 [*Antilua Cheat Menu Theme] [client]
 
 #    Font type for the cheat menu text.
