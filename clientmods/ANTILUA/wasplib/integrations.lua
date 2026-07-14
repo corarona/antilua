@@ -226,7 +226,7 @@ core.register_globalstep(function()
 	if core.settings:get_bool("autotool") then
 		local pt = core.get_pointed_thing()
 		if pt and pt.type == "node" then
-			local ptpos = core.get_pointed_thing_position(pt)
+			local ptpos = pt.under
 			if ptpos and vector.equals(ptpos, at_pointed_pos) and player:get_control().dig then
 				player:set_wield_index(at_new_idx)
 				if at_best_time == 0 then
