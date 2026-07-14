@@ -766,7 +766,7 @@ local function find_nearest_rail_portal(nx, nz)
 	return best_x, best_z
 end
 
-core.register_chatcommand("railportal", {
+core.register_chatcommand("oy_railportal", {
 	params = "[x,[y,]z]",
 	description = "Find nearest oysterity nether railway portal. Uses current pos if no args.",
 	func = function(param)
