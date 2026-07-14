@@ -26,6 +26,8 @@ struct OverlayPanel {
 	bool hover_pin = false;
 	bool hover_focus = false;
 	bool hover_reset = false;
+	bool hover_collapse = false;
+	bool collapsed = false;
 	video::SColor title_color;
 	bool title_color_set = false;
 };
@@ -36,7 +38,7 @@ public:
 	PanelOverlay();
 	virtual ~PanelOverlay() = default;
 
-	void drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug);
+	virtual void drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug);
 	void drawPinned(video::IVideoDriver *driver, v2s32 mouse_pos);
 
 	void handleMouse(v2s32 pos, bool left_down);
@@ -55,6 +57,7 @@ protected:
 		OverlayPanel &panel, s32 content_x, s32 content_y,
 		s32 content_w, s32 content_h, v2s32 mouse_pos) = 0;
 	virtual void handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32 cy, s32 cw);
+	virtual void handleRightClick(v2s32 pos);
 
 	// Drawing helpers
 	void drawPanelChrome(video::IVideoDriver *driver, OverlayPanel &panel, v2s32 mouse_pos);

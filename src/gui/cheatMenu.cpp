@@ -38,6 +38,7 @@ bool g_show_minimal_debug = false;
 static bool isCatPanel(const OverlayPanel &p) { return p.id.find("_cat_") == 0; }
 static bool isFavPanel(const OverlayPanel &p) { return p.id == "_fav_0"; }
 static bool isSuperPanel(const OverlayPanel &p) { return p.id == "_super_0"; }
+bool CheatMenu::isRecentPanel(const OverlayPanel &p) { return p.id == "_recent_0"; }
 
 static std::set<std::string> getFavoritesSet()
 {
@@ -103,10 +104,257 @@ CheatMenu::CheatMenu(Client *client) : PanelOverlay(), m_client(client)
 	m_fontsize.Y = MYMAX(m_fontsize.Y, 1);
 }
 
+void CheatMenu::addRecentCheat(const std::string &setting)
+{
+	// Move to front if already present
+	auto it = std::find(m_recent_cheats.begin(), m_recent_cheats.end(), setting);
+	if (it != m_recent_cheats.end())
+		m_recent_cheats.erase(it);
+	m_recent_cheats.insert(m_recent_cheats.begin(), setting);
+	if (m_recent_cheats.size() > MAX_RECENT)
+		m_recent_cheats.resize(MAX_RECENT);
+	saveRecentCheats();
+}
+
+void CheatMenu::createRecentPanel()
+{
+	if (m_recent_cheats.empty())
+		return;
+	OverlayPanel rp;
+	rp.id = "_recent_0";
+	rp.title = "Recent";
+	rp.w = m_entry_width > 0 ? m_entry_width : 220;
+	rp.title_h = m_head_height;
+	m_panels.push_back(rp);
+}
+
+void CheatMenu::loadRecentCheats()
+{
+	m_recent_cheats.clear();
+	std::string val;
+	if (!g_settings->getNoEx("cheat_menu_recent", val) || val.empty())
+		return;
+	std::istringstream ss(val);
+	std::string item;
+	while (std::getline(ss, item, ','))
+		if (!item.empty())
+			m_recent_cheats.push_back(item);
+}
+
+void CheatMenu::saveRecentCheats()
+{
+	std::string val;
+	for (size_t i = 0; i < m_recent_cheats.size(); i++) {
+		if (i > 0) val += ",";
+		val += m_recent_cheats[i];
+	}
+	g_settings->set("cheat_menu_recent", val);
+}
+
+bool CheatMenu::hasActiveConflict(ScriptApiCheatsCheat *cheat) const
+{
+	if (cheat->m_conflicts_with.empty())
+		return false;
+	for (auto &setting : cheat->m_conflicts_with) {
+		try {
+			if (g_settings->getBool(setting))
+				return true;
+		} catch (SettingNotFoundException &) {}
+	}
+	return false;
+}
+
+void CheatMenu::dismissContextMenu()
+{
+	m_ctx.active = false;
+	m_ctx.cheat_setting.clear();
+}
+
+void CheatMenu::drawContextMenu(video::IVideoDriver *driver)
+{
+	if (!m_ctx.active)
+		return;
+
+	enum { OPT_TOGGLE = 0, OPT_SETTINGS = 1, OPT_FAVORITE = 2 };
+	s32 entry_h = 30;
+	s32 gap = 2;
+	int num = 1; // always toggle
+	if (m_ctx.has_settings) num++;
+	num++; // always favorite
+
+	m_ctx.w = 180;
+	m_ctx.h = num * entry_h + (num - 1) * gap + 6;
+
+	// Clamp to screen
+	auto ss = driver->getScreenSize();
+	if (m_ctx.x + m_ctx.w > (s32)ss.Width) m_ctx.x = ss.Width - m_ctx.w;
+	if (m_ctx.y + m_ctx.h > (s32)ss.Height) m_ctx.y = ss.Height - m_ctx.h;
+
+	// Background
+	drawRoundedRect(driver, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h, m_panel_bg, m_bg_color);
+	drawRoundedBorder(driver, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h, m_border_color);
+
+	s32 iy = m_ctx.y + 3;
+	auto draw_item = [&](const std::string &text, int idx) {
+		bool sel = (idx == m_ctx.selected);
+		driver->draw2DRectangle(sel ? m_active_bg_color : m_panel_bg,
+			core::rect<s32>(m_ctx.x + 1, iy, m_ctx.x + m_ctx.w - 1, iy + entry_h));
+		drawText(text, m_ctx.x + 6, iy + (entry_h - m_fontsize.Y) / 2,
+			sel ? m_selected_font_color : m_font_color);
+		iy += entry_h + gap;
+	};
+
+	draw_item(m_ctx.is_enabled ? "Disable" : "Enable", OPT_TOGGLE);
+	if (m_ctx.has_settings)
+		draw_item("Settings", OPT_SETTINGS);
+	draw_item(m_ctx.is_favorite ? "Unfavorite" : "Favorite", OPT_FAVORITE);
+}
+
+void CheatMenu::handleRightClick(v2s32 pos)
+{
+	if (!g_cheat_layer_active) {
+		dismissContextMenu();
+		return;
+	}
+
+	// Check if click is on the context menu itself
+	if (m_ctx.active) {
+		if (pointInRect(pos.X, pos.Y, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h)) {
+			s32 entry_h = 30;
+			s32 gap = 2;
+			s32 iy = m_ctx.y + 3;
+			int idx = 0;
+
+			auto check_hit = [&]() -> bool {
+				if (pointInRect(pos.X, pos.Y, m_ctx.x + 1, iy, m_ctx.w - 2, entry_h))
+					return true;
+				iy += entry_h + gap;
+				idx++;
+				return false;
+			};
+
+			// Toggle
+			if (check_hit()) { m_ctx.selected = 0; execContextMenu(); return; }
+			// Settings
+			if (m_ctx.has_settings && check_hit()) { m_ctx.selected = idx; execContextMenu(); return; }
+			// Favorite
+			if (check_hit()) { m_ctx.selected = idx; execContextMenu(); return; }
+
+			dismissContextMenu();
+			return;
+		}
+		dismissContextMenu();
+		return;
+	}
+
+	// Find which cheat was right-clicked
+	for (size_t pi = 0; pi < m_panels.size(); pi++) {
+		auto &panel = m_panels[pi];
+		if (panel.collapsed)
+			continue;
+		if (!pointInRect(pos.X, pos.Y, panel.x, panel.y, panel.w, panel.h))
+			continue;
+		if (pointInRect(pos.X, pos.Y, panel.x, panel.y, panel.w, panel.title_h))
+			return; // title bar — ignore
+
+		s32 cx = panel.x, cy = panel.y + panel.title_h + m_gap;
+		s32 cw = panel.w;
+
+		// Determine how many entries in this panel to iterate
+		auto count_entries = [&]() -> std::vector<ScriptApiCheatsCheat *> {
+			std::vector<ScriptApiCheatsCheat *> result;
+			ClientScripting *script = m_client->getScript();
+			if (!script || !script->m_cheats_loaded)
+				return result;
+
+			if (isRecentPanel(panel)) {
+				for (auto &s : m_recent_cheats) {
+					for (auto &cat : script->m_cheat_categories)
+						for (auto *ch : cat->m_cheats)
+							if (ch->m_setting == s)
+								result.push_back(ch);
+				}
+			} else if (isCatPanel(panel) && panel.selected_category >= 0 &&
+					(size_t)panel.selected_category < script->m_cheat_categories.size()) {
+				for (auto *ch : script->m_cheat_categories[panel.selected_category]->m_cheats)
+					if (matchesSearch(ch->m_name, m_search_text))
+						result.push_back(ch);
+			} else if (isFavPanel(panel)) {
+				auto favs = getFavoritesSet();
+				for (auto &cat : script->m_cheat_categories)
+					for (auto *ch : cat->m_cheats)
+						if (favs.count(ch->m_setting) && matchesSearch(ch->m_name, m_search_text))
+							result.push_back(ch);
+			}
+			return result;
+		};
+
+		auto entries = count_entries();
+		s32 iy = cy;
+		for (size_t ei = 0; ei < entries.size(); ei++) {
+			if (pointInRect(pos.X, pos.Y, cx, iy, cw, m_entry_height)) {
+				auto *cheat = entries[ei];
+				m_ctx.active = true;
+				m_ctx.x = pos.X;
+				m_ctx.y = pos.Y;
+				m_ctx.selected = 0;
+				m_ctx.cheat_setting = cheat->m_setting;
+				m_ctx.is_enabled = cheat->is_enabled();
+
+				lua_State *L = m_client->getScript()->getLuaState();
+				lua_getglobal(L, "core");
+				lua_getfield(L, -1, "cheat_defs");
+				lua_getfield(L, -1, cheat->m_setting.c_str());
+				if (lua_istable(L, -1)) {
+					lua_getfield(L, -1, "cheat_settings");
+					m_ctx.has_settings = lua_istable(L, -1) || lua_isfunction(L, -1);
+					lua_pop(L, 1);
+				} else {
+					m_ctx.has_settings = false;
+				}
+				lua_pop(L, 3);
+
+				m_ctx.is_favorite = isFavorite(cheat->m_setting);
+				return;
+			}
+			iy += m_entry_height + m_gap;
+		}
+	}
+}
+
+void CheatMenu::execContextMenu()
+{
+	if (!m_ctx.active)
+		return;
+
+	ClientScripting *script = m_client->getScript();
+	if (!script || !script->m_cheats_loaded)
+		return;
+
+	enum { OPT_TOGGLE = 0, OPT_SETTINGS = 1, OPT_FAVORITE = 2 };
+
+	if (m_ctx.selected == OPT_TOGGLE) {
+		for (auto &cat : script->m_cheat_categories)
+			for (auto *ch : cat->m_cheats)
+				if (ch->m_setting == m_ctx.cheat_setting) {
+					script->toggle_cheat(ch);
+					addRecentCheat(ch->m_setting);
+					dismissContextMenu();
+					return;
+				}
+	} else if (m_ctx.selected == OPT_SETTINGS && m_ctx.has_settings) {
+		script->show_cheat_settings(m_ctx.cheat_setting);
+	} else if (m_ctx.selected == OPT_FAVORITE) {
+		toggleFavorite(m_ctx.cheat_setting);
+	}
+	dismissContextMenu();
+}
+
 void CheatMenu::createCategoryPanels()
 {
 	CHEAT_MENU_GET_SCRIPTPTR
 	m_panels.clear();
+	loadRecentCheats();
 	size_t n = script->m_cheat_categories.size();
 	for (size_t i = 0; i < n; i++) {
 		OverlayPanel cp;
@@ -140,6 +388,7 @@ void CheatMenu::createCategoryPanels()
 		g_settings->remove("panel_pos__fav_0");
 	}
 
+	createRecentPanel();
 	createSupermenuPanel();
 
 	m_search_text.clear();
@@ -147,6 +396,9 @@ void CheatMenu::createCategoryPanels()
 
 s32 CheatMenu::getPanelContentHeight(const OverlayPanel &panel)
 {
+	if (panel.collapsed)
+		return 0;
+
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded)
 		return 0;
@@ -169,6 +421,12 @@ s32 CheatMenu::getPanelContentHeight(const OverlayPanel &panel)
 			for (auto &cheat : cat->m_cheats)
 				if (isFavorite(cheat->m_setting) && matchesSearch(cheat->m_name, m_search_text))
 					count++;
+	} else if (isRecentPanel(panel)) {
+		for (auto &setting : m_recent_cheats)
+			for (auto &cat : script->m_cheat_categories)
+				for (auto &cheat : cat->m_cheats)
+					if (cheat->m_setting == setting)
+						{ count++; break; }
 	} else if (isCatPanel(panel) && panel.selected_category >= 0 &&
 			(size_t)panel.selected_category < script->m_cheat_categories.size()) {
 		for (auto &cheat : script->m_cheat_categories[panel.selected_category]->m_cheats)
@@ -182,7 +440,7 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 	OverlayPanel &panel, s32 content_x, s32 content_y,
 	s32 content_w, s32 content_h, v2s32 mouse_pos)
 {
-	if (!isCatPanel(panel) && !isFavPanel(panel) && !isSuperPanel(panel))
+	if (!isCatPanel(panel) && !isFavPanel(panel) && !isSuperPanel(panel) && !isRecentPanel(panel))
 		return;
 	CHEAT_MENU_GET_SCRIPTPTR
 
@@ -258,7 +516,19 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 
 	auto favs = getFavoritesSet();
 
-	if (isFavPanel(panel)) {
+	if (isRecentPanel(panel)) {
+		for (auto &setting : m_recent_cheats) {
+			for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
+				for (auto &cheat : script->m_cheat_categories[ci]->m_cheats) {
+					if (cheat->m_setting == setting) {
+						entries.push_back({cheat, (int)ci});
+						goto next_recent;
+					}
+				}
+			}
+			next_recent:;
+		}
+	} else if (isFavPanel(panel)) {
 		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
 			for (auto &cheat : script->m_cheat_categories[ci]->m_cheats) {
 				if (favs.count(cheat->m_setting) && matchesSearch(cheat->m_name, m_search_text))
@@ -306,9 +576,15 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 		driver->draw2DRectangle(cbg, core::rect<s32>(content_x + 1, iy, content_x + content_w - 1, iy + m_entry_height));
 
 		std::string txt = enabled ? "[x] " : "[ ] ";
+		bool conflict = hasActiveConflict(cheat);
+		if (conflict)
+			txt += "\u26A0 ";
 		txt += cheat->m_name;
 		drawText(txt, content_x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,
 			(chi == panel.selected_cheat) ? m_selected_font_color : m_font_color);
+
+		if (conflict && !tooltip_desc.empty())
+			tooltip_desc += " \u26A0 Conflict with another active cheat";
 
 		// Star icon (far right)
 		s32 star_x = content_x + content_w - 18;
@@ -384,7 +660,7 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 	if (panel_idx >= m_panels.size())
 		return;
 	auto &panel = m_panels[panel_idx];
-	if (!isCatPanel(panel) && !isFavPanel(panel) && !isSuperPanel(panel))
+	if (!isCatPanel(panel) && !isFavPanel(panel) && !isSuperPanel(panel) && !isRecentPanel(panel))
 		return;
 	CHEAT_MENU_GET_SCRIPTPTR
 
@@ -424,6 +700,7 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 					if (pointInRect(pos.X, pos.Y, panel.x, iy, panel.w, m_entry_height)) {
 						panel.selected_cheat = chi;
 						script->toggle_cheat(cheat);
+						addRecentCheat(cheat->m_setting);
 						return;
 					}
 					iy += m_entry_height + m_gap;
@@ -442,7 +719,14 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 
 	auto favs = getFavoritesSet();
 
-	if (isFavPanel(panel)) {
+	if (isRecentPanel(panel)) {
+		for (auto &setting : m_recent_cheats)
+			for (auto &cat : script->m_cheat_categories)
+				for (auto *ch : cat->m_cheats)
+					if (ch->m_setting == setting)
+						{ entries.push_back({ch}); goto next_recent_click; }
+		next_recent_click:;
+	} else if (isFavPanel(panel)) {
 		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++)
 			for (auto &cheat : script->m_cheat_categories[ci]->m_cheats)
 				if (favs.count(cheat->m_setting) && matchesSearch(cheat->m_name, m_search_text))
@@ -488,6 +772,7 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 			// Main area: toggle cheat
 			panel.selected_cheat = chi;
 			script->toggle_cheat(e.cheat);
+			addRecentCheat(e.cheat->m_setting);
 			return;
 		}
 		iy += m_entry_height + m_gap;
@@ -518,12 +803,14 @@ void CheatMenu::onLayerClosed()
 		}
 	}
 
-	// Remove saved positions for fav and super panels so they always reset to left
+	// Remove saved positions for special panels so they always reset to left
 	g_settings->remove("panel_pos__fav_0");
 	g_settings->remove("panel_pos__super_0");
+	g_settings->remove("panel_pos__recent_0");
 
 	for (s32 i = (s32)m_panels.size() - 1; i >= 0; i--) {
-		if ((isCatPanel(m_panels[i]) || isFavPanel(m_panels[i]) || isSuperPanel(m_panels[i])) && !m_panels[i].pinned)
+		auto &p = m_panels[i];
+		if ((isCatPanel(p) || isFavPanel(p) || isSuperPanel(p) || isRecentPanel(p)) && !p.pinned)
 			m_panels.erase(m_panels.begin() + i);
 	}
 }
@@ -586,6 +873,10 @@ void CheatMenu::selectUp()
 		int max = countFavoritedCheats(script) - 1;
 		panel->selected_cheat--;
 		if (panel->selected_cheat < 0) panel->selected_cheat = max;
+	} else if (isRecentPanel(*panel)) {
+		int max = (int)m_recent_cheats.size() - 1;
+		panel->selected_cheat--;
+		if (panel->selected_cheat < 0) panel->selected_cheat = max;
 	} else if (isSuperPanel(*panel)) {
 		int max = 1;
 		if (m_super_level == 0) {
@@ -620,6 +911,10 @@ void CheatMenu::selectDown()
 		if (panel->selected_cheat > max) panel->selected_cheat = 0;
 	} else if (isFavPanel(*panel)) {
 		int max = countFavoritedCheats(script) - 1;
+		panel->selected_cheat++;
+		if (panel->selected_cheat > max) panel->selected_cheat = 0;
+	} else if (isRecentPanel(*panel)) {
+		int max = (int)m_recent_cheats.size() - 1;
 		panel->selected_cheat++;
 		if (panel->selected_cheat > max) panel->selected_cheat = 0;
 	} else if (isSuperPanel(*panel)) {
@@ -680,6 +975,7 @@ void CheatMenu::selectConfirm()
 			if (panel->selected_cheat >= 0 && (size_t)panel->selected_cheat < cat->m_cheats.size()) {
 				auto *cheat = cat->m_cheats[panel->selected_cheat];
 				script->toggle_cheat(cheat);
+				addRecentCheat(cheat->m_setting);
 			}
 		}
 	} else if (isFavPanel(*panel)) {
@@ -689,11 +985,27 @@ void CheatMenu::selectConfirm()
 				if (isFavorite(cheat->m_setting)) {
 					if (idx == panel->selected_cheat) {
 						script->toggle_cheat(cheat);
+						addRecentCheat(cheat->m_setting);
 						return;
 					}
 					idx++;
 				}
 			}
+		}
+	} else if (isRecentPanel(*panel)) {
+		int idx = 0;
+		for (auto &setting : m_recent_cheats) {
+			for (auto &cat : script->m_cheat_categories)
+				for (auto *ch : cat->m_cheats)
+					if (ch->m_setting == setting) {
+						if (idx == panel->selected_cheat) {
+							script->toggle_cheat(ch);
+							addRecentCheat(ch->m_setting);
+							return;
+						}
+						idx++;
+						break;
+					}
 		}
 	} else if (isSuperPanel(*panel)) {
 		if (m_super_level == 0) {
@@ -724,6 +1036,7 @@ void CheatMenu::selectConfirm()
 						continue;
 					if (cheat_idx == panel->selected_cheat) {
 						script->toggle_cheat(cheat);
+						addRecentCheat(cheat->m_setting);
 						return;
 					}
 					cheat_idx++;
@@ -731,6 +1044,12 @@ void CheatMenu::selectConfirm()
 			}
 		}
 	}
+}
+
+void CheatMenu::drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug)
+{
+	PanelOverlay::drawAll(driver, mouse_pos, show_debug);
+	drawContextMenu(driver);
 }
 
 bool CheatMenu::isFavorite(const std::string &setting) const
@@ -985,6 +1304,7 @@ void CheatMenu::paletteConfirm()
 				continue;
 			if (idx == m_quick_palette_selected) {
 				script->toggle_cheat(cheat);
+				addRecentCheat(cheat->m_setting);
 				return;
 			}
 			idx++;
@@ -1011,13 +1331,17 @@ void CheatMenu::autoTilePanels(v2u32 screen_size)
 	for (auto &panel : m_panels)
 		panel.h = panel.title_h + getPanelContentHeight(panel);
 
-	// Left column reserved for fav and super
+	auto isSpecial = [&](const OverlayPanel &p) -> bool {
+		return isFavPanel(p) || isSuperPanel(p) || isRecentPanel(p);
+	};
+
+	// Left column reserved for special panels
 	s32 left_col_x = margin;
 
 	// Stack special panels vertically in left column
 	s32 left_y = 60;
 	for (auto &panel : m_panels) {
-		if (isFavPanel(panel) || isSuperPanel(panel)) {
+		if (isSpecial(panel)) {
 			panel.x = left_col_x;
 			panel.y = left_y;
 			panel.detached = false;
@@ -1028,7 +1352,7 @@ void CheatMenu::autoTilePanels(v2u32 screen_size)
 	// Collect non-special panels and sort by height (tallest first)
 	std::vector<size_t> order;
 	for (size_t i = 0; i < m_panels.size(); i++) {
-		if (!isFavPanel(m_panels[i]) && !isSuperPanel(m_panels[i]))
+		if (!isSpecial(m_panels[i]))
 			order.push_back(i);
 	}
 	std::stable_sort(order.begin(), order.end(), [&](size_t a, size_t b) {
@@ -1038,7 +1362,7 @@ void CheatMenu::autoTilePanels(v2u32 screen_size)
 	// Mark special panels as already placed
 	std::vector<bool> placed(m_panels.size(), false);
 	for (size_t i = 0; i < m_panels.size(); i++) {
-		if (isFavPanel(m_panels[i]) || isSuperPanel(m_panels[i]))
+		if (isSpecial(m_panels[i]))
 			placed[i] = true;
 	}
 
@@ -1055,7 +1379,7 @@ void CheatMenu::autoTilePanels(v2u32 screen_size)
 
 	s32 right_start = margin;
 	for (auto &p : m_panels) {
-		if (isFavPanel(p) || isSuperPanel(p))
+		if (isSpecial(p))
 			right_start = std::max(right_start, p.x + p.w + m_gap);
 	}
 

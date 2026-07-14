@@ -114,6 +114,33 @@ void ScriptApiCheats::init_cheats()
 	}
 	lua_pop(L, 2);
 
+	// Read conflicts from cheat_defs
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "cheat_defs");
+	if (lua_istable(L, -1)) {
+		for (auto &cat : m_cheat_categories) {
+			for (auto *cheat : cat->m_cheats) {
+				if (cheat->m_setting.empty())
+					continue;
+				lua_getfield(L, -1, cheat->m_setting.c_str());
+				if (lua_istable(L, -1)) {
+					lua_getfield(L, -1, "conflicts_with");
+					if (lua_istable(L, -1)) {
+						lua_pushnil(L);
+						while (lua_next(L, -2)) {
+							if (lua_isstring(L, -1))
+								cheat->m_conflicts_with.push_back(lua_tostring(L, -1));
+							lua_pop(L, 1);
+						}
+					}
+					lua_pop(L, 1);
+				}
+				lua_pop(L, 1);
+			}
+		}
+	}
+	lua_pop(L, 2);
+
 	std::sort(m_cheat_categories.begin(), m_cheat_categories.end(),
 			[](const ScriptApiCheatsCategory *a, const ScriptApiCheatsCategory *b) {
 				return a->m_name < b->m_name;

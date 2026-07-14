@@ -19,6 +19,8 @@ function core.register_cheat(name, ...)
 		end
 	end
 
+	def.conflicts_with = def.conflicts_with or {}
+
 	if def.setting then
 		if core.settings:get(def.setting) == nil then
 			core.settings:set(def.setting, "false")
@@ -40,6 +42,108 @@ function core.register_cheat(name, ...)
 	return def
 end
 
+-- Profile management
+function core.save_cheat_profile(name)
+	local enabled = {}
+	for setting, def in pairs(core.cheat_defs) do
+		if core.settings:get_bool(setting) then
+			table.insert(enabled, setting)
+		end
+	end
+	core.settings:set("cheat_profile_" .. name, table.concat(enabled, ","))
+	local list = core.settings:get("cheat_profile_names") or ""
+	local names = {}
+	for n in list:gmatch("[^,]+") do
+		if n ~= name then table.insert(names, n) end
+	end
+	table.insert(names, name)
+	core.settings:set("cheat_profile_names", table.concat(names, ","))
+	core.settings:write()
+end
+
+function core.load_cheat_profile(name)
+	local data = core.settings:get("cheat_profile_" .. name)
+	if not data or data == "" then return false end
+	local profiled = {}
+	for setting in data:gmatch("[^,]+") do
+		profiled[setting] = true
+	end
+	for setting, def in pairs(core.cheat_defs) do
+		core.settings:set_bool(setting, profiled[setting] == true)
+	end
+	core.settings:write()
+	return true
+end
+
+function core.delete_cheat_profile(name)
+	core.settings:set("cheat_profile_" .. name, "")
+	local list = core.settings:get("cheat_profile_names") or ""
+	local names = {}
+	for n in list:gmatch("[^,]+") do
+		if n ~= name then table.insert(names, n) end
+	end
+	core.settings:set("cheat_profile_names", table.concat(names, ","))
+	core.settings:write()
+end
+
+function core.list_cheat_profiles()
+	local list = core.settings:get("cheat_profile_names") or ""
+	local names = {}
+	for n in list:gmatch("[^,]+") do
+		table.insert(names, n)
+	end
+	return names
+end
+
+-- Chat command for profile management
+core.register_chatcommand("profile", {
+	params = "save|load|list|delete [name]",
+	description = "Manage cheat profiles",
+	func = function(name, param)
+		local parts = {}
+		for p in param:gmatch("%S+") do
+			table.insert(parts, p)
+		end
+		local cmd = parts[1]
+		if not cmd then
+			return false, "Usage: .profile save|load|list|delete [name]"
+		end
+		if cmd == "save" then
+			local pname = parts[2]
+			if not pname then
+				return false, "Usage: .profile save <name>"
+			end
+			core.save_cheat_profile(pname)
+			return true, "Profile '" .. pname .. "' saved."
+		elseif cmd == "load" then
+			local pname = parts[2]
+			if not pname then
+				return false, "Usage: .profile load <name>"
+			end
+			if core.load_cheat_profile(pname) then
+				return true, "Profile '" .. pname .. "' loaded."
+			else
+				return false, "Profile '" .. pname .. "' not found."
+			end
+		elseif cmd == "list" then
+			local profiles = core.list_cheat_profiles()
+			if #profiles == 0 then
+				return true, "No saved profiles."
+			end
+			return true, "Profiles: " .. table.concat(profiles, ", ")
+		elseif cmd == "delete" then
+			local pname = parts[2]
+			if not pname then
+				return false, "Usage: .profile delete <name>"
+			end
+			core.delete_cheat_profile(pname)
+			return true, "Profile '" .. pname .. "' deleted."
+		else
+			return false, "Unknown command: " .. cmd .. ". Use save|load|list|delete."
+		end
+	end,
+})
+
 -- Movement cheats
 core.register_cheat({ name = "Freecam", category = "Movement", setting = "freecam",
 	description = "Detach camera for free movement" })
@@ -52,17 +156,21 @@ core.register_cheat({ name = "PitchMove", category = "Movement", setting = "pitc
 core.register_cheat({ name = "AutoJump", category = "Movement", setting = "autojump",
 	description = "Automatically jump when hitting obstacles" })
 core.register_cheat({ name = "Jesus", category = "Movement", setting = "jesus",
-	description = "Walk on liquids" })
+	description = "Walk on liquids",
+	conflicts_with = { "spider", "jetpack", "freecam" } })
 core.register_cheat({ name = "NoSlow", category = "Movement", setting = "no_slow",
 	description = "Prevent movement speed reduction" })
 core.register_cheat({ name = "JetPack", category = "Movement", setting = "jetpack",
-	description = "Fly upward by holding the jump key" })
+	description = "Fly upward by holding the jump key",
+	conflicts_with = { "jesus", "spider", "freecam" } })
 core.register_cheat({ name = "AntiSlip", category = "Movement", setting = "antislip",
 	description = "Prevent slipping on slippery surfaces" })
 core.register_cheat({ name = "AirJump", category = "Movement", setting = "airjump",
-	description = "Jump while in mid-air" })
+	description = "Jump while in mid-air",
+	conflicts_with = { "jesus", "spider" } })
 core.register_cheat({ name = "Spider", category = "Movement", setting = "spider",
-	description = "Climb walls like a spider" })
+	description = "Climb walls like a spider",
+	conflicts_with = { "jesus", "jetpack", "freecam" } })
 core.register_cheat({ name = "EntitySpeed", category = "Movement", setting = "entity_speed",
 	description = "Increase entity movement speed" })
 

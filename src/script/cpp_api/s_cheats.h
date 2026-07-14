@@ -30,6 +30,7 @@ public:
 	ScriptApiCheatsCheat(const std::string &name, const int &function);
 	std::string m_name;
 	std::string m_setting;
+	std::vector<std::string> m_conflicts_with;
 	bool is_enabled();
 	void toggle(lua_State *L, int error_handler);
 

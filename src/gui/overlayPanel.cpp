@@ -158,8 +158,15 @@ void PanelOverlay::drawPanelChrome(video::IVideoDriver *driver,
 	video::SColor titleColor = panel.title_color_set ? panel.title_color : m_title_bg;
 	driver->draw2DRectangle(titleColor, core::rect<s32>(x + 4, y + 1, x + w - 4, y + panel.title_h));
 
+	s32 collapse_x = x + 5;
+	panel.hover_collapse = pointInRect(mouse_pos.X, mouse_pos.Y, collapse_x, y, 16, panel.title_h);
+	driver->draw2DRectangle(panel.hover_collapse ? m_item_bg : m_panel_bg,
+		core::rect<s32>(collapse_x, y, collapse_x + 16, y + panel.title_h));
+	drawText(panel.collapsed ? "\u25B6" : "\u25BC", collapse_x + 3,
+		y + (panel.title_h - m_fontsize.Y) / 2, m_font_color);
+
 	drawText(panel.title.empty() ? panel.id : panel.title,
-		x + 5, y + (panel.title_h - m_fontsize.Y) / 2, m_font_color);
+		x + 24, y + (panel.title_h - m_fontsize.Y) / 2, m_font_color);
 
 	s32 pin_x = x + w - 56;
 	panel.hover_pin = pointInRect(mouse_pos.X, mouse_pos.Y, pin_x, y, 16, panel.title_h);
@@ -220,8 +227,10 @@ void PanelOverlay::drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool sh
 
 		drawPanelChrome(driver, panel, mouse_pos);
 
-		s32 iy = y + panel.title_h + m_gap;
-		drawPanelContent(driver, panel, x, iy, w, h - panel.title_h - m_gap, mouse_pos);
+		if (!panel.collapsed) {
+			s32 iy = y + panel.title_h + m_gap;
+			drawPanelContent(driver, panel, x, iy, w, h - panel.title_h - m_gap, mouse_pos);
+		}
 	}
 }
 
@@ -241,8 +250,10 @@ void PanelOverlay::drawPinned(video::IVideoDriver *driver, v2s32 mouse_pos)
 			if (y < 0) y = 0;
 
 			drawPanelChrome(driver, panel, mouse_pos);
-			s32 iy = y + panel.title_h + m_gap;
-			drawPanelContent(driver, panel, x, iy, w, h - panel.title_h - m_gap, mouse_pos);
+			if (!panel.collapsed) {
+				s32 iy = y + panel.title_h + m_gap;
+				drawPanelContent(driver, panel, x, iy, w, h - panel.title_h - m_gap, mouse_pos);
+			}
 		}
 	}
 }
@@ -497,6 +508,12 @@ void PanelOverlay::handleMouse(v2s32 pos, bool left_down)
 			continue;
 
 		if (pointInRect(pos.X, pos.Y, x, y, w, panel.title_h)) {
+			s32 collapse_x = x + 5;
+			if (pointInRect(pos.X, pos.Y, collapse_x, y, 16, panel.title_h)) {
+				panel.collapsed = !panel.collapsed;
+				savePanelPositions();
+				return;
+			}
 			s32 pin_x = x + w - 56;
 			if (pointInRect(pos.X, pos.Y, pin_x, y, 16, panel.title_h)) {
 				panel.pinned = !panel.pinned;
@@ -528,10 +545,12 @@ void PanelOverlay::handleMouse(v2s32 pos, bool left_down)
 			return;
 		}
 
-		s32 iy = y + panel.title_h + m_gap;
-		if (pointInRect(pos.X, pos.Y, x, iy, w, panel.h - panel.title_h - m_gap)) {
-			handlePanelContentClick(pi, pos, x, iy, w);
-			return;
+		if (!panel.collapsed) {
+			s32 iy = y + panel.title_h + m_gap;
+			if (pointInRect(pos.X, pos.Y, x, iy, w, panel.h - panel.title_h - m_gap)) {
+				handlePanelContentClick(pi, pos, x, iy, w);
+				return;
+			}
 		}
 	}
 }
@@ -539,6 +558,11 @@ void PanelOverlay::handleMouse(v2s32 pos, bool left_down)
 void PanelOverlay::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32 cy, s32 cw)
 {
 	// Default: no content click handling
+}
+
+void PanelOverlay::handleRightClick(v2s32 pos)
+{
+	// Default: no right-click handling
 }
 
 void PanelOverlay::onLayerClosed()
@@ -565,8 +589,11 @@ void PanelOverlay::loadPanelPosition(OverlayPanel &panel)
 		panel.y = atoi(val.substr(comma + 1).c_str());
 	} else {
 		panel.y = atoi(val.substr(comma + 1, comma2 - comma - 1).c_str());
-		if (val.substr(comma2 + 1) == "pinned")
+		auto rest = val.substr(comma2 + 1);
+		if (rest.find("pinned") != std::string::npos)
 			panel.pinned = true;
+		if (rest.find("collapsed") != std::string::npos)
+			panel.collapsed = true;
 	}
 }
 
@@ -576,6 +603,7 @@ void PanelOverlay::savePanelPositions()
 		std::string key = "panel_pos_" + panel.id;
 		std::string val = std::to_string(panel.x) + "," + std::to_string(panel.y);
 		if (panel.pinned) val += ",pinned";
+		if (panel.collapsed) val += ",collapsed";
 		g_settings->set(key, val);
 	}
 }

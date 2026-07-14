@@ -46,6 +46,8 @@ public:
 	ClientScripting *getScript() { return m_client->getScript(); }
 
 	void drawHUD(video::IVideoDriver *driver, double dtime);
+	void drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug) override;
+	void handleRightClick(v2s32 pos) override;
 
 	void createCategoryPanels();
 	void onLayerClosed();
@@ -110,4 +112,31 @@ private:
 	bool isFavorite(const std::string &setting) const;
 	void toggleFavorite(const std::string &setting);
 	int countFavoritedCheats(ClientScripting *script) const;
+
+	// Recently Used
+	static constexpr size_t MAX_RECENT = 10;
+	std::vector<std::string> m_recent_cheats;
+	void addRecentCheat(const std::string &setting);
+	void createRecentPanel();
+	void loadRecentCheats();
+	void saveRecentCheats();
+	static bool isRecentPanel(const OverlayPanel &p);
+
+	// Right-click context menu
+	struct ContextMenuState {
+		bool active = false;
+		s32 x, y, w, h;
+		int selected = 0;
+		std::string cheat_setting;
+		bool is_enabled = false;
+		bool has_settings = false;
+		bool is_favorite = false;
+	};
+	ContextMenuState m_ctx;
+	void dismissContextMenu();
+	void drawContextMenu(video::IVideoDriver *driver);
+	void execContextMenu();
+
+	// Conflicts
+	bool hasActiveConflict(ScriptApiCheatsCheat *cheat) const;
 };
