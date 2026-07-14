@@ -720,12 +720,15 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 	auto favs = getFavoritesSet();
 
 	if (isRecentPanel(panel)) {
-		for (auto &setting : m_recent_cheats)
+		for (auto &setting : m_recent_cheats) {
 			for (auto &cat : script->m_cheat_categories)
 				for (auto *ch : cat->m_cheats)
-					if (ch->m_setting == setting)
-						{ entries.push_back({ch}); goto next_recent_click; }
+					if (ch->m_setting == setting) {
+						entries.push_back({ch});
+						goto next_recent_click;
+					}
 		next_recent_click:;
+		}
 	} else if (isFavPanel(panel)) {
 		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++)
 			for (auto &cheat : script->m_cheat_categories[ci]->m_cheats)
