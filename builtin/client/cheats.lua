@@ -112,7 +112,7 @@ function core.show_slot_picker(setting)
 		local label = (assigned == setting) and ("[x] Slot " .. i) or ("[ ] Slot " .. i)
 		local row = math.floor((i - 1) / 3)
 		local col = (i - 1) % 3
-		fs = fs .. "button[" .. (col * 2) .. "," .. (row * 0.7 + 0.7) .. ";1.8,0.6;slot_" .. i .. ";" .. label .. "]"
+		fs = fs .. "button[" .. (col * 2) .. "," .. (row * 0.7 + 0.7) .. ";1.8,0.6;slot_" .. i .. ";" .. core.formspec_escape(label) .. "]"
 	end
 	fs = fs .. "button_exit[0.3," .. (3.5) .. ";5.4,0.8;slot_done;Done]"
 	core.show_formspec("antilua_slot_picker:" .. setting, fs)
