@@ -1222,15 +1222,16 @@ void CheatMenu::selectConfirm()
 
 void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 {
-	PanelOverlay::handleMouse(pos, left_down);
-
 	static bool left_prev = false;
 	bool clicked = !left_prev && left_down;
 	left_prev = left_down;
-	if (!clicked)
-		return;
 
-	// Check profiles popup item clicks (only when active)
+	if (!clicked) {
+		PanelOverlay::handleMouse(pos, left_down);
+		return;
+	}
+
+	// Check profiles popup clicks BEFORE panel handler (popup is topmost layer)
 	if (m_profiles_active) {
 		s32 entry_h = 30;
 		s32 gap = 2;
@@ -1252,7 +1253,6 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 				iy += entry_h + gap;
 				idx++;
 			}
-			// Save current...
 			if (pointInRect(pos.X, pos.Y, px + 1, iy, pw - 2, entry_h)) {
 				m_profiles_active = false;
 				lua_State *L = m_client->getScript()->getLuaState();
@@ -1265,7 +1265,6 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			}
 			iy += entry_h + gap;
 			idx++;
-			// Manage...
 			if (pointInRect(pos.X, pos.Y, px + 1, iy, pw - 2, entry_h)) {
 				m_profiles_active = false;
 				lua_State *L = m_client->getScript()->getLuaState();
@@ -1281,23 +1280,30 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 			}
 			return;
 		}
-		// Click outside profiles popup → dismiss
 		m_profiles_active = false;
 	}
 
-	// Check profiles button click (search bar right area) — compute from known bar geometry
-	if (!m_profiles_active) {
-		s32 bar_w = 400;
-		s32 bar_x = ((s32)m_screen_size.X - bar_w) / 2;
-		s32 btn_x = bar_x + bar_w + 6;
-		s32 btn_w = 90;
-		s32 bar_y = 8;
-		s32 btn_h = 34;
-		if (pointInRect(pos.X, pos.Y, btn_x, bar_y, btn_w, btn_h)) {
-			refreshProfileList();
-			m_profiles_active = true;
+	// If click is on context menu, don't forward to panels (context menu only uses right-click)
+	if (m_ctx.active) {
+		if (pointInRect(pos.X, pos.Y, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h))
 			return;
-		}
+		dismissContextMenu();
+	}
+
+	// Forward to panel handler
+	PanelOverlay::handleMouse(pos, left_down);
+
+	// Check profiles button click
+	s32 bar_w = 400;
+	s32 bar_x = ((s32)m_screen_size.X - bar_w) / 2;
+	s32 btn_x = bar_x + bar_w + 6;
+	s32 btn_w = 90;
+	s32 bar_y = 8;
+	s32 btn_h = 34;
+	if (pointInRect(pos.X, pos.Y, btn_x, bar_y, btn_w, btn_h)) {
+		refreshProfileList();
+		m_profiles_active = true;
+		return;
 	}
 
 	// Click outside context menu → dismiss

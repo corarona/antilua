@@ -3956,8 +3956,13 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats, f32 dtime)
 	if (m_cheat_layer_active && m_cheat_menu) {
 		m_cheat_menu->handleMouse(input->getMousePos(),
 			input->isKeyDown(KeyType::DIG));
-		if (input->isKeyDown(KeyType::PLACE))
-			m_cheat_menu->handleRightClick(input->getMousePos());
+		{
+			static bool place_was_down = false;
+			bool place_down = input->isKeyDown(KeyType::PLACE);
+			if (place_down && !place_was_down)
+				m_cheat_menu->handleRightClick(input->getMousePos());
+			place_was_down = place_down;
+		}
 	}
 
 	g_cheat_menu = this->m_cheat_menu;
