@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "network/connection.h"
 #include "script/scripting_client.h"
 #include "client/renderingengine.h"
+#include "gui/cheatMenu.h"
 #include <IFileSystem.h>
 #include <IReadFile.h>
 #include "client/session.h"
@@ -1318,6 +1319,21 @@ int ModApiClient::l_reattach(lua_State *L)
 	return 0;
 }
 
+// cheat_menu_set_visible(visible)
+int ModApiClient::l_cheat_menu_set_visible(lua_State *L)
+{
+	bool visible = readParam<bool>(L, 1);
+	g_cheat_layer_active = visible;
+	auto *device = RenderingEngine::get_raw_device();
+	if (device) {
+		if (auto *cur = device->getCursorControl())
+			cur->setVisible(visible);
+	}
+	if (!visible && g_cheat_menu)
+		g_cheat_menu->onLayerClosed();
+	return 0;
+}
+
 void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
@@ -1369,6 +1385,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(create_client_entity);
 	API_FCT(detach);
 	API_FCT(reattach);
+	API_FCT(cheat_menu_set_visible);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)

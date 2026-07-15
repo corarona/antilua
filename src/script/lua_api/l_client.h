@@ -183,6 +183,9 @@ private:
 	// reattach()
 	static int l_reattach(lua_State *L);
 
+	// cheat_menu_set_visible(visible)
+	static int l_cheat_menu_set_visible(lua_State *L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 	static void InitializeSSCSM(lua_State *L, int top);

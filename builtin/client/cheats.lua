@@ -119,18 +119,34 @@ function core.show_slot_picker(setting)
 end
 
 core.register_on_formspec_input(function(formname, fields)
+	local toggle_mode = core.settings:get_bool("cheat_menu_toggle_mode")
+
+	-- Reopen cheat menu when a cheat-related formspec is closed
+	local function reopen_on_quit()
+		if fields.quit then
+			core.after(0.05, function()
+				core.cheat_menu_set_visible(toggle_mode)
+			end)
+		end
+	end
+
 	-- Save profile dialog
-	if formname == "antilua_save_profile" and fields.profile_save then
-		local name = fields.profile_name
-		if name and #name > 0 then
-			core.save_cheat_profile(name)
-			ws.notify("Profile '" .. name .. "' saved.", ws.NOTIFY_INFO)
+	if formname == "antilua_save_profile" then
+		reopen_on_quit()
+		if fields.profile_save then
+			local name = fields.profile_name
+			if name and #name > 0 then
+				core.save_cheat_profile(name)
+				ws.notify("Profile '" .. name .. "' saved.", ws.NOTIFY_INFO)
+			end
 		end
 		return true
 	end
+
 	-- Slot picker
 	local slot_prefix = "antilua_slot_picker:"
 	if formname:sub(1, #slot_prefix) == slot_prefix then
+		reopen_on_quit()
 		local setting = formname:sub(#slot_prefix + 1)
 		for i = 1, 9 do
 			if fields["slot_" .. i] then
@@ -145,6 +161,12 @@ core.register_on_formspec_input(function(formname, fields)
 			end
 		end
 		return true
+	end
+
+	-- Cheat settings formspec (opened from gear icon or context menu)
+	if formname:find("^cheat_settings:") == 1 then
+		reopen_on_quit()
+		return false
 	end
 end)
 

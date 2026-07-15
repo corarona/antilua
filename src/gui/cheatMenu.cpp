@@ -24,6 +24,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "settings.h"
 #include "util/string.h"
 #include "client/renderingengine.h"
+#include "client/renderingengine.h"
 #include "client/inputhandler.h"
 #include <algorithm>
 #include <cmath>
@@ -520,10 +521,12 @@ void CheatMenu::execContextMenu()
 					return;
 				}
 	} else if (m_ctx.selected == OPT_SETTINGS && m_ctx.has_settings) {
+		closeForFormspec();
 		script->show_cheat_settings(m_ctx.cheat_setting);
 	} else if (m_ctx.selected == OPT_FAVORITE) {
 		toggleFavorite(m_ctx.cheat_setting);
 	} else if (m_ctx.selected == OPT_SLOT && !m_ctx.cheat_setting.empty()) {
+		closeForFormspec();
 		lua_State *L = m_client->getScript()->getLuaState();
 		lua_getglobal(L, "core");
 		lua_getfield(L, -1, "show_slot_picker");
@@ -961,6 +964,7 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 			if (has_set) {
 				s32 gear_x = panel.x + panel.w - 36;
 				if (pointInRect(pos.X, pos.Y, gear_x, iy, 16, m_entry_height)) {
+					closeForFormspec();
 					script->show_cheat_settings(e.cheat->m_setting);
 					return;
 				}
@@ -974,6 +978,18 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 		}
 		iy += m_entry_height + m_gap;
 		chi++;
+	}
+}
+
+void CheatMenu::closeForFormspec()
+{
+	g_cheat_layer_active = false;
+	if (g_cheat_menu)
+		g_cheat_menu->onLayerClosed();
+	auto *device = RenderingEngine::get_raw_device();
+	if (device) {
+		if (auto *cur = device->getCursorControl())
+			cur->setVisible(false);
 	}
 }
 

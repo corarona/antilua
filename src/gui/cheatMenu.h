@@ -154,4 +154,7 @@ private:
 
 	// Conflicts
 	bool hasActiveConflict(ScriptApiCheatsCheat *cheat) const;
+
+	// Close cheat layer before opening a formspec from within the menu
+	static void closeForFormspec();
 };
