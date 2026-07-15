@@ -25,6 +25,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 extern class CheatMenu *g_cheat_menu;
 extern bool g_cheat_layer_active;
+extern bool g_cheat_layer_force_hidden;
 extern bool g_quick_palette_active;
 extern bool g_show_minimal_debug;
 

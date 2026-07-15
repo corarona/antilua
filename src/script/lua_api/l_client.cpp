@@ -1323,6 +1323,8 @@ int ModApiClient::l_reattach(lua_State *L)
 int ModApiClient::l_cheat_menu_set_visible(lua_State *L)
 {
 	bool visible = readParam<bool>(L, 1);
+	if (visible)
+		g_cheat_layer_force_hidden = false;
 	g_cheat_layer_active = visible;
 	auto *device = RenderingEngine::get_raw_device();
 	if (device) {

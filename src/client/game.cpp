@@ -3967,6 +3967,8 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats, f32 dtime)
 
 	g_cheat_menu = this->m_cheat_menu;
 	g_cheat_layer_active = this->m_cheat_layer_active;
+	if (g_cheat_layer_force_hidden)
+		g_cheat_layer_active = false;
 	g_show_minimal_debug = this->m_game_ui->m_flags.show_minimal_debug;
 	this->m_rendering_engine->draw_scene(sky_color, this->m_game_ui->m_flags.show_hud,
 			draw_wield_tool, draw_crosshair);

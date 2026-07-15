@@ -33,6 +33,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 CheatMenu *g_cheat_menu = nullptr;
 bool g_cheat_layer_active = false;
+bool g_cheat_layer_force_hidden = false;
 bool g_quick_palette_active = false;
 bool g_show_minimal_debug = false;
 
@@ -984,6 +985,7 @@ void CheatMenu::handlePanelContentClick(size_t panel_idx, v2s32 pos, s32 cx, s32
 void CheatMenu::closeForFormspec()
 {
 	g_cheat_layer_active = false;
+	g_cheat_layer_force_hidden = true;
 	if (g_cheat_menu)
 		g_cheat_menu->onLayerClosed();
 	auto *device = RenderingEngine::get_raw_device();
