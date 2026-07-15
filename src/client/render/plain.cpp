@@ -243,7 +243,10 @@ void DrawHUD::run(PipelineContext &context)
 		context.client->getCamera()->drawNametags();
 	}
 
-	// Draw cheat menu background overlay + panels before formspecs
+	// Draw GUI first (formspecs, chat — under the cheat layer)
+	context.device->getGUIEnvironment()->drawAll();
+
+	// Draw cheat menu overlay + panels on top of everything
 	if (g_cheat_menu) {
 		video::IVideoDriver *driver = context.device->getVideoDriver();
 		v2s32 mouse_pos = context.device->getCursorControl()->getPosition();
@@ -261,9 +264,6 @@ void DrawHUD::run(PipelineContext &context)
 		if (g_cheat_menu->isQuickPaletteActive())
 			g_cheat_menu->drawQuickPalette(driver);
 	}
-
-	// Draw GUI on top of cheat menu so formspecs render above it
-	context.device->getGUIEnvironment()->drawAll();
 }
 
 
