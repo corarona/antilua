@@ -47,6 +47,7 @@ public:
 
 	void drawHUD(video::IVideoDriver *driver, double dtime);
 	void drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug) override;
+	void handleMouse(v2s32 pos, bool left_down) override;
 	void handleRightClick(v2s32 pos) override;
 
 	void createCategoryPanels();
@@ -131,11 +132,24 @@ private:
 		bool is_enabled = false;
 		bool has_settings = false;
 		bool is_favorite = false;
+		int ctx_panel_idx = -1;  // >= 0 means panel-level (enable/disable all)
 	};
 	ContextMenuState m_ctx;
 	void dismissContextMenu();
 	void drawContextMenu(video::IVideoDriver *driver);
 	void execContextMenu();
+
+	// Profiles dropdown
+	bool m_profiles_active = false;
+	v2s32 m_profiles_pos;
+	s32 m_profiles_selected = 0;
+	std::vector<std::string> m_profile_names;
+	void refreshProfileList();
+	void loadProfile(size_t idx);
+	void drawProfilesPopup(video::IVideoDriver *driver);
+
+	// Quick slots
+	int getSlotForSetting(const std::string &setting) const;
 
 	// Conflicts
 	bool hasActiveConflict(ScriptApiCheatsCheat *cheat) const;

@@ -95,6 +95,59 @@ function core.list_cheat_profiles()
 	return names
 end
 
+function core.save_cheat_profile_dialog()
+	local fs = "formspec_version[10]size[6,3]"
+		.. "no_prepend[]"
+		.. "field[0.3,0.8;5.4,0.8;profile_name;Profile name;]"
+		.. "button[0.3,1.8;2.5,0.8;profile_save;Save]"
+		.. "button_exit[3.2,1.8;2.5,0.8;profile_cancel;Cancel]"
+	core.show_formspec("antilua_save_profile", fs)
+end
+
+function core.show_slot_picker(setting)
+	local fs = "formspec_version[10]size[6,5]"
+		.. "no_prepend[]label[0.3,0.2;Select slot for " .. core.formspec_escape(setting) .. "]"
+	for i = 1, 9 do
+		local assigned = core.settings:get("cheat_slot_" .. i)
+		local label = (assigned == setting) and ("[x] Slot " .. i) or ("[ ] Slot " .. i)
+		local row = math.floor((i - 1) / 3)
+		local col = (i - 1) % 3
+		fs = fs .. "button[" .. (col * 2) .. "," .. (row * 0.7 + 0.7) .. ";1.8,0.6;slot_" .. i .. ";" .. label .. "]"
+	end
+	fs = fs .. "button_exit[0.3," .. (3.5) .. ";5.4,0.8;slot_done;Done]"
+	core.show_formspec("antilua_slot_picker:" .. setting, fs)
+end
+
+core.register_on_formspec_input(function(formname, fields)
+	-- Save profile dialog
+	if formname == "antilua_save_profile" and fields.profile_save then
+		local name = fields.profile_name
+		if name and #name > 0 then
+			core.save_cheat_profile(name)
+			ws.notify("Profile '" .. name .. "' saved.", ws.NOTIFY_INFO)
+		end
+		return true
+	end
+	-- Slot picker
+	local slot_prefix = "antilua_slot_picker:"
+	if formname:sub(1, #slot_prefix) == slot_prefix then
+		local setting = formname:sub(#slot_prefix + 1)
+		for i = 1, 9 do
+			if fields["slot_" .. i] then
+				local current = core.settings:get("cheat_slot_" .. i)
+				if current == setting then
+					core.settings:set("cheat_slot_" .. i, "")
+				else
+					core.settings:set("cheat_slot_" .. i, setting)
+				end
+				core.show_slot_picker(setting)
+				return true
+			end
+		end
+		return true
+	end
+end)
+
 -- Chat command for profile management
 core.register_chatcommand("profile", {
 	params = "save|load|list|delete [name]",

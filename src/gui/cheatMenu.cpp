@@ -164,10 +164,99 @@ bool CheatMenu::hasActiveConflict(ScriptApiCheatsCheat *cheat) const
 	return false;
 }
 
+int CheatMenu::getSlotForSetting(const std::string &setting) const
+{
+	for (int i = 1; i <= 9; i++) {
+		if (g_settings->get("cheat_slot_" + std::to_string(i)) == setting)
+			return i;
+	}
+	return 0;
+}
+
+void CheatMenu::refreshProfileList()
+{
+	m_profile_names.clear();
+	lua_State *L = m_client->getScript()->getLuaState();
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "list_cheat_profiles");
+	if (lua_pcall(L, 0, 1, 0) == 0 && lua_istable(L, -1)) {
+		lua_pushnil(L);
+		while (lua_next(L, -2)) {
+			if (lua_isstring(L, -1))
+				m_profile_names.emplace_back(lua_tostring(L, -1));
+			lua_pop(L, 1);
+		}
+	}
+	lua_pop(L, 2);
+}
+
+void CheatMenu::loadProfile(size_t idx)
+{
+	if (idx >= m_profile_names.size())
+		return;
+	lua_State *L = m_client->getScript()->getLuaState();
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "load_cheat_profile");
+	lua_pushstring(L, m_profile_names[idx].c_str());
+	lua_pcall(L, 1, 0, 0);
+	lua_pop(L, 1);
+}
+
+void CheatMenu::drawProfilesPopup(video::IVideoDriver *driver)
+{
+	if (!m_profiles_active)
+		return;
+
+	s32 entry_h = 30;
+	s32 gap = 2;
+	int num_items = (int)m_profile_names.size() + 2; // profiles + Save + Manage
+	s32 pw = 200;
+	s32 ph = num_items * entry_h + (num_items - 1) * gap + 6;
+
+	s32 px = m_profiles_pos.X;
+	s32 py = m_profiles_pos.Y;
+
+	auto ss = driver->getScreenSize();
+	if (px + pw > (s32)ss.Width) px = ss.Width - pw;
+	if (py + ph > (s32)ss.Height) py = ss.Height - ph;
+
+	drawRoundedRect(driver, px, py, pw, ph, m_panel_bg, m_bg_color);
+	drawRoundedBorder(driver, px, py, pw, ph, m_border_color);
+
+	s32 iy = py + 3;
+	int idx = 0;
+	for (auto &name : m_profile_names) {
+		bool sel = (idx == m_profiles_selected);
+		driver->draw2DRectangle(sel ? m_active_bg_color : m_panel_bg,
+			core::rect<s32>(px + 1, iy, px + pw - 1, iy + entry_h));
+		drawText(name, px + 6, iy + (entry_h - m_fontsize.Y) / 2,
+			sel ? m_selected_font_color : m_font_color);
+		iy += entry_h + gap;
+		idx++;
+	}
+
+	// Save current
+	bool sel_save = (idx == m_profiles_selected);
+	driver->draw2DRectangle(sel_save ? m_active_bg_color : m_panel_bg,
+		core::rect<s32>(px + 1, iy, px + pw - 1, iy + entry_h));
+	drawText("Save current...", px + 6, iy + (entry_h - m_fontsize.Y) / 2,
+		sel_save ? m_selected_font_color : m_font_color);
+	iy += entry_h + gap;
+	idx++;
+
+	// Manage
+	bool sel_mgmt = (idx == m_profiles_selected);
+	driver->draw2DRectangle(sel_mgmt ? m_active_bg_color : m_panel_bg,
+		core::rect<s32>(px + 1, iy, px + pw - 1, iy + entry_h));
+	drawText("Manage...", px + 6, iy + (entry_h - m_fontsize.Y) / 2,
+		sel_mgmt ? m_selected_font_color : m_font_color);
+}
+
 void CheatMenu::dismissContextMenu()
 {
 	m_ctx.active = false;
 	m_ctx.cheat_setting.clear();
+	m_ctx.ctx_panel_idx = -1;
 }
 
 void CheatMenu::drawContextMenu(video::IVideoDriver *driver)
@@ -175,22 +264,48 @@ void CheatMenu::drawContextMenu(video::IVideoDriver *driver)
 	if (!m_ctx.active)
 		return;
 
-	enum { OPT_TOGGLE = 0, OPT_SETTINGS = 1, OPT_FAVORITE = 2 };
 	s32 entry_h = 30;
 	s32 gap = 2;
+
+	if (m_ctx.ctx_panel_idx >= 0) {
+		// Panel-level context menu
+		m_ctx.w = 180;
+		m_ctx.h = 2 * entry_h + gap + 6;
+		auto ss = driver->getScreenSize();
+		if (m_ctx.x + m_ctx.w > (s32)ss.Width) m_ctx.x = ss.Width - m_ctx.w;
+		if (m_ctx.y + m_ctx.h > (s32)ss.Height) m_ctx.y = ss.Height - m_ctx.h;
+		drawRoundedRect(driver, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h, m_panel_bg, m_bg_color);
+		drawRoundedBorder(driver, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h, m_border_color);
+		s32 iy = m_ctx.y + 3;
+		auto di = [&](const std::string &t, int idx) {
+			bool sel = (idx == m_ctx.selected);
+			driver->draw2DRectangle(sel ? m_active_bg_color : m_panel_bg,
+				core::rect<s32>(m_ctx.x + 1, iy, m_ctx.x + m_ctx.w - 1, iy + entry_h));
+			drawText(t, m_ctx.x + 6, iy + (entry_h - m_fontsize.Y) / 2,
+				sel ? m_selected_font_color : m_font_color);
+			iy += entry_h + gap;
+		};
+		di("Enable all", 0);
+		di("Disable all", 1);
+		return;
+	}
+
+	// Cheat-level context menu
+	enum { OPT_TOGGLE = 0, OPT_SETTINGS = 1, OPT_FAVORITE = 2, OPT_SLOT = 3 };
 	int num = 1; // always toggle
 	if (m_ctx.has_settings) num++;
 	num++; // always favorite
+	int cur_slot = getSlotForSetting(m_ctx.cheat_setting);
+	if (cur_slot) num++; // unbind
+	else num++; // bind
 
 	m_ctx.w = 180;
 	m_ctx.h = num * entry_h + (num - 1) * gap + 6;
 
-	// Clamp to screen
 	auto ss = driver->getScreenSize();
 	if (m_ctx.x + m_ctx.w > (s32)ss.Width) m_ctx.x = ss.Width - m_ctx.w;
 	if (m_ctx.y + m_ctx.h > (s32)ss.Height) m_ctx.y = ss.Height - m_ctx.h;
 
-	// Background
 	drawRoundedRect(driver, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h, m_panel_bg, m_bg_color);
 	drawRoundedBorder(driver, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h, m_border_color);
 
@@ -208,6 +323,10 @@ void CheatMenu::drawContextMenu(video::IVideoDriver *driver)
 	if (m_ctx.has_settings)
 		draw_item("Settings", OPT_SETTINGS);
 	draw_item(m_ctx.is_favorite ? "Unfavorite" : "Favorite", OPT_FAVORITE);
+	if (cur_slot)
+		draw_item("Slot " + std::to_string(cur_slot), OPT_SLOT);
+	else
+		draw_item("Slot...", OPT_SLOT);
 }
 
 void CheatMenu::handleRightClick(v2s32 pos)
@@ -254,8 +373,18 @@ void CheatMenu::handleRightClick(v2s32 pos)
 			continue;
 		if (!pointInRect(pos.X, pos.Y, panel.x, panel.y, panel.w, panel.h))
 			continue;
-		if (pointInRect(pos.X, pos.Y, panel.x, panel.y, panel.w, panel.title_h))
-			return; // title bar — ignore
+		if (pointInRect(pos.X, pos.Y, panel.x, panel.y, panel.w, panel.title_h)) {
+			// Right-click on category panel title → enable/disable all
+			if (isCatPanel(panel)) {
+				m_ctx.active = true;
+				m_ctx.x = pos.X;
+				m_ctx.y = pos.Y;
+				m_ctx.selected = 0;
+				m_ctx.ctx_panel_idx = (int)pi;
+				m_ctx.cheat_setting.clear();
+			}
+			return;
+		}
 
 		s32 cx = panel.x, cy = panel.y + panel.title_h + m_gap;
 		s32 cw = panel.w;
@@ -327,11 +456,32 @@ void CheatMenu::execContextMenu()
 	if (!m_ctx.active)
 		return;
 
+	// Panel-level: enable/disable all in a category
+	if (m_ctx.ctx_panel_idx >= 0) {
+		size_t pi = (size_t)m_ctx.ctx_panel_idx;
+		if (pi < m_panels.size() && isCatPanel(m_panels[pi])) {
+			int cat_idx = m_panels[pi].selected_category;
+			ClientScripting *script = m_client->getScript();
+			if (script && script->m_cheats_loaded && cat_idx >= 0 &&
+					(size_t)cat_idx < script->m_cheat_categories.size()) {
+				bool enable = (m_ctx.selected == 0);
+				for (auto *ch : script->m_cheat_categories[cat_idx]->m_cheats) {
+					if (ch->m_setting.empty())
+						script->toggle_cheat(ch);
+					else
+						g_settings->setBool(ch->m_setting, enable);
+				}
+			}
+		}
+		dismissContextMenu();
+		return;
+	}
+
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded)
 		return;
 
-	enum { OPT_TOGGLE = 0, OPT_SETTINGS = 1, OPT_FAVORITE = 2 };
+	enum { OPT_TOGGLE = 0, OPT_SETTINGS = 1, OPT_FAVORITE = 2, OPT_SLOT = 3 };
 
 	if (m_ctx.selected == OPT_TOGGLE) {
 		for (auto &cat : script->m_cheat_categories)
@@ -346,6 +496,15 @@ void CheatMenu::execContextMenu()
 		script->show_cheat_settings(m_ctx.cheat_setting);
 	} else if (m_ctx.selected == OPT_FAVORITE) {
 		toggleFavorite(m_ctx.cheat_setting);
+	} else if (m_ctx.selected == OPT_SLOT) {
+		lua_State *L = m_client->getScript()->getLuaState();
+		lua_getglobal(L, "core");
+		lua_getfield(L, -1, "show_slot_picker");
+		if (lua_isfunction(L, -1)) {
+			lua_pushstring(L, m_ctx.cheat_setting.c_str());
+			lua_pcall(L, 1, 0, 0);
+		}
+		lua_pop(L, 2);
 	}
 	dismissContextMenu();
 }
@@ -582,6 +741,14 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 		txt += cheat->m_name;
 		drawText(txt, content_x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,
 			(chi == panel.selected_cheat) ? m_selected_font_color : m_font_color);
+
+		int slot = getSlotForSetting(cheat->m_setting);
+		if (slot) {
+			std::string badge = " [" + std::to_string(slot) + "]";
+			drawText(badge, content_x + 5 + m_font->getDimension(utf8_to_wide(txt).c_str()).Width + 2,
+				iy + (m_entry_height - m_fontsize.Y) / 2,
+				video::SColor(255, 255, 200, 0));
+		}
 
 		if (conflict && !tooltip_desc.empty())
 			tooltip_desc += " \u26A0 Conflict with another active cheat";
@@ -1049,10 +1216,96 @@ void CheatMenu::selectConfirm()
 	}
 }
 
+void CheatMenu::handleMouse(v2s32 pos, bool left_down)
+{
+	PanelOverlay::handleMouse(pos, left_down);
+
+	static bool left_prev = false;
+	bool clicked = !left_prev && left_down;
+	left_prev = left_down;
+	if (!clicked)
+		return;
+
+	// Check profiles popup item clicks (only when active)
+	if (m_profiles_active) {
+		s32 entry_h = 30;
+		s32 gap = 2;
+		s32 px = m_profiles_pos.X;
+		s32 py = m_profiles_pos.Y;
+		int num_items = (int)m_profile_names.size() + 2;
+		s32 pw = 200;
+		s32 ph = num_items * entry_h + (num_items - 1) * gap + 6;
+		if (pointInRect(pos.X, pos.Y, px, py, pw, ph)) {
+			s32 iy = py + 3;
+			int idx = 0;
+			for (size_t i = 0; i < m_profile_names.size(); i++) {
+				if (pointInRect(pos.X, pos.Y, px + 1, iy, pw - 2, entry_h)) {
+					m_profiles_selected = idx;
+					m_profiles_active = false;
+					loadProfile(i);
+					return;
+				}
+				iy += entry_h + gap;
+				idx++;
+			}
+			// Save current...
+			if (pointInRect(pos.X, pos.Y, px + 1, iy, pw - 2, entry_h)) {
+				m_profiles_active = false;
+				lua_State *L = m_client->getScript()->getLuaState();
+				lua_getglobal(L, "core");
+				lua_getfield(L, -1, "save_cheat_profile_dialog");
+				if (lua_isfunction(L, -1))
+					lua_pcall(L, 0, 0, 0);
+				lua_pop(L, 2);
+				return;
+			}
+			iy += entry_h + gap;
+			idx++;
+			// Manage...
+			if (pointInRect(pos.X, pos.Y, px + 1, iy, pw - 2, entry_h)) {
+				m_profiles_active = false;
+				lua_State *L = m_client->getScript()->getLuaState();
+				lua_getglobal(L, "core");
+				lua_getfield(L, -1, "run_server_chatcommand");
+				if (lua_isfunction(L, -1)) {
+					lua_pushstring(L, "profile");
+					lua_pushstring(L, "list");
+					lua_pcall(L, 2, 0, 0);
+				}
+				lua_pop(L, 2);
+				return;
+			}
+			return;
+		}
+		// Click outside profiles popup → dismiss
+		m_profiles_active = false;
+	}
+
+	// Check profiles button click (search bar right area) — compute from known bar geometry
+	if (!m_profiles_active) {
+		s32 bar_w = 400;
+		s32 bar_x = ((s32)m_screen_size.X - bar_w) / 2;
+		s32 btn_x = bar_x + bar_w + 6;
+		s32 btn_w = 90;
+		s32 bar_y = 8;
+		s32 btn_h = 34;
+		if (pointInRect(pos.X, pos.Y, btn_x, bar_y, btn_w, btn_h)) {
+			refreshProfileList();
+			m_profiles_active = true;
+			return;
+		}
+	}
+
+	// Click outside context menu → dismiss
+	if (m_ctx.active && !pointInRect(pos.X, pos.Y, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h))
+		dismissContextMenu();
+}
+
 void CheatMenu::drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug)
 {
 	PanelOverlay::drawAll(driver, mouse_pos, show_debug);
 	drawContextMenu(driver);
+	drawProfilesPopup(driver);
 }
 
 bool CheatMenu::isFavorite(const std::string &setting) const
@@ -1105,6 +1358,14 @@ void CheatMenu::drawSearchBar(video::IVideoDriver *driver)
 
 	drawText(display, bar_x + 8, bar_y + (bar_h - m_fontsize.Y) / 2,
 		m_search_text.empty() ? m_font_color : m_selected_font_color);
+
+	// Profiles button to the right of the search bar
+	s32 btn_x = bar_x + bar_w + 6;
+	s32 btn_w = 90;
+	driver->draw2DRectangle(m_item_bg,
+		core::rect<s32>(btn_x, bar_y, btn_x + btn_w, bar_y + bar_h));
+	drawText("Profiles \u25BC", btn_x + 4, bar_y + (bar_h - m_fontsize.Y) / 2, m_font_color);
+	m_profiles_pos = v2s32(btn_x, bar_y + bar_h + 2);
 }
 
 bool CheatMenu::pollInput()
@@ -1150,6 +1411,15 @@ bool CheatMenu::pollInput()
 		} else {
 			return true;
 		}
+	} else if (c >= '1' && c <= '9' && m_search_text.empty()) {
+		// Quick slot toggle: 1-9 without search text
+		int slot = c - '0';
+		std::string setting = g_settings->get("cheat_slot_" + std::to_string(slot));
+		if (!setting.empty() && setting.find("cheat_slot_") != 0) {
+			bool val = g_settings->getBool(setting);
+			g_settings->setBool(setting, !val);
+		}
+		return false;
 	} else if (c >= 32) {
 		m_search_text += (char)c;
 	}

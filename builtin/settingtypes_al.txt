@@ -237,6 +237,17 @@ cheat_menu_entry_height (Cheat menu entry height) int 35 10 200
 #    Width of the cheat menu in pixels.
 cheat_menu_entry_width (Cheat menu entry width) int 200 50 500
 
+#    Quick slot cheat assignments (1-9).
+cheat_slot_1 (Quick slot 1) string
+cheat_slot_2 (Quick slot 2) string
+cheat_slot_3 (Quick slot 3) string
+cheat_slot_4 (Quick slot 4) string
+cheat_slot_5 (Quick slot 5) string
+cheat_slot_6 (Quick slot 6) string
+cheat_slot_7 (Quick slot 7) string
+cheat_slot_8 (Quick slot 8) string
+cheat_slot_9 (Quick slot 9) string
+
 [*Antilua DTE] [client]
 
 #    Width of the DTE formspec window.

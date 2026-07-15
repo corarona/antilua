@@ -105,6 +105,8 @@ static void set_al_default_settings()
 	settings->setDefault("cheat_menu_head_height", "33");
 	settings->setDefault("cheat_menu_entry_height", "35");
 	settings->setDefault("cheat_menu_entry_width", "200");
+	for (int i = 1; i <= 9; i++)
+		settings->setDefault("cheat_slot_" + std::to_string(i), "");
 
 	// Cheat features
 	settings->setDefault("xray", "false");

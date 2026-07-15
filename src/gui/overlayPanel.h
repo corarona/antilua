@@ -41,7 +41,7 @@ public:
 	virtual void drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug);
 	void drawPinned(video::IVideoDriver *driver, v2s32 mouse_pos);
 
-	void handleMouse(v2s32 pos, bool left_down);
+	virtual void handleMouse(v2s32 pos, bool left_down);
 	void onLayerClosed();
 
 	virtual void autoTilePanels(v2u32 screen_size);
