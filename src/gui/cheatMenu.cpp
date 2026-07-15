@@ -333,6 +333,34 @@ void CheatMenu::drawContextMenu(video::IVideoDriver *driver)
 	}
 }
 
+bool CheatMenu::handleContextMenuItemClick(v2s32 pos)
+{
+	if (!m_ctx.active)
+		return false;
+	if (!pointInRect(pos.X, pos.Y, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h))
+		return false;
+
+	s32 entry_h = 30;
+	s32 gap = 2;
+	s32 iy = m_ctx.y + 3;
+	int idx = 0;
+
+	auto check_hit = [&]() -> bool {
+		if (pointInRect(pos.X, pos.Y, m_ctx.x + 1, iy, m_ctx.w - 2, entry_h))
+			return true;
+		iy += entry_h + gap;
+		idx++;
+		return false;
+	};
+
+	if (check_hit()) { m_ctx.selected = 0; execContextMenu(); return true; }
+	if (m_ctx.has_settings && check_hit()) { m_ctx.selected = idx; execContextMenu(); return true; }
+	if (check_hit()) { m_ctx.selected = idx; execContextMenu(); return true; }
+
+	dismissContextMenu();
+	return true;
+}
+
 void CheatMenu::handleRightClick(v2s32 pos)
 {
 	if (!g_cheat_layer_active) {
@@ -342,31 +370,7 @@ void CheatMenu::handleRightClick(v2s32 pos)
 
 	// Check if click is on the context menu itself
 	if (m_ctx.active) {
-		if (pointInRect(pos.X, pos.Y, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h)) {
-			s32 entry_h = 30;
-			s32 gap = 2;
-			s32 iy = m_ctx.y + 3;
-			int idx = 0;
-
-			auto check_hit = [&]() -> bool {
-				if (pointInRect(pos.X, pos.Y, m_ctx.x + 1, iy, m_ctx.w - 2, entry_h))
-					return true;
-				iy += entry_h + gap;
-				idx++;
-				return false;
-			};
-
-			// Toggle
-			if (check_hit()) { m_ctx.selected = 0; execContextMenu(); return; }
-			// Settings
-			if (m_ctx.has_settings && check_hit()) { m_ctx.selected = idx; execContextMenu(); return; }
-			// Favorite
-			if (check_hit()) { m_ctx.selected = idx; execContextMenu(); return; }
-
-			dismissContextMenu();
-			return;
-		}
-		dismissContextMenu();
+		handleContextMenuItemClick(pos);
 		return;
 	}
 
@@ -1283,9 +1287,9 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 		m_profiles_active = false;
 	}
 
-	// If click is on context menu, don't forward to panels (context menu only uses right-click)
+	// Handle context menu left-click
 	if (m_ctx.active) {
-		if (pointInRect(pos.X, pos.Y, m_ctx.x, m_ctx.y, m_ctx.w, m_ctx.h))
+		if (handleContextMenuItemClick(pos))
 			return;
 		dismissContextMenu();
 	}

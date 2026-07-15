@@ -138,6 +138,7 @@ private:
 	void dismissContextMenu();
 	void drawContextMenu(video::IVideoDriver *driver);
 	void execContextMenu();
+	bool handleContextMenuItemClick(v2s32 pos);
 
 	// Profiles dropdown
 	bool m_profiles_active = false;
