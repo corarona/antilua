@@ -343,22 +343,31 @@ bool CheatMenu::handleContextMenuItemClick(v2s32 pos)
 	s32 entry_h = 30;
 	s32 gap = 2;
 	s32 iy = m_ctx.y + 3;
-	int idx = 0;
 
-	auto check_hit = [&]() -> bool {
-		if (pointInRect(pos.X, pos.Y, m_ctx.x + 1, iy, m_ctx.w - 2, entry_h))
+	auto check_item = [&](const std::string &text, int opt) -> bool {
+		if (pointInRect(pos.X, pos.Y, m_ctx.x + 1, iy, m_ctx.w - 2, entry_h)) {
+			m_ctx.selected = opt;
+			execContextMenu();
 			return true;
+		}
 		iy += entry_h + gap;
-		idx++;
 		return false;
 	};
 
-	if (check_hit()) { m_ctx.selected = 0; execContextMenu(); return true; }
-	if (m_ctx.has_settings && check_hit()) { m_ctx.selected = idx; execContextMenu(); return true; }
-	if (check_hit()) { m_ctx.selected = idx; execContextMenu(); return true; }
+	// Toggle (always first, opt 0)
+	if (check_item(m_ctx.is_enabled ? "Disable" : "Enable", 0)) return true;
+
+	// Settings (only if has_settings) -> opt 1
+	if (m_ctx.has_settings && check_item("Settings", 1)) return true;
+
+	// Favorite -> opt 2
+	if (check_item(m_ctx.is_favorite ? "Unfavorite" : "Favorite", 2)) return true;
+
+	// Slot -> opt 3 (only for setting-based cheats)
+	if (!m_ctx.cheat_setting.empty() && check_item(m_ctx.cheat_setting.empty() ? "Slot..." : ("Slot " + std::to_string(getSlotForSetting(m_ctx.cheat_setting))), 3)) return true;
 
 	dismissContextMenu();
-	return true;
+	return false;
 }
 
 void CheatMenu::handleRightClick(v2s32 pos)
@@ -377,22 +386,32 @@ void CheatMenu::handleRightClick(v2s32 pos)
 	// Find which cheat was right-clicked
 	for (size_t pi = 0; pi < m_panels.size(); pi++) {
 		auto &panel = m_panels[pi];
-		if (panel.collapsed)
-			continue;
 		if (!pointInRect(pos.X, pos.Y, panel.x, panel.y, panel.w, panel.h))
 			continue;
+
+		// Check title bar FIRST (works even for collapsed panels)
 		if (pointInRect(pos.X, pos.Y, panel.x, panel.y, panel.w, panel.title_h)) {
-			// Right-click on category panel title → enable/disable all
 			if (isCatPanel(panel)) {
+				// Category panel title: enable/disable all
 				m_ctx.active = true;
 				m_ctx.x = pos.X;
 				m_ctx.y = pos.Y;
 				m_ctx.selected = 0;
 				m_ctx.ctx_panel_idx = (int)pi;
 				m_ctx.cheat_setting.clear();
+				return;
+			}
+			if (isSuperPanel(panel)) {
+				dismissContextMenu();
+				return;
 			}
 			return;
 		}
+
+		if (panel.collapsed)
+			continue;
+		if (!pointInRect(pos.X, pos.Y, panel.x, panel.y, panel.w, panel.h))
+			continue;
 
 		s32 cx = panel.x, cy = panel.y + panel.title_h + m_gap;
 		s32 cw = panel.w;
