@@ -166,6 +166,8 @@ bool CheatMenu::hasActiveConflict(ScriptApiCheatsCheat *cheat) const
 
 int CheatMenu::getSlotForSetting(const std::string &setting) const
 {
+	if (setting.empty())
+		return 0;
 	for (int i = 1; i <= 9; i++) {
 		if (g_settings->get("cheat_slot_" + std::to_string(i)) == setting)
 			return i;
@@ -323,10 +325,12 @@ void CheatMenu::drawContextMenu(video::IVideoDriver *driver)
 	if (m_ctx.has_settings)
 		draw_item("Settings", OPT_SETTINGS);
 	draw_item(m_ctx.is_favorite ? "Unfavorite" : "Favorite", OPT_FAVORITE);
-	if (cur_slot)
-		draw_item("Slot " + std::to_string(cur_slot), OPT_SLOT);
-	else
-		draw_item("Slot...", OPT_SLOT);
+	if (!m_ctx.cheat_setting.empty()) {
+		if (cur_slot)
+			draw_item("Slot " + std::to_string(cur_slot), OPT_SLOT);
+		else
+			draw_item("Slot...", OPT_SLOT);
+	}
 }
 
 void CheatMenu::handleRightClick(v2s32 pos)
@@ -496,7 +500,7 @@ void CheatMenu::execContextMenu()
 		script->show_cheat_settings(m_ctx.cheat_setting);
 	} else if (m_ctx.selected == OPT_FAVORITE) {
 		toggleFavorite(m_ctx.cheat_setting);
-	} else if (m_ctx.selected == OPT_SLOT) {
+	} else if (m_ctx.selected == OPT_SLOT && !m_ctx.cheat_setting.empty()) {
 		lua_State *L = m_client->getScript()->getLuaState();
 		lua_getglobal(L, "core");
 		lua_getfield(L, -1, "show_slot_picker");
@@ -742,7 +746,7 @@ void CheatMenu::drawPanelContent(video::IVideoDriver *driver,
 		drawText(txt, content_x + 5, iy + (m_entry_height - m_fontsize.Y) / 2,
 			(chi == panel.selected_cheat) ? m_selected_font_color : m_font_color);
 
-		int slot = getSlotForSetting(cheat->m_setting);
+		int slot = !cheat->m_setting.empty() ? getSlotForSetting(cheat->m_setting) : 0;
 		if (slot) {
 			std::string badge = " [" + std::to_string(slot) + "]";
 			drawText(badge, content_x + 5 + m_font->getDimension(utf8_to_wide(txt).c_str()).Width + 2,
