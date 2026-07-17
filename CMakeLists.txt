@@ -260,25 +260,25 @@ install(FILES "doc/client_lua_api.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
 install(FILES "doc/menu_lua_api.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
 install(FILES "doc/texture_packs.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
 install(FILES "doc/world_format.md" DESTINATION "${DOCDIR}" COMPONENT "Docs")
-install(FILES "minetest.conf.example" DESTINATION "${EXAMPLE_CONF_DIR}")
+install(FILES "antilua.conf.example" DESTINATION "${EXAMPLE_CONF_DIR}")
 
 if(UNIX AND NOT APPLE)
-	install(FILES "doc/luanti.6" "doc/luantiserver.6" DESTINATION "${MANDIR}/man6")
-	install(FILES "misc/org.luanti.luanti.desktop" DESTINATION "${XDG_APPS_DIR}")
-	install(FILES "misc/org.luanti.luanti.metainfo.xml" DESTINATION "${METAINFODIR}")
-	install(FILES "misc/luanti.svg" DESTINATION "${ICONDIR}/hicolor/scalable/apps")
-	install(FILES "misc/luanti-xorg-icon-128.png"
+	install(FILES "doc/antilua.6" DESTINATION "${MANDIR}/man6")
+	install(FILES "misc/org.antilua.antilua.desktop" DESTINATION "${XDG_APPS_DIR}")
+	install(FILES "misc/org.antilua.antilua.metainfo.xml" DESTINATION "${METAINFODIR}")
+	install(FILES "misc/antilua.svg" DESTINATION "${ICONDIR}/hicolor/scalable/apps")
+	install(FILES "misc/antilua-xorg-icon-128.png"
 		DESTINATION "${ICONDIR}/hicolor/128x128/apps"
-		RENAME "luanti.png")
+		RENAME "antilua.png")
 endif()
 
 if(APPLE)
-	install(FILES "misc/luanti-icon.icns" DESTINATION "${SHAREDIR}")
+	install(FILES "misc/antilua-icon.icns" DESTINATION "${SHAREDIR}")
 	install(FILES "${CMAKE_BINARY_DIR}/Info.plist" DESTINATION "${BUNDLE_PATH}/Contents")
 endif()
 
 if(CMAKE_GENERATOR STREQUAL "Xcode")
-	set(client_RESOURCES "${CMAKE_SOURCE_DIR}/misc/luanti-icon.icns")
+	set(client_RESOURCES "${CMAKE_SOURCE_DIR}/misc/antilua-icon.icns")
 endif()
 
 # Library pack
