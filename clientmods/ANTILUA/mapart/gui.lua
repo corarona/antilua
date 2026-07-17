@@ -1,7 +1,7 @@
 -- State for formspec
 local state = {
 	png_list = {},
-	png_dir = core.settings:get("mapart.png_dir") or "/tmp/antilua_mapart",
+	png_dir = core.settings:get("mapart.png_dir") or (core.get_data_path() .. "images"),
 	selected = 0,
 	preview = "",
 	out_w = 128,

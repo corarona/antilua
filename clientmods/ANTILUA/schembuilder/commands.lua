@@ -13,6 +13,9 @@ function do_schembuild(param, use_pos)
 	-- file:<path> — load an MTS file from disk
 	if param:match("^file:") then
 		local filepath = param:sub(6)
+		if not filepath:find("/") then
+			filepath = core.get_data_path() .. "schematics/" .. filepath
+		end
 		if filepath:find("..") then
 			return false, "Invalid path"
 		end
@@ -95,25 +98,26 @@ function load_schematic_by_index(event_idx)
 	else
 		schem_path2 = modpath .. "/schematics"
 	end
+	local user_path = core.get_data_path() .. "schematics"
 	local files = core.get_dir_list(schem_path2, false) or {}
-	local schems = {}
+	local user_files = core.get_dir_list(user_path, false) or {}
+	local all_files = {}
 	for _, f in ipairs(files) do
 		if f:match("%.mts$") then
-			table.insert(schems, f)
+			table.insert(all_files, { name = f, path = schem_path2 .. "/" .. f })
 		end
 	end
-	local selected = schems[event_idx]
-	if selected then
-		local real_modpath
-		if type(core.get_modpath_real) == "function" then
-			real_modpath = core.get_modpath_real("schembuilder")
-		else
-			real_modpath = modpath
+	for _, f in ipairs(user_files) do
+		if f:match("%.mts$") then
+			table.insert(all_files, { name = f, path = user_path .. "/" .. f })
 		end
-		local param = "file:" .. real_modpath .. "/schematics/" .. selected
+	end
+	local selected = all_files[event_idx]
+	if selected then
+		local param = "file:" .. selected.path
 		local ok, err, sparam = do_schembuild(param)
 		if ok then
-			create_build(sparam or param, selected)
+			create_build(sparam or param, selected.name)
 		end
 		core.close_formspec("schembuilder:browser")
 	end

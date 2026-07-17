@@ -113,6 +113,9 @@ core.register_chatcommand("mapart", {
 		if filepath:find("..") then
 			return false, "Invalid path"
 		end
+		if not filepath:find("/") then
+			filepath = core.get_data_path() .. "images/" .. filepath
+		end
 		local out_w, out_h
 		local do_dither = false
 		local do_gamma = false
@@ -220,6 +223,9 @@ core.register_chatcommand("mapart_wall", {
 		local filepath = parts[1]
 		if filepath:find("..") then
 			return false, "Invalid path"
+		end
+		if not filepath:find("/") then
+			filepath = core.get_data_path() .. "images/" .. filepath
 		end
 		local dir = "x"
 		local do_dither = false

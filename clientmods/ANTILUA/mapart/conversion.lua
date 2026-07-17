@@ -6,7 +6,7 @@ local function save_and_load_mts(schem, name, use_pos)
 	end
 
 	local schem_dir = core.settings:get("mapart_output_dir")
-		or "/tmp/antilua_mapart"
+		or (core.get_data_path() .. "schematics")
 
 	local filepath = schem_dir .. "/" .. name:gsub("%.png$", "") .. ".mts"
 	local ok, err = core.write_file(filepath, mts_data)

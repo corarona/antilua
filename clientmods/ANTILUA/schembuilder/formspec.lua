@@ -19,16 +19,23 @@ function show_browser_form(tab)
 			schem_path = modpath .. "/schematics"
 		end
 		local files = core.get_dir_list(schem_path, false) or {}
+		local user_path = core.get_data_path() .. "schematics"
+		local user_files = core.get_dir_list(user_path, false) or {}
 		local schems = {}
 		for _, f in ipairs(files) do
 			if f:match("%.mts$") then
 				table.insert(schems, core.formspec_escape(f))
 			end
 		end
+		for _, f in ipairs(user_files) do
+			if f:match("%.mts$") then
+				table.insert(schems, core.formspec_escape("[U] " .. f))
+			end
+		end
 		if #schems == 0 then
-			fs = fs .. "label[0,1;No .mts schematics found in schematics/]"
+			fs = fs .. "label[0,1;No .mts schematics found]"
 		else
-			fs = fs .. "label[0,0.6;Available schematics:]" ..
+			fs = fs .. "label[0,0.6;Available schematics:  ([U] = user)]" ..
 				"textlist[0,1;10,7;schem_list;" .. table.concat(schems, ",") .. ";0]" ..
 				"button[0,8.5;4,0.8;schem_load;Load]"
 		end
