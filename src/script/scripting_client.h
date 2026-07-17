@@ -39,11 +39,7 @@ public:
 protected:
 	// from ScriptApiSecurity:
 	bool checkPathInternal(const std::string &abs_path, bool write_required,
-		bool *write_allowed) override {
-		warningstream << "IO API called in client scripting" << std::endl;
-		assert(0);
-		return false;
-	}
+		bool *write_allowed) override;
 	bool modNamesAreTrusted() override { return true; }
 
 private:

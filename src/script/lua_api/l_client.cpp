@@ -1336,6 +1336,28 @@ int ModApiClient::l_cheat_menu_set_visible(lua_State *L)
 	return 0;
 }
 
+// get_data_path()
+int ModApiClient::l_get_data_path(lua_State *L)
+{
+	std::string dir = porting::path_user + DIR_DELIM "data";
+	fs::CreateAllDirs(dir);
+	lua_pushstring(L, dir.c_str());
+	return 1;
+}
+
+// get_serverdata_path()
+int ModApiClient::l_get_serverdata_path(lua_State *L)
+{
+	Client *client = getClient(L);
+	std::string server_id = client->getAddressName()
+		+ "_" + std::to_string(client->getServerAddress().getPort());
+	std::string dir = porting::path_user + DIR_DELIM "data"
+		+ DIR_DELIM "server" + DIR_DELIM + server_id;
+	fs::CreateAllDirs(dir);
+	lua_pushstring(L, dir.c_str());
+	return 1;
+}
+
 void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
@@ -1388,6 +1410,8 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(detach);
 	API_FCT(reattach);
 	API_FCT(cheat_menu_set_visible);
+	API_FCT(get_data_path);
+	API_FCT(get_serverdata_path);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)

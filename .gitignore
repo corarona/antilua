@@ -76,6 +76,7 @@ AppDir
 !/worlds/worlds_here.txt
 /client/mod_storage/
 /mod_data
+/data/
 
 ## Configuration/log files
 minetest.conf

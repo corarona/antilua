@@ -37,6 +37,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_util.h"
 #include "lua_api/l_item.h"
 #include "lua_api/l_nodemeta.h"
+#include "porting.h"
+#include "filesys.h"
 #include "lua_api/l_noise.h"
 #include "lua_api/l_localplayer.h"
 #include "lua_api/l_camera.h"
@@ -77,6 +79,28 @@ ClientScripting::ClientScripting(Client *client):
 	AlScriptApi::setClient(client);
 
 	infostream << "SCRIPTAPI: Initialized client game modules" << std::endl;
+}
+
+bool ClientScripting::checkPathInternal(const std::string &abs_path,
+	bool write_required, bool *write_allowed)
+{
+	std::string user_path = fs::AbsolutePath(porting::path_user);
+	std::string cache_path = fs::AbsolutePath(porting::path_cache);
+	std::string share_path = fs::AbsolutePath(porting::path_share);
+
+	// Write access to user data dir and cache
+	if (abs_path.substr(0, user_path.size()) == user_path ||
+		abs_path.substr(0, cache_path.size()) == cache_path) {
+		if (write_allowed)
+			*write_allowed = true;
+		return true;
+	}
+
+	// Read-only access to share dir
+	if (!write_required && abs_path.substr(0, share_path.size()) == share_path)
+		return true;
+
+	return false;
 }
 
 void ClientScripting::InitializeModApi(lua_State *L, int top)
