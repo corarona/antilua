@@ -4,16 +4,18 @@ local state = {
 	png_dir = core.settings:get("mapart.png_dir") or (core.get_data_path() .. "images"),
 	selected = 0,
 	preview = "",
-	out_w = 128,
-	out_h = 128,
-	dither = false,
-	gamma = false,
-	invonly = false,
+	out_w = tonumber(core.settings:get("mapart_gui_w")) or 128,
+	out_h = tonumber(core.settings:get("mapart_gui_h")) or 128,
+	dither = core.settings:get_bool("mapart_gui_dither"),
+	gamma = core.settings:get_bool("mapart_gui_gamma"),
+	invonly = core.settings:get_bool("mapart_gui_invonly"),
 	grid_new = core.settings:get_bool("mapart_grid_new", false),
-	mode = "floor",
-	filter = "nearest",
-	max_colors = 0,
+	mode = core.settings:get("mapart_gui_mode") or "floor",
+	filter = core.settings:get("mapart_gui_filter") or "nearest",
+	max_colors = tonumber(core.settings:get("mapart_gui_max_colors")) or 0,
 	status = "",
+	conv_done = false,
+	conv_filename = "",
 }
 
 -- Mapart formspec tab (called from schembuilder)
@@ -61,6 +63,9 @@ get_mapart_tab = function(fs, tab)
 	if s.status ~= "" then
 		fs = fs .. "label[0.3," .. st_y .. ";" .. core.formspec_escape(s.status) .. "]"
 	end
+	if s.conv_done and s.conv_filename ~= "" then
+		fs = fs .. "button[0.3," .. (st_y + 0.6) .. ";9,0.8;mapart_view_builder;View in Schembuilder]"
+	end
 
 	return fs
 end
@@ -99,7 +104,7 @@ handle_mapart_events = function(fields)
 			if ok and data then
 				local ok2, img = pcall(core.decode_image, data)
 				if ok2 and img then
-					local pw, ph = 64, 64
+					local pw, ph = 200, 200
 					local pixels = {}
 					for y = 0, ph - 1 do
 						for x = 0, pw - 1 do
@@ -173,6 +178,17 @@ handle_mapart_events = function(fields)
 		s.invonly = do_invonly
 		s.mode = mode
 		s.filter = filter
+		s.conv_done = false
+		s.conv_filename = ""
+
+		-- Persist settings
+		core.settings:set("mapart_gui_w", tostring(out_w))
+		core.settings:set("mapart_gui_h", tostring(out_h))
+		core.settings:set("mapart_gui_dither", do_dither and "true" or "false")
+		core.settings:set("mapart_gui_gamma", do_gamma and "true" or "false")
+		core.settings:set("mapart_gui_mode", mode)
+		core.settings:set("mapart_gui_filter", filter)
+		core.settings:set("mapart_gui_max_colors", tostring(max_colors))
 
 		local pal = mapart.palette
 		if do_invonly then
@@ -209,6 +225,13 @@ handle_mapart_events = function(fields)
 			s._conv.schem.size.x = mode == "wall_x" and out_w or 1
 		end
 		core.after(0, function() process_conv_chunk() end)
+		return true
+	end
+
+	if fields.mapart_view_builder then
+		core.close_formspec("schembuilder:browser")
+		-- Switch to schembuilder tab 0
+		show_browser_form(0)
 		return true
 	end
 

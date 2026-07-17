@@ -311,10 +311,22 @@ local function process_conv_chunk()
 				end
 			end
 			local ok3, result = save_and_load_mts(c.schem, c.name, grid_pos)
-			if ok3 then s.status = "Saved: " .. result else s.status = "Error: " .. (result or "unknown") end
+			if ok3 then
+				s.status = "Saved: " .. result
+				s.conv_done = true
+				s.conv_filename = c.name:gsub("%.png$", "") .. ".mts"
+			else
+				s.status = "Error: " .. (result or "unknown")
+			end
 		else
 			local ok3, result = save_and_load_mts(c.schem, c.name)
-			if ok3 then s.status = "Saved: " .. result else s.status = "Error: " .. (result or "unknown") end
+			if ok3 then
+				s.status = "Saved: " .. result
+				s.conv_done = true
+				s.conv_filename = c.name:gsub("%.png$", "") .. ".mts"
+			else
+				s.status = "Error: " .. (result or "unknown")
+			end
 		end
 		c.schem = nil
 		return
@@ -323,6 +335,13 @@ local function process_conv_chunk()
 	local total_rows = (c.mode == "floor" or (c.mode:sub(1,4) == "wall" and c.wall_dir == "x")) and c.out_h or c.out_w
 	local remaining = (c.mode:sub(1,4) == "wall" and c.wall_dir == "z") and (c.out_w - c.z) or (c.y + 1)
 	local pct = math.floor((total_rows - remaining) * 100 / total_rows)
+	local prev_pct = s._last_pct or -1
+	if pct - prev_pct >= 5 then
+		s._last_pct = pct
+	end
 	s.status = "Converting " .. pct .. "%..."
+	if pct > 0 and pct % 10 == 0 and pct ~= s._last_refresh then
+		s._last_refresh = pct
+	end
 	core.after(0, process_conv_chunk)
 end

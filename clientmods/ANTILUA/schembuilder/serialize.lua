@@ -72,14 +72,20 @@ function schembuilder_serialize(pos1, pos2)
 end
 
 core.register_chatcommand("ssave", {
-	description = "Save the current region to schembuilder_output setting",
+	params = "[name]",
+	description = "Save the current region to data/schematics/<name>.mts",
 	func = function(param)
 		if schembuilder.pos1 ~= nil and schembuilder.pos2 ~= nil then
+			local name = param ~= "" and param or ("build_" .. os.date("%Y%m%d_%H%M%S"))
 			local schem, count = schembuilder_serialize(schembuilder.pos1, schembuilder.pos2)
 			local mts_data = core.serialize_schematic(schem, "mts")
-			local b64 = core.encode_base64(mts_data)
-			core.settings:set("schembuilder_output", b64)
-			ws.notify("Saved " .. count .. " nodes to schembuilder_output", ws.NOTIFY_INFO)
+			local filepath = core.get_data_path() .. "schematics/" .. name .. ".mts"
+			local ok = core.write_file(filepath, mts_data)
+			if ok then
+				ws.notify("Saved " .. count .. " nodes to " .. filepath, ws.NOTIFY_INFO)
+			else
+				ws.notify("Failed to write " .. filepath, ws.NOTIFY_ERROR)
+			end
 		end
 	end,
 })

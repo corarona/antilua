@@ -152,6 +152,24 @@ core.register_on_formspec_input(function(formname, fields)
 		local idx = parse_list_event(fields.schem_list)
 		if idx then
 			_selected_schem = idx
+			-- Also fetch the display name for info display
+			local schem_path
+			if type(core.get_modpath_real) == "function" then
+				schem_path = core.get_modpath_real("schembuilder") .. "/schematics"
+			else
+				schem_path = modpath .. "/schematics"
+			end
+			local user_path = core.get_data_path() .. "schematics"
+			local file_list = {}
+			local files = core.get_dir_list(schem_path, false) or {}
+			local user_files = core.get_dir_list(user_path, false) or {}
+			for _, f in ipairs(files) do
+				if f:match("%.mts$") then table.insert(file_list, f) end
+			end
+			for _, f in ipairs(user_files) do
+				if f:match("%.mts$") then table.insert(file_list, "[U] " .. f) end
+			end
+			_selected_schem_name = file_list[idx]
 			if fields.schem_list:match("^DCL:") then
 				load_schematic_by_index(idx)
 				return
@@ -307,6 +325,19 @@ core.register_on_formspec_input(function(formname, fields)
 		return
 	end
 end)
+
+core.register_chatcommand("sload", {
+	params = "<name>",
+	description = "Load a schematic from data/schematics/ by name",
+	func = function(param)
+		if param == "" then return false, "Usage: .sload <name>" end
+		local ok, err = do_schembuild("file:" .. param)
+		if ok then
+			return true, "Loaded: " .. param
+		end
+		return false, err
+	end,
+})
 
 core.register_chatcommand("schembrowse", {
 	description = "Open the schematic browser GUI",

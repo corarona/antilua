@@ -2,6 +2,8 @@
 local _bx_status = ""
 local _sel_bx_result = nil
 local _sel_bx_dl = nil
+local schem_cache = {}
+local _selected_schem_name = nil
 
 function show_browser_form(tab)
 	tab = tab or 0
@@ -18,26 +20,53 @@ function show_browser_form(tab)
 		else
 			schem_path = modpath .. "/schematics"
 		end
-		local files = core.get_dir_list(schem_path, false) or {}
 		local user_path = core.get_data_path() .. "schematics"
-		local user_files = core.get_dir_list(user_path, false) or {}
 		local schems = {}
-		for _, f in ipairs(files) do
-			if f:match("%.mts$") then
-				table.insert(schems, core.formspec_escape(f))
+		schem_cache = {}
+
+		local function scan_dir(dir, prefix)
+			local files = core.get_dir_list(dir, false) or {}
+			for _, f in ipairs(files) do
+				if f:match("%.mts$") then
+					local display = prefix and (prefix .. f) or f
+					local fullpath = dir .. "/" .. f
+					table.insert(schems, core.formspec_escape(display))
+					-- Parse header for size info
+					local ok, data = pcall(core.read_file, fullpath)
+					if ok then
+						local ok2, schem = pcall(core.read_schematic, data, {})
+						if ok2 and schem then
+							local count = 0
+							for _, entry in ipairs(schem.data) do
+								if entry.name ~= "air" and entry.prob ~= 0 then
+									count = count + 1
+								end
+							end
+							schem_cache[display] = {
+								size = schem.size,
+								count = count,
+							}
+						end
+					end
+				end
 			end
 		end
-		for _, f in ipairs(user_files) do
-			if f:match("%.mts$") then
-				table.insert(schems, core.formspec_escape("[U] " .. f))
-			end
-		end
+
+		scan_dir(schem_path)
+		scan_dir(user_path, "[U] ")
+
 		if #schems == 0 then
 			fs = fs .. "label[0,1;No .mts schematics found]"
 		else
 			fs = fs .. "label[0,0.6;Available schematics:  ([U] = user)]" ..
 				"textlist[0,1;10,7;schem_list;" .. table.concat(schems, ",") .. ";0]" ..
 				"button[0,8.5;4,0.8;schem_load;Load]"
+			-- Show info for selected schematic
+			if _selected_schem_name and schem_cache[_selected_schem_name] then
+				local info = schem_cache[_selected_schem_name]
+				fs = fs .. "label[4.5,8.5;Size: " .. info.size.x .. "x" .. info.size.y .. "x" .. info.size.z
+					.. " (" .. info.count .. " nodes)]"
+			end
 		end
 	elseif tab == 1 then
 		local idx = get_build_index()
