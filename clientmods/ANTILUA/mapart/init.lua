@@ -110,15 +110,11 @@ core.register_chatcommand("mapart", {
 		end
 
 		local filepath = parts[1]
-		print("[mapart] filepath from parts[1]: " .. tostring(filepath))
 		if filepath:find("..") then
 			return false, "Invalid path"
 		end
 		if not filepath:find("/") then
-			local dp = core.get_data_path()
-			print("[mapart] get_data_path(): " .. tostring(dp))
-			filepath = dp .. "images/" .. filepath
-			print("[mapart] resolved to: " .. tostring(filepath))
+			filepath = core.get_data_path() .. "images/" .. filepath
 		end
 		local out_w, out_h
 		local do_dither = false
@@ -225,15 +221,11 @@ core.register_chatcommand("mapart_wall", {
 		end
 
 		local filepath = parts[1]
-		print("[mapart_wall] filepath from parts[1]: " .. tostring(filepath))
 		if filepath:find("..") then
 			return false, "Invalid path"
 		end
 		if not filepath:find("/") then
-			local dp = core.get_data_path()
-			print("[mapart_wall] get_data_path(): " .. tostring(dp))
-			filepath = dp .. "images/" .. filepath
-			print("[mapart_wall] resolved to: " .. tostring(filepath))
+			filepath = core.get_data_path() .. "images/" .. filepath
 		end
 		local dir = "x"
 		local do_dither = false
