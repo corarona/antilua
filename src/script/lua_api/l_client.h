@@ -192,6 +192,9 @@ private:
 	// get_serverdata_path()
 	static int l_get_serverdata_path(lua_State *L);
 
+	// append_file(path, data)
+	static int l_append_file(lua_State *L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 	static void InitializeSSCSM(lua_State *L, int top);

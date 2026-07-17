@@ -149,6 +149,9 @@ std::string AbsolutePathPartial(const std::string &path);
 [[nodiscard]]
 const char *GetFilenameFromPath(const char *path);
 
+// Append content to a file (creates if it doesn't exist)
+bool AppendFile(const std::string &path, std::string_view content);
+
 // Replace the content of a file on disk in a way that is safe from
 // corruption/truncation on a crash.
 // logs and returns false on error

@@ -995,6 +995,16 @@ bool safeWriteToFile(const std::string &path, std::string_view content)
 	return true;
 }
 
+bool AppendFile(const std::string &path, std::string_view content)
+{
+	FILE *f = fopen(path.c_str(), "ab");
+	if (!f)
+		return false;
+	size_t written = fwrite(content.data(), 1, content.size(), f);
+	fclose(f);
+	return written == content.size();
+}
+
 #if CHECK_CLIENT_BUILD()
 bool extractZipFile(io::IFileSystem *fs, const char *filename, const std::string &destination)
 {

@@ -1358,6 +1358,20 @@ int ModApiClient::l_get_serverdata_path(lua_State *L)
 	return 1;
 }
 
+// append_file(path, data)
+int ModApiClient::l_append_file(lua_State *L)
+{
+	std::string path = luaL_checkstring(L, 1);
+	if (path.find("..") != std::string::npos) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+	size_t len;
+	const char *data = luaL_checklstring(L, 2, &len);
+	lua_pushboolean(L, fs::AppendFile(path, std::string_view(data, len)));
+	return 1;
+}
+
 void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
@@ -1405,6 +1419,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(read_file);
 	API_FCT(decode_image);
 	API_FCT(write_file);
+	API_FCT(append_file);
 	API_FCT(get_dir_list);
 	API_FCT(create_client_entity);
 	API_FCT(detach);

@@ -172,6 +172,9 @@ cheat_menu_favorites (Cheat menu favorites) string
 #    Key to toggle the cheat menu.
 keymap_toggle_cheat_menu (Toggle cheat menu) key SYSTEM_SCANCODE_43
 
+#    Enable per-server chat logging to data/server/.
+chat_logging (Chat logging) bool false
+
 #    Key to open the quick select palette.
 keymap_quick_select_menu (Quick select menu) key SYSTEM_SCANCODE_53
 
