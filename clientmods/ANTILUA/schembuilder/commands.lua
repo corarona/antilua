@@ -413,12 +413,72 @@ function pos_marker(pos, texture)
 	})
 end
 
+local wireframe_timer = 0
+
+local function add_edge_particle(x, y, z)
+	core.add_particle({
+		pos = { x = x, y = y, z = z },
+		velocity = {x=0, y=0, z=0},
+		acceleration = {x=0, y=0, z=0},
+		expirationtime = 3.0,
+		size = 0.3,
+		collisiondetection = false,
+		collision_removal = false,
+		vertical = false,
+		texture = "bubble.png",
+		glow = 14,
+	})
+end
+
+local function draw_wireframe()
+	if not schembuilder.pos1 or not schembuilder.pos2 then
+		wireframe_timer = 0
+		return
+	end
+	-- Draw edges of the box between pos1 and pos2, spaced ~1 block apart
+	local function lerp(a, b, t) return a + (b - a) * t end
+	local p1 = schembuilder.pos1
+	local p2 = schembuilder.pos2
+	local x1, y1, z1 = math.floor(math.min(p1.x, p2.x)), math.floor(math.min(p1.y, p2.y)), math.floor(math.min(p1.z, p2.z))
+	local x2, y2, z2 = math.floor(math.max(p1.x, p2.x)), math.floor(math.max(p1.y, p2.y)), math.floor(math.max(p1.z, p2.z))
+	local dx, dy, dz = x2 - x1, y2 - y1, z2 - z1
+	local maxd = math.max(dx, dy, dz, 1)
+	-- 4 edges along X
+	for t = 0, 1, 1 / maxd do
+		local x = lerp(x1, x2, t)
+		add_edge_particle(math.floor(x), y1, z1)
+		add_edge_particle(math.floor(x), y1, z2)
+		add_edge_particle(math.floor(x), y2, z1)
+		add_edge_particle(math.floor(x), y2, z2)
+	end
+	-- 4 edges along Y
+	for t = 0, 1, 1 / maxd do
+		local y = lerp(y1, y2, t)
+		add_edge_particle(x1, math.floor(y), z1)
+		add_edge_particle(x1, math.floor(y), z2)
+		add_edge_particle(x2, math.floor(y), z1)
+		add_edge_particle(x2, math.floor(y), z2)
+	end
+	-- 4 edges along Z
+	for t = 0, 1, 1 / maxd do
+		local z = lerp(z1, z2, t)
+		add_edge_particle(x1, y1, math.floor(z))
+		add_edge_particle(x1, y2, math.floor(z))
+		add_edge_particle(x2, y1, math.floor(z))
+		add_edge_particle(x2, y2, math.floor(z))
+	end
+	-- Schedule refresh
+	wireframe_timer = core.after(2.5, draw_wireframe)
+end
+
 core.register_chatcommand("spos1", {
 	description = "Set pos1",
 	func = function(param)
 		schembuilder.pos1 = vector.round(core.localplayer:get_pos())
 		ws.notify("pos1 set", ws.NOTIFY_INFO)
 		pos_marker(schembuilder.pos1, "worldedit_pos1.png")
+		if wireframe_timer ~= 0 then core.after(0, function() core.clear_all_particles() end) end
+		draw_wireframe()
 	end,
 })
 
@@ -428,5 +488,7 @@ core.register_chatcommand("spos2", {
 		schembuilder.pos2 = vector.round(core.localplayer:get_pos())
 		ws.notify("pos2 set", ws.NOTIFY_INFO)
 		pos_marker(schembuilder.pos2, "worldedit_pos2.png")
+		if wireframe_timer ~= 0 then core.after(0, function() core.clear_all_particles() end) end
+		draw_wireframe()
 	end,
 })

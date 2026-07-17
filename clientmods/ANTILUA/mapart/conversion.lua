@@ -200,6 +200,11 @@ local function process_conv_chunk()
 	local s = state
 	local c = s._conv
 	if not c then return end
+	if s._conv_cancel then
+		s._conv = nil
+		s._conv_cancel = false
+		return
+	end
 	local chunk = 32
 	local done = 0
 
@@ -342,6 +347,7 @@ local function process_conv_chunk()
 	s.status = "Converting " .. pct .. "%..."
 	if pct > 0 and pct % 10 == 0 and pct ~= s._last_refresh then
 		s._last_refresh = pct
+		show_browser_form(3)
 	end
 	core.after(0, process_conv_chunk)
 end

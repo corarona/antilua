@@ -16,6 +16,7 @@ local state = {
 	status = "",
 	conv_done = false,
 	conv_filename = "",
+	_conv_cancel = false,
 }
 
 -- Mapart formspec tab (called from schembuilder)
@@ -46,19 +47,28 @@ get_mapart_tab = function(fs, tab)
 		"field[6.7,4.8;1.5,0.6;mapart_h;;" .. s.out_h .. "]" ..
 		"label[6.7,4.3;H]" ..
 		"dropdown[5,5.5;3.5;mapart_mode;Floor,Wall (X),Wall (Z);" .. mode_idx .. "]" ..
+		"tooltip[mapart_mode;Output orientation: floor lies flat, walls stand vertically]" ..
 		"dropdown[5,6.2;3.5;mapart_filter;Nearest,Bilinear;" .. (s.filter == "bilinear" and 2 or 1) .. "]" ..
+		"tooltip[mapart_filter;How pixels are sampled when resizing the image]" ..
 		"checkbox[5,6.9;mapart_dither;Dither;" .. (s.dither and "true" or "false") .. "]" ..
+		"tooltip[mapart_dither;Error diffusion — improves color blending between blocks]" ..
 		"checkbox[5,7.6;mapart_gamma;Gamma;" .. (s.gamma and "true" or "false") .. "]" ..
+		"tooltip[mapart_gamma;sRGB gamma correction — more accurate color matching]" ..
 		"checkbox[5,8.3;mapart_invonly;Inventory only;" .. (s.invonly and "true" or "false") .. "]" ..
+		"tooltip[mapart_invonly;Only use blocks currently in your inventory]" ..
 		"field[5.5,8.8;1.5,0.6;mapart_colors;;" .. (s.max_colors > 0 and s.max_colors or "") .. "]" ..
-		"label[5,8.5;Colors (0=all)]"
+		"label[5,8.5;Colors (0=all)]" ..
+		"tooltip[mapart_colors;Limit palette size (0 = use all 25k+ block colors)]"
 
 	if s.mode == "floor" then
 		fs = fs .. "checkbox[5,9.0;mapart_grid_new;New grid;" .. (s.grid_new and "true" or "false") .. "]"
 	end
 
 	local btn_y = s.mode == "floor" and 9.7 or 9.0
-	fs = fs .. "button[0.3," .. btn_y .. ";9,0.8;mapart_convert;Convert]"
+	fs = fs .. "button[0.3," .. btn_y .. ";4,0.8;mapart_convert;Convert]"
+	if s._conv and not s.conv_done then
+		fs = fs .. "button[4.5," .. btn_y .. ";4.5,0.8;mapart_cancel;Cancel]"
+	end
 	local st_y = btn_y + 0.9
 	if s.status ~= "" then
 		fs = fs .. "label[0.3," .. st_y .. ";" .. core.formspec_escape(s.status) .. "]"
@@ -232,6 +242,12 @@ handle_mapart_events = function(fields)
 		core.close_formspec("schembuilder:browser")
 		-- Switch to schembuilder tab 0
 		show_browser_form(0)
+		return true
+	end
+
+	if fields.mapart_cancel then
+		s._conv_cancel = true
+		s.status = "Cancelled"
 		return true
 	end
 
