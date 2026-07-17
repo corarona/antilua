@@ -47,6 +47,8 @@ core.get_modpath(modname) -> string
 core.get_last_run_mod() -> string
 core.set_last_run_mod(modname)
 core.get_builtin_path() -> string
+core.get_data_path() -> string              -- Shared data dir (path_user/data/)
+core.get_serverdata_path() -> string        -- Per-server data dir (path_user/data/server/<addr>_<port>/)
 ```
 
 ### Chat & Display
