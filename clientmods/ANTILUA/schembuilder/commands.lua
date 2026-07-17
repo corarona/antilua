@@ -161,14 +161,17 @@ core.register_on_formspec_input(function(formname, fields)
 			end
 			local user_path = core.get_data_path() .. "schematics"
 			local file_list = {}
-			local files = core.get_dir_list(schem_path, false) or {}
-			local user_files = core.get_dir_list(user_path, false) or {}
-			for _, f in ipairs(files) do
-				if f:match("%.mts$") then table.insert(file_list, f) end
+			local function add_dir(dir, prefix)
+				local list = core.get_dir_list(dir, false)
+				local files = (type(list) == "table") and list or {}
+				for _, f in ipairs(files) do
+					if f:match("%.mts$") then
+						table.insert(file_list, prefix and (prefix .. f) or f)
+					end
+				end
 			end
-			for _, f in ipairs(user_files) do
-				if f:match("%.mts$") then table.insert(file_list, "[U] " .. f) end
-			end
+			add_dir(schem_path)
+			add_dir(user_path, "[U] ")
 			_selected_schem_name = file_list[idx]
 			if fields.schem_list:match("^DCL:") then
 				load_schematic_by_index(idx)

@@ -25,7 +25,8 @@ function show_browser_form(tab)
 		schem_cache = {}
 
 		local function scan_dir(dir, prefix)
-			local files = core.get_dir_list(dir, false) or {}
+			local list = core.get_dir_list(dir, false)
+			local files = (type(list) == "table") and list or {}
 			for _, f in ipairs(files) do
 				if f:match("%.mts$") then
 					local display = prefix and (prefix .. f) or f
