@@ -91,7 +91,7 @@ dofile(vfspath .. "/gui.lua")
 local function apply_max_colors(pal)
 	local maxc = mapart.max_colors
 	if maxc and maxc > 0 and #pal > maxc then
-		return reduce_palette(pal, maxc)
+		return mapart.reduce_palette(pal, maxc)
 	end
 	return pal
 end
@@ -159,14 +159,14 @@ core.register_chatcommand("mapart", {
 
 		local pal = mapart.palette
 		if do_invonly then
-			pal = build_inv_palette()
+			pal = mapart.build_inv_palette()
 			if not pal or #pal == 0 then
 				return false, "No usable blocks in inventory"
 			end
 		end
 		pal = apply_max_colors(pal)
 
-		local schem = image_to_schem(img.width, img.height, img.data, {
+		local schem = mapart.image_to_schem(img.width, img.height, img.data, {
 			width = out_w,
 			height = out_h,
 			dither = do_dither,
@@ -274,14 +274,14 @@ core.register_chatcommand("mapart_wall", {
 
 		local pal = mapart.palette
 		if do_invonly then
-			pal = build_inv_palette()
+			pal = mapart.build_inv_palette()
 			if not pal or #pal == 0 then
 				return false, "No usable blocks in inventory"
 			end
 		end
 		pal = apply_max_colors(pal)
 
-		local schem = image_to_wall_schem(img.width, img.height, img.data, {
+		local schem = mapart.image_to_wall_schem(img.width, img.height, img.data, {
 			width = out_w,
 			height = out_h,
 			dither = do_dither,

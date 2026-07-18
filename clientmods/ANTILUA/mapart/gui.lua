@@ -118,12 +118,12 @@ handle_mapart_events = function(fields)
 					local pixels = {}
 					for y = 0, ph - 1 do
 						for x = 0, pw - 1 do
-							local r,g,b,a = sample_px(img.data, img.width, img.height, x, y, pw, ph, false)
+							local r,g,b,a = mapart.sample_px(img.data, img.width, img.height, x, y, pw, ph, false)
 							if a < 128 then
 								pixels[#pixels + 1] = 0; pixels[#pixels + 1] = 0
 								pixels[#pixels + 1] = 0; pixels[#pixels + 1] = 0
 							else
-								local best = find_closest(r, g, b, false, mapart.palette)
+								local best = mapart.find_closest(r, g, b, false, mapart.palette)
 								if best then
 									pixels[#pixels + 1] = best.r
 									pixels[#pixels + 1] = best.g
@@ -202,14 +202,14 @@ handle_mapart_events = function(fields)
 
 		local pal = mapart.palette
 		if do_invonly then
-			pal = build_inv_palette()
+			pal = mapart.build_inv_palette()
 			if not pal or #pal == 0 then
 				s.status = "No usable blocks in inventory"
 				return true
 			end
 		end
 		if max_colors > 0 and #pal > max_colors then
-			pal = reduce_palette(pal, max_colors)
+			pal = mapart.reduce_palette(pal, max_colors)
 		end
 
 		s.status = "Converting..."
@@ -234,7 +234,7 @@ handle_mapart_events = function(fields)
 			s._conv.schem.size.z = mode == "wall_z" and out_w or 1
 			s._conv.schem.size.x = mode == "wall_x" and out_w or 1
 		end
-		core.after(0, function() process_conv_chunk() end)
+		core.after(0, function() mapart.process_conv_chunk() end)
 		return true
 	end
 

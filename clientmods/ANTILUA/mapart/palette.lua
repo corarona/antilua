@@ -8,7 +8,7 @@ local function srgb_to_linear(c)
 end
 
 -- Find closest palette entry (RGB Euclidean distance)
-local function find_closest(r, g, b, use_gamma, pal_override)
+function mapart.find_closest(r, g, b, use_gamma, pal_override)
 	local pal = pal_override or mapart.palette
 	local best_idx, best_dist = nil, math.huge
 	for i, entry in ipairs(pal) do
@@ -33,7 +33,7 @@ local function find_closest(r, g, b, use_gamma, pal_override)
 end
 
 -- Floyd-Steinberg dithering
-local function floyd_steinberg(errors, w, h, x, y, dr, dg, db)
+function mapart.floyd_steinberg(errors, w, h, x, y, dr, dg, db)
 	local function add_err(ox, oy, factor)
 		local ex, ey = x + ox, y + oy
 		if ex >= 0 and ex < w and ey >= 0 and ey < h then
@@ -50,7 +50,7 @@ local function floyd_steinberg(errors, w, h, x, y, dr, dg, db)
 end
 
 -- Reduce palette to N colors using median cut
-function reduce_palette(pal, max_colors)
+function mapart.reduce_palette(pal, max_colors)
 	if max_colors <= 0 or #pal <= max_colors then
 		return pal
 	end
@@ -147,7 +147,7 @@ function reduce_palette(pal, max_colors)
 end
 
 -- Sample a pixel from the source image (nearest-neighbor or bilinear)
-local function sample_px(data, sw, sh, px, py, dw, dh, bilinear)
+function mapart.sample_px(data, sw, sh, px, py, dw, dh, bilinear)
 	if bilinear then
 		local sx = px * sw / dw
 		local sy = py * sh / dh

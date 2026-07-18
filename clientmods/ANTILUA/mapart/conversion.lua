@@ -23,7 +23,7 @@ end
 -- Build a filtered palette with only nodes in the player's inventory (cached 1s)
 local _inv_cache_time = 0
 local _inv_cache_pal = nil
-function build_inv_palette()
+function mapart.build_inv_palette()
 	local now = os.clock()
 	if now - _inv_cache_time < 1.0 and _inv_cache_pal then
 		return _inv_cache_pal
@@ -56,7 +56,7 @@ function build_inv_palette()
 end
 
 -- Convert decoded image data to an MTS schematic (floor/painting)
-local function image_to_schem(width, height, pixel_data, opts)
+function mapart.image_to_schem(width, height, pixel_data, opts)
 	opts = opts or {}
 	local out_w = opts.width or 128
 	local out_h = opts.height or 128
@@ -78,7 +78,7 @@ local function image_to_schem(width, height, pixel_data, opts)
 
 	for z = out_h - 1, 0, -1 do
 		for x = 0, out_w - 1 do
-			local r, g, b, a = sample_px(pixel_data, width, height, x, z, out_w, out_h, use_bilinear)
+			local r, g, b, a = mapart.sample_px(pixel_data, width, height, x, z, out_w, out_h, use_bilinear)
 
 			if use_dither then
 				local idx = z * out_w + x
@@ -94,14 +94,14 @@ local function image_to_schem(width, height, pixel_data, opts)
 					param2 = 0,
 				})
 			else
-				local best = find_closest(r, g, b, use_gamma, pal)
+				local best = mapart.find_closest(r, g, b, use_gamma, pal)
 				if best then
 					local dr = (r or 0) - best.r
 					local dg = (g or 0) - best.g
 					local db = (b or 0) - best.b
 
 					if use_dither then
-						floyd_steinberg(errors, out_w, out_h, x, z, dr, dg, db)
+						mapart.floyd_steinberg(errors, out_w, out_h, x, z, dr, dg, db)
 					end
 
 					table.insert(schem.data, {
@@ -124,7 +124,7 @@ local function image_to_schem(width, height, pixel_data, opts)
 end
 
 -- Convert decoded image data to a vertical wall MTS schematic
-local function image_to_wall_schem(width, height, pixel_data, opts)
+function mapart.image_to_wall_schem(width, height, pixel_data, opts)
 	opts = opts or {}
 	local out_w = opts.width or width
 	local out_h = opts.height or height
@@ -146,7 +146,7 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 		schem = { size = { x = out_w, y = out_h, z = 1 }, data = {} }
 		for y = out_h - 1, 0, -1 do
 			for x = 0, out_w - 1 do
-				local r, g, b, a = sample_px(pixel_data, width, height, x, y, out_w, out_h, use_bilinear)
+				local r, g, b, a = mapart.sample_px(pixel_data, width, height, x, y, out_w, out_h, use_bilinear)
 				if use_dither then
 					local idx = y * out_w + x
 					r = math.max(0, math.min(255, r + errors[idx * 3 + 1]))
@@ -156,10 +156,10 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 				if a < 128 then
 					table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
 				else
-					local best = find_closest(r, g, b, use_gamma, pal)
+					local best = mapart.find_closest(r, g, b, use_gamma, pal)
 					if best then
 						local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-						if use_dither then floyd_steinberg(errors, out_w, out_h, x, y, dr, dg, db) end
+						if use_dither then mapart.floyd_steinberg(errors, out_w, out_h, x, y, dr, dg, db) end
 						table.insert(schem.data, { name = best.name, prob = 254, param2 = best.param2 })
 					else
 						table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
@@ -171,7 +171,7 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 		schem = { size = { x = 1, y = out_h, z = out_w }, data = {} }
 		for z = 0, out_w - 1 do
 			for y = out_h - 1, 0, -1 do
-				local r, g, b, a = sample_px(pixel_data, width, height, z, y, out_w, out_h, use_bilinear)
+				local r, g, b, a = mapart.sample_px(pixel_data, width, height, z, y, out_w, out_h, use_bilinear)
 				if use_dither then
 					local idx = y * out_w + z
 					r = math.max(0, math.min(255, r + errors[idx * 3 + 1]))
@@ -181,10 +181,10 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 				if a < 128 then
 					table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
 				else
-					local best = find_closest(r, g, b, use_gamma, pal)
+					local best = mapart.find_closest(r, g, b, use_gamma, pal)
 					if best then
 						local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-						if use_dither then floyd_steinberg(errors, out_w, out_h, z, y, dr, dg, db) end
+						if use_dither then mapart.floyd_steinberg(errors, out_w, out_h, z, y, dr, dg, db) end
 						table.insert(schem.data, { name = best.name, prob = 254, param2 = best.param2 })
 					else
 						table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
@@ -196,7 +196,7 @@ local function image_to_wall_schem(width, height, pixel_data, opts)
 	return schem
 end
 
-local function process_conv_chunk()
+function mapart.process_conv_chunk()
 	local s = state
 	local c = s._conv
 	if not c then return end
@@ -212,7 +212,7 @@ local function process_conv_chunk()
 		if c.mode == "floor" then
 			if c.y < 0 then done = 1; break end
 			for x = 0, c.out_w - 1 do
-				local r,g,b,a = sample_px(c.img.data, c.img.width, c.img.height, x, c.y, c.out_w, c.out_h, c.filter == "bilinear")
+				local r,g,b,a = mapart.sample_px(c.img.data, c.img.width, c.img.height, x, c.y, c.out_w, c.out_h, c.filter == "bilinear")
 				if c.dither then
 					local idx = c.y * c.out_w + x
 					r = math.max(0, math.min(255, r + c.errors[idx*3+1]))
@@ -222,10 +222,10 @@ local function process_conv_chunk()
 				if a < 128 then
 					table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
 				else
-					local best = find_closest(r, g, b, c.gamma, c.pal)
+					local best = mapart.find_closest(r, g, b, c.gamma, c.pal)
 					if best then
 						local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-						if c.dither then floyd_steinberg(c.errors, c.out_w, c.out_h, x, c.y, dr, dg, db) end
+						if c.dither then mapart.floyd_steinberg(c.errors, c.out_w, c.out_h, x, c.y, dr, dg, db) end
 						table.insert(c.schem.data, { name = best.name, prob = 254, param2 = best.param2 })
 					else
 						table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
@@ -238,7 +238,7 @@ local function process_conv_chunk()
 			if dir == "x" then
 				if c.y < 0 then done = 1; break end
 				for x = 0, c.out_w - 1 do
-					local r,g,b,a = sample_px(c.img.data, c.img.width, c.img.height, x, c.y, c.out_w, c.out_h, c.filter == "bilinear")
+					local r,g,b,a = mapart.sample_px(c.img.data, c.img.width, c.img.height, x, c.y, c.out_w, c.out_h, c.filter == "bilinear")
 					if c.dither then
 						local idx = c.y * c.out_w + x
 						r = math.max(0, math.min(255, r + c.errors[idx*3+1]))
@@ -248,10 +248,10 @@ local function process_conv_chunk()
 					if a < 128 then
 						table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
 					else
-						local best = find_closest(r, g, b, c.gamma, c.pal)
+						local best = mapart.find_closest(r, g, b, c.gamma, c.pal)
 						if best then
 							local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-							if c.dither then floyd_steinberg(c.errors, c.out_w, c.out_h, x, c.y, dr, dg, db) end
+							if c.dither then mapart.floyd_steinberg(c.errors, c.out_w, c.out_h, x, c.y, dr, dg, db) end
 							table.insert(c.schem.data, { name = best.name, prob = 254, param2 = best.param2 })
 						else
 							table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
@@ -262,7 +262,7 @@ local function process_conv_chunk()
 			else
 				if c.z >= c.out_w then done = 1; break end
 				for y = c.out_h - 1, 0, -1 do
-					local r,g,b,a = sample_px(c.img.data, c.img.width, c.img.height, c.z, y, c.out_w, c.out_h, c.filter == "bilinear")
+					local r,g,b,a = mapart.sample_px(c.img.data, c.img.width, c.img.height, c.z, y, c.out_w, c.out_h, c.filter == "bilinear")
 					if c.dither then
 						local idx = y * c.out_w + c.z
 						r = math.max(0, math.min(255, r + c.errors[idx*3+1]))
@@ -272,10 +272,10 @@ local function process_conv_chunk()
 					if a < 128 then
 						table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
 					else
-						local best = find_closest(r, g, b, c.gamma, c.pal)
+						local best = mapart.find_closest(r, g, b, c.gamma, c.pal)
 						if best then
 							local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-							if c.dither then floyd_steinberg(c.errors, c.out_w, c.out_h, c.z, y, dr, dg, db) end
+							if c.dither then mapart.floyd_steinberg(c.errors, c.out_w, c.out_h, c.z, y, dr, dg, db) end
 							table.insert(c.schem.data, { name = best.name, prob = 254, param2 = best.param2 })
 						else
 							table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
@@ -349,5 +349,5 @@ local function process_conv_chunk()
 		s._last_refresh = pct
 		show_browser_form(3)
 	end
-	core.after(0, process_conv_chunk)
+	core.after(0, mapart.process_conv_chunk)
 end
