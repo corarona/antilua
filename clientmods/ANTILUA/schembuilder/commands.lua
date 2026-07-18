@@ -16,7 +16,7 @@ function do_schembuild(param, use_pos)
 		if not filepath:find("/") then
 			filepath = core.get_data_path() .. "schematics/" .. filepath
 		end
-		if filepath:find("..") then
+		if filepath:find("%.%.") then
 			return false, "Invalid path"
 		end
 		local ok, data = pcall(core.read_file, filepath)

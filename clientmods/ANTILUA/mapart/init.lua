@@ -110,7 +110,7 @@ core.register_chatcommand("mapart", {
 		end
 
 		local filepath = parts[1]
-		if filepath:find("..") then
+		if filepath:find("%.%.") then
 			return false, "Invalid path"
 		end
 		if not filepath:find("/") then
@@ -221,7 +221,7 @@ core.register_chatcommand("mapart_wall", {
 		end
 
 		local filepath = parts[1]
-		if filepath:find("..") then
+		if filepath:find("%.%.") then
 			return false, "Invalid path"
 		end
 		if not filepath:find("/") then
@@ -312,7 +312,7 @@ core.register_chatcommand("test_encode_png", {
 		if param == "" then
 			return false, "Usage: /test_encode_png <path>"
 		end
-		if param:find("..") then
+		if param:find("%.%.") then
 			return false, "Invalid path"
 		end
 		local ok, data = pcall(core.read_file, param)
