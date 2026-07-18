@@ -88,7 +88,6 @@ void MyEventReceiver::reloadKeybindings()
 	keybindings[KeyType::CAMERA_PITCH_UP] = getKeySetting("keymap_camera_pitch_up");
 	keybindings[KeyType::CAMERA_PITCH_DOWN] = getKeySetting("keymap_camera_pitch_down");
 
-	keybindings[KeyType::ENDERCHEST] = getKeySetting("keymap_enderchest");
 	keybindings[KeyType::TOGGLE_CHEAT_MENU] = getKeySetting("keymap_toggle_cheat_menu");
 	keybindings[KeyType::KILLAURA] = getKeySetting("keymap_toggle_killaura");
 	keybindings[KeyType::FREECAM] = getKeySetting("keymap_toggle_freecam");

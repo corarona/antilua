@@ -103,7 +103,6 @@ public:
 		SLOT_32,
 
 		// DragonfireClient-specific keys (appended to avoid enum value shifts)
-		ENDERCHEST,
 		TOGGLE_CHEAT_MENU,
 		KILLAURA,
 		FREECAM,

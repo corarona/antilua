@@ -60,7 +60,6 @@ enum
 	GUI_ID_KEY_SNEAK_BUTTON,
 	GUI_ID_KEY_DROP_BUTTON,
 	GUI_ID_KEY_INVENTORY_BUTTON,
-	GUI_ID_KEY_ENDERCHEST_BUTTON,
 	GUI_ID_KEY_HOTBAR_PREV_BUTTON,
 	GUI_ID_KEY_HOTBAR_NEXT_BUTTON,
 	GUI_ID_KEY_MUTE_BUTTON,
@@ -407,7 +406,6 @@ void GUIKeyChangeMenu::init_keys()
 	this->add_key(GUI_ID_KEY_SNEAK_BUTTON,          wstrgettext("Sneak"),            "keymap_sneak");
 	this->add_key(GUI_ID_KEY_DROP_BUTTON,           wstrgettext("Drop"),             "keymap_drop");
 	this->add_key(GUI_ID_KEY_INVENTORY_BUTTON,      wstrgettext("Inventory"),        "keymap_inventory");
-	this->add_key(GUI_ID_KEY_ENDERCHEST_BUTTON,     wstrgettext("Enderchest"),		  "keymap_enderchest");
 	this->add_key(GUI_ID_KEY_HOTBAR_PREV_BUTTON,    wstrgettext("Prev. item"),       "keymap_hotbar_previous");
 	this->add_key(GUI_ID_KEY_HOTBAR_NEXT_BUTTON,    wstrgettext("Next item"),        "keymap_hotbar_next");
 	this->add_key(GUI_ID_KEY_ZOOM_BUTTON,           wstrgettext("Zoom"),             "keymap_zoom");
