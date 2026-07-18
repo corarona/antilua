@@ -1,5 +1,5 @@
 -- Save MTS to schematics dir and load into schembuilder
-local function save_and_load_mts(schem, name, use_pos)
+function mapart.save_and_load_mts(schem, name, use_pos)
 	local mts_data = core.serialize_schematic(schem, "mts")
 	if not mts_data then
 		return false, "Failed to serialize schematic"
@@ -315,7 +315,7 @@ function mapart.process_conv_chunk()
 					}
 				end
 			end
-			local ok3, result = save_and_load_mts(c.schem, c.name, grid_pos)
+			local ok3, result = mapart.save_and_load_mts(c.schem, c.name, grid_pos)
 			if ok3 then
 				s.status = "Saved: " .. result
 				s.conv_done = true
@@ -324,7 +324,7 @@ function mapart.process_conv_chunk()
 				s.status = "Error: " .. (result or "unknown")
 			end
 		else
-			local ok3, result = save_and_load_mts(c.schem, c.name)
+			local ok3, result = mapart.save_and_load_mts(c.schem, c.name)
 			if ok3 then
 				s.status = "Saved: " .. result
 				s.conv_done = true

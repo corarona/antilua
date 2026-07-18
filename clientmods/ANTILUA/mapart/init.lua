@@ -198,7 +198,7 @@ core.register_chatcommand("mapart", {
 		end
 
 		local name = filepath:match("([^/]+)%.png$") or "mapart_output"
-		local ok3, result = save_and_load_mts(schem, name .. ".png", grid_pos)
+		local ok3, result = mapart.save_and_load_mts(schem, name .. ".png", grid_pos)
 		if ok3 then
 			return true, "Mapart saved: " .. result .. " (" .. #schem.data .. " nodes)"
 		else
@@ -296,7 +296,7 @@ core.register_chatcommand("mapart_wall", {
 		end
 
 		local name = filepath:match("([^/]+)%.png$") or "mapart_wall_output"
-		local ok3, result = save_and_load_mts(schem, name .. ".png")
+		local ok3, result = mapart.save_and_load_mts(schem, name .. ".png")
 		if ok3 then
 			return true, "Wall saved: " .. result .. " (" .. #schem.data .. " nodes)"
 		else
