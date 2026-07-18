@@ -720,6 +720,12 @@ int ModApiClient::l_send_nodemeta_fields(lua_State *L)
 int ModApiClient::l_read_file(lua_State *L)
 {
 	std::string path = luaL_checkstring(L, 1);
+	// Normalize path to resolve any .. components from RUN_IN_PLACE paths
+	{
+		std::string normalized = fs::AbsolutePath(path);
+		if (!normalized.empty())
+			path = normalized;
+	}
 	// Prevent directory traversal
 	if (path.find("..") != std::string::npos) {
 		lua_pushnil(L);
@@ -828,6 +834,12 @@ int ModApiClient::l_decode_image(lua_State *L)
 int ModApiClient::l_write_file(lua_State *L)
 {
 	std::string path = luaL_checkstring(L, 1);
+	// Normalize path to resolve any .. components
+	{
+		std::string normalized = fs::AbsolutePath(path);
+		if (!normalized.empty())
+			path = normalized;
+	}
 	// Prevent directory traversal
 	if (path.find("..") != std::string::npos) {
 		lua_pushnil(L);
@@ -1340,6 +1352,9 @@ int ModApiClient::l_cheat_menu_set_visible(lua_State *L)
 int ModApiClient::l_get_data_path(lua_State *L)
 {
 	std::string dir = porting::path_user + DIR_DELIM "data";
+	std::string clean = fs::AbsolutePath(dir);
+	if (!clean.empty())
+		dir = clean;
 	fs::CreateAllDirs(dir);
 	lua_pushstring(L, dir.c_str());
 	return 1;
@@ -1353,6 +1368,9 @@ int ModApiClient::l_get_serverdata_path(lua_State *L)
 		+ "_" + std::to_string(client->getServerAddress().getPort());
 	std::string dir = porting::path_user + DIR_DELIM "data"
 		+ DIR_DELIM "server" + DIR_DELIM + server_id;
+	std::string clean = fs::AbsolutePath(dir);
+	if (!clean.empty())
+		dir = clean;
 	fs::CreateAllDirs(dir);
 	lua_pushstring(L, dir.c_str());
 	return 1;
