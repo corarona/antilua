@@ -23,7 +23,7 @@ end
 -- Build a filtered palette with only nodes in the player's inventory (cached 1s)
 local _inv_cache_time = 0
 local _inv_cache_pal = nil
-local function build_inv_palette()
+function build_inv_palette()
 	local now = os.clock()
 	if now - _inv_cache_time < 1.0 and _inv_cache_pal then
 		return _inv_cache_pal
