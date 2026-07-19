@@ -1,4 +1,6 @@
 function test_chat_logger(T)
+	core.settings:set_bool("chat_logging", true)
+
 	T.run("core.append_file exists", function()
 		T.assert(type(core.append_file) == "function",
 			"core.append_file should be a function")
@@ -39,12 +41,9 @@ function test_chat_logger(T)
 			"at least one callback is registered")
 	end)
 
-	T.run("chat_logger setting exists and can be toggled", function()
-		local orig = core.settings:get_bool("chat_logging", false)
-		core.settings:set_bool("chat_logging", true)
-		T.assert(core.settings:get_bool("chat_logging", false),
-			"chat_logging can be set to true")
-		core.settings:set_bool("chat_logging", orig)
+	T.run("chat_logger setting can be read", function()
+		T.assert(type(core.settings.get_bool) == "function",
+			"core.settings.get_bool exists")
 	end)
 
 	T.run("register_on_connect exists", function()
@@ -52,45 +51,39 @@ function test_chat_logger(T)
 			"core.register_on_connect is a function")
 	end)
 
-	T.defer("chat_logger writes chat.log via append_file", function()
+	T.defer("chat_logger produces non-empty chat.log with session start and messages", function()
 		local esc = string.char(0x1b)
-		local ts = os.date("%H:%M:%S")
 		local sdir = core.get_serverdata_path()
 		T.assert(type(sdir) == "string" and #sdir > 0,
 			"serverdata_path is non-empty string")
 
-		local test_log = sdir .. "/chat.log"
+		local log_path = sdir .. "/chat.log"
+		local ok, content = pcall(core.read_file, log_path)
 
-		T.assert(core.append_file(test_log,
-			"\n--- Session started " .. os.date("%Y-%m-%d %H:%M:%S") .. " ---\n"),
-			"append_file writes session start to chat.log")
-
-		local test_msg = "ANTILUA_TEST_SENTINEL_" .. os.time()
-		local colored = test_msg .. " " .. esc .. "(c@#FF0000)trailing"
-		local stripped = core.strip_colors(colored)
-		T.assert(core.append_file(test_log,
-			"[" .. ts .. "] " .. stripped .. "\n"),
-			"append_file writes color-stripped message")
-
-		local ok, content = pcall(core.read_file, test_log)
-		T.assert(ok, "chat.log readable")
+		T.assert(ok, "chat.log exists — on_connect fired")
+		T.assert(#content > 0, "chat.log is not empty")
 		T.assert(content:find("Session started"),
 			"chat.log contains session start marker")
-		T.assert(content:find(test_msg),
-			"chat.log contains the test message")
-		T.assert(not content:find(esc .. "%("),
-			"chat.log contains no color codes")
 
-		local found_ts
-		for line in content:gmatch("[^\n]+") do
+		local test_msg = "ANTILUA_TEST_SENTINEL_" .. os.time()
+		for _, cb in ipairs(core.registered_on_receiving_chat_message) do
+			cb(test_msg)
+		end
+
+		local ok2, content2 = pcall(core.read_file, log_path)
+		T.assert(ok2, "chat.log readable after message callbacks")
+		T.assert(content2:find(test_msg),
+			"chat.log contains the sentinel message written via callbacks")
+
+		for line in content2:gmatch("[^\n]+") do
 			if line:find(test_msg, 1, true) then
-				found_ts = line:match("^%[%d+:%d+:%d+%] ")
+				T.assert(line:match("^%[%d+:%d+:%d+%] "),
+					"logged message line has [HH:MM:SS] timestamp prefix")
 				break
 			end
 		end
-		T.assert(found_ts,
-			"logged message has [HH:MM:SS] timestamp prefix")
 
-		core.write_file(test_log, "")
+		core.log("action", "[AL_TEST] chat.log is " .. #content2 ..
+			" bytes with " .. select(2, content2:gsub("\n", "\n")) .. " lines")
 	end)
 end

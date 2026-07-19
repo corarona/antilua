@@ -340,8 +340,10 @@ void Client::loadMods()
 	}
 
 	// Create objects if they're ready
-	if (m_state == LC_Ready)
+	if (m_state == LC_Ready) {
 		m_script->on_client_ready(m_env.getLocalPlayer());
+		AlClientHooks::on_connect(this);
+	}
 	if (m_camera)
 		m_script->on_camera_ready(m_camera);
 	if (m_minimap)
