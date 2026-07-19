@@ -48,6 +48,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "lua_api/l_client_sound.h"
 #include "lua_api/l_sky.h"
 #include "lua_api/l_clouds.h"
+#include "lua_api/l_draw3d.h"
 #include "lua_api/al_client_map.h"
 
 ClientScripting::ClientScripting(Client *client):
@@ -137,6 +138,7 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	LuaCamera::Register(L);
 	LuaSky::Register(L);
 	LuaClouds::Register(L);
+	LuaDraw3D::Register(L);
 	ModApiParticlesLocal::Initialize(L, top);
 	ModApiClientSound::Initialize(L, top);
 	ClientSoundHandle::Register(L);
@@ -159,4 +161,5 @@ void ClientScripting::on_minimap_ready(Minimap *minimap)
 	LuaMinimap::create(getStack(), minimap);
 	LuaSky::create(getStack(), g_game->sky.get());
 	LuaClouds::create(getStack(), g_game->clouds.get());
+	LuaDraw3D::create(getStack());
 }

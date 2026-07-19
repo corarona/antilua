@@ -33,6 +33,7 @@ set(client_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/render/core.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/factory.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/plain.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/render/al_draw_shapes.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/sidebyside.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/stereo.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/secondstage.cpp

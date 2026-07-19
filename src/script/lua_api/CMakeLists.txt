@@ -46,6 +46,7 @@ set(client_SCRIPT_LUA_API_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/l_pause_menu.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_sky.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_clouds.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/l_draw3d.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_storage.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/l_sscsm.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/al_client_map.cpp

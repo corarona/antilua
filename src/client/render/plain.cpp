@@ -15,6 +15,7 @@
 #include "client/minimap.h"
 #include "client/shadows/dynamicshadowsrender.h"
 #include "util/numeric.h"
+#include "client/render/al_draw_shapes.h"
 #include <ICameraSceneNode.h>
 #include <IGUIEnvironment.h>
 #include "map.h"
@@ -358,6 +359,7 @@ void populatePlainPipeline(RenderPipeline *pipeline, Client *client)
 	auto step3D = pipeline->own(create3DStage(client, downscale_factor));
 	pipeline->addStep(step3D);
 	pipeline->addStep<DrawTracersAndESP>();
+	pipeline->addStep<DrawLuaShapes>();
 	pipeline->addStep<DrawWield>();
 	pipeline->addStep<MapPostFxStep>();
 

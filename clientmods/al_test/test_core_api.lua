@@ -274,4 +274,78 @@ function test_core_api(T)
 		local ok, err = pcall(core.mod_channel_join, test_channel)
 		T.assert(ok, "mod_channel_join should succeed; error: " .. tostring(err))
 	end)
+
+	-- Draw3D API tests
+	T.defer("core.draw3d exists and has methods", function()
+		T.assert(core.draw3d ~= nil, "core.draw3d should exist")
+		T.assert(type(core.draw3d.add_sphere) == "function", "draw3d:add_sphere exists")
+		T.assert(type(core.draw3d.add_box) == "function", "draw3d:add_box exists")
+		T.assert(type(core.draw3d.add_wirebox) == "function", "draw3d:add_wirebox exists")
+		T.assert(type(core.draw3d.add_line) == "function", "draw3d:add_line exists")
+		T.assert(type(core.draw3d.add_circle) == "function", "draw3d:add_circle exists")
+		T.assert(type(core.draw3d.clear) == "function", "draw3d:clear exists")
+	end)
+
+	T.defer("core.draw3d:add_sphere does not crash", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local ok, err = pcall(core.draw3d.add_sphere, core.draw3d, pos, 2, "#00FF00", 16)
+		T.assert(ok, "draw3d:add_sphere should not throw; error: " .. tostring(err))
+		core.draw3d:clear()
+	end)
+
+	T.defer("core.draw3d:add_box does not crash", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local p1 = {x = pos.x - 1, y = pos.y, z = pos.z - 1}
+		local p2 = {x = pos.x + 1, y = pos.y + 2, z = pos.z + 1}
+		local ok, err = pcall(core.draw3d.add_box, core.draw3d, p1, p2, "#FF0000")
+		T.assert(ok, "draw3d:add_box should not throw; error: " .. tostring(err))
+		core.draw3d:clear()
+	end)
+
+	T.defer("core.draw3d:add_wirebox does not crash", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local ok, err = pcall(core.draw3d.add_wirebox, core.draw3d,
+			{x = pos.x - 1, y = pos.y, z = pos.z - 1},
+			{x = pos.x + 1, y = pos.y + 2, z = pos.z + 1}, "#FFFF00")
+		T.assert(ok, "draw3d:add_wirebox should not throw; error: " .. tostring(err))
+		core.draw3d:clear()
+	end)
+
+	T.defer("core.draw3d:add_line does not crash", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local ok, err = pcall(core.draw3d.add_line, core.draw3d, pos,
+			{x = pos.x + 5, y = pos.y, z = pos.z}, "#FF00FF")
+		T.assert(ok, "draw3d:add_line should not throw; error: " .. tostring(err))
+		core.draw3d:clear()
+	end)
+
+	T.defer("core.draw3d:add_circle does not crash", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local ok, err = pcall(core.draw3d.add_circle, core.draw3d, pos, 3, "#00FFFF", 24)
+		T.assert(ok, "draw3d:add_circle should not throw; error: " .. tostring(err))
+		core.draw3d:clear()
+	end)
+
+	T.defer("core.draw3d:clear with group clears correctly", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		core.draw3d:add_sphere(pos, 1, "#0F0", 8, 1)
+		core.draw3d:add_box({x = pos.x - 1, y = pos.y, z = pos.z - 1},
+			{x = pos.x + 1, y = pos.y + 2, z = pos.z + 1}, "#F00", 2)
+		core.draw3d:clear(1)
+		-- clear(1) should not crash (can't verify it actually removed without inspecting internals)
+		core.draw3d:clear()
+	end)
+
+	T.defer("/testdraw command registered", function()
+		T.assert(type(core.registered_chatcommands["testdraw"]) == "table",
+			"/testdraw command should exist")
+		T.assert(type(core.registered_chatcommands["testdraw"].func) == "function",
+			"/testdraw should have a function")
+	end)
 end
