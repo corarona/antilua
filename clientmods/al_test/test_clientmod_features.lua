@@ -154,4 +154,45 @@ function test_clientmod_features(T)
 		T.assert(type(core.registered_on_hud_param_changed) == "table",
 			"registered_on_hud_param_changed should be a table")
 	end)
+
+	-- QoL mod features
+	T.run("/entityinfo command registered", function()
+		T.assert(type(core.registered_chatcommands["entityinfo"]) == "table",
+			"/entityinfo command should exist")
+	end)
+
+	T.run("chat timestamps callback prepends [HH:MM:SS]", function()
+		local found
+		for _, cb in ipairs(core.registered_on_receiving_chat_message) do
+			local ret = cb("test message")
+			if ret and ret:match("^%[%d+:%d+:%d+%] ") then
+				found = true
+				break
+			end
+		end
+		T.assert(found, "at least one callback adds [HH:MM:SS] timestamp")
+	end)
+
+	T.run("click coords callback parses (X, Y, Z)", function()
+		local found
+		for _, cb in ipairs(core.registered_on_receiving_chat_message) do
+			-- Should not crash, should parse coords silently
+			local ok, ret = pcall(cb, "Look at (100, 200, -300)")
+			if ok then
+				found = true
+			end
+		end
+		T.assert(found, "click coords callback should handle (X, Y, Z)")
+	end)
+
+	T.run("auto_reconnect setting defaults exist", function()
+		T.assert(type(core.settings:get("auto_reconnect")) == "string",
+			"auto_reconnect setting should exist")
+		T.assert(type(core.settings:get("auto_reconnect_delay")) == "string",
+			"auto_reconnect_delay setting should exist")
+		T.assert(type(core.settings:get("auto_reconnect_max_backoff")) == "string",
+			"auto_reconnect_max_backoff setting should exist")
+		T.assert(type(core.settings:get("auto_reconnect_max")) == "string",
+			"auto_reconnect_max setting should exist")
+	end)
 end

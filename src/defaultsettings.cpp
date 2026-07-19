@@ -194,6 +194,12 @@ static void set_al_default_settings()
 #else
 	settings->setDefault("pipe_lua_path", "/tmp/antilua_lua");
 #endif
+
+	// Auto reconnect
+	settings->setDefault("auto_reconnect", "false");
+	settings->setDefault("auto_reconnect_delay", "3.0");
+	settings->setDefault("auto_reconnect_max_backoff", "60.0");
+	settings->setDefault("auto_reconnect_max", "10");
 }
 
 void set_default_settings()

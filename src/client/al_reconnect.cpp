@@ -76,6 +76,10 @@ void ReconnectManager::tick(float dtime, Client *client,
 		return;
 
 	// Timer expired — attempt reconnection
+	if (m_attempt >= g_settings->getU16("auto_reconnect_max")) {
+		m_state = State::Cancelled;
+		return;
+	}
 	m_attempt++;
 	float max_backoff = g_settings->getFloat("auto_reconnect_max_backoff");
 	m_backoff = std::min(m_backoff * 2.0f, max_backoff);
