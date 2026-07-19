@@ -1364,8 +1364,14 @@ int ModApiClient::l_get_data_path(lua_State *L)
 int ModApiClient::l_get_serverdata_path(lua_State *L)
 {
 	Client *client = getClient(L);
-	std::string server_id = client->getAddressName()
-		+ "_" + std::to_string(client->getServerAddress().getPort());
+	std::string addr = client->getAddressName();
+	std::string server_id;
+	if (addr.empty() || client->isSingleplayer()) {
+		server_id = "singleplayer";
+	} else {
+		server_id = addr + "_"
+			+ std::to_string(client->getServerAddress().getPort());
+	}
 	std::string dir = porting::path_user + DIR_DELIM "data"
 		+ DIR_DELIM "server" + DIR_DELIM + server_id;
 	fs::CreateAllDirs(dir);

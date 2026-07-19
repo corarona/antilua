@@ -141,6 +141,8 @@ public:
 
 	bool isShutdown();
 
+	bool isSingleplayer() { return m_simple_singleplayer_mode; }
+
 	void connect(const Address &address, const std::string &address_name);
 
 	/*
