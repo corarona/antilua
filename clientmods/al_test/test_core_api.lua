@@ -104,28 +104,42 @@ function test_core_api(T)
 			"core.set_last_run_mod should be a function")
 	end)
 
-	T.defer("core.get_node_or_nil returns node at player position", function()
-		local pos = core.localplayer:get_pos()
-		T.assert(type(pos) == "table", "player pos should be a table")
-		local bp = vector.round(pos)
-		local node = core.get_node_or_nil(bp)
-		-- Try below feet if at player pos returns nil (e.g. player is in air)
-		if not node then
-			bp = {x = bp.x, y = bp.y - 1, z = bp.z}
-			node = core.get_node_or_nil(bp)
+	T.defer("core.get_node_or_nil finds a solid node", function()
+		-- Search a wide area for any non-air node to verify the API works
+		local found
+		for y = 10, -10, -1 do
+			local pos = core.localplayer:get_pos()
+			if not pos then break end
+			local bp = {x = math.floor(pos.x), y = math.floor(pos.y) + y, z = math.floor(pos.z)}
+			local node = core.get_node_or_nil(bp)
+			if node and node.name ~= "air" and node.name ~= "ignore" then
+				found = node
+				break
+			end
 		end
-		-- Try further below if still nil
-		if not node then
-			bp = {x = bp.x, y = bp.y - 1, z = bp.z}
-			node = core.get_node_or_nil(bp)
+		if not found then
+			-- Fall back: scan a wider horizontal area
+			for dx = -5, 5 do for dz = -5, 5 do
+				local pos = core.localplayer:get_pos()
+				if not pos then break end
+				for y = 10, -10, -1 do
+					local bp = {x = math.floor(pos.x) + dx, y = math.floor(pos.y) + y, z = math.floor(pos.z) + dz}
+					local node = core.get_node_or_nil(bp)
+					if node and node.name ~= "air" and node.name ~= "ignore" then
+						found = node
+						break
+					end
+				end
+				if found then break end
+			end end
 		end
-		T.assert(type(node) == "table",
-			"get_node_or_nil should return a table at or below player pos")
-		T.assert(type(node.name) == "string",
+		T.assert(found ~= nil,
+			"get_node_or_nil should find a solid node near the player")
+		T.assert(type(found.name) == "string",
 			"node should have a name field")
-		T.assert(type(node.param1) == "number",
+		T.assert(type(found.param1) == "number",
 			"node should have a param1 field")
-		T.assert(type(node.param2) == "number",
+		T.assert(type(found.param2) == "number",
 			"node should have a param2 field")
 	end)
 
