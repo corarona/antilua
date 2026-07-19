@@ -129,6 +129,11 @@ static void buildBoxMesh(scene::SMeshBuffer *buf,
 static void drawWireSphere(video::IVideoDriver *driver, v3f center, f32 radius,
 		video::SColor color, u32 segments)
 {
+	// Debug: single bright line along +X at radius distance
+	driver->draw3DLine(center,
+		v3f(center.X + radius, center.Y, center.Z),
+		video::SColor(255, 255, 0, 0));
+
 	if (segments < 3) segments = 3;
 	u32 rings = segments / 2;
 	if (rings < 2) rings = 2;
