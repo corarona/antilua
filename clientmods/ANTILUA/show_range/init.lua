@@ -8,17 +8,14 @@ local function add_box_lines(pos, r, color, group)
 		core.draw3d:add_line(a, b, color, group)
 	end
 
-	-- Bottom face
 	line({x = mi.x, y = mi.y, z = mi.z}, {x = ma.x, y = mi.y, z = mi.z})
 	line({x = ma.x, y = mi.y, z = mi.z}, {x = ma.x, y = mi.y, z = ma.z})
 	line({x = ma.x, y = mi.y, z = ma.z}, {x = mi.x, y = mi.y, z = ma.z})
 	line({x = mi.x, y = mi.y, z = ma.z}, {x = mi.x, y = mi.y, z = mi.z})
-	-- Top face
 	line({x = mi.x, y = ma.y, z = mi.z}, {x = ma.x, y = ma.y, z = mi.z})
 	line({x = ma.x, y = ma.y, z = mi.z}, {x = ma.x, y = ma.y, z = ma.z})
 	line({x = ma.x, y = ma.y, z = ma.z}, {x = mi.x, y = ma.y, z = ma.z})
 	line({x = mi.x, y = ma.y, z = ma.z}, {x = mi.x, y = ma.y, z = mi.z})
-	-- Verticals
 	line({x = mi.x, y = mi.y, z = mi.z}, {x = mi.x, y = ma.y, z = mi.z})
 	line({x = ma.x, y = mi.y, z = mi.z}, {x = ma.x, y = ma.y, z = mi.z})
 	line({x = ma.x, y = mi.y, z = ma.z}, {x = ma.x, y = ma.y, z = ma.z})
@@ -49,6 +46,11 @@ ws.rg("ShowRange", {
 				"#FFFF00", GROUP)
 		end
 		core.draw3d:add_line(pos, {x = pos.x + 10, y = pos.y, z = pos.z}, "#FF0000", GROUP)
+
+		-- SINGLE diagnostic line from player to pos.x + r
+		core.draw3d:add_line(pos,
+			{x = pos.x + r, y = pos.y, z = pos.z},
+			"#00FFFF", GROUP)
 
 		-- Box using lines via add_line
 		add_box_lines(pos, r, "#FF8800", GROUP)
