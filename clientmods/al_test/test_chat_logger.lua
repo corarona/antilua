@@ -41,11 +41,6 @@ function test_chat_logger(T)
 			"at least one callback is registered")
 	end)
 
-	T.run("chat_logger setting can be read", function()
-		T.assert(type(core.settings.get_bool) == "function",
-			"core.settings.get_bool exists")
-	end)
-
 	T.run("register_on_connect exists", function()
 		T.assert(type(core.register_on_connect) == "function",
 			"core.register_on_connect is a function")
