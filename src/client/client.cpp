@@ -2048,8 +2048,10 @@ void Client::afterContentReceived()
 	m_state = LC_Ready;
 	sendReady();
 
-	if (m_mods_loaded)
+	if (m_mods_loaded) {
 		m_script->on_client_ready(m_env.getLocalPlayer());
+		AlClientHooks::on_connect(this);
+	}
 
 	m_rendering_engine->draw_load_screen(wstrgettext("Done!"), guienv, m_tsrc, 0, 100);
 	infostream<<"Client::afterContentReceived() done"<<std::endl;

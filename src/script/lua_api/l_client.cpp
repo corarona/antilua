@@ -1368,10 +1368,10 @@ int ModApiClient::l_get_serverdata_path(lua_State *L)
 		+ "_" + std::to_string(client->getServerAddress().getPort());
 	std::string dir = porting::path_user + DIR_DELIM "data"
 		+ DIR_DELIM "server" + DIR_DELIM + server_id;
+	fs::CreateAllDirs(dir);
 	std::string clean = fs::AbsolutePath(dir);
 	if (!clean.empty())
 		dir = clean;
-	fs::CreateAllDirs(dir);
 	lua_pushstring(L, dir.c_str());
 	return 1;
 }
@@ -1380,6 +1380,11 @@ int ModApiClient::l_get_serverdata_path(lua_State *L)
 int ModApiClient::l_append_file(lua_State *L)
 {
 	std::string path = luaL_checkstring(L, 1);
+	{
+		std::string normalized = fs::AbsolutePath(path);
+		if (!normalized.empty())
+			path = normalized;
+	}
 	if (path.find("..") != std::string::npos) {
 		lua_pushboolean(L, false);
 		return 1;
