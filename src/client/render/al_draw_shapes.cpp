@@ -129,14 +129,35 @@ static void buildBoxMesh(scene::SMeshBuffer *buf,
 static void drawWireSphere(video::IVideoDriver *driver, v3f center, f32 radius,
 		video::SColor color, u32 segments)
 {
-	// Simple cross along axes at radius distance
-	video::SColor debug_color(255, 255, 0, 255);
-	driver->draw3DLine(center, v3f(center.X + radius, center.Y, center.Z), debug_color);
-	driver->draw3DLine(center, v3f(center.X - radius, center.Y, center.Z), debug_color);
-	driver->draw3DLine(center, v3f(center.X, center.Y + radius, center.Z), debug_color);
-	driver->draw3DLine(center, v3f(center.X, center.Y - radius, center.Z), debug_color);
-	driver->draw3DLine(center, v3f(center.X, center.Y, center.Z + radius), debug_color);
-	driver->draw3DLine(center, v3f(center.X, center.Y, center.Z - radius), debug_color);
+	if (segments < 3) segments = 3;
+	u32 rings = segments / 2;
+	if (rings < 2) rings = 2;
+
+	for (u32 lat = 0; lat < rings; lat++) {
+		f32 theta1 = (f32)lat / rings * M_PI;
+		f32 theta2 = (f32)(lat + 1) / rings * M_PI;
+		for (u32 lon = 0; lon < segments; lon++) {
+			f32 phi1 = (f32)lon / segments * 2.0f * M_PI;
+			f32 phi2 = (f32)(lon + 1) / segments * 2.0f * M_PI;
+
+			f32 x1 = std::sin(theta1) * std::cos(phi1) * radius;
+			f32 y1 = std::cos(theta1) * radius;
+			f32 z1 = std::sin(theta1) * std::sin(phi1) * radius;
+
+			f32 x2 = std::sin(theta1) * std::cos(phi2) * radius;
+			f32 y2 = std::cos(theta1) * radius;
+			f32 z2 = std::sin(theta1) * std::sin(phi2) * radius;
+
+			f32 x3 = std::sin(theta2) * std::cos(phi1) * radius;
+			f32 y3 = std::cos(theta2) * radius;
+			f32 z3 = std::sin(theta2) * std::sin(phi1) * radius;
+
+			driver->draw3DLine(v3f(center.X + x1, center.Y + y1, center.Z + z1),
+				v3f(center.X + x2, center.Y + y2, center.Z + z2), color);
+			driver->draw3DLine(v3f(center.X + x1, center.Y + y1, center.Z + z1),
+				v3f(center.X + x3, center.Y + y3, center.Z + z3), color);
+		}
+	}
 }
 
 // --- Wireframe circle ---
