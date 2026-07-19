@@ -12,6 +12,7 @@ private:
 	static int gc_object(lua_State *L);
 
 	static int l_add_sphere(lua_State *L);
+	static int l_add_wiresphere(lua_State *L);
 	static int l_add_box(lua_State *L);
 	static int l_add_wirebox(lua_State *L);
 	static int l_add_line(lua_State *L);

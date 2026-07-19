@@ -26,6 +26,7 @@ struct DrawShapeCommand
 	video::SColor color;
 	u32 segments;
 	s32 group_id;
+	bool wireframe = false;
 };
 
 class DrawLuaShapes : public TrivialRenderStep

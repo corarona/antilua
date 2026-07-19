@@ -55,6 +55,29 @@ int LuaDraw3D::l_add_sphere(lua_State *L)
 	return 0;
 }
 
+// add_wiresphere(self, pos, radius, color [, segments, group_id])
+int LuaDraw3D::l_add_wiresphere(lua_State *L)
+{
+	v3f pos = check_v3f(L, 2) * BS;
+	f32 radius = luaL_checknumber(L, 3) * BS;
+	video::SColor color(255, 255, 255, 255);
+	if (!lua_isnoneornil(L, 4))
+		read_color(L, 4, &color);
+	u32 segments = lua_isnumber(L, 5) ? (u32)lua_tonumber(L, 5) : 24;
+	s32 group_id = lua_isnumber(L, 6) ? (s32)lua_tonumber(L, 6) : -1;
+
+	DrawShapeCommand cmd;
+	cmd.type = DrawShapeCommand::Type::Sphere;
+	cmd.pos = pos;
+	cmd.radius = radius;
+	cmd.color = color;
+	cmd.segments = segments;
+	cmd.group_id = group_id;
+	cmd.wireframe = true;
+	DrawLuaShapes::addCommand(cmd);
+	return 0;
+}
+
 // add_box(self, minp, maxp, color [, group_id])
 int LuaDraw3D::l_add_box(lua_State *L)
 {
@@ -147,6 +170,7 @@ int LuaDraw3D::l_clear(lua_State *L)
 
 const luaL_Reg LuaDraw3D::methods[] = {
 	luamethod(LuaDraw3D, add_sphere),
+	luamethod(LuaDraw3D, add_wiresphere),
 	luamethod(LuaDraw3D, add_box),
 	luamethod(LuaDraw3D, add_wirebox),
 	luamethod(LuaDraw3D, add_line),

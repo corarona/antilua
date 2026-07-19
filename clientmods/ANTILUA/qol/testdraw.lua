@@ -1,7 +1,7 @@
 -- Chat command to test the 3D drawing API
 
 core.register_chatcommand("testdraw", {
-	params = "sphere <radius> | box <w> [h] [d] | wirebox <w> [h] [d] | circle <radius> | line <length> | all | clear [group]",
+	params = "sphere <radius> [wire] | box <w> [h] [d] | wirebox <w> [h] [d] | wiresphere <radius> | circle <radius> | line <length> | all | clear [group]",
 	description = "Test the Lua 3D drawing API",
 	func = function(param)
 		if not core.draw3d then
@@ -32,9 +32,20 @@ core.register_chatcommand("testdraw", {
 
 		if cmd == "sphere" then
 			local radius = tonumber(parts[2]) or 5
+			local is_wire = parts[3] == "wire"
+			local segs = tonumber(parts[3]) or (is_wire and 24 or nil)
+			if is_wire then
+				core.draw3d:add_wiresphere(pos, radius, "#00FF00", segs)
+			else
+				core.draw3d:add_sphere(pos, radius, "#00FF0080", segs)
+			end
+			return true, "Added " .. (is_wire and "wireframe " or "") .. "sphere at " .. core.pos_to_string(pos) .. " radius=" .. radius
+
+		elseif cmd == "wiresphere" then
+			local radius = tonumber(parts[2]) or 5
 			local segs = tonumber(parts[3]) or 24
-			core.draw3d:add_sphere(pos, radius, "#00FF00", segs)
-			return true, "Added sphere at " .. core.pos_to_string(pos) .. " radius=" .. radius
+			core.draw3d:add_wiresphere(pos, radius, "#00FF00", segs)
+			return true, "Added wireframe sphere at " .. core.pos_to_string(pos) .. " radius=" .. radius
 
 		elseif cmd == "box" then
 			local w = tonumber(parts[2]) or 5
@@ -68,13 +79,14 @@ core.register_chatcommand("testdraw", {
 			return true, "Added line length=" .. length
 
 		elseif cmd == "all" then
-			core.draw3d:add_sphere({x = pos.x + 8, y = pos.y, z = pos.z}, 3, "#00FF00", 16, 1)
-			core.draw3d:add_box({x = pos.x - 5, y = pos.y, z = pos.z - 2}, {x = pos.x + 5, y = pos.y + 4, z = pos.z + 2}, "#FF4444", 2)
+			core.draw3d:add_sphere({x = pos.x + 8, y = pos.y, z = pos.z}, 3, "#00FF0080", 16, 1)
+			core.draw3d:add_wiresphere({x = pos.x - 8, y = pos.y, z = pos.z}, 3, "#00FF00", 16, 6)
+			core.draw3d:add_box({x = pos.x - 5, y = pos.y, z = pos.z - 2}, {x = pos.x + 5, y = pos.y + 4, z = pos.z + 2}, "#FF444480", 2)
 			core.draw3d:add_wirebox({x = pos.x - 5, y = pos.y + 5, z = pos.z - 2}, {x = pos.x + 5, y = pos.y + 9, z = pos.z + 2}, "#FFFF44", 3)
 			core.draw3d:add_circle(pos, 6, "#44AAFF", 32, 4)
 			local look = core.camera:get_look_dir()
 			core.draw3d:add_line(pos, {x = pos.x + look.x * 12, y = pos.y + look.y * 12, z = pos.z + look.z * 12}, "#FF44FF", 5)
-			return true, "Added one of each shape (groups 1-5). .testdraw clear <group> to remove individual groups."
+			return true, "Added shapes. .testdraw clear <group> to remove."
 
 		else
 			return false, "Unknown subcommand: " .. cmd .. ". Use sphere|box|wirebox|circle|line|all|clear"
