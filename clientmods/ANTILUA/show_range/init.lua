@@ -1,5 +1,30 @@
 local GROUP = 9999
 
+local function add_box_lines(pos, r, color, group)
+	local mi = {x = pos.x - r, y = pos.y - r, z = pos.z - r}
+	local ma = {x = pos.x + r, y = pos.y + r, z = pos.z + r}
+
+	local function line(a, b)
+		core.draw3d:add_line(a, b, color, group)
+	end
+
+	-- Bottom face
+	line({x = mi.x, y = mi.y, z = mi.z}, {x = ma.x, y = mi.y, z = mi.z})
+	line({x = ma.x, y = mi.y, z = mi.z}, {x = ma.x, y = mi.y, z = ma.z})
+	line({x = ma.x, y = mi.y, z = ma.z}, {x = mi.x, y = mi.y, z = ma.z})
+	line({x = mi.x, y = mi.y, z = ma.z}, {x = mi.x, y = mi.y, z = mi.z})
+	-- Top face
+	line({x = mi.x, y = ma.y, z = mi.z}, {x = ma.x, y = ma.y, z = mi.z})
+	line({x = ma.x, y = ma.y, z = mi.z}, {x = ma.x, y = ma.y, z = ma.z})
+	line({x = ma.x, y = ma.y, z = ma.z}, {x = mi.x, y = ma.y, z = ma.z})
+	line({x = mi.x, y = ma.y, z = ma.z}, {x = mi.x, y = ma.y, z = mi.z})
+	-- Verticals
+	line({x = mi.x, y = mi.y, z = mi.z}, {x = mi.x, y = ma.y, z = mi.z})
+	line({x = ma.x, y = mi.y, z = mi.z}, {x = ma.x, y = ma.y, z = mi.z})
+	line({x = ma.x, y = mi.y, z = ma.z}, {x = ma.x, y = ma.y, z = ma.z})
+	line({x = mi.x, y = mi.y, z = ma.z}, {x = mi.x, y = ma.y, z = ma.z})
+end
+
 ws.rg("ShowRange", {
 	category = "Render",
 	setting = "show_range",
@@ -15,13 +40,8 @@ ws.rg("ShowRange", {
 
 		local r = tonumber(core.settings:get("show_range.range")) or 6.6
 
-		core.log("action", "[ShowRange] r=" .. tostring(r) .. " type=" .. type(r))
-
 		-- Scale reference: 1-block cube + 10-block line with tick marks
-		core.draw3d:add_wirebox(
-			{x = pos.x - 0.5, y = pos.y - 0.5, z = pos.z - 0.5},
-			{x = pos.x + 0.5, y = pos.y + 0.5, z = pos.z + 0.5},
-			"#00FF00", GROUP)
+		add_box_lines(pos, 0.5, "#00FF00", GROUP)
 		for i = 0, 10 do
 			core.draw3d:add_line(
 				{x = pos.x + i, y = pos.y - 0.3, z = pos.z},
@@ -30,19 +50,10 @@ ws.rg("ShowRange", {
 		end
 		core.draw3d:add_line(pos, {x = pos.x + 10, y = pos.y, z = pos.z}, "#FF0000", GROUP)
 
-		-- Box using r
-		core.draw3d:add_wirebox(
-			{x = pos.x - r, y = pos.y - r, z = pos.z - r},
-			{x = pos.x + r, y = pos.y + r, z = pos.z + r},
-			"#FF8800", GROUP)
+		-- Box using lines via add_line
+		add_box_lines(pos, r, "#FF8800", GROUP)
 
-		-- Also test: box using raw number 6.6
-		core.draw3d:add_wirebox(
-			{x = pos.x - 6.6, y = pos.y - 6.6, z = pos.z - 6.6},
-			{x = pos.x + 6.6, y = pos.y + 6.6, z = pos.z + 6.6},
-			"#FF00FF", GROUP)
-
-		-- Sphere using r
+		-- Sphere using add_wiresphere
 		core.draw3d:add_wiresphere(pos, r, "#FFFFFF", 48, GROUP)
 	end,
 	on_stop = function()

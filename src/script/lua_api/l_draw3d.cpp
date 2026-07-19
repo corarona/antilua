@@ -103,6 +103,7 @@ int LuaDraw3D::l_add_wirebox(lua_State *L)
 {
 	v3f minp = check_v3f(L, 2) * BS;
 	v3f maxp = check_v3f(L, 3) * BS;
+
 	video::SColor color(255, 255, 255, 255);
 	if (!lua_isnoneornil(L, 4))
 		read_color(L, 4, &color);
