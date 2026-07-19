@@ -15,28 +15,26 @@ ws.rg("ShowRange", {
 
 		local r = tonumber(core.settings:get("show_range.range")) or 6.6
 
-		-- Draw a 1-node reference cube at player feet (should be 1x1x1 block)
+		-- Scale reference: 1-block cube at player feet
 		core.draw3d:add_wirebox(
 			{x = pos.x - 0.5, y = pos.y - 0.5, z = pos.z - 0.5},
 			{x = pos.x + 0.5, y = pos.y + 0.5, z = pos.z + 0.5},
-			"#00FF00", GROUP
-		)
+			"#00FF00", GROUP)
 
-		-- 10-node line along X axis from player (should cover 10 blocks)
-		core.draw3d:add_line(
-			pos,
-			{x = pos.x + 10, y = pos.y, z = pos.z},
-			"#FF0000", GROUP
-		)
-
-		-- Tick marks every block along the line
-		for i = 1, 10 do
+		-- 10-block line with tick marks every block
+		for i = 0, 10 do
 			core.draw3d:add_line(
 				{x = pos.x + i, y = pos.y - 0.3, z = pos.z},
 				{x = pos.x + i, y = pos.y + 0.3, z = pos.z},
-				"#FFFF00", GROUP
-			)
+				"#FFFF00", GROUP)
 		end
+		core.draw3d:add_line(pos, {x = pos.x + 10, y = pos.y, z = pos.z}, "#FF0000", GROUP)
+
+		-- Box at radius r (from -r to +r around player)
+		core.draw3d:add_wirebox(
+			{x = pos.x - r, y = pos.y - r, z = pos.z - r},
+			{x = pos.x + r, y = pos.y + r, z = pos.z + r},
+			"#FF8800", GROUP)
 
 		-- Sphere at radius r
 		core.draw3d:add_wiresphere(pos, r, "#FFFFFF", 48, GROUP)
