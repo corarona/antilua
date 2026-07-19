@@ -234,32 +234,44 @@ function test_ws_rg_lifecycle(T)
 	T.defer("ws.rg lifecycle: on_start fires on toggle on", function()
 		local fired = { start = false, step = false, stop = false, done = false }
 		local test_setting = "al_test_rg_lifecycle"
+
 		core.settings:set(test_setting, "false")
 		ws.rg("DFTestLifecycle", {
 			name = "DFTestLifecycle",
 			category = "DevTools",
 			setting = test_setting,
+			delay = 0,
 			on_start = function() fired.start = true end,
 			on_step = function() fired.step = true end,
 			on_stop = function() fired.stop = true end,
 		})
+
+		T.assert(#ws.registered_globalhacks > 0,
+			"ws.registered_globalhacks should not be empty")
+		T.assert(core.cheat_defs[test_setting] ~= nil,
+			"cheat_defs should have the test setting")
+
 		core.settings:set_bool(test_setting, true)
-		core.after(3.0, function()
-			local ok1 = fired.start
-			local ok2 = fired.step
-			core.settings:set_bool(test_setting, false)
-			core.after(3.0, function()
-				local ok3 = fired.stop
-				if ok1 and ok2 and ok3 then
-					fired.done = true
-				end
-			end)
-		end)
-		-- Poll for completion
-		core.after(12.0, function()
-			T.assert(fired.done, "ws.rg lifecycle: start=" .. tostring(fired.start) .. " step=" .. tostring(fired.step) .. " stop=" .. tostring(fired.stop))
-			core.settings:set_bool(test_setting, false)
-		end)
+
+		-- Test the globalhack template directly (synchronous)
+		local hack = ws.registered_globalhacks[#ws.registered_globalhacks]
+		T.assert(type(hack) == "function", "latest globalhack should be a function")
+
+		-- Call it manually — triggers on_start (setting=true, ghwason=nil)
+		hack(0)
+
+		-- Second call — triggers on_step (delay=0 so no rate-limit)
+		hack(0)
+
+		-- Disable and call again — triggers on_stop
+		core.settings:set_bool(test_setting, false)
+		hack(0)
+
+		T.assert(fired.start, "on_start should fire when hack is called with setting=true")
+		T.assert(fired.step, "on_step should fire on subsequent calls")
+		T.assert(fired.stop, "on_stop should fire when setting is toggled off")
+
+		core.settings:set_bool(test_setting, false)
 	end)
 end
 
