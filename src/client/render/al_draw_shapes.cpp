@@ -129,9 +129,14 @@ static void buildBoxMesh(scene::SMeshBuffer *buf,
 static void drawWireSphere(video::IVideoDriver *driver, v3f center, f32 radius,
 		video::SColor color, u32 segments)
 {
-	// Debug: equator line along +X at radius
-	video::SColor dbg(255, 255, 0, 255);
-	driver->draw3DLine(center, v3f(center.X + radius, center.Y, center.Z), dbg);
+	static bool dbg_once = false;
+	// Debug: axis cross at radius distance (verify scale)
+	video::SColor dbg(255, 0, 255, 255);
+	for (int d = 1; d >= -1; d -= 2) {
+		driver->draw3DLine(center, v3f(center.X + radius * d, center.Y, center.Z), dbg);
+		driver->draw3DLine(center, v3f(center.X, center.Y + radius * d, center.Z), dbg);
+		driver->draw3DLine(center, v3f(center.X, center.Y, center.Z + radius * d), dbg);
+	}
 
 	if (segments < 3) segments = 3;
 	u32 rings = segments / 2;
