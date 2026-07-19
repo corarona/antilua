@@ -195,4 +195,24 @@ function test_clientmod_features(T)
 		T.assert(type(core.settings:get("auto_reconnect_max")) == "string",
 			"auto_reconnect_max setting should exist")
 	end)
+
+	-- ShowRange cheat
+	T.run("ShowRange cheat in Render category", function()
+		T.assert(type(core.cheats.Render) == "table", "Render category exists")
+		T.assert(core.cheats.Render.ShowRange ~= nil,
+			"ShowRange should be in Render category")
+	end)
+
+	T.run("show_range setting exists", function()
+		T.assert(type(core.settings:get("show_range")) == "string",
+			"show_range setting should exist")
+	end)
+
+	T.run("show_range.range cheat setting default is 6.6", function()
+		local def = core.cheat_defs["show_range"]
+		T.assert(def ~= nil, "show_range cheat def exists")
+		T.assert(def.cheat_settings ~= nil, "show_range has cheat_settings")
+		T.assert(def.cheat_settings.range.default == 6.6,
+			"show_range.range default is 6.6")
+	end)
 end
