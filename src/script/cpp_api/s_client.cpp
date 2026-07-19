@@ -70,7 +70,7 @@ std::string ScriptApiClient::on_receiving_message(const std::string &message)
 	// Call callbacks
 	lua_pushstring(L, message.c_str());
 	try {
-		runCallbacks(1, RUN_CALLBACKS_MODE_OR_SC);
+		runCallbacks(1, RUN_CALLBACKS_MODE_OR);
 	} catch (LuaError &e) {
 		getClient()->setFatalError(e);
 		return {};
