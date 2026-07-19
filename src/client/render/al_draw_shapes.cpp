@@ -5,6 +5,7 @@
 #include "client/client.h"
 #include "client/clientenvironment.h"
 #include "client/camera.h"
+#include "client/mesh.h"
 #include "settings.h"
 #include <IVideoDriver.h>
 #include <CMeshBuffer.h>
@@ -57,6 +58,10 @@ static void buildSphereMesh(scene::SMeshBuffer *buf, v3f center, f32 radius,
 				center.X + sinTheta * std::cos(phi) * radius,
 				center.Y + cosTheta * radius,
 				center.Z + sinTheta * std::sin(phi) * radius);
+			v.Normal = v3f(
+				sinTheta * std::cos(phi),
+				cosTheta,
+				sinTheta * std::sin(phi));
 			v.Color = color;
 		}
 	}
@@ -82,11 +87,19 @@ static void buildBoxMesh(scene::SMeshBuffer *buf,
 		{0, 1, 2, 3},  {4, 5, 6, 7},  {1, 5, 3, 7},
 		{0, 4, 2, 6},  {2, 3, 6, 7},  {0, 1, 4, 5},
 	};
-	static const v3f verts[8] = {
+	static const v3f base_verts[8] = {
 		v3f(-1, -1, -1), v3f( 1, -1, -1),
 		v3f(-1,  1, -1), v3f( 1,  1, -1),
 		v3f(-1, -1,  1), v3f( 1, -1,  1),
 		v3f(-1,  1,  1), v3f( 1,  1,  1),
+	};
+	static const v3f face_normals[6] = {
+		v3f( 0,  0, -1),  // front
+		v3f( 0,  0,  1),  // back
+		v3f( 1,  0,  0),  // right
+		v3f(-1,  0,  0),  // left
+		v3f( 0,  1,  0),  // top
+		v3f( 0, -1,  0),  // bottom
 	};
 	v3f scale = (maxp - minp) * 0.5f;
 	v3f center = (minp + maxp) * 0.5f;
@@ -99,9 +112,10 @@ static void buildBoxMesh(scene::SMeshBuffer *buf,
 		for (int j = 0; j < 4; j++) {
 			int idx = quad_indices[face][j];
 			vb[vi].Pos = v3f(
-				center.X + verts[idx].X * scale.X,
-				center.Y + verts[idx].Y * scale.Y,
-				center.Z + verts[idx].Z * scale.Z);
+				center.X + base_verts[idx].X * scale.X,
+				center.Y + base_verts[idx].Y * scale.Y,
+				center.Z + base_verts[idx].Z * scale.Z);
+			vb[vi].Normal = face_normals[face];
 			vb[vi].Color = color;
 			vi++;
 		}
@@ -197,6 +211,7 @@ void DrawLuaShapes::run(PipelineContext &context)
 				driver->setMaterial(mat);
 				scene::SMeshBuffer meshBuf;
 				buildSphereMesh(&meshBuf, rp, cmd.radius, c, cmd.segments);
+				colorizeMeshBuffer(&meshBuf, c, 0.5f, v3f(-1, -1, -1));
 				driver->drawMeshBuffer(&meshBuf);
 			}
 			break;
@@ -213,6 +228,7 @@ void DrawLuaShapes::run(PipelineContext &context)
 				driver->setMaterial(mat);
 				scene::SMeshBuffer meshBuf;
 				buildBoxMesh(&meshBuf, rp, rp2, c);
+				colorizeMeshBuffer(&meshBuf, c, 0.5f, v3f(-1, -1, -1));
 				driver->drawMeshBuffer(&meshBuf);
 			}
 			break;
