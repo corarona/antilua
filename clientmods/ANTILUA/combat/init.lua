@@ -285,6 +285,11 @@ local function update_target_hud(closest)
 	core.localplayer:hud_change(killaura.hud_id, "text", text)
 end
 
+local function has_group(groups, name)
+	local v = groups[name]
+	return v ~= nil and v ~= 0
+end
+
 local function find_best_weapon()
 	local best = { slot = nil, rank = 999 }
 	for i = 1, 9 do
@@ -297,15 +302,15 @@ local function find_best_weapon()
 			local groups = def and def.groups or {}
 			local enchanted = name:find("_enchanted$") ~= nil
 			local rank
-			if groups.mace then
+			if has_group(groups, "mace") then
 				rank = 0
-			elseif groups.sword and enchanted then
+			elseif has_group(groups, "sword") and enchanted then
 				rank = 1
-			elseif groups.axe and enchanted then
+			elseif has_group(groups, "axe") and enchanted then
 				rank = 2
-			elseif groups.sword then
+			elseif has_group(groups, "sword") then
 				rank = 3
-			elseif groups.axe then
+			elseif has_group(groups, "axe") then
 				rank = 4
 			else
 				rank = 999
