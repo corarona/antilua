@@ -285,6 +285,39 @@ local function update_target_hud(closest)
 	core.localplayer:hud_change(killaura.hud_id, "text", text)
 end
 
+local function find_best_weapon()
+	local best = { slot = nil, rank = 999 }
+	for i = 1, 9 do
+		local inv = core.get_inventory("current_player")
+		if not inv then break end
+		local stack = inv.main[i]
+		if stack and not stack:is_empty() then
+			local name = stack:get_name()
+			local def = core.get_item_def(name)
+			local groups = def and def.groups or {}
+			local enchanted = name:find("_enchanted$") ~= nil
+			local rank
+			if groups.mace then
+				rank = 0
+			elseif groups.sword and enchanted then
+				rank = 1
+			elseif groups.axe and enchanted then
+				rank = 2
+			elseif groups.sword then
+				rank = 3
+			elseif groups.axe then
+				rank = 4
+			else
+				rank = 999
+			end
+			if rank < best.rank then
+				best = { slot = i, rank = rank, name = name }
+			end
+		end
+	end
+	return best.slot, best.name
+end
+
 local function hit_objects(radius, filter, interact_action)
 	local pl = core.localplayer
 	local lp = pl:get_pos()
@@ -341,39 +374,42 @@ ws.rg("Killaura", {
 				end
 			end
 			if found_target then
-				local mace_slot = core.find_item("mcl_tools:mace_enchanted", 1, 9)
-				if not mace_slot then
-					mace_slot = core.find_item("mcl_tools:mace", 1, 9)
-				end
+				local weapon_slot, weapon_name = find_best_weapon()
+				local is_mace = weapon_name and weapon_name:find("mace") ~= nil
 				local vel = core.localplayer:get_velocity()
 				local saved_pos = core.localplayer:get_pos()
 				local saved_wield = core.localplayer:get_wield_index()
 				local action
-				if mace_slot then
+				if weapon_slot then
 					local cur = core.localplayer:get_wield_index()
-					if cur ~= mace_slot then
-						core.localplayer:set_wield_index(mace_slot)
+					if cur ~= weapon_slot then
+						core.localplayer:set_wield_index(weapon_slot)
 					end
-					local d = tonumber(core.settings:get("killaura.mace_fall_distance")) or 10
-					local v = math.sqrt(d * 40)
-					core.localplayer:set_velocity({x = 0, y = -v, z = 0})
-					core.localplayer:set_pos(saved_pos)
-					action = "use"
+					if is_mace then
+						local d = tonumber(core.settings:get("killaura.mace_fall_distance")) or 10
+						local v = math.sqrt(d * 40)
+						core.localplayer:set_velocity({x = 0, y = -v, z = 0})
+						core.localplayer:set_pos(saved_pos)
+						action = "use"
+					elseif vel.y >= -0.5 then
+						core.localplayer:set_velocity({x = vel.x, y = -3, z = vel.z})
+						core.localplayer:set_pos(saved_pos)
+					end
 				elseif vel.y >= -0.5 then
 					core.localplayer:set_velocity({x = vel.x, y = -3, z = vel.z})
 					core.localplayer:set_pos(saved_pos)
 				end
 				closest = hit_objects(killaura.get("range"), filter, action)
-				if action or vel.y >= -0.5 then
+				if weapon_slot or vel.y >= -0.5 then
 					local function restore()
 						core.localplayer:set_velocity(vel)
 						core.localplayer:set_pos(saved_pos)
 					end
 					restore()
-					if mace_slot then
+					if weapon_slot then
 						core.localplayer:set_wield_index(saved_wield)
-						-- Keep resetting velocity for a short window so server
-						-- velocity updates (mace windburst, fall cancel) don't stick
+					end
+					if is_mace then
 						core.after(0.05, restore)
 						core.after(0.1, restore)
 						core.after(0.2, restore)

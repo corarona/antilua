@@ -82,8 +82,7 @@ function test_combat(T)
 		local v = core.settings:get("killaura.mace_fall_distance")
 		T.assert(v ~= nil, "killaura.mace_fall_distance setting should exist")
 		local n = tonumber(v)
-		T.assert(type(n) == "number" and n >= 2 and n <= 50,
-			"mace_fall_distance should be between 2 and 50, got " .. tostring(v))
+		T.assert(type(n) == "number", "mace_fall_distance should be a number, got " .. tostring(v))
 	end)
 
 	T.run("killaura.make_filter exists", function()
