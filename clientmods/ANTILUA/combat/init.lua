@@ -326,9 +326,11 @@ ws.rg("Killaura", {
 			track_friend_hp()
 		end
 		local filter = make_filter(mode)
+		local closest
 		if filter then
 			local mace_slot = core.find_item("mcl_tools:mace", 1, 9)
 			local vel = core.localplayer:get_velocity()
+			local saved_pos = core.localplayer:get_pos()
 			if mace_slot then
 				local cur = core.localplayer:get_wield_index()
 				if cur ~= mace_slot then
@@ -336,16 +338,18 @@ ws.rg("Killaura", {
 				end
 				local d = tonumber(core.settings:get("killaura.mace_fall_distance")) or 10
 				local v = math.sqrt(d * 40)
-				local pos = core.localplayer:get_pos()
 				core.localplayer:set_velocity({x = 0, y = -v, z = 0})
-				core.localplayer:set_pos(pos)
+				core.localplayer:set_pos(saved_pos)
 			elseif vel.y >= -0.5 then
-				local pos = core.localplayer:get_pos()
 				core.localplayer:set_velocity({x = vel.x, y = -3, z = vel.z})
-				core.localplayer:set_pos(pos)
+				core.localplayer:set_pos(saved_pos)
+			end
+			closest = hit_objects(killaura.get("range"), filter)
+			if mace_slot or vel.y >= -0.5 then
+				core.localplayer:set_velocity(vel)
+				core.localplayer:set_pos(saved_pos)
 			end
 		end
-		local closest = hit_objects(killaura.get("range"), filter)
 		update_target_hud(closest)
 	end,
 	on_stop = function(self)
