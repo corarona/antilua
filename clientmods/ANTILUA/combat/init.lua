@@ -365,10 +365,18 @@ ws.rg("Killaura", {
 				end
 				closest = hit_objects(killaura.get("range"), filter, action)
 				if action or vel.y >= -0.5 then
-					core.localplayer:set_velocity(vel)
-					core.localplayer:set_pos(saved_pos)
+					local function restore()
+						core.localplayer:set_velocity(vel)
+						core.localplayer:set_pos(saved_pos)
+					end
+					restore()
 					if mace_slot then
 						core.localplayer:set_wield_index(saved_wield)
+						-- Keep resetting velocity for a short window so server
+						-- velocity updates (mace windburst, fall cancel) don't stick
+						core.after(0.05, restore)
+						core.after(0.1, restore)
+						core.after(0.2, restore)
 					end
 				end
 			end
