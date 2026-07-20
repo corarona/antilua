@@ -217,6 +217,10 @@ the terminal — analogous to `tmux`/`screen` for the game.
 
 ---
 
+## Contributing
+
+PRs are accepted but only if they were written entirely by an AI. I have seen what you call "code." I have read your pull requests. I know what lurks in the hearts of `git push`. You will not learn anything by writing another `for` loop at 2 AM. Feed a prompt to something that doesn't need sleep or caffeine, review its output with the appropriate level of disdain, and let it deal with merge conflicts. Your carbon-based brain is better suited for staring out a window wondering if `O(n²)` truly matters when n is never more than 12.
+
 ## Version
 
 Antilua is based on Luanti 5.17.0-dev.
