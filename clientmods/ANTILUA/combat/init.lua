@@ -328,26 +328,40 @@ ws.rg("Killaura", {
 		local filter = make_filter(mode)
 		local closest
 		if filter then
-			local mace_slot = core.find_item("mcl_tools:mace", 1, 9)
-			local vel = core.localplayer:get_velocity()
-			local saved_pos = core.localplayer:get_pos()
-			if mace_slot then
-				local cur = core.localplayer:get_wield_index()
-				if cur ~= mace_slot then
-					core.localplayer:set_wield_index(mace_slot)
+			local lp = core.localplayer:get_pos()
+			local found_target
+			for _, obj in pairs(core.get_objects_inside_radius(lp, killaura.get("range"))) do
+				if filter(obj) then
+					found_target = true
+					break
 				end
-				local d = tonumber(core.settings:get("killaura.mace_fall_distance")) or 10
-				local v = math.sqrt(d * 40)
-				core.localplayer:set_velocity({x = 0, y = -v, z = 0})
-				core.localplayer:set_pos(saved_pos)
-			elseif vel.y >= -0.5 then
-				core.localplayer:set_velocity({x = vel.x, y = -3, z = vel.z})
-				core.localplayer:set_pos(saved_pos)
 			end
-			closest = hit_objects(killaura.get("range"), filter)
-			if mace_slot or vel.y >= -0.5 then
-				core.localplayer:set_velocity(vel)
-				core.localplayer:set_pos(saved_pos)
+			if found_target then
+				local mace_slot = core.find_item("mcl_tools:mace", 1, 9)
+				local vel = core.localplayer:get_velocity()
+				local saved_pos = core.localplayer:get_pos()
+				local saved_wield = core.localplayer:get_wield_index()
+				if mace_slot then
+					local cur = core.localplayer:get_wield_index()
+					if cur ~= mace_slot then
+						core.localplayer:set_wield_index(mace_slot)
+					end
+					local d = tonumber(core.settings:get("killaura.mace_fall_distance")) or 10
+					local v = math.sqrt(d * 40)
+					core.localplayer:set_velocity({x = 0, y = -v, z = 0})
+					core.localplayer:set_pos(saved_pos)
+				elseif vel.y >= -0.5 then
+					core.localplayer:set_velocity({x = vel.x, y = -3, z = vel.z})
+					core.localplayer:set_pos(saved_pos)
+				end
+				closest = hit_objects(killaura.get("range"), filter)
+				if mace_slot or vel.y >= -0.5 then
+					core.localplayer:set_velocity(vel)
+					core.localplayer:set_pos(saved_pos)
+					if mace_slot then
+						core.localplayer:set_wield_index(saved_wield)
+					end
+				end
 			end
 		end
 		update_target_hud(closest)
