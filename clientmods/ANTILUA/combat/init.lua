@@ -285,14 +285,18 @@ local function update_target_hud(closest)
 	core.localplayer:hud_change(killaura.hud_id, "text", text)
 end
 
-local function hit_objects(radius, filter)
+local function hit_objects(radius, filter, interact_action)
 	local pl = core.localplayer
 	local lp = pl:get_pos()
 	local closest_obj = nil
 	local closest_dist = math.huge
 	for _, obj in pairs(core.get_objects_inside_radius(lp, radius)) do
 		if not filter or filter(obj) then
-			obj:punch()
+			if interact_action then
+				core.interact(interact_action, {type = "object", ref = obj})
+			else
+				obj:punch()
+			end
 			local dist = vector.distance(lp, obj:get_pos())
 			if dist < closest_dist then
 				closest_obj = obj
@@ -341,6 +345,7 @@ ws.rg("Killaura", {
 				local vel = core.localplayer:get_velocity()
 				local saved_pos = core.localplayer:get_pos()
 				local saved_wield = core.localplayer:get_wield_index()
+				local action
 				if mace_slot then
 					local cur = core.localplayer:get_wield_index()
 					if cur ~= mace_slot then
@@ -350,12 +355,13 @@ ws.rg("Killaura", {
 					local v = math.sqrt(d * 40)
 					core.localplayer:set_velocity({x = 0, y = -v, z = 0})
 					core.localplayer:set_pos(saved_pos)
+					action = "use"
 				elseif vel.y >= -0.5 then
 					core.localplayer:set_velocity({x = vel.x, y = -3, z = vel.z})
 					core.localplayer:set_pos(saved_pos)
 				end
-				closest = hit_objects(killaura.get("range"), filter)
-				if mace_slot or vel.y >= -0.5 then
+				closest = hit_objects(killaura.get("range"), filter, action)
+				if action or vel.y >= -0.5 then
 					core.localplayer:set_velocity(vel)
 					core.localplayer:set_pos(saved_pos)
 					if mace_slot then
