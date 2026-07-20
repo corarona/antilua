@@ -341,7 +341,10 @@ ws.rg("Killaura", {
 				end
 			end
 			if found_target then
-				local mace_slot = core.find_item("mcl_tools:mace", 1, 9)
+				local mace_slot = core.find_item("mcl_tools:mace_enchanted", 1, 9)
+				if not mace_slot then
+					mace_slot = core.find_item("mcl_tools:mace", 1, 9)
+				end
 				local vel = core.localplayer:get_velocity()
 				local saved_pos = core.localplayer:get_pos()
 				local saved_wield = core.localplayer:get_wield_index()
