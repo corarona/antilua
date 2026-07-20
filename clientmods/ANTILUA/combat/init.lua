@@ -326,7 +326,26 @@ ws.rg("Killaura", {
 			track_friend_hp()
 		end
 		local filter = make_filter(mode)
-		local closest = filter and hit_objects(killaura.get("range"), filter)
+		if filter then
+			local mace_slot = core.find_item("mcl_tools:mace", 1, 9)
+			local vel = core.localplayer:get_velocity()
+			if mace_slot then
+				local cur = core.localplayer:get_wield_index()
+				if cur ~= mace_slot then
+					core.localplayer:set_wield_index(mace_slot)
+				end
+				local d = tonumber(core.settings:get("killaura.mace_fall_distance")) or 10
+				local v = math.sqrt(d * 40)
+				local pos = core.localplayer:get_pos()
+				core.localplayer:set_velocity({x = 0, y = -v, z = 0})
+				core.localplayer:set_pos(pos)
+			elseif vel.y >= -0.5 then
+				local pos = core.localplayer:get_pos()
+				core.localplayer:set_velocity({x = vel.x, y = -3, z = vel.z})
+				core.localplayer:set_pos(pos)
+			end
+		end
+		local closest = hit_objects(killaura.get("range"), filter)
 		update_target_hud(closest)
 	end,
 	on_stop = function(self)
@@ -348,6 +367,7 @@ ws.rg("Killaura", {
 		},
 		retaliate_timeout = { type = "number", default = 30, min = 5, max = 120 },
 		hunter_threshold = { type = "number", default = 10, min = 1, max = 40 },
+		mace_fall_distance = { type = "number", default = 10, min = 2, max = 50 },
 	},
 	get_formspec = build_formspec,
 })

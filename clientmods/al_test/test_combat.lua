@@ -78,6 +78,12 @@ function test_combat(T)
 		core.settings:set("killaura.range", "10")
 	end)
 
+	T.run("killaura.mace_fall_distance default is 10", function()
+		local v = core.settings:get("killaura.mace_fall_distance")
+		T.assert(v ~= nil, "killaura.mace_fall_distance setting should exist")
+		T.assert_eq(tonumber(v), 10, "mace_fall_distance default should be 10")
+	end)
+
 	T.run("killaura.make_filter exists", function()
 		T.assert(type(killaura.make_filter) == "function")
 		T.assert(type(killaura.make_filter("aggressive")) == "function")
