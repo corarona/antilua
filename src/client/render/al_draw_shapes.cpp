@@ -130,6 +130,14 @@ static void drawWireSphere(video::IVideoDriver *driver, v3f center, f32 radius,
 		video::SColor color, u32 segments)
 {
 	static bool dbg_once = false;
+	static bool logged_radius = false;
+	if (!logged_radius) {
+		logged_radius = true;
+		infostream << "drawWireSphere: radius=" << radius
+			<< " center=" << center
+			<< " rp.X+radius=" << (center.X + radius) << std::endl;
+	}
+
 	// Debug: axis cross at radius distance (verify scale)
 	video::SColor dbg(255, 0, 255, 255);
 	for (int d = 1; d >= -1; d -= 2) {
