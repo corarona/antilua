@@ -3270,11 +3270,13 @@ bool Game::nodePlacement(const ItemDefinition &selected_def,
 		if (nodedef_manager->get(map.getNode(nodepos)).rightclickable)
 			client->interact(INTERACT_PLACE, pointed);
 
-		if (AlClientHooks::on_open_nodemeta_form(client, nodepos,
-				meta->getString("formspec")))
-			return false;
-
-		m_game_formspec.showNodeFormspec(meta->getString("formspec"), nodepos);
+		{
+			std::string formspec = AlClientHooks::on_open_nodemeta_form(
+				client, nodepos, meta->getString("formspec"));
+			if (formspec.empty())
+				return false;
+			m_game_formspec.showNodeFormspec(formspec, nodepos);
+		}
 		return false;
 	}
 

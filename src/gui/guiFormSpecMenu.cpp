@@ -3629,7 +3629,8 @@ void GUIFormSpecMenu::drawMenu()
 {
 	if (m_form_src) {
 		const std::string &newform = m_form_src->getForm();
-		if (newform != m_formspec_string) {
+		if (newform != m_formspec_src_last) {
+			m_formspec_src_last = newform;
 			m_formspec_string = newform;
 			m_is_form_regenerated = false;
 			regenerateGui(m_screensize_old);

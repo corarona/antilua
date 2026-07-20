@@ -334,7 +334,7 @@ core.register_on_node_remove(func(pos))
 ```lua
 core.register_on_sending_inventory_fields(func(formname, fields) -> true to cancel)
 core.register_on_sending_nodemeta_fields(func(formname, fields) -> true to cancel)
-core.register_on_open_nodemeta_form(func(pos, formspec) -> true to cancel)
+core.register_on_open_nodemeta_form(func(pos, formspec) -> string|true|nil)
 ```
 
 - **`on_sending_inventory_fields`**: Called before sending inventory formspec fields to the server.
@@ -342,7 +342,8 @@ core.register_on_open_nodemeta_form(func(pos, formspec) -> true to cancel)
 - **`on_sending_nodemeta_fields`**: Called before sending nodemeta formspec fields.
   Return `true` to cancel the submission.
 - **`on_open_nodemeta_form`**: Called when a nodemeta formspec is about to open.
-  Return `true` to block it.
+  Return a string to show a modified formspec, `true` to block it, or `nil`/`false` to
+  show the original. Callbacks form a chain — each receives the output of the previous one.
 
 ### Sound & Particle Callbacks
 

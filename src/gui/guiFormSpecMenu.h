@@ -205,6 +205,7 @@ public:
 	{
 		m_formspec_string = formspec_string;
 		m_current_inventory_location = current_inventory_location;
+		m_formspec_src_last = m_form_src ? m_form_src->getForm() : formspec_string;
 		m_is_form_regenerated = false;
 		regenerateGui(m_screensize_old);
 	}
@@ -360,6 +361,7 @@ protected:
 
 	std::string m_formspec_string;
 	std::string m_formspec_prepend;
+	std::string m_formspec_src_last;
 	InventoryLocation m_current_inventory_location;
 
 	// Default true because we can't control regeneration on resizing, but

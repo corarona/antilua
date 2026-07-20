@@ -43,7 +43,7 @@ public:
 			bool keep);
 	std::string on_receiving_inventory_form(
 			const std::string &formspec);
-	bool on_open_nodemeta_form(v3s16 pos,
+	std::string on_open_nodemeta_form(v3s16 pos,
 			const std::string &formspec);
 
 	// Phase 1b: Moved from ScriptApiClient
