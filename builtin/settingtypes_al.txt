@@ -3,6 +3,63 @@
 #    Show active cheat names on the HUD.
 cheat_hud (Cheat HUD) bool true
 
+#    Use toggle mode (press TAB to open/close) instead of hold-to-show.
+cheat_menu_toggle_mode (Cheat menu toggle mode) bool false
+
+#    Comma-separated list of favorited cheat settings for the favorites panel.
+cheat_menu_favorites (Cheat menu favorites) string
+
+#    Key to toggle the cheat menu.
+keymap_toggle_cheat_menu (Toggle cheat menu) key SYSTEM_SCANCODE_43
+
+#    Key to open the quick select palette.
+keymap_quick_select_menu (Quick select menu) key SYSTEM_SCANCODE_53
+
+#    Enable per-server chat logging to data/server/.
+chat_logging (Chat logging) bool false
+
+#    Extended interaction range.
+#    Affects digging, placing, and entity interaction.
+reach (Extended reach) bool true
+reach.range (Reach range) float 6.6 1.0 100
+
+#    Bypass privilege checks for fly/fast/noclip on the server.
+priv_bypass (Privilege bypass) bool true
+
+#    Automatically respawn on death.
+autorespawn (Auto respawn) bool false
+
+#    Prevent forced rotation by server.
+no_force_rotate (No force rotate) bool false
+
+#    Prevent pointing at/selecting any node.
+dont_point_nodes (Don't point nodes) bool false
+
+#    Enable Lua remote control.
+lua_control (Lua control) bool false
+
+#    Experimental: separate camera from player.
+detached_camera (Detached camera) bool false
+
+#    Max nodes processed per tick by scaffold/block tools.
+nodes_per_tick (Nodes per tick) int 8 1 100
+
+#    Allow pointing at/selecting liquid nodes.
+point_all (Point All) bool false
+
+#    Comma-separated list of node names visible in X-Ray mode.
+xray_nodes (X-Ray node list) string default:stone,mcl_core:stone
+
+fullbright.min_level (Fullbright min light level) int 15 0 15
+
+#    Color for entity ESP/tracer lines (R,G,B).
+entity_esp_color (Entity ESP color) string (255,255,255)
+
+#    Color for player ESP/tracer lines (R,G,B).
+player_esp_color (Player ESP color) string (255,255,255)
+
+[*Antilua Cheats] [client]
+
 #    ---- Combat ----
 
 #    Prevents knockback from attacks and explosions.
@@ -19,6 +76,9 @@ patrolguard (PatrolGuard) bool false
 
 #    Build/place blocks below the player automatically.
 scaffold (Scaffold) bool false
+
+#    Auto-replenish totem of undying in offhand slot after use.
+autototem (AutoTotem) bool false
 
 #    ---- Movement Cheats ----
 
@@ -58,12 +118,8 @@ autojump (AutoJump) bool false
 #    Hide non-xray nodes at the mesh level, revealing ores and caves.
 xray (X-Ray) bool false
 
-#    Comma-separated list of node names visible in X-Ray mode.
-xray_nodes (X-Ray node list) string default:stone,mcl_core:stone
-
 #    Force maximum light level on all nodes.
 fullbright (Fullbright) bool false
-fullbright.min_level (Fullbright min light level) int 15 0 15
 
 #    Always render with daytime brightness.
 no_night (Bright night) bool false
@@ -76,9 +132,6 @@ no_hurt_cam (No hurt camera) bool false
 
 #    Show the player's current position as an in-world HUD element.
 coords (Coordinates) bool false
-
-#    Allow pointing at/selecting liquid nodes.
-point_all (Point All) bool false
 
 #    Entity wireframe hitboxes visible through walls.
 enable_entity_esp (Entity hitboxes) bool false
@@ -97,12 +150,6 @@ enable_player_tracers (Player tracers) bool false
 
 #    Player meshes rendered through walls (occluded players only).
 enable_player_wallhack (Player wallhack) bool false
-
-#    Color for entity ESP/tracer lines (R,G,B).
-entity_esp_color (Entity ESP color) string (255,255,255)
-
-#    Color for player ESP/tracer lines (R,G,B).
-player_esp_color (Player ESP color) string (255,255,255)
 
 #    ---- Interact ----
 
@@ -127,9 +174,6 @@ spamclick (Fast click / spamclick) bool false
 #    Automatically hit nearby entities.
 autohit (Auto hit) bool false
 
-#    Max nodes processed per tick by scaffold/block tools.
-nodes_per_tick (Nodes per tick) int 8 1 100
-
 #    ---- Exploit ----
 
 #    Entities move at full player speed (no lazy loading).
@@ -139,44 +183,6 @@ entity_speed (Entity speed) bool false
 
 #    Prevent all environmental damage (fall, fire, lava, drowning).
 prevent_natural_damage (No natural damage) bool true
-
-#    Prevent forced rotation by server.
-no_force_rotate (No force rotate) bool false
-
-#    Extended interaction range.
-#    Affects digging, placing, and entity interaction.
-reach (Extended reach) bool true
-reach.range (Reach range) float 6.6 1.0 100
-
-#    Bypass privilege checks for fly/fast/noclip on the server.
-priv_bypass (Privilege bypass) bool true
-
-#    Automatically respawn on death.
-autorespawn (Auto respawn) bool false
-
-#    Prevent pointing at/selecting any node.
-dont_point_nodes (Don't point nodes) bool false
-
-#    Enable Lua remote control.
-lua_control (Lua control) bool false
-
-#    Experimental: separate camera from player.
-detached_camera (Detached camera) bool false
-
-#    Use toggle mode (press TAB to open/close) instead of hold-to-show.
-cheat_menu_toggle_mode (Cheat menu toggle mode) bool false
-
-#    Comma-separated list of favorited cheat settings for the favorites panel.
-cheat_menu_favorites (Cheat menu favorites) string
-
-#    Key to toggle the cheat menu.
-keymap_toggle_cheat_menu (Toggle cheat menu) key SYSTEM_SCANCODE_43
-
-#    Enable per-server chat logging to data/server/.
-chat_logging (Chat logging) bool false
-
-#    Key to open the quick select palette.
-keymap_quick_select_menu (Quick select menu) key SYSTEM_SCANCODE_53
 
 [*Antilua Cheat Menu Theme] [client]
 

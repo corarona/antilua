@@ -156,6 +156,7 @@ static void set_al_default_settings()
 	settings->setDefault("player_esp_color", "(255, 255, 255)");
 	settings->setDefault("scaffold", "false");
 	settings->setDefault("killaura", "false");
+	settings->setDefault("autototem", "false");
 	settings->setDefault("airjump", "false");
 	settings->setDefault("spider", "false");
 	settings->setDefault("autojump", "false");
