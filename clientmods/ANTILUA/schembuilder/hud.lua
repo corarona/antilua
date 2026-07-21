@@ -65,7 +65,7 @@ function update_hud()
 		hud_id = core.localplayer:hud_add({
 			type = "text",
 			direction = 0,
-			position = {x = 0.85, y = 0.05},
+			position = {x = 0.85, y = 0.25},
 			alignment = {x = 1, y = 1},
 			offset = {x = 0, y = 0},
 			number = 0x00FF00,
