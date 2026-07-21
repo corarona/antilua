@@ -6,11 +6,33 @@ if core.settings:get("poi_show_all_waypoints") == nil then
 	core.settings:set("poi_show_all_waypoints", "false")
 end
 
+local function reset_gui_state()
+	selected_name = nil
+	formspec_list = {}
+	filter_group = ""
+	sort_by_distance = false
+	lpos = nil
+	for _, id in pairs(shown_huds) do
+		if core.localplayer then core.localplayer:hud_remove(id) end
+	end
+	shown_huds = {}
+	if hud_wp then
+		if core.localplayer then core.localplayer:hud_remove(hud_wp) end
+		hud_wp = nil
+	end
+end
+
 core.register_on_connect(function()
 	local info = core.get_server_info()
 	if info and info.address then
 		stprefix = "POI-" .. info.address .. ":" .. info.port .. ":"
 	end
+	reset_gui_state()
+end)
+
+core.register_on_disconnect(function()
+	reset_gui_state()
+	stprefix = "POI-singleplayer:"
 end)
 
 local function show_all_enabled()
@@ -157,6 +179,12 @@ function poi.rename_waypoint(oldname, newname)
 	return true
 end
 
+function poi.check_vector(v)
+	if type(v) ~= "table" then return false end
+	return type(v.x) == "number" and type(v.y) == "number" and type(v.z) == "number"
+		and v.x == v.x and v.y == v.y and v.z == v.z
+end
+
 function poi.has_wp_near(pos)
 	for _, name in ipairs(poi.getwps()) do
 		local wpos = poi.get_waypoint(name)
@@ -266,8 +294,11 @@ local function trim_death_waypoints(max)
 	end
 end
 
+local death_counter = 0
 core.register_on_death(function()
 	if not core.localplayer then return end
+	local my_death = death_counter
+	death_counter = death_counter + 1
 	if core.settings:get_bool("auto_death_waypoint", true) then
 		local pos = core.localplayer:get_pos()
 		poi.death_pos = vector.new(pos)
@@ -282,12 +313,15 @@ core.register_on_death(function()
 		trim_death_waypoints(max)
 	end
 	if core.settings:get_bool("death_tp") then
+		local dpos = poi.death_pos and vector.new(poi.death_pos)
 		core.after(0.5, function()
-			core.localplayer:set_pos(poi.death_pos)
+			if death_counter ~= my_death + 1 then return end
+			core.localplayer:set_pos(dpos)
 			core.after(0.1, function()
-				local n = core.get_node_or_nil(poi.death_pos)
+				if death_counter ~= my_death + 1 then return end
+				local n = core.get_node_or_nil(dpos)
 				if n and n.name == "bones:bones" then
-					ws.dig(poi.death_pos)
+					ws.dig(dpos)
 				end
 			end)
 		end)
@@ -569,7 +603,7 @@ core.register_on_formspec_input(function(formname, fields)
 	-- Transport buttons
 	for _, v in ipairs(poi.registered_transports) do
 		if fields[v.name] then
-			if not v.func(poi.get_waypoint(name), name) then
+			if v.func(poi.get_waypoint(name), name) then
 				ws.notify("Error with " .. v.name, ws.NOTIFY_ERROR)
 			end
 			return true
@@ -613,11 +647,11 @@ core.register_on_formspec_input(function(formname, fields)
 			local c = WP_COLORS[idx]
 			if c then
 				poi.set_color(name, c.hex)
-				shown_huds = {}
-				if hud_wp then
-					core.localplayer:hud_remove(hud_wp)
-					hud_wp = nil
+				for title, id in pairs(shown_huds) do
+					core.localplayer:hud_remove(id)
 				end
+				shown_huds = {}
+				hud_wp = nil
 			end
 		end
 		poi.display_formspec()
@@ -707,130 +741,9 @@ core.register_chatcommand("dump_pois", {
 })
 
 --
--- Oysterity Nether Railway Network
+-- Server-specific extras (loaded conditionally, may not exist)
 --
-
-local RAIL_PORTAL_SPACING = 200
-local RAIL_PORTAL_MAX = 3800
-local RAIL_RINGS = {420, 666, 1337, 2666, 3860}
-local RAIL_PORTAL_Y_NETHER = -28946.5
-local RAIL_PORTAL_Y_OVERWORLD = 1
-
-local function ring_perimeter_point(R, d)
-	local side = math.floor(d / (2 * R))
-	local offset = d % (2 * R)
-	if side == 0 then
-		return R, -R + offset
-	elseif side == 1 then
-		return R - offset, R
-	elseif side == 2 then
-		return -R, R - offset
-	else
-		return -R + offset, -R
-	end
-end
-
-local function find_nearest_rail_portal(nx, nz)
-	local best_dsq = math.huge
-	local best_x, best_z = 0, 0
-
-	-- Axis portals: (200n, 0) and (0, 200n)
-	for n = -19, 19 do
-		local ax, az = n * RAIL_PORTAL_SPACING, 0
-		local dsq = (nx - ax)^2 + (nz - az)^2
-		if dsq < best_dsq then
-			best_dsq = dsq
-			best_x, best_z = ax, az
-		end
-		ax, az = 0, n * RAIL_PORTAL_SPACING
-		dsq = (nx - ax)^2 + (nz - az)^2
-		if dsq < best_dsq then
-			best_dsq = dsq
-			best_x, best_z = ax, az
-		end
-	end
-
-	-- Ring portals: square perimeters every 200 nodes
-	for _, R in ipairs(RAIL_RINGS) do
-		local perimeter = 8 * R
-		for d = 0, perimeter - RAIL_PORTAL_SPACING, RAIL_PORTAL_SPACING do
-			local px, pz = ring_perimeter_point(R, d)
-			local dsq = (nx - px)^2 + (nz - pz)^2
-			if dsq < best_dsq then
-				best_dsq = dsq
-				best_x, best_z = px, pz
-			end
-		end
-	end
-
-	return best_x, best_z
-end
-
-core.register_chatcommand("oy_railportal", {
-	params = "[x,[y,]z]",
-	description = "Find nearest oysterity nether railway portal. Uses current pos if no args.",
-	func = function(param)
-		local x, y, z
-		local is_nether = false
-
-		if param == nil or param == "" then
-			local pos = core.localplayer:get_pos()
-			if not pos then
-				return false, "Could not get player position."
-			end
-			x, y, z = pos.x, pos.y, pos.z
-		else
-			param = param:gsub(",", " ")
-			local parts = {}
-			for p in param:gmatch("%S+") do
-				table.insert(parts, p)
-			end
-			if #parts == 2 then
-				x = tonumber(parts[1])
-				z = tonumber(parts[2])
-				y = nil
-			elseif #parts >= 3 then
-				x = tonumber(parts[1])
-				y = tonumber(parts[2])
-				z = tonumber(parts[3])
-			else
-				return false, "Usage: .railportal [x,[y,]z]"
-			end
-			if not x or not z then
-				return false, "Invalid coordinates."
-			end
-		end
-
-		if y then
-			is_nether = y < -20000
-		end
-
-		-- Convert to nether coordinates
-		if not is_nether then
-			x = x / 8
-			z = z / 8
-		end
-
-		local px, pz = find_nearest_rail_portal(x, z)
-
-		if is_nether then
-			x, z = px, pz
-			y = RAIL_PORTAL_Y_NETHER
-		else
-			x = math.floor(px * 8)
-			z = math.floor(pz * 8)
-			y = RAIL_PORTAL_Y_OVERWORLD
-		end
-
-		local pos = {x = x, y = y, z = z}
-		local dim = is_nether and "Nether" or "Overworld"
-
-		poi.set_waypoint(pos, "Rail Portal")
-		poi.display_waypoint("Rail Portal")
-
-		return true, dim .. " Rail Portal at " .. x .. ", " .. y .. ", " .. z
-	end,
-})
+pcall(dofile, core.get_modpath(core.get_current_modname()) .. "/oysterity_rail.lua")
 
 --
 -- Cheat registrations
