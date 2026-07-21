@@ -6,35 +6,6 @@ if core.settings:get("poi_show_all_waypoints") == nil then
 	core.settings:set("poi_show_all_waypoints", "false")
 end
 
-local function reset_gui_state()
-	selected_name = nil
-	formspec_list = {}
-	filter_group = ""
-	sort_by_distance = false
-	lpos = nil
-	for _, id in pairs(shown_huds) do
-		if core.localplayer then core.localplayer:hud_remove(id) end
-	end
-	shown_huds = {}
-	if hud_wp then
-		if core.localplayer then core.localplayer:hud_remove(hud_wp) end
-		hud_wp = nil
-	end
-end
-
-core.register_on_connect(function()
-	local info = core.get_server_info()
-	if info and info.address then
-		stprefix = "POI-" .. info.address .. ":" .. info.port .. ":"
-	end
-	reset_gui_state()
-end)
-
-core.register_on_disconnect(function()
-	reset_gui_state()
-	stprefix = "POI-singleplayer:"
-end)
-
 local function show_all_enabled()
 	return core.settings:get_bool("poi_show_all_waypoints")
 end
@@ -63,6 +34,35 @@ poi.registered_transports = {}
 poi.speed = 0
 poi.last_name = nil
 poi.last_pos = nil
+
+local function reset_gui_state()
+	selected_name = nil
+	formspec_list = {}
+	filter_group = ""
+	sort_by_distance = false
+	lpos = nil
+	for _, id in pairs(shown_huds) do
+		if core.localplayer then core.localplayer:hud_remove(id) end
+	end
+	shown_huds = {}
+	if hud_wp then
+		if core.localplayer then core.localplayer:hud_remove(hud_wp) end
+		hud_wp = nil
+	end
+end
+
+core.register_on_connect(function()
+	local info = core.get_server_info()
+	if info and info.address then
+		stprefix = "POI-" .. info.address .. ":" .. info.port .. ":"
+	end
+	reset_gui_state()
+end)
+
+core.register_on_disconnect(function()
+	reset_gui_state()
+	stprefix = "POI-singleplayer:"
+end)
 
 --
 -- Internal helpers
