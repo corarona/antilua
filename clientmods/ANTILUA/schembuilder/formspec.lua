@@ -10,7 +10,7 @@ function show_browser_form(tab)
 	local sid = get_server_id()
 	local theme_bg = core.settings:get("theme_bg") or "#121212"
 	local fs = "formspec_version[10]size[10,10]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
-		"tabheader[0,0;tabs;Browse Schematics,Saved Builds,BlockExchange,Mapart;" .. (tab + 1) .. "]" ..
+		"tabheader[0,0;tabs;Browse Schematics,Saved Builds,BlockExchange,Mapart,Create Shapes;" .. (tab + 1) .. "]" ..
 		"button[8,9;2,0.8;close;Close]"
 
 	if tab == 0 then
@@ -136,6 +136,20 @@ function show_browser_form(tab)
 		else
 			fs = fs .. "label[0,1;Mapart mod not loaded. Please wait...]"
 		end
+	elseif tab == 4 then
+		fs = fs ..
+			"dropdown[0,1;5,0.8;shape_type;Cube,Sphere,Circle,Ellipse,Pyramid,Cylinder;1]" ..
+			"field[5.5,1;4.5,0.8;node_name;Node Name;mcl_core:stone]" ..
+			"field[0,2;3,0.8;dim_x;Width;8]" ..
+			"field[3.5,2;3,0.8;dim_y;Height;8]" ..
+			"field[7,2;3,0.8;dim_z;Depth;8]" ..
+			"checkbox[0,2.8;hollow;Hollow;false]" ..
+			"label[0,3.5;Place offset from player:]" ..
+			"field[0,3.8;2.5,0.8;offset_x;X;0]" ..
+			"field[3,3.8;2.5,0.8;offset_y;Y;1]" ..
+			"field[6,3.8;2.5,0.8;offset_z;Z;5]" ..
+			"button[0,5;4.5,0.8;shape_generate;Generate to Memory]" ..
+			"button[5.5,5;4.5,0.8;shape_genplace;Generate && Place Now]"
 	end
 
 	core.show_formspec("schembuilder:browser", fs)

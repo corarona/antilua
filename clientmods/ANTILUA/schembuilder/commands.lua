@@ -327,6 +327,62 @@ core.register_on_formspec_input(function(formname, fields)
 		end
 		return
 	end
+
+	-- Tab 4: Shape generation actions
+	if fields.shape_generate or fields.shape_genplace then
+		local shape_type = fields.shape_type or "cube"
+		local mat = fields.node_name or "mcl_core:stone"
+		local dim_x = tonumber(fields.dim_x) or 8
+		local dim_y = tonumber(fields.dim_y) or 8
+		local dim_z = tonumber(fields.dim_z) or 8
+		local hollow = fields.hollow == "true"
+		local off_x = tonumber(fields.offset_x) or 0
+		local off_y = tonumber(fields.offset_y) or 1
+		local off_z = tonumber(fields.offset_z) or 5
+
+		shape_type = shape_type:lower()
+
+		local rel_nodes, err = schembuilder.generate_shape(shape_type, dim_x, dim_y, dim_z, mat, hollow)
+		if not rel_nodes then
+			ws.notify("Shape generation error: " .. (err or "unknown"), ws.NOTIFY_ERROR)
+			return
+		end
+
+		if #rel_nodes == 0 then
+			ws.notify("Generated shape is empty (try larger dimensions)", ws.NOTIFY_WARNING)
+			return
+		end
+
+		local pos = core.localplayer and vector.round(core.localplayer:get_pos())
+		if not pos then
+			ws.notify("No player position", ws.NOTIFY_ERROR)
+			return
+		end
+
+		local origin = vector.add(pos, {x = off_x, y = off_y, z = off_z})
+
+		clear_supply_chests()
+		place_nodes = {}
+		for _, n in ipairs(rel_nodes) do
+			local wp = {x = origin.x + n.x, y = origin.y + n.y, z = origin.z + n.z, name = n.name}
+			table.insert(place_nodes, wp)
+			add_preview_if_needed(wp, wp.name)
+		end
+
+		local shape_name = shape_type:gsub("^%l", string.upper)
+		local label = shape_name .. " (" .. dim_x .. "x" .. dim_y .. "x" .. dim_z .. ")"
+		create_build("shape:" .. label, label)
+		core.after(0.1, update_hud)
+
+		ws.notify("Generated " .. #place_nodes .. " nodes: " .. label, ws.NOTIFY_SUCCESS)
+
+		if fields.shape_genplace then
+			core.settings:set("placelitem", "true")
+		end
+
+		core.close_formspec("schembuilder:browser")
+		return
+	end
 end)
 
 core.register_chatcommand("sload", {
