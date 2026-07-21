@@ -133,7 +133,7 @@ function ws.get_itemslot_bg_v4(x, y, w, h, margin)
 		for j = 1, h do
 			local px = x + margin + (i - 1)
 			local py = y + margin + (j - 1)
-			parts[#parts + 1] = "image[" .. px .. "," .. py .. ";0,0;mcl_formspec_itemslot_bg.png]"
+			parts[#parts + 1] = "image[" .. px .. "," .. py .. ";0,0;mcl_formspec_itemslot.png]"
 		end
 	end
 	return table.concat(parts)
