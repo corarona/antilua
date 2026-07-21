@@ -137,17 +137,29 @@ function show_browser_form(tab)
 			fs = fs .. "label[0,1;Mapart mod not loaded. Please wait...]"
 		end
 	elseif tab == 4 then
+		local function sv(name, default)
+			return core.settings:get(name) or default
+		end
+		local shape_names = {"Cube","Sphere","Circle","Ellipse","Pyramid","Cylinder"}
+		local shape_idx = 1
+		local saved_shape = sv("schembuilder_shape_type", "Cube")
+		for i, n in ipairs(shape_names) do
+			if n == saved_shape then shape_idx = i; break end
+		end
 		fs = fs ..
-			"dropdown[0,1;5,0.8;shape_type;Cube,Sphere,Circle,Ellipse,Pyramid,Cylinder;1]" ..
-			"field[5.5,1;4.5,0.8;node_name;Node Name;mcl_core:stone]" ..
-			"field[0,2;3,0.8;dim_x;Width;8]" ..
-			"field[3.5,2;3,0.8;dim_y;Height;8]" ..
-			"field[7,2;3,0.8;dim_z;Depth;8]" ..
-			"checkbox[0,2.8;hollow;Hollow;false]" ..
+			"dropdown[0,1;5,0.8;shape_type;" ..
+				table.concat(shape_names, ",") .. ";" .. shape_idx .. "]" ..
+			"field[5.5,1;4.5,0.8;node_name;Node Name;" ..
+				core.formspec_escape(sv("schembuilder_node_name", "mcl_core:stone")) .. "]" ..
+			"field[0,2;3,0.8;dim_x;Width;" .. sv("schembuilder_dim_x", "8") .. "]" ..
+			"field[3.5,2;3,0.8;dim_y;Height;" .. sv("schembuilder_dim_y", "8") .. "]" ..
+			"field[7,2;3,0.8;dim_z;Depth;" .. sv("schembuilder_dim_z", "8") .. "]" ..
+			"checkbox[0,2.8;hollow;Hollow;" ..
+				(core.settings:get_bool("schembuilder_hollow") and "true" or "false") .. "]" ..
 			"label[0,3.5;Place offset from player:]" ..
-			"field[0,3.8;2.5,0.8;offset_x;X;0]" ..
-			"field[3,3.8;2.5,0.8;offset_y;Y;1]" ..
-			"field[6,3.8;2.5,0.8;offset_z;Z;5]" ..
+			"field[0,3.8;2.5,0.8;offset_x;X;" .. sv("schembuilder_offset_x", "0") .. "]" ..
+			"field[3,3.8;2.5,0.8;offset_y;Y;" .. sv("schembuilder_offset_y", "1") .. "]" ..
+			"field[6,3.8;2.5,0.8;offset_z;Z;" .. sv("schembuilder_offset_z", "5") .. "]" ..
 			"button[0,5;4.5,0.8;shape_generate;Generate to Memory]" ..
 			"button[5.5,5;4.5,0.8;shape_genplace;Generate && Place Now]"
 	end

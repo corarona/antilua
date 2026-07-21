@@ -328,14 +328,30 @@ core.register_on_formspec_input(function(formname, fields)
 		return
 	end
 
+	-- Tab 4: Persist checkbox state via setting (checkbox not included in button submissions)
+	if fields.hollow ~= nil then
+		core.settings:set_bool("schembuilder_hollow", fields.hollow == "true")
+		show_browser_form(4)
+		return
+	end
+
 	-- Tab 4: Shape generation actions
 	if fields.shape_generate or fields.shape_genplace then
+		core.settings:set("schembuilder_shape_type", fields.shape_type or "Cube")
+		core.settings:set("schembuilder_node_name", fields.node_name or "mcl_core:stone")
+		core.settings:set("schembuilder_dim_x", fields.dim_x or "8")
+		core.settings:set("schembuilder_dim_y", fields.dim_y or "8")
+		core.settings:set("schembuilder_dim_z", fields.dim_z or "8")
+		core.settings:set("schembuilder_offset_x", fields.offset_x or "0")
+		core.settings:set("schembuilder_offset_y", fields.offset_y or "1")
+		core.settings:set("schembuilder_offset_z", fields.offset_z or "5")
+
 		local shape_type = fields.shape_type or "cube"
 		local mat = fields.node_name or "mcl_core:stone"
 		local dim_x = tonumber(fields.dim_x) or 8
 		local dim_y = tonumber(fields.dim_y) or 8
 		local dim_z = tonumber(fields.dim_z) or 8
-		local hollow = fields.hollow == "true"
+		local hollow = core.settings:get_bool("schembuilder_hollow")
 		local off_x = tonumber(fields.offset_x) or 0
 		local off_y = tonumber(fields.offset_y) or 1
 		local off_z = tonumber(fields.offset_z) or 5
