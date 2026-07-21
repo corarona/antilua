@@ -53,15 +53,16 @@ end
 
 core.register_on_connect(function()
 	local info = core.get_server_info()
-	if info and info.address then
+	if info and info.address and info.address ~= "" then
 		stprefix = "POI-" .. info.address .. ":" .. info.port .. ":"
+	else
+		stprefix = "POI-singleplayer:"
 	end
 	reset_gui_state()
 end)
 
 core.register_on_disconnect(function()
 	reset_gui_state()
-	stprefix = "POI-singleplayer:"
 end)
 
 --
