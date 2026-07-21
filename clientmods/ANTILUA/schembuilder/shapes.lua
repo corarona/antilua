@@ -17,17 +17,30 @@ end
 function shapes.generate_sphere(r, mat, hollow)
 	local nodes = {}
 	local r2 = r * r
-	local r_outer = r + 0.5
-	local r_inner = r - 0.5
-	for x = -r, r do
-		for y = -r, r do
-			for z = -r, r do
-				local d2 = x * x + y * y + z * z
-				if d2 <= r2 then
-					if not hollow then
+	if not hollow then
+		for x = -r, r do
+			for y = -r, r do
+				for z = -r, r do
+					if x * x + y * y + z * z <= r2 then
 						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
-					elseif d2 >= (r - 1) * (r - 1) then
-						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+					end
+				end
+			end
+		end
+	else
+		for x = -r, r do
+			for y = -r, r do
+				for z = -r, r do
+					local d2 = x * x + y * y + z * z
+					if d2 <= r2 then
+						if (x+1)*(x+1)+y*y+z*z > r2
+							or (x-1)*(x-1)+y*y+z*z > r2
+							or x*x+(y+1)*(y+1)+z*z > r2
+							or x*x+(y-1)*(y-1)+z*z > r2
+							or x*x+y*y+(z+1)*(z+1) > r2
+							or x*x+y*y+(z-1)*(z-1) > r2 then
+							nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+						end
 					end
 				end
 			end
@@ -54,19 +67,28 @@ function shapes.generate_ellipsoid(rx, ry, rz, mat, hollow)
 	local rx2 = rx * rx
 	local ry2 = ry * ry
 	local rz2 = rz * rz
-	for x = -rx, rx do
-		for y = -ry, ry do
-			for z = -rz, rz do
-				local val = (x * x) / rx2 + (y * y) / ry2 + (z * z) / rz2
-				if val <= 1 then
-					if not hollow then
+	if not hollow then
+		for x = -rx, rx do
+			for y = -ry, ry do
+				for z = -rz, rz do
+					if (x*x)/rx2 + (y*y)/ry2 + (z*z)/rz2 <= 1 then
 						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
-					else
-						local val_outer = ((x) * (x)) / rx2 + ((y) * (y)) / ry2 + ((z) * (z)) / rz2
-						local val_inner = ((x - (x > 0 and 1 or -1)) * (x - (x > 0 and 1 or -1))) / rx2
-							+ ((y - (y > 0 and 1 or -1)) * (y - (y > 0 and 1 or -1))) / ry2
-							+ ((z - (z > 0 and 1 or -1)) * (z - (z > 0 and 1 or -1))) / rz2
-						if val_outer >= 1 or val_inner <= 1 then
+					end
+				end
+			end
+		end
+	else
+		for x = -rx, rx do
+			for y = -ry, ry do
+				for z = -rz, rz do
+					local val = (x*x)/rx2 + (y*y)/ry2 + (z*z)/rz2
+					if val <= 1 then
+						if ((x+1)*(x+1))/rx2 + (y*y)/ry2 + (z*z)/rz2 > 1
+							or ((x-1)*(x-1))/rx2 + (y*y)/ry2 + (z*z)/rz2 > 1
+							or (x*x)/rx2 + ((y+1)*(y+1))/ry2 + (z*z)/rz2 > 1
+							or (x*x)/rx2 + ((y-1)*(y-1))/ry2 + (z*z)/rz2 > 1
+							or (x*x)/rx2 + (y*y)/ry2 + ((z+1)*(z+1))/rz2 > 1
+							or (x*x)/rx2 + (y*y)/ry2 + ((z-1)*(z-1))/rz2 > 1 then
 							nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
 						end
 					end
