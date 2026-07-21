@@ -485,7 +485,8 @@ local function build_actions(sb, af)
 		af.button(0.5, 7.5, 1, 0.5, "sort_toggle", sort_label),
 		af.button_exit(1.7, 7.5, 1, 0.5, "display", "Show"),
 		af.button(9, 7.5, 1.3, 0.5, "rename", "Rename"),
-		af.button(10.5, 7.5, 1.3, 0.5, "delete", "Delete")
+		af.button(10.5, 7.5, 1.3, 0.5, "delete", "Delete"),
+		af.button(11.8, 7.5, 1.5, 0.5, "clear_all", "Clear All")
 	)
 	local sp, y = 0.5, 8.25
 	for _, v in ipairs(poi.registered_transports) do
@@ -550,6 +551,17 @@ local function show_delete_fs(name)
 		af.label(0.35, 0.25, [[Are you sure you want to delete "]] .. name .. [["?]]),
 		af.button(0, 1, 3, 1, "cancel", "Cancel"),
 		af.button(3, 1, 3, 1, "delete_confirm", "Delete")
+	)
+	return core.show_formspec("poi-csm", sb:get())
+end
+
+local function show_clear_all_fs()
+	local af = core.al_formspec
+	local sb = af.begin("size[6,2]")
+	sb:add(
+		af.label(0.35, 0.2, "Hide ALL displayed waypoints?"),
+		af.button(0, 1, 3, 1, "cancel", "Cancel"),
+		af.button(3, 1, 3, 1, "clear_all_confirm", "Hide All")
 	)
 	return core.show_formspec("poi-csm", sb:get())
 end
@@ -653,6 +665,17 @@ core.register_on_formspec_input(function(formname, fields)
 			poi.display_formspec()
 		end,
 		cancel = function() poi.display_formspec() end,
+		clear_all = function() show_clear_all_fs() end,
+		clear_all_confirm = function()
+			for title, id in pairs(shown_huds) do
+				core.localplayer:hud_remove(id)
+			end
+			shown_huds = {}
+			hud_wp = nil
+			poi.last_name = nil
+			poi.last_pos = nil
+			poi.display_formspec()
+		end,
 	}
 
 	for field_name, handler in pairs(action_map) do
