@@ -571,6 +571,27 @@ core.register_on_formspec_input(function(formname, fields)
 			core.settings:set_bool("poi_show_all_waypoints", fields.poi_show_all == "true")
 			poi.display_formspec()
 		end,
+		wp_group = function()
+			if fields.key_enter_field == "wp_group" and fields.wp_group then
+				poi.set_group(selected_name, fields.wp_group)
+				poi.display_formspec()
+			end
+		end,
+		wp_color = function()
+			local idx = tonumber(fields.wp_color)
+			if idx then
+				local c = WP_COLORS[idx]
+				if c then
+					poi.set_color(name, c.hex)
+					for title, id in pairs(shown_huds) do
+						core.localplayer:hud_remove(id)
+					end
+					shown_huds = {}
+					hud_wp = nil
+				end
+			end
+			poi.display_formspec()
+		end,
 	}
 
 	local name
@@ -632,38 +653,18 @@ core.register_on_formspec_input(function(formname, fields)
 			poi.display_formspec()
 		end,
 		cancel = function() poi.display_formspec() end,
-		wp_group = function()
-			if fields.key_enter_field == "wp_group" and fields.wp_group then
-				poi.set_group(selected_name, fields.wp_group)
-				poi.display_formspec()
-			end
-		end,
-		wp_color = function()
-			local idx = tonumber(fields.wp_color)
-			if idx then
-				local c = WP_COLORS[idx]
-				if c then
-					poi.set_color(name, c.hex)
-					for title, id in pairs(shown_huds) do
-						core.localplayer:hud_remove(id)
-					end
-					shown_huds = {}
-					hud_wp = nil
-				end
-			end
-			poi.display_formspec()
-		end,
 	}
 
-	for field_name, handler in pairs(handlers) do
-		if fields[field_name] ~= nil and not fields[field_name]:match("^$") then
+	for field_name, handler in pairs(action_map) do
+		if fields[field_name] ~= nil then
 			handler()
 			return true
 		end
 	end
 
-	for field_name, handler in pairs(action_map) do
-		if fields[field_name] ~= nil then
+	for _, field_name in ipairs({"group_filter", "poi_show_all", "wp_color", "wp_group"}) do
+		local handler = handlers[field_name]
+		if handler and fields[field_name] ~= nil and not fields[field_name]:match("^$") then
 			handler()
 			return true
 		end
