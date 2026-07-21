@@ -96,6 +96,7 @@ local function execute_movement(self, s, dst, target, lp)
 		core.localplayer:set_pitch(0)
 		core.settings:set_bool("continuous_forward", false)
 		core.settings:set_bool(self.setting, false)
+		autofly.arrived = true
 		return
 	end
 	if not core.settings:get_bool("continuous_forward") then return end
@@ -141,6 +142,7 @@ ws.rg("Autopilot", {
 		execute_movement(self, s, dst, target, lp)
 	end,
 	on_start = function(self)
+		autofly.arrived = nil
 		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
 		if mode ~= "follow" and (not poi.last_pos or not poi.last_name) then
 			return false, "Select a poi first."
@@ -198,7 +200,7 @@ ws.rg("Autopilot", {
 
 local cf_was_on = false
 core.register_globalstep(function()
-	if not poi.last_pos then return end
+	if not poi.last_pos or autofly.arrived then return end
 	local cf_on = core.settings:get_bool("continuous_forward")
 	if cf_on and not cf_was_on and not core.settings:get_bool("autopilot") then
 		core.settings:set_bool("autopilot", true)
@@ -218,6 +220,7 @@ end
 local function go_to(pos, name)
 	poi.last_pos = pos
 	poi.last_name = name
+	autofly.arrived = nil
 	core.settings:set_bool("autopilot", true)
 end
 
