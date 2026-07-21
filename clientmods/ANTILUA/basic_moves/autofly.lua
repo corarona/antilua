@@ -1,6 +1,6 @@
-autofly={}
-autofly.tpos=nil
-autofly.atpos=nil
+autofly = {}
+autofly.tpos = nil
+autofly.atpos = nil
 autofly.follow_name = nil
 
 local function find_closest_player()
@@ -22,133 +22,126 @@ local function find_closest_player()
 	return closest_pos, closest_name
 end
 
+local function read_settings(self)
+	return {
+		mode = core.settings:get(self.setting .. ".mode") or "3d_aim",
+		landing = tonumber(core.settings:get(self.setting .. ".landing_distance")) or 15,
+		speed = tonumber(core.settings:get(self.setting .. ".speed")) or 1.0,
+		alt_hold = core.settings:get_bool(self.setting .. ".altitude_hold"),
+		alt = tonumber(core.settings:get(self.setting .. ".altitude")) or 10,
+		avoid = core.settings:get_bool(self.setting .. ".avoid_obstacles") ~= false,
+	}
+end
+
+local function resolve_target(mode)
+	if mode == "follow" then
+		local pos, name = find_closest_player()
+		autofly.follow_name = name
+		return pos
+	end
+	autofly.follow_name = nil
+	return poi.last_pos
+end
+
+local function compute_tpos(mode, target, lp)
+	if mode == "2d_aim" then
+		return vector.new(target.x, lp.y, target.z)
+	elseif mode == "nether" then
+		return vector.new(target.x / 8, lp.y, target.z / 8)
+	end
+	return target
+end
+
+local function find_ground_y(lp, max_y)
+	for dy = 2, max_y do
+		local check = {x = lp.x, y = lp.y - dy, z = lp.z}
+		local nd = core.get_node_or_nil(check)
+		if nd and nd.name ~= "air" then
+			return check.y
+		end
+	end
+end
+
+local function altitude_adjust(lp, target_y, threshold, step)
+	if not target_y then return end
+	if lp.y < target_y - threshold then
+		core.localplayer:set_pos(vector.add(lp, {x = 0, y = step, z = 0}))
+	elseif lp.y > target_y + threshold then
+		core.localplayer:set_pos(vector.add(lp, {x = 0, y = -step, z = 0}))
+	end
+end
+
+local function obstacle_avoidance(lp)
+	local ahead = ws.dircoord(1, 0, 0)
+	local nd = core.get_node_or_nil(ahead)
+	if not (nd and nd.name ~= "air") then return end
+	local up = ws.dircoord(1, 1, 0)
+	if core.get_node_or_nil(up) and core.get_node_or_nil(up).name == "air" then
+		core.localplayer:set_pos(up)
+		return
+	end
+	for _, side in ipairs({-1, 1}) do
+		local aside = ws.dircoord(0, 0, side)
+		local beyond = ws.dircoord(1, 0, side)
+		if core.get_node_or_nil(aside) and core.get_node_or_nil(aside).name == "air"
+				and core.get_node_or_nil(beyond) and core.get_node_or_nil(beyond).name == "air" then
+			core.localplayer:set_pos(beyond)
+			return
+		end
+	end
+end
+
+local function execute_movement(self, s, dst, target, lp)
+	if dst <= s.landing then
+		core.localplayer:set_pitch(0)
+		core.settings:set_bool("continuous_forward", false)
+		core.settings:set_bool(self.setting, false)
+		return
+	end
+	if not core.settings:get_bool("continuous_forward") then return end
+	if s.mode == "3d_velocity" then
+		local dir = vector.direction(lp, target)
+		core.localplayer:set_velocity(vector.multiply(dir,
+			core.localplayer:get_movement_speed().walk / 10 * s.speed))
+	else
+		ws.aim(autofly.tpos)
+	end
+end
+
 ws.rg("Autopilot", {
 	category = "Movement",
 	setting = "autopilot",
 	description = "Automatic flight with obstacle avoidance",
 	on_step = function(self)
-		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
-		local landing = tonumber(core.settings:get(self.setting .. ".landing_distance")) or 15
-		local speed = tonumber(core.settings:get(self.setting .. ".speed")) or 1.0
-		local alt_hold = core.settings:get_bool(self.setting .. ".altitude_hold") == true
-		local alt = tonumber(core.settings:get(self.setting .. ".altitude")) or 10
-		local avoid = core.settings:get_bool(self.setting .. ".avoid_obstacles") ~= false
-
-		-- Determine target: POI waypoint or follow player
-		local target
-		if mode == "follow" then
-			target, autofly.follow_name = find_closest_player()
-			if not target then
-				autofly.follow_name = nil
-				return
-			end
-		else
-			target = poi.last_pos
-			if not target then return end
-			autofly.follow_name = nil
-		end
+		local s = read_settings(self)
+		local target = resolve_target(s.mode)
+		if not target then return end
 
 		local lp = ws.dircoord(0, 0, 0)
-		local dst
+		autofly.tpos = compute_tpos(s.mode, target, lp)
+		local dst = vector.distance(lp, autofly.tpos)
 
-		if mode == "2d_aim" then
-			autofly.tpos = vector.new(target.x, lp.y, target.z)
-			dst = vector.distance(lp, autofly.tpos)
-		elseif mode == "hover" then
-			-- Find terrain below and maintain altitude
-			local below = ws.dircoord(0, -1, 0)
-			for check_y = 2, 100 do
-				local check = {x = below.x, y = lp.y - check_y, z = below.z}
-				local nd = core.get_node_or_nil(check)
-				if nd and nd.name ~= "air" then
-					local target_y = check.y + alt
-					if lp.y < target_y - 0.5 then
-						core.localplayer:set_pos(vector.add(lp, {x=0, y=0.3, z=0}))
-					elseif lp.y > target_y + 0.5 then
-						core.localplayer:set_pos(vector.add(lp, {x=0, y=-0.3, z=0}))
-					end
-					break
-				end
-			end
-			autofly.tpos = vector.new(target.x, lp.y, target.z)
-			dst = vector.distance(lp, autofly.tpos)
-		elseif mode == "nether" then
-			autofly.tpos = vector.new(target.x / 8, lp.y, target.z / 8)
-			dst = vector.distance(lp, autofly.tpos)
-		else
-			autofly.tpos = target
-			dst = vector.distance(lp, target)
+		-- Hover mode: altitude above ground
+		if s.mode == "hover" then
+			local gy = find_ground_y(lp, 100)
+			if gy then altitude_adjust(lp, gy + s.alt, 0.5, 0.3) end
 		end
 
-		-- Obstacle avoidance: check block ahead, try to go around
-		if avoid and mode ~= "3d_velocity" then
-			local ahead = ws.dircoord(1, 0, 0)
-			local nd = core.get_node_or_nil(ahead)
-			if nd and nd.name ~= "air" then
-				-- Try stepping up
-				local up = ws.dircoord(1, 1, 0)
-				local nu = core.get_node_or_nil(up)
-				if nu and nu.name == "air" then
-					core.localplayer:set_pos(up)
-				else
-					-- Try going around sideways (then forward)
-					for _, side in ipairs({-1, 1}) do
-						local aside = ws.dircoord(0, 0, side)
-						local na = core.get_node_or_nil(aside)
-						if na and na.name == "air" then
-							local beyond = ws.dircoord(1, 0, side)
-							local nb = core.get_node_or_nil(beyond)
-							if nb and nb.name == "air" then
-								core.localplayer:set_pos(beyond)
-								break
-							end
-						end
-					end
-				end
-			end
+		-- Obstacle avoidance
+		if s.avoid and s.mode ~= "3d_velocity" then
+			obstacle_avoidance(lp)
 		end
 
-		-- Altitude hold: maintain height above ground
-		if alt_hold and mode ~= "3d_velocity" and mode ~= "hover" then
-			local below = ws.dircoord(0, -1, 0)
-			for check_y = 2, alt do
-				local check = {x = below.x, y = lp.y - check_y, z = below.z}
-				local nd = core.get_node_or_nil(check)
-				if nd and nd.name ~= "air" then
-					local target_y = check.y + alt
-					if lp.y < target_y - 1 then
-						core.localplayer:set_pos(vector.add(lp, {x=0, y=1, z=0}))
-					elseif lp.y > target_y + 1 then
-						core.localplayer:set_pos(vector.add(lp, {x=0, y=-1, z=0}))
-					end
-					break
-				end
-			end
+		-- Altitude hold (not for hover or 3d_velocity)
+		if s.alt_hold and s.mode ~= "3d_velocity" and s.mode ~= "hover" then
+			local gy = find_ground_y(lp, s.alt)
+			if gy then altitude_adjust(lp, gy + s.alt, 1, 1) end
 		end
 
-		-- Movement
-		if mode == "3d_velocity" then
-			if dst > landing and core.settings:get_bool("continuous_forward", false) then
-				local dir = vector.direction(lp, target)
-				core.localplayer:set_velocity(vector.multiply(dir,
-					core.localplayer:get_movement_speed().walk / 10 * speed))
-			else
-				core.localplayer:set_pitch(0)
-				core.settings:set_bool(self.setting, false)
-			end
-		else
-			if dst > landing and core.settings:get_bool("continuous_forward", false) then
-				ws.aim(autofly.tpos)
-			else
-				core.localplayer:set_pitch(0)
-				core.settings:set_bool("continuous_forward", false)
-				core.settings:set_bool(self.setting, false)
-			end
-		end
+		execute_movement(self, s, dst, target, lp)
 	end,
 	on_start = function(self)
 		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
-		-- Follow mode doesn't need a preselected waypoint
 		if mode ~= "follow" and (not poi.last_pos or not poi.last_name) then
 			return false, "Select a poi first."
 		end
@@ -156,16 +149,15 @@ ws.rg("Autopilot", {
 		local lp = ws.dircoord(0, 0, 0)
 		autofly.tpos = table.copy(poi.last_pos)
 
-		-- Override movement speed
 		core.localplayer:set_physics_override({ speed = speed })
 
 		if mode == "2d_aim" then
 			autofly.atpos = table.copy(poi.last_pos)
 			autofly.tpos = vector.new(poi.last_pos.x, lp.y, poi.last_pos.z)
 			local tdst = vector.distance(autofly.tpos, poi.last_pos)
-			local label = "Target " .. math.floor(tdst) .. "m " ..
-				(autofly.tpos.y < poi.last_pos.y and "below" or "above") ..
-				" actual target '" .. poi.last_name .. "'"
+			local label = "Target " .. math.floor(tdst) .. "m "
+				.. (autofly.tpos.y < poi.last_pos.y and "below" or "above")
+				.. " actual target '" .. poi.last_name .. "'"
 			poi.display(autofly.tpos, label)
 			core.settings:set_bool("continuous_forward", true)
 		elseif mode == "nether" then
@@ -204,7 +196,6 @@ ws.rg("Autopilot", {
 	},
 })
 
--- Watch continuous_forward: if turned on with a waypoint selected, enable autopilot
 local cf_was_on = false
 core.register_globalstep(function()
 	if not poi.last_pos then return end

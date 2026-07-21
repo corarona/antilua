@@ -378,20 +378,42 @@ local function get_unique_groups()
 	return sorted
 end
 
-function poi.display_formspec()
-	local af = core.al_formspec
-	local raw_wps = poi.getwps()
-	local sb = af.begin("size[13.5,10]")
+--
+-- Formspec builders
+--
 
+local function get_filtered_sorted_waypoints()
+	local wps = poi.getwps()
+	if filter_group ~= "" then
+		local filtered = {}
+		for _, name in ipairs(wps) do
+			if poi.get_group(name) == filter_group then
+				table.insert(filtered, name)
+			end
+		end
+		wps = filtered
+	end
+	if sort_by_distance then
+		local with_dist = {}
+		for i, name in ipairs(wps) do
+			with_dist[i] = {name = name, dist = wp_distance(name)}
+		end
+		table.sort(with_dist, function(a, b) return a.dist < b.dist end)
+		wps = {}
+		for _, entry in ipairs(with_dist) do
+			table.insert(wps, entry.name)
+		end
+	end
+	return wps
+end
+
+local function build_header(sb, af)
 	sb:add(
 		"background9[1,1;1,1;blank.png;true;7]",
 		af.label(0.25, 0.5, "Waypoint list")
 	)
-
 	sb:add("checkbox[0.25,0.2;poi_show_all;Show all servers;"
 		.. (core.settings:get_bool("poi_show_all_waypoints") and "true" or "false") .. "]")
-
-	-- Group filter dropdown
 	local groups = get_unique_groups()
 	local filter_items = {"All"}
 	for _, g in ipairs(groups) do
@@ -402,27 +424,9 @@ function poi.display_formspec()
 		if g == filter_group then filter_sel = i end
 	end
 	sb:add(af.dropdown(3, 0.25, 2.5, "group_filter", filter_items, filter_sel))
+end
 
-	-- Filter waypoints by group
-	local waypoints = raw_wps
-	if filter_group ~= "" then
-		waypoints = {}
-		for _, name in ipairs(raw_wps) do
-			if poi.get_group(name) == filter_group then
-				table.insert(waypoints, name)
-			end
-		end
-	end
-
-	-- Sort waypoints
-	if sort_by_distance then
-		table.sort(waypoints, function(a, b)
-			return wp_distance(a) < wp_distance(b)
-		end)
-	end
-
-	-- Build textlist from waypoints (left side)
-	formspec_list = {}
+local function build_waypoint_list(sb, af, waypoints)
 	local tl_entries = {}
 	for id, name in ipairs(waypoints) do
 		formspec_list[id] = name
@@ -443,53 +447,45 @@ function poi.display_formspec()
 		if name == selected_name then sel = id end
 	end
 	sb:add("textlist[0.25,0.75;8.5,6;wp_list;" .. table.concat(tl_entries, ",") .. ";" .. sel .. "]")
-
-	-- Screenshot thumbnail (right side)
 	if selected_name then
 		local ss = get_screenshot(selected_name)
 		if ss then
 			sb:add(af.image(9.25, 0.75, 3.5, 2.5, ss))
 		end
 	end
+end
 
-	-- Action buttons
+local function build_details_panel(sb, af, name)
+	if not name then return end
+	local pos = poi.get_waypoint(name)
+	if pos then
+		sb:add(af.label(0.25, 7.25, "Waypoint position: " .. pos.x .. ", " .. pos.y .. ", " .. pos.z))
+	end
+
+	local cur_hex = poi.get_color(name)
+	if cur_hex == "" then cur_hex = "00ff00" end
+	local sel_idx = 1
+	for i, c in ipairs(WP_COLORS) do
+		if c.hex == cur_hex then sel_idx = i end
+	end
+	local color_names = {}
+	for _, c in ipairs(WP_COLORS) do
+		table.insert(color_names, c.name)
+	end
+	sb:add(af.dropdown(3, 7.5, 1.8, "wp_color", color_names, sel_idx))
+
+	local cur_group = poi.get_group(name)
+	sb:add(af.field(5, 7.25, 3.5, 0.5, "wp_group", "Group", cur_group))
+end
+
+local function build_actions(sb, af)
 	local sort_label = sort_by_distance and "Dist" or "A-Z"
 	sb:add(
 		af.button(0.5, 7.5, 1, 0.5, "sort_toggle", sort_label),
-		af.button_exit(1.7, 7.5, 1, 0.5, "display", "Show")
-	)
-
-	-- Color dropdown (only when a waypoint is selected)
-	if selected_name then
-		local cur_hex = poi.get_color(selected_name)
-		if cur_hex == "" then cur_hex = "00ff00" end
-		local sel_idx = 1
-		for i, c in ipairs(WP_COLORS) do
-			if c.hex == cur_hex then sel_idx = i end
-		end
-		local color_names = {}
-		for _, c in ipairs(WP_COLORS) do
-			table.insert(color_names, c.name)
-		end
-		sb:add(af.dropdown(3, 7.5, 1.8, "wp_color", color_names, sel_idx))
-	end
-
-	sb:add(
+		af.button_exit(1.7, 7.5, 1, 0.5, "display", "Show"),
 		af.button(9, 7.5, 1.3, 0.5, "rename", "Rename"),
 		af.button(10.5, 7.5, 1.3, 0.5, "delete", "Delete")
 	)
-
-	-- Waypoint position label and group field
-	if selected_name then
-		local pos = poi.get_waypoint(selected_name)
-		if pos then
-			sb:add(af.label(0.25, 7.25, "Waypoint position: " .. pos.x .. ", " .. pos.y .. ", " .. pos.z))
-		end
-		local cur_group = poi.get_group(selected_name)
-		sb:add(af.field(5, 7.25, 3.5, 0.5, "wp_group", "Group", cur_group))
-	end
-
-	-- Transport buttons
 	local sp, y = 0.5, 8.25
 	for _, v in ipairs(poi.registered_transports) do
 		sb:add(af.button_exit(sp, y, 1, 0.5, v.name, v.name))
@@ -499,7 +495,16 @@ function poi.display_formspec()
 			sp = 0.5
 		end
 	end
+end
 
+function poi.display_formspec()
+	local af = core.al_formspec
+	local sb = af.begin("size[13.5,10]")
+	local wps = get_filtered_sorted_waypoints()
+	build_header(sb, af)
+	build_waypoint_list(sb, af, wps)
+	build_details_panel(sb, af, selected_name)
+	build_actions(sb, af)
 	return core.show_formspec("poi-csm", sb:get())
 end
 
@@ -551,56 +556,36 @@ end
 core.register_on_formspec_input(function(formname, fields)
 	if formname ~= "poi-csm" then return end
 
-	-- Group filter: check before everything else since it's always
-	-- submitted alongside other dropdowns like wp_color
-	if fields.group_filter then
-		local filter_names = {"All"}
-		local groups = get_unique_groups()
-		for _, g in ipairs(groups) do
-			table.insert(filter_names, g)
-		end
-		local idx = tonumber(fields.group_filter)
-		if idx and filter_names[idx] then
-			local new_filter = filter_names[idx]
-			filter_group = (new_filter == "All") and "" or new_filter
+	local handlers = {
+		group_filter = function()
+			local filter_names = {"All"}
+			for _, g in ipairs(get_unique_groups()) do table.insert(filter_names, g) end
+			local idx = tonumber(fields.group_filter)
+			if idx and filter_names[idx] then
+				filter_group = (filter_names[idx] == "All") and "" or filter_names[idx]
+				poi.display_formspec()
+			end
+		end,
+		poi_show_all = function()
+			core.settings:set_bool("poi_show_all_waypoints", fields.poi_show_all == "true")
 			poi.display_formspec()
-			return true
-		end
-	end
-
-	-- Show all servers checkbox
-	if fields.poi_show_all ~= nil then
-		core.settings:set_bool("poi_show_all_waypoints", fields.poi_show_all == "true")
-		poi.display_formspec()
-		return true
-	end
+		end,
+	}
 
 	local name
 	if fields.wp_list then
 		local event = core.explode_textlist_event(fields.wp_list)
-		if event.index then
-			name = formspec_list[event.index]
-		end
+		if event.index then name = formspec_list[event.index] end
 	else
 		name = selected_name
 	end
 
-	if not name then
-		if fields.display or fields.delete then
-			ws.notify("Please select a waypoint first.", ws.NOTIFY_ERROR)
-		end
-		return true
-	end
-
-	-- Textlist selection change (must come before other field checks,
-	-- because dropdown fields are always submitted and would short-circuit)
-	if fields.wp_list and name ~= selected_name then
+	if fields.wp_list and name and name ~= selected_name then
 		selected_name = name
 		poi.display_formspec()
 		return true
 	end
 
-	-- Transport buttons
 	for _, v in ipairs(poi.registered_transports) do
 		if fields[v.name] then
 			if v.func(poi.get_waypoint(name), name) then
@@ -610,51 +595,77 @@ core.register_on_formspec_input(function(formname, fields)
 		end
 	end
 
-	if fields.display then
-		if not poi.display_waypoint(name) then
-			ws.notify("Error displaying waypoint!", ws.NOTIFY_ERROR)
-		end
-	elseif fields.sort_toggle then
-		sort_by_distance = not sort_by_distance
-		poi.display_formspec()
-	elseif fields.rename then
-		show_rename_fs(name)
-	elseif fields.rename_confirm then
-		if fields.new_name and #fields.new_name > 0 then
-			if poi.rename_waypoint(name, fields.new_name) then
+	local action_map = {
+		display = function()
+			if not name then
+				ws.notify("Please select a waypoint first.", ws.NOTIFY_ERROR)
+			elseif not poi.display_waypoint(name) then
+				ws.notify("Error displaying waypoint!", ws.NOTIFY_ERROR)
+			end
+		end,
+		delete = function()
+			if not name then
+				ws.notify("Please select a waypoint first.", ws.NOTIFY_ERROR)
+			else
+				show_delete_fs(name)
+			end
+		end,
+		sort_toggle = function()
+			sort_by_distance = not sort_by_distance
+			poi.display_formspec()
+		end,
+		rename = function() show_rename_fs(name) end,
+		rename_confirm = function()
+			if not (fields.new_name and #fields.new_name > 0) then
+				ws.notify("New name required", ws.NOTIFY_ERROR)
+			elseif poi.rename_waypoint(name, fields.new_name) then
 				selected_name = fields.new_name
 			else
 				ws.notify("Error renaming waypoint!", ws.NOTIFY_ERROR)
 			end
-		else
-			ws.notify("New name required", ws.NOTIFY_ERROR)
-		end
-		poi.display_formspec()
-	elseif fields.delete then
-		show_delete_fs(name)
-	elseif fields.delete_confirm then
-		poi.delete_waypoint(name)
-		selected_name = nil
-		poi.display_formspec()
-	elseif fields.cancel then
-		poi.display_formspec()
-	elseif fields.key_enter_field == "wp_group" and fields.wp_group then
-		poi.set_group(selected_name, fields.wp_group)
-		poi.display_formspec()
-	elseif fields.wp_color then
-		local idx = tonumber(fields.wp_color)
-		if idx then
-			local c = WP_COLORS[idx]
-			if c then
-				poi.set_color(name, c.hex)
-				for title, id in pairs(shown_huds) do
-					core.localplayer:hud_remove(id)
-				end
-				shown_huds = {}
-				hud_wp = nil
+			poi.display_formspec()
+		end,
+		delete_confirm = function()
+			poi.delete_waypoint(name)
+			selected_name = nil
+			poi.display_formspec()
+		end,
+		cancel = function() poi.display_formspec() end,
+		wp_group = function()
+			if fields.key_enter_field == "wp_group" and fields.wp_group then
+				poi.set_group(selected_name, fields.wp_group)
+				poi.display_formspec()
 			end
+		end,
+		wp_color = function()
+			local idx = tonumber(fields.wp_color)
+			if idx then
+				local c = WP_COLORS[idx]
+				if c then
+					poi.set_color(name, c.hex)
+					for title, id in pairs(shown_huds) do
+						core.localplayer:hud_remove(id)
+					end
+					shown_huds = {}
+					hud_wp = nil
+				end
+			end
+			poi.display_formspec()
+		end,
+	}
+
+	for field_name, handler in pairs(handlers) do
+		if fields[field_name] ~= nil and not fields[field_name]:match("^$") then
+			handler()
+			return true
 		end
-		poi.display_formspec()
+	end
+
+	for field_name, handler in pairs(action_map) do
+		if fields[field_name] ~= nil then
+			handler()
+			return true
+		end
 	end
 
 	return true
