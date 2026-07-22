@@ -3,7 +3,6 @@
 -- SPDX-License-Identifier: LGPL-2.1-or-later
 
 account_manager = {}
-login_username = login_username or ""
 
 local account_dir = core.get_user_path() .. DIR_DELIM .. "data"
 local account_file = account_dir .. DIR_DELIM .. "accounts.txt"
@@ -53,7 +52,6 @@ local function apply_selected_account()
 	core.settings:set("name", account.username)
 	cache_settings:set(login_username_setting, account.username)
 	cache_settings:set(login_password_setting, account.password)
-	login_username = account.username
 end
 
 function account_manager.load()
