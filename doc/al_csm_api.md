@@ -34,6 +34,7 @@ Table of Contents
 20. Task Markers & Tracers
 21. Extended Object & Entity API
 22. LocalPlayer & ClientObjectRef Extensions
+23. Strata Pathfinding Bot
 
 ---
 
@@ -1265,6 +1266,64 @@ core.load_media(filename) -> string|nil
 
 :get_id() -> int                       -- Get the numeric ID of this object
 ```
+
+---
+
+23. Strata Pathfinding Bot
+===========================
+
+The Strata mod (`clientmods/ANTILUA/strata/`) provides autonomous player
+movement using A* pathfinding, block mining, and block placement. It
+acts as a client-side bot that navigates to a target coordinate by
+breaking through obstacles and placing blocks as needed.
+
+### Cheat Setting
+
+Set `strata = true` to enable. Accessible from the cheat menu under
+"Player" category, or via:
+
+```lua
+core.settings:set_bool("strata", true)
+```
+
+### How It Works
+
+1. **`core.find_path()`** computes an A* path from the player's current
+   position to the target.
+2. **`Strata.compute_actions_required_to_complete_path()`** converts the
+   node path into executable actions: `walk`, `jump`, `fall`,
+   `mine_block`, `place_block`.
+3. Actions are visualized with **task nodes** (red for mining, green for
+   placing) and **task tracers** (colored lines between waypoints) via
+   `core.add_task_node()` and `core.add_task_tracer()`.
+4. A `core.register_globalstep()` handler executes actions one at a time,
+   using `core.localplayer:set_lua_control()` for movement and
+   `core.interact()` for digging/placing.
+5. On completion, a green node appears at the destination. On timeout
+   (2 seconds per action), the path is recalculated.
+
+### API
+
+```lua
+Strata.set_target(pos)       -- Set destination and start pathfinding
+Strata.clear_actions()       -- Stop bot and clear all queued actions
+Strata.clear_path_visuals()  -- Remove all task nodes and tracers
+```
+
+### Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `strata` | `false` | Enable Strata pathfinding bot |
+
+### Dependencies
+
+- `wasplib` — provides `ws.aim()`, `ws.select_best_tool()`,
+  `ws.can_place_at()`, `ws.get_digtime()`
+- Uses `core.find_path()`, `core.add_task_node/clear_task_node`,
+  `core.add_task_tracer/clear_task_tracer`,
+  `core.localplayer:set_lua_control()`, `core.interact()`,
+  `core.get_inventory()`, `InventoryAction`
 
 ---
 
