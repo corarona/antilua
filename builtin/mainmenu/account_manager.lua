@@ -5,7 +5,7 @@
 account_manager = {}
 login_username = login_username or ""
 
-local account_dir = core.get_data_path()
+local account_dir = core.get_user_path() .. DIR_DELIM .. "data"
 local account_file = account_dir .. DIR_DELIM .. "accounts.txt"
 local selected_name_setting = "account_manager.selected_account"
 local legacy_selected_name_setting = "account_manager.selected_username"
