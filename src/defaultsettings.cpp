@@ -153,16 +153,6 @@ static void set_al_default_settings()
 	settings->setDefault("enable_entity_wallhack", "false");
 	settings->setDefault("enable_player_wallhack", "false");
 	settings->setDefault("cheat_theme", "Modern");
-	settings->setDefault("chatplus.enabled", "false");
-	settings->setDefault("chatplus_offset_x", "0");
-	settings->setDefault("chatplus_offset_y", "0");
-	settings->setDefault("chatplus_background", "true");
-	settings->setDefault("chatplus_background_color", "#000000");
-	settings->setDefault("chatplus_background_alpha", "180");
-	settings->setDefault("chatplus_border", "false");
-	settings->setDefault("chatplus_border_color", "#7878FF");
-	settings->setDefault("chatplus_border_alpha", "255");
-	settings->setDefault("chatplus_padding", "4");
 	settings->setDefault("enable_task_nodes", "true");
 	settings->setDefault("enable_task_tracers", "true");
 	settings->setDefault("entity_esp_color", "(255, 255, 255)");

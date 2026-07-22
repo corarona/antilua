@@ -154,36 +154,6 @@ enable_player_wallhack (Player wallhack) bool false
 #    Named cheat menu color theme.
 cheat_theme (Cheat theme) enum Modern Modern,Legacy,Midnight,Moss,Ocean,Outdoors,Matrix
 
-#    Enable custom chat HUD styling (ChatPlus).
-chatplus.enabled (ChatPlus enabled) bool false
-
-#    Chat HUD horizontal offset in pixels.
-chatplus_offset_x (ChatPlus offset X) int 0
-
-#    Chat HUD vertical offset in pixels.
-chatplus_offset_y (ChatPlus offset Y) int 0
-
-#    Show chat background.
-chatplus_background (ChatPlus background) bool true
-
-#    Chat background color (hex #RRGGBB).
-chatplus_background_color (ChatPlus background color) string #000000
-
-#    Chat background alpha (0-255).
-chatplus_background_alpha (ChatPlus background alpha) int 180
-
-#    Show chat border.
-chatplus_border (ChatPlus border) bool false
-
-#    Chat border color (hex #RRGGBB).
-chatplus_border_color (ChatPlus border color) string #7878FF
-
-#    Chat border alpha (0-255).
-chatplus_border_alpha (ChatPlus border alpha) int 255
-
-#    Chat padding in pixels.
-chatplus_padding (ChatPlus padding) int 4
-
 #    Colored wireframe boxes marking task/waypoint nodes.
 enable_task_nodes (Task nodes) bool true
 
