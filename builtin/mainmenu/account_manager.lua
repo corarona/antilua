@@ -51,7 +51,6 @@ local function apply_selected_account()
 	core.settings:set(legacy_selected_name_setting, account.username)
 	core.settings:set("name", account.username)
 	cache_settings:set(login_username_setting, account.username)
-	cache_settings:set(login_password_setting, account.password)
 end
 
 function account_manager.load()

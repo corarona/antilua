@@ -119,7 +119,6 @@ end
 
 local function eventhandler(event)
 	if event == "DialogShow" then
-		mm_game_theme.set_engine()
 		return true
 	elseif event == "MenuQuit" then
 		local current = ui.find_by_name("dlg_account_manager")
