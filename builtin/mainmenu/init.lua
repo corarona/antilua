@@ -3,7 +3,7 @@
 -- SPDX-License-Identifier: LGPL-2.1-or-later
 
 MAIN_TAB_W = 15.5
-MAIN_TAB_H = 7.1
+MAIN_TAB_H = 8.0
 TABHEADER_H = 0.85
 GAMEBAR_H = 1.25
 GAMEBAR_OFFSET_DESKTOP = 0.375
