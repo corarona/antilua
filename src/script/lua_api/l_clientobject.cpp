@@ -22,8 +22,10 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "common/c_converter.h"
 #include "common/c_content.h"
 #include "client/client.h"
+#include "client/content_cao.h"
 #include "object_properties.h"
 #include "util/pointedthing.h"
+#include "activeobject.h"
 
 ClientActiveObject *ClientObjectRef::getClientActiveObject()
 {
@@ -271,6 +273,40 @@ void ClientObjectRef::set_null(lua_State *L)
 	obj->m_object = nullptr;
 }
 
+// Extended API
+
+int ClientObjectRef::l_set_pos(lua_State *L)
+{
+	GenericCAO *gcao = get_generic_cao(checkobject(L, 1), L);
+	if (!gcao)
+		return 0;
+	gcao->setPos(checkFloatPos(L, 2));
+	return 0;
+}
+
+int ClientObjectRef::l_set_attachment(lua_State *L)
+{
+	GenericCAO *gcao = get_generic_cao(checkobject(L, 1), L);
+	if (!gcao)
+		return 0;
+	u16 parent_id = luaL_checkinteger(L, 2);
+	std::string bone = luaL_checkstring(L, 3);
+	v3f pos = check_v3f(L, 4);
+	v3f rot = check_v3f(L, 5) * core::DEGTORAD;
+	bool force_visible = lua_toboolean(L, 6);
+	gcao->setAttachment(parent_id, bone, pos, rot, force_visible);
+	return 0;
+}
+
+int ClientObjectRef::l_get_id(lua_State *L)
+{
+	ClientActiveObject *cao = get_cao(checkobject(L, 1));
+	if (!cao)
+		return 0;
+	lua_pushinteger(L, cao->getId());
+	return 1;
+}
+
 int ClientObjectRef::gc_object(lua_State *L)
 {
 	ClientObjectRef *obj = *(ClientObjectRef **)(lua_touserdata(L, 1));
@@ -321,4 +357,7 @@ luaL_Reg ClientObjectRef::methods[] = {luamethod(ClientObjectRef, get_pos),
 		luamethod(ClientObjectRef, get_max_hp), luamethod(ClientObjectRef, punch),
 		luamethod(ClientObjectRef, rightclick),
 		luamethod(ClientObjectRef, remove),
+		luamethod(ClientObjectRef, set_pos),
+		luamethod(ClientObjectRef, set_attachment),
+		luamethod(ClientObjectRef, get_id),
 		{0, 0}};

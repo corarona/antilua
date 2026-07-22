@@ -48,6 +48,8 @@ set(client_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/clientobject.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/clouds.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/al_hooks.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/pathfind.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/task_markers.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/pipe_lua.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/session.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/camera_roll.cpp

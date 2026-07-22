@@ -195,6 +195,68 @@ private:
 	// append_file(path, data)
 	static int l_append_file(lua_State *L);
 
+	// --- Extended API from DevClient ---
+
+	// start_dig(pos) — start digging without completing
+	static int l_start_dig(lua_State *L);
+
+	// get_item_damage_against(slot_index, object_id) — calculate wielded item damage vs entity
+	static int l_get_item_damage_against(lua_State *L);
+	static int l_get_inv_item_damage(lua_State *L) { return l_get_item_damage_against(L); }
+
+	// get_item_dig_time(slot_index, nodepos) — calculate dig time for an item vs a node
+	static int l_get_item_dig_time(lua_State *L);
+	static int l_get_inv_item_break(lua_State *L) { return l_get_item_dig_time(L); }
+
+	// set_fast_speed(speed)
+	static int l_set_fast_speed(lua_State *L);
+
+	// get_all_objects() — return all active objects (no radius filter)
+	static int l_get_all_objects(lua_State *L);
+
+	// get_active_object_by_id(id) — get object by numeric ID
+	static int l_get_active_object_by_id(lua_State *L);
+	static int l_get_active_object(lua_State *L) { return l_get_active_object_by_id(L); }
+
+	// all_loaded_nodes() — iterator over all loaded nodes
+	static int l_all_loaded_nodes(lua_State *L);
+
+	// nodes_at_block_pos(pos) — iterator over nodes in a block
+	static int l_nodes_at_block_pos(lua_State *L);
+
+	// can_attack(object_id) — check if player can attack entity
+	static int l_can_attack(lua_State *L);
+
+	// get_server_url() — return "address:port" or nil
+	static int l_get_server_url(lua_State *L);
+
+	// get_node_name(pos) — convenience: get node name string at pos
+	static int l_get_node_name(lua_State *L);
+
+	// add_task_node(pos, color) — persistent colored wireframe box marker
+	static int l_add_task_node(lua_State *L);
+
+	// clear_task_node(pos)
+	static int l_clear_task_node(lua_State *L);
+
+	// add_task_tracer(start_pos, end_pos, color) — persistent colored line
+	static int l_add_task_tracer(lua_State *L);
+
+	// clear_task_tracer(start_pos, end_pos)
+	static int l_clear_task_tracer(lua_State *L);
+
+	// update_infotexts() — refresh all infotext displays
+	static int l_update_infotexts(lua_State *L);
+
+	// get_description() — get description string
+	static int l_get_description(lua_State *L);
+
+	// find_path(start_pos, end_pos) — A* pathfinding, returns {pos,...}
+	static int l_find_path(lua_State *L);
+
+	// load_media(filename) — load custom media file
+	static int l_load_media(lua_State *L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 	static void InitializeSSCSM(lua_State *L, int top);

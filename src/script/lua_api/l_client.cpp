@@ -28,6 +28,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include <IFileSystem.h>
 #include <IReadFile.h>
 #include "client/session.h"
+#include "client/pathfind.h"
+#include "client/task_markers.h"
 #include "itemdef.h"
 #include "client/client.h"
 #include "client/clientevent.h"
@@ -1401,6 +1403,267 @@ int ModApiClient::l_append_file(lua_State *L)
 	return 1;
 }
 
+// --- Extended API from DevClient ---
+
+// start_dig(pos)
+int ModApiClient::l_start_dig(lua_State *L)
+{
+	v3s16 p = floatToInt(checkFloatPos(L, 1), BS);
+	PointedThing pointed;
+	pointed.type = POINTEDTHING_NODE;
+	pointed.node_abovesurface = p;
+	pointed.node_undersurface = p;
+	getClient(L)->interact(INTERACT_START_DIGGING, pointed);
+	return 0;
+}
+
+// get_item_damage_against(slot_index, object_id)
+int ModApiClient::l_get_item_damage_against(lua_State *L)
+{
+	int slot = luaL_checkinteger(L, 1) - 1;
+	Client *client = getClient(L);
+	InventoryLocation loc;
+	loc.setCurrentPlayer();
+	Inventory *inv = client->getInventory(loc);
+	if (!inv)
+		return 0;
+	InventoryList *main = inv->getList("main");
+	if (!main || slot < 0 || (u32)slot >= main->getSize())
+		return 0;
+	const ItemStack &stack = main->getItem(slot);
+	if (stack.empty())
+		return 0;
+	const ToolCapabilities &tcaps = stack.getToolCapabilities(client->idef());
+	// Return the sum of damage group values as a simple damage metric
+	s32 total = 0;
+	for (const auto &dg : tcaps.damageGroups)
+		total += dg.second;
+	lua_pushinteger(L, total);
+	return 1;
+}
+
+// get_item_dig_time(slot_index, nodepos) — uses engine's getDigParams
+int ModApiClient::l_get_item_dig_time(lua_State *L)
+{
+	int slot = luaL_checkinteger(L, 1) - 1;
+	v3s16 nodepos = floatToInt(check_v3f(L, 2), 1.0f);
+	Client *client = getClient(L);
+	InventoryLocation loc;
+	loc.setCurrentPlayer();
+	Inventory *inv = client->getInventory(loc);
+	if (!inv)
+		return 0;
+	InventoryList *main = inv->getList("main");
+	if (!main || slot < 0 || (u32)slot >= main->getSize())
+		return 0;
+	const ItemStack &stack = main->getItem(slot);
+	if (stack.empty())
+		return 0;
+	bool ok;
+	MapNode node = client->CSMGetNode(nodepos, &ok);
+	if (!ok)
+		return 0;
+	const ContentFeatures &def = client->getNodeDefManager()->get(node);
+	const ToolCapabilities &tcaps = stack.getToolCapabilities(client->idef());
+	DigParams params = getDigParams(def.groups, &tcaps);
+	lua_pushnumber(L, params.time);
+	return 1;
+}
+
+// set_fast_speed(speed)
+int ModApiClient::l_set_fast_speed(lua_State *L)
+{
+	float speed = readParam<float>(L, 1);
+	g_settings->setFloat("movement_speed_fast", speed);
+	return 0;
+}
+
+// get_all_objects()
+int ModApiClient::l_get_all_objects(lua_State *L)
+{
+	ClientEnvironment &env = getClient(L)->getEnv();
+	auto pos = env.getLocalPlayer()->getPosition();
+	std::vector<DistanceSortedActiveObject> objs;
+	env.getActiveObjects(pos, 1e8f, objs);
+	int i = 0;
+	lua_createtable(L, objs.size(), 0);
+	for (const auto &obj : objs) {
+		push_objectRef(L, obj.obj->getId());
+		lua_rawseti(L, -2, ++i);
+	}
+	return 1;
+}
+
+// get_active_object_by_id(id)
+int ModApiClient::l_get_active_object_by_id(lua_State *L)
+{
+	u16 id = luaL_checkinteger(L, 1);
+	ClientActiveObject *obj = getClient(L)->getEnv().getActiveObject(id);
+	if (obj)
+		push_objectRef(L, obj->getId());
+	else
+		lua_pushnil(L);
+	return 1;
+}
+
+// all_loaded_nodes() -> table of positions
+int ModApiClient::l_all_loaded_nodes(lua_State *L)
+{
+	Client *client = getClient(L);
+	ClientMap &map = client->getEnv().getClientMap();
+	v3s16 cam_pos = floatToInt(
+		client->getEnv().getLocalPlayer()->getPosition(), BS);
+	v3s16 blocks_min, blocks_max;
+	map.getBlocksInViewRange(cam_pos, &blocks_min, &blocks_max);
+	lua_newtable(L);
+	int idx = 1;
+	for (s16 z = blocks_min.Z; z <= blocks_max.Z; z++)
+	for (s16 y = blocks_min.Y; y <= blocks_max.Y; y++)
+	for (s16 x = blocks_min.X; x <= blocks_max.X; x++) {
+		MapBlock *block = map.getBlockNoCreateNoEx(v3s16(x, y, z));
+		if (!block)
+			continue;
+		v3s16 node_min = v3s16(x, y, z) * MAP_BLOCKSIZE;
+		for (s16 nz = 0; nz < MAP_BLOCKSIZE; nz++)
+		for (s16 ny = 0; ny < MAP_BLOCKSIZE; ny++)
+		for (s16 nx = 0; nx < MAP_BLOCKSIZE; nx++) {
+			push_v3s16(L, node_min + v3s16(nx, ny, nz));
+			lua_rawseti(L, -2, idx++);
+		}
+	}
+	return 1;
+}
+
+// nodes_at_block_pos(pos) -> table of positions
+int ModApiClient::l_nodes_at_block_pos(lua_State *L)
+{
+	v3s16 bpos = floatToInt(check_v3f(L, 1), 1.0f);
+	MapBlock *block = getClient(L)->getEnv().getClientMap()
+		.getBlockNoCreateNoEx(bpos);
+	if (!block) {
+		lua_pushnil(L);
+		return 1;
+	}
+	v3s16 node_min = bpos * MAP_BLOCKSIZE;
+	lua_newtable(L);
+	int idx = 1;
+	for (s16 nz = 0; nz < MAP_BLOCKSIZE; nz++)
+	for (s16 ny = 0; ny < MAP_BLOCKSIZE; ny++)
+	for (s16 nx = 0; nx < MAP_BLOCKSIZE; nx++) {
+		push_v3s16(L, node_min + v3s16(nx, ny, nz));
+		lua_rawseti(L, -2, idx++);
+	}
+	return 1;
+}
+
+// can_attack(object_id)
+int ModApiClient::l_can_attack(lua_State *L)
+{
+	u16 id = luaL_checkinteger(L, 1);
+	ClientActiveObject *obj = getClient(L)->getEnv().getActiveObject(id);
+	lua_pushboolean(L, obj != nullptr);
+	return 1;
+}
+
+// get_server_url()
+int ModApiClient::l_get_server_url(lua_State *L)
+{
+	Client *client = getClient(L);
+	if (client->isSingleplayer())
+		return 0;
+	lua_pushstring(L, client->getAddressName().c_str());
+	return 1;
+}
+
+// get_node_name(pos)
+int ModApiClient::l_get_node_name(lua_State *L)
+{
+	v3s16 p = floatToInt(check_v3f(L, 1), 1.0f);
+	bool pos_ok;
+	MapNode n = getClient(L)->CSMGetNode(p, &pos_ok);
+	if (!pos_ok)
+		return 0;
+	const ContentFeatures &def = getClient(L)->getNodeDefManager()->get(n);
+	lua_pushstring(L, def.name.c_str());
+	return 1;
+}
+
+// add_task_node(pos, color)
+int ModApiClient::l_add_task_node(lua_State *L)
+{
+	TaskMarkerStore::addNode(checkFloatPos(L, 1), read_ARGB8(L, 2));
+	return 0;
+}
+
+// clear_task_node(pos)
+int ModApiClient::l_clear_task_node(lua_State *L)
+{
+	lua_pushboolean(L, TaskMarkerStore::removeNode(checkFloatPos(L, 1)));
+	return 1;
+}
+
+// add_task_tracer(start_pos, end_pos, color)
+int ModApiClient::l_add_task_tracer(lua_State *L)
+{
+	TaskMarkerStore::addTracer(checkFloatPos(L, 1), checkFloatPos(L, 2),
+		read_ARGB8(L, 3));
+	return 0;
+}
+
+// clear_task_tracer(start_pos, end_pos)
+int ModApiClient::l_clear_task_tracer(lua_State *L)
+{
+	lua_pushboolean(L, TaskMarkerStore::removeTracer(
+		checkFloatPos(L, 1), checkFloatPos(L, 2)));
+	return 1;
+}
+
+// update_infotexts() — just a no-op stub for compat
+int ModApiClient::l_update_infotexts(lua_State *L)
+{
+	return 0;
+}
+
+// get_description()
+int ModApiClient::l_get_description(lua_State *L)
+{
+	lua_pushstring(L, "Antilua");
+	return 1;
+}
+
+// find_path(start_pos, end_pos)
+int ModApiClient::l_find_path(lua_State *L)
+{
+	v3f start = check_v3f(L, 1);
+	v3f end = check_v3f(L, 2);
+	Client *client = getClient(L);
+	Pathfind finder;
+	auto path = finder.get_path(start, end, client,
+		client->getNodeDefManager(), 10000, false);
+	lua_newtable(L);
+	int idx = 1;
+	for (const auto &pn : path) {
+		push_v3f(L, pn.position);
+		lua_rawseti(L, -2, idx++);
+	}
+	return 1;
+}
+
+// load_media(filename) — read file content from custom_assets dir
+int ModApiClient::l_load_media(lua_State *L)
+{
+	std::string filename = luaL_checkstring(L, 1);
+	std::string path = porting::path_user + DIR_DELIM "textures"
+		+ DIR_DELIM "custom_assets" + DIR_DELIM + filename;
+	std::string data;
+	if (!fs::ReadFile(path, data)) {
+		lua_pushnil(L);
+		return 1;
+	}
+	lua_pushlstring(L, data.data(), data.size());
+	return 1;
+}
+
 void ModApiClient::Initialize(lua_State *L, int top)
 {
 	API_FCT(get_current_modname);
@@ -1456,6 +1719,29 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(cheat_menu_set_visible);
 	API_FCT(get_data_path);
 	API_FCT(get_serverdata_path);
+	// Extended API
+	API_FCT(start_dig);
+	API_FCT(get_item_damage_against);
+	API_FCT(get_inv_item_damage);  // compat shim
+	API_FCT(get_item_dig_time);
+	API_FCT(get_inv_item_break);   // compat shim
+	API_FCT(set_fast_speed);
+	API_FCT(get_all_objects);
+	API_FCT(get_active_object_by_id);
+	API_FCT(get_active_object);    // compat shim
+	API_FCT(all_loaded_nodes);
+	API_FCT(nodes_at_block_pos);
+	API_FCT(can_attack);
+	API_FCT(get_server_url);
+	API_FCT(get_node_name);
+	API_FCT(add_task_node);
+	API_FCT(clear_task_node);
+	API_FCT(add_task_tracer);
+	API_FCT(clear_task_tracer);
+	API_FCT(update_infotexts);
+	API_FCT(get_description);
+	API_FCT(find_path);
+	API_FCT(load_media);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)

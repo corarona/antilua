@@ -131,6 +131,12 @@ private:
 	// get_object(self)
 	static int l_get_object(lua_State *L);
 
+	// Extended API
+	static int l_set_lua_control(lua_State *L);
+	static int l_hud_get_all(lua_State *L);
+	static int l_punch(lua_State *L);
+	static int l_get_time_from_last_punch(lua_State *L);
+
 	// Physics extras
 	static int l_get_collisionbox(lua_State *L);
 	static int l_get_eye_offset(lua_State *L);

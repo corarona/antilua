@@ -30,6 +30,10 @@ Table of Contents
 16. Notification System (wasplib)
 17. Constraint System (wasplib)
 18. Particle System
+19. Pathfinding
+20. Task Markers & Tracers
+21. Extended Object & Entity API
+22. LocalPlayer & ClientObjectRef Extensions
 
 ---
 
@@ -1069,6 +1073,197 @@ core.add_particlespawner({
 
 core.delete_particlespawner(id)
 core.clear_all_particles()               -- Remove all particles and spawners
+```
+
+---
+
+19. Pathfinding
+=================
+
+### `core.find_path(start, end)`
+
+A* pathfinding on the client-side node map. Finds a walkable path between two
+positions, accounting for dig time, headroom, and diagonal movement costs.
+
+```lua
+core.find_path(start_pos, end_pos) -> {pos,...}
+    -- Returns an array of {x,y,z} waypoints in node coordinates.
+    -- Returns an empty array if no path is found.
+    -- Blocking call; may take hundreds of milliseconds on long paths.
+    -- Use `runInThread` from the threading API to avoid lag.
+```
+
+Uses `Pathfind` (C++ class in `src/client/pathfind.h`). The pathfinder:
+- Evaluates terrain cost based on the player's best available tool in inventory
+- Penalises digging through non-air nodes
+- Penalises unsteady footing (no walkable block below)
+- Checks headroom clearance (2 blocks above)
+- Handles diagonal, up, and down movement with appropriate costs
+
+---
+
+20. Task Markers & Tracers
+==========================
+
+Persistent colored visual markers rendered in-world. Implemented on top of
+`DrawLuaShapes` — no separate render step needed.
+
+### `core.add_task_node(pos, color)`
+
+Add a colored wireframe box at a world position. The box is 1×1×1 nodes,
+centered on `pos`.
+
+```lua
+core.add_task_node({x=10, y=20, z=30}, "#FF0000")
+    -- pos: v3f position in BS units
+    -- color: CSS color string (e.g. "#FF0000", "#00FF00FF") or SColor table
+```
+
+### `core.clear_task_node(pos) -> bool`
+
+Remove a task node marker at the given position.
+
+```lua
+local ok = core.clear_task_node({x=10, y=20, z=30})
+```
+
+### `core.add_task_tracer(start_pos, end_pos, color)`
+
+Add a colored line between two world positions.
+
+```lua
+core.add_task_tracer({x=0, y=0, z=0}, {x=10, y=20, z=30}, "#00FF00")
+```
+
+### `core.clear_task_tracer(start_pos, end_pos) -> bool`
+
+Remove a task tracer line.
+
+```lua
+local ok = core.clear_task_tracer({x=0, y=0, z=0}, {x=10, y=20, z=30})
+```
+
+### Settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `enable_task_nodes` | `true` | Show task node wireframe boxes |
+| `enable_task_tracers` | `true` | Show task tracer lines |
+
+---
+
+21. Extended Object & Entity API
+=================================
+
+These functions extend `core.*` with methods from DevClient's client-side
+API. Some are registered under improved names with the original names
+available as compatibility shims.
+
+### Object Lookup
+
+```lua
+core.get_all_objects() -> {ObjectRef,...}
+    -- Returns all active objects (entities, players) without radius filter.
+
+core.get_active_object_by_id(id) -> ObjectRef|nil
+    -- Get an active object by its numeric ID.
+    -- Compat shim: core.get_active_object(id)
+```
+
+### World Interaction
+
+```lua
+core.start_dig(pos)                    -- Start digging at pos without completing
+core.can_attack(object_id) -> bool     -- Check if an entity ID is valid for attacking
+core.get_node_name(pos) -> string      -- Shorthand: get node name string at pos
+core.all_loaded_nodes() -> {pos,...}   -- Table of all currently loaded node positions
+core.nodes_at_block_pos(pos) -> {pos,...} -- Table of all node positions in a mapblock
+```
+
+### Item Utilities
+
+```lua
+core.get_item_damage_against(slot_index, object_id) -> int
+    -- Returns total damage group value of item in inventory slot vs nothing.
+    -- Compat shim: core.get_inv_item_damage(slot_index, object_id)
+
+core.get_item_dig_time(slot_index, nodepos) -> float
+    -- Returns estimated dig time in seconds for item in slot against node at pos.
+    -- Uses the engine's getDigParams().
+    -- Compat shim: core.get_inv_item_break(slot_index, nodepos)
+```
+
+### Server Info
+
+```lua
+core.get_server_url() -> string|nil    -- "address:port" or nil (singleplayer)
+core.get_description() -> string       -- Engine description string
+core.update_infotexts()                -- Refresh infotext displays (stub)
+```
+
+### File Aliases
+
+```lua
+core.file_write(path, data)            -- Alias for core.write_file
+core.file_append(path, data)           -- Alias for core.append_file
+```
+
+### Entity Creation Alias
+
+```lua
+core.add_active_object(pos, properties) -> ObjectRef
+    -- Alias for core.create_client_entity
+```
+
+### Settings
+
+```lua
+core.set_fast_speed(speed)             -- Set movement_speed_fast
+```
+
+### Media
+
+```lua
+core.load_media(filename) -> string|nil
+    -- Read a file from <userdata>/textures/custom_assets/<filename>
+    -- Returns the file content as a string, or nil on error.
+```
+
+---
+
+22. LocalPlayer & ClientObjectRef Extensions
+=============================================
+
+### LocalPlayer (`core.localplayer:*`)
+
+```lua
+:set_lua_control(control_table)        -- Set player controls from Lua
+    -- control_table fields (all optional, default keeps current value):
+    --   up, down, left, right: float (0.0 to 1.0)
+    --   jump, aux1, sneak, zoom, dig, place: bool
+    --   pitch, yaw: float (degrees)
+
+:hud_get_all() -> {[id]=hud_def,...}   -- Returns all HUD elements as a table
+    -- Keys are numeric IDs, values are HUD definition tables.
+
+:punch(object_id)                      -- Punch/send interact to a specific entity
+
+:get_time_from_last_punch() -> float   -- Time in seconds since last punch (approx)
+```
+
+### ClientObjectRef (entity references from `core.get_objects_inside_radius`, etc.)
+
+```lua
+:set_pos(pos)                          -- Set entity position (client-side only)
+:set_attachment(parent_id, bone, pos, rot, force_visible)
+    -- Attach this object to a parent entity.
+    -- parent_id: numeric entity ID
+    -- bone: bone name string (empty string for no bone)
+    -- pos: v3f attachment position
+    -- rot: v3f rotation in degrees
+    -- force_visible: bool
+
+:get_id() -> int                       -- Get the numeric ID of this object
 ```
 
 ---

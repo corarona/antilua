@@ -101,6 +101,11 @@ private:
 	// remove(self)
 	static int l_remove(lua_State *L);
 
+	// Extended API
+	static int l_set_pos(lua_State *L);
+	static int l_set_attachment(lua_State *L);
+	static int l_get_id(lua_State *L);
+
 	// set_nametag_images(self, images)
 	// FIXME: requires GenericCAO::nametag_images and Camera/Nametag changes
 	// static int l_set_nametag_images(lua_State *L);

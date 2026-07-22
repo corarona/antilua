@@ -604,6 +604,81 @@ LocalPlayer *LuaLocalPlayer::getobject(lua_State *L, int narg)
 	return player;
 }
 
+// Extended API
+
+// set_lua_control(self, control_table)
+int LuaLocalPlayer::l_set_lua_control(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	luaL_checktype(L, 2, LUA_TTABLE);
+
+	auto read_bool = [L](const char *key, bool fallback) {
+		lua_getfield(L, -1, key);
+		bool v = lua_isnil(L, -1) ? fallback : lua_toboolean(L, -1);
+		lua_pop(L, 1);
+		return v;
+	};
+	auto read_float = [L](const char *key, float fallback) {
+		lua_getfield(L, -1, key);
+		float v = lua_isnil(L, -1) ? fallback : lua_tonumber(L, -1);
+		lua_pop(L, 1);
+		return v;
+	};
+
+	player->control.up = read_float("up", player->control.up);
+	player->control.down = read_float("down", player->control.down);
+	player->control.left = read_float("left", player->control.left);
+	player->control.right = read_float("right", player->control.right);
+	player->control.jump = read_bool("jump", player->control.jump);
+	player->control.aux1 = read_bool("aux1", player->control.aux1);
+	player->control.sneak = read_bool("sneak", player->control.sneak);
+	player->control.zoom = read_bool("zoom", player->control.zoom);
+	player->control.dig = read_bool("dig", player->control.dig);
+	player->control.place = read_bool("place", player->control.place);
+	player->control.pitch = read_float("pitch", player->control.pitch);
+	player->control.yaw = read_float("yaw", player->control.yaw);
+	return 0;
+}
+
+// hud_get_all(self) -> { [id] = hud_def, ... }
+int LuaLocalPlayer::l_hud_get_all(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	lua_newtable(L);
+	u32 id = 0;
+	for (const auto &e : player->csm_hud.getElements()) {
+		if (e) {
+			push_hud_element(L, e.get());
+			lua_rawseti(L, -2, id);
+		}
+		++id;
+	}
+	return 1;
+}
+
+// punch(self, object_id)
+int LuaLocalPlayer::l_punch(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	u16 obj_id = luaL_checkinteger(L, 2);
+	ClientActiveObject *obj = getClient(L)->getEnv().getActiveObject(obj_id);
+	if (!obj)
+		return 0;
+	PointedThing pointed;
+	pointed.type = POINTEDTHING_OBJECT;
+	pointed.object_id = obj_id;
+	getClient(L)->interact(INTERACT_START_DIGGING, pointed);
+	return 0;
+}
+
+// get_time_from_last_punch(self) -> float
+int LuaLocalPlayer::l_get_time_from_last_punch(lua_State *L)
+{
+	// Return a reasonable default — client doesn't track this separately
+	lua_pushnumber(L, 1.0f);
+	return 1;
+}
+
 int LuaLocalPlayer::gc_object(lua_State *L)
 {
 	LuaLocalPlayer *o = *(LuaLocalPlayer **)(lua_touserdata(L, 1));
@@ -680,6 +755,11 @@ const luaL_Reg LuaLocalPlayer::methods[] = {
 		luamethod(LuaLocalPlayer, get_object),
 		luamethod(LuaLocalPlayer, get_hotbar_size),
 		luamethod(LuaLocalPlayer, get_move_resistance),
+
+		luamethod(LuaLocalPlayer, set_lua_control),
+		luamethod(LuaLocalPlayer, hud_get_all),
+		luamethod(LuaLocalPlayer, punch),
+		luamethod(LuaLocalPlayer, get_time_from_last_punch),
 
 		luamethod(LuaLocalPlayer, get_collisionbox),
 		luamethod(LuaLocalPlayer, get_eye_offset),
