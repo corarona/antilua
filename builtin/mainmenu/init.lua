@@ -38,6 +38,8 @@ dofile(menupath .. DIR_DELIM .. "dlg_version_info.lua")
 dofile(menupath .. DIR_DELIM .. "dlg_reinstall_mtg.lua")
 dofile(menupath .. DIR_DELIM .. "dlg_rebind_keys.lua")
 dofile(menupath .. DIR_DELIM .. "dlg_clients_list.lua")
+dofile(menupath .. DIR_DELIM .. "account_manager.lua")
+dofile(menupath .. DIR_DELIM .. "dlg_account_manager.lua")
 dofile(menupath .. DIR_DELIM .. "dlg_server_list_mods.lua")
 
 local tabs = {

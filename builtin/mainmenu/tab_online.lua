@@ -2,6 +2,27 @@
 -- Copyright (C) 2014 sapier
 -- SPDX-License-Identifier: LGPL-2.1-or-later
 
+local function account_list_text()
+	local accounts = account_manager and account_manager.get_accounts and account_manager.get_accounts() or {}
+	if #accounts == 0 then
+		return fgettext("No accounts saved")
+	end
+	local names = {}
+	for i, account in ipairs(accounts) do
+		names[i] = account.username
+	end
+	return table.concat(names, ",")
+end
+
+local function get_selected_online_account()
+	local accounts = account_manager and account_manager.get_accounts and account_manager.get_accounts() or {}
+	local index = tonumber(tabdata and tabdata.selected_account_index)
+	if not index and account_manager and account_manager.get_selected_index then
+		index = account_manager.get_selected_index()
+	end
+	return accounts[index or 1]
+end
+
 local function get_sorted_servers()
 	local servers = {
 		fav = {},
@@ -132,8 +153,17 @@ local function get_formspec(tabview, name, tabdata)
 		"label[0.25,1.6;" .. fgettext("Server Description") .. "]" ..
 		"box[0.25,1.85;5.25,2.7;#999999]"..
 
+		-- Account selector
+		"container[0,4.5]" ..
+		"label[0.25,0;" .. fgettext("Account") .. "]" ..
+		"dropdown[0.25,0.22;4,0.7;account_list;" .. account_list_text() .. ";" ..
+			(account_manager and account_manager.get_selected_index() or 1) .. ";true]" ..
+		"button[4.25,0.22;0.75,0.7;btn_accounts;" .. fgettext("...") .. "]" ..
+		"tooltip[btn_accounts;" .. fgettext("Manage accounts") .. "]" ..
+		"container_end[]" ..
+
 		-- Name / Password
-		"container[0,4.8]" ..
+		"container[0,5.35]" ..
 		"label[0.25,0;" .. fgettext("Name") .. "]" ..
 		"label[2.875,0;" .. fgettext("Password") .. "]" ..
 		"field[0.25,0.2;2.625,0.75;te_name;;" .. core.formspec_escape(core.settings:get("name")) .. "]" ..
@@ -501,6 +531,25 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		core.settings:set("name", fields.te_name)
 	end
 
+	if fields.account_list then
+		local selected = tonumber(fields.account_list)
+		if selected then
+			tabdata.selected_account_index = selected
+			local account = account_manager.get_accounts()[selected]
+			if account then
+				core.settings:set("name", account.username)
+			end
+		end
+	end
+
+	if fields.btn_accounts then
+		local dlg = create_account_manager_dlg()
+		dlg:set_parent(tabview)
+		tabview:hide()
+		dlg:show()
+		return true
+	end
+
 	if fields.servers then
 		local event = core.explode_table_event(fields.servers)
 		local server = tabdata.lookup[event.row]
@@ -512,14 +561,24 @@ local function main_button_handler(tabview, fields, name, tabdata)
 					return true
 				end
 
+				local name = fields.te_name
+				local pwd = fields.te_pwd
+				if (name == "" or name == nil) and account_manager then
+					local account = get_selected_online_account()
+					if account then
+						name = account.username
+						pwd = pwd or account.password or ""
+					end
+				end
+
 				gamedata.mode       = "join"
 				gamedata.address    = server.address
 				gamedata.port       = server.port
-				gamedata.playername = fields.te_name
+				gamedata.playername = name
 				gamedata.selected_world = 0
 
-				if fields.te_pwd then
-					gamedata.password = fields.te_pwd
+				if pwd then
+					gamedata.password = pwd
 				end
 
 				if gamedata.address and gamedata.port then
@@ -596,9 +655,25 @@ local function main_button_handler(tabview, fields, name, tabdata)
 	local te_port_number = tonumber(fields.te_port)
 
 	if (fields.btn_mp_login or fields.key_enter) and host_filled then
+		-- Fill name/password from selected account if fields are empty
+		local name = fields.te_name
+		local pwd = fields.te_pwd
+		if (name == "" or name == nil) and account_manager then
+			local account = get_selected_online_account()
+			if account then
+				name = account.username
+				pwd = pwd or account.password or ""
+				if account_manager.mark_used then
+					account_manager.mark_used(tabdata.selected_account_index or
+						account_manager.get_selected_index())
+					tabdata.selected_account_index = 1
+				end
+			end
+		end
+
 		gamedata.mode       = "join"
-		gamedata.playername = fields.te_name
-		gamedata.password   = fields.te_pwd
+		gamedata.playername = name
+		gamedata.password   = pwd
 		gamedata.address    = fields.te_address
 		gamedata.port       = te_port_number
 
