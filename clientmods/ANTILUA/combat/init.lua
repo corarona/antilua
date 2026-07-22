@@ -3,6 +3,7 @@ local target_obj = nil  -- set via .target command; targeted object ref or nil
 local killaura = {
 	hph = 1,
 	hit_y = -0.1,
+	range = 4.5,
 	damage_log = {},
 	friend_hp_cache = {},
 }
