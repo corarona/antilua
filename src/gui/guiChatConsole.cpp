@@ -3,6 +3,7 @@
 // Copyright (C) 2013 celeron55, Perttu Ahola <celeron55@gmail.com>
 
 #include "guiChatConsole.h"
+#include "client/al_chatplus.h"
 #include "chat.h"
 #include "client/client.h"
 #include "client/keycode.h"
@@ -91,6 +92,12 @@ GUIChatConsole::GUIChatConsole(
 	m_scrollbar->setSubElement(true);
 	m_scrollbar->setLargeStep(1);
 	m_scrollbar->setSmallStep(1);
+
+	// Apply ChatPlus style overrides if enabled
+	auto cp = ChatPlus::readHudStyle();
+	if (cp.enabled) {
+		m_background_color = cp.background_color;
+	}
 }
 
 void GUIChatConsole::openConsole(f32 scale)

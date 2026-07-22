@@ -1151,6 +1151,26 @@ local ok = core.clear_task_tracer({x=0, y=0, z=0}, {x=10, y=20, z=30})
 | `enable_task_nodes` | `true` | Show task node wireframe boxes |
 | `enable_task_tracers` | `true` | Show task tracer lines |
 
+### ChatPlus — Chat HUD Styling
+
+ChatPlus adds a `ChatPlus::HudStyle` struct that controls chat background
+color, border, offset, and padding. Settings are under the `chatplus.*`
+prefix. The default chat console settings (`console_color`, `console_alpha`)
+are overridden when `chatplus.enabled = true`.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `chatplus.enabled` | bool | `false` | Enable ChatPlus styling |
+| `chatplus_offset_x` | int | `0` | Chat HUD horizontal offset (px) |
+| `chatplus_offset_y` | int | `0` | Chat HUD vertical offset (px) |
+| `chatplus_background` | bool | `true` | Show chat background |
+| `chatplus_background_color` | string | `#000000` | Background hex color |
+| `chatplus_background_alpha` | int | `180` | Background opacity (0-255) |
+| `chatplus_border` | bool | `false` | Show chat border |
+| `chatplus_border_color` | string | `#7878FF` | Border hex color |
+| `chatplus_border_alpha` | int | `255` | Border opacity (0-255) |
+| `chatplus_padding` | int | `4` | Padding around chat text (px) |
+
 ### Cheat Theme
 
 The cheat menu color theme can be switched via the `cheat_theme` setting.
