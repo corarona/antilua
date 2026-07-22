@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "script/scripting_client.h"
 #include "client/client.h"
+#include "client/al_theme.h"
 #include "porting.h"
 #include "cheatMenu.h"
 #include "settings.h"
@@ -82,15 +83,39 @@ CheatMenu::CheatMenu(Client *client) : PanelOverlay(), m_client(client)
 {
 	FontMode fontMode = fontStringToEnum(g_settings->get("cheat_menu_font"));
 
-	m_bg_color = parseHexColor(g_settings->get("theme_bg"), g_settings->getU32("theme_bg_alpha"));
-	m_active_bg_color = parseHexColor(g_settings->get("theme_active_bg"), g_settings->getU32("theme_active_bg_alpha"));
-	m_font_color = parseHexColor(g_settings->get("theme_text"), g_settings->getU32("theme_text_alpha"));
-	m_selected_font_color = parseHexColor(g_settings->get("theme_selected_text"));
-	m_panel_bg = parseHexColor(g_settings->get("theme_panel_bg"), g_settings->getU32("theme_panel_bg_alpha"));
-	m_title_bg = parseHexColor(g_settings->get("theme_title_bg"), g_settings->getU32("theme_title_bg_alpha"));
-	m_border_color = parseHexColor(g_settings->get("theme_border"), g_settings->getU32("theme_border_alpha"));
-	m_item_bg = parseHexColor(g_settings->get("theme_item_bg"), g_settings->getU32("theme_item_bg_alpha"));
-	m_tooltip_bg = parseHexColor(g_settings->get("theme_tooltip_bg"), g_settings->getU32("theme_panel_bg_alpha"));
+	// Load theme from ThemeManager, then allow individual overrides
+	ThemeManager::getInstance().loadBuiltinThemes();
+	CheatTheme theme = ThemeManager::getInstance().getTheme(
+		g_settings->get("cheat_theme"));
+	m_bg_color = theme.bg;
+	m_active_bg_color = theme.active_bg;
+	m_font_color = theme.text;
+	m_selected_font_color = theme.selected_text;
+	m_panel_bg = theme.panel_bg;
+	m_title_bg = theme.title_bg;
+	m_border_color = theme.border;
+	m_item_bg = theme.item_bg;
+	m_tooltip_bg = theme.tooltip_bg;
+
+	// Individual settings override theme values
+	if (g_settings->exists("theme_bg"))
+		m_bg_color = parseHexColor(g_settings->get("theme_bg"), g_settings->getU32("theme_bg_alpha"));
+	if (g_settings->exists("theme_active_bg"))
+		m_active_bg_color = parseHexColor(g_settings->get("theme_active_bg"), g_settings->getU32("theme_active_bg_alpha"));
+	if (g_settings->exists("theme_text"))
+		m_font_color = parseHexColor(g_settings->get("theme_text"), g_settings->getU32("theme_text_alpha"));
+	if (g_settings->exists("theme_selected_text"))
+		m_selected_font_color = parseHexColor(g_settings->get("theme_selected_text"));
+	if (g_settings->exists("theme_panel_bg"))
+		m_panel_bg = parseHexColor(g_settings->get("theme_panel_bg"), g_settings->getU32("theme_panel_bg_alpha"));
+	if (g_settings->exists("theme_title_bg"))
+		m_title_bg = parseHexColor(g_settings->get("theme_title_bg"), g_settings->getU32("theme_title_bg_alpha"));
+	if (g_settings->exists("theme_border"))
+		m_border_color = parseHexColor(g_settings->get("theme_border"), g_settings->getU32("theme_border_alpha"));
+	if (g_settings->exists("theme_item_bg"))
+		m_item_bg = parseHexColor(g_settings->get("theme_item_bg"), g_settings->getU32("theme_item_bg_alpha"));
+	if (g_settings->exists("theme_tooltip_bg"))
+		m_tooltip_bg = parseHexColor(g_settings->get("theme_tooltip_bg"), g_settings->getU32("theme_panel_bg_alpha"));
 
 	m_head_height = g_settings->getU32("cheat_menu_head_height");
 	m_entry_height = g_settings->getU32("cheat_menu_entry_height");

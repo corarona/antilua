@@ -151,6 +151,9 @@ enable_player_tracers (Player tracers) bool false
 #    Player meshes rendered through walls (occluded players only).
 enable_player_wallhack (Player wallhack) bool false
 
+#    Named cheat menu color theme.
+cheat_theme (Cheat theme) enum Modern Modern,Legacy,Midnight,Moss,Ocean,Outdoors,Matrix
+
 #    Colored wireframe boxes marking task/waypoint nodes.
 enable_task_nodes (Task nodes) bool true
 

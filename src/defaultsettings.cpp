@@ -152,6 +152,7 @@ static void set_al_default_settings()
 	settings->setDefault("enable_player_tracers", "false");
 	settings->setDefault("enable_entity_wallhack", "false");
 	settings->setDefault("enable_player_wallhack", "false");
+	settings->setDefault("cheat_theme", "Modern");
 	settings->setDefault("enable_task_nodes", "true");
 	settings->setDefault("enable_task_tracers", "true");
 	settings->setDefault("entity_esp_color", "(255, 255, 255)");

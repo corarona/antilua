@@ -1151,6 +1151,44 @@ local ok = core.clear_task_tracer({x=0, y=0, z=0}, {x=10, y=20, z=30})
 | `enable_task_nodes` | `true` | Show task node wireframe boxes |
 | `enable_task_tracers` | `true` | Show task tracer lines |
 
+### Cheat Theme
+
+The cheat menu color theme can be switched via the `cheat_theme` setting.
+Individual `theme_*` settings override specific colors within the theme.
+
+```lua
+core.settings:set("cheat_theme", "Matrix")  -- green-on-black
+core.settings:set("cheat_theme", "Modern")  -- default dark blue-grey
+core.settings:set("cheat_theme", "Legacy")
+core.settings:set("cheat_theme", "Midnight")
+core.settings:set("cheat_theme", "Moss")
+core.settings:set("cheat_theme", "Ocean")
+core.settings:set("cheat_theme", "Outdoors")
+```
+
+Available themes: `Modern`, `Matrix`, `Legacy`, `Midnight`, `Moss`,
+`Ocean`, `Outdoors`.
+
+| Setting | Type | Description |
+|---------|------|-------------|
+| `cheat_theme` | enum | Named color theme (Modern, Matrix, etc.) |
+| `theme_bg` | string | Background color (hex `#RRGGBB`) |
+| `theme_bg_alpha` | int | Background opacity (0-255) |
+| `theme_active_bg` | string | Active/hover item background |
+| `theme_active_bg_alpha` | int | Active item background opacity |
+| `theme_text` | string | Text color |
+| `theme_text_alpha` | int | Text opacity |
+| `theme_selected_text` | string | Selected/highlighted text color |
+| `theme_panel_bg` | string | Panel background |
+| `theme_panel_bg_alpha` | int | Panel background opacity |
+| `theme_title_bg` | string | Title bar background |
+| `theme_title_bg_alpha` | int | Title bar opacity |
+| `theme_border` | string | Border color |
+| `theme_border_alpha` | int | Border opacity |
+| `theme_item_bg` | string | Item list background |
+| `theme_item_bg_alpha` | int | Item background opacity |
+| `theme_tooltip_bg` | string | Tooltip background |
+
 ---
 
 21. Extended Object & Entity API
