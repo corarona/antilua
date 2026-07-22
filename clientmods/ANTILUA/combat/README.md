@@ -1,16 +1,23 @@
-# killaura
+# Combat cheats
+
+Killaura and AutoEvade — client-side combat enhancements.
+
+## killaura
 
 Auto-attack nearby entities with configurable targeting. Supports player enemies, all players (except friends), mobs, and combined modes. Includes friend/enemy list management via settings formspec.
 
-## Player usage
+## AutoEvade
+
+Auto-evade incoming projectiles and maintain distance from enemy players. The head (1 block above player position) always stays in air — no teleporting into solid blocks.
 
 ### Cheats
 
 | Cheat | Category | Setting | Description |
 |-------|----------|---------|-------------|
 | Killaura | Combat | `killaura` | Auto-punch nearby targets (configurable mode) |
+| AutoEvade | Combat | `auto_evade` | Auto-evade projectiles and enemy players |
 
-### Targeting modes
+### Killaura targeting modes
 
 | Mode | Description |
 |------|-------------|
@@ -19,13 +26,13 @@ Auto-attack nearby entities with configurable targeting. Supports player enemies
 | `mobs` | Attack hostile mobs (mesh-based detection) |
 | `all` | Attack enemies + mobs |
 
-### Settings
+### Killaura settings
 
 | Setting | Default | Description |
 |---------|---------|-------------|
 | `killaura.hph` | 1 | Hits per hit (1–10) |
 | `killaura.hit_y` | -0.1 | Vertical velocity offset on each hit |
-| `killaura.range` | 10 | Attack range (1–30) |
+| `killaura.range` | 4.5 | Attack range (1–30) |
 | `killaura.target_mode` | `players_enemies` | Targeting mode |
 
 ### Target HUD
@@ -37,9 +44,19 @@ When killaura is active, a text HUD appears in the top-right corner showing the 
 
 Displays: target name, current/max HP, ASCII health bar (10 segments), distance. Color-coded by health (green > 60%, yellow > 30%, red ≤ 30%). HUD clears when no targets are nearby.
 
+### AutoEvade settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `auto_evade.range` | 8 | Evade scan range (3–20) |
+| `auto_evade.player_min_distance` | 6 | Min distance from non-friend players (3–20) |
+| `auto_evade.cooldown` | 0.3 | Seconds between evades (0.1–2) |
+| `auto_evade.evade_projectiles` | true | Evade incoming projectiles |
+| `auto_evade.evade_players` | true | Evade enemy player proximity |
+
 ### Friend/enemy list
 
-Open the Killaura cheat settings in the cheat menu to manage friend and enemy lists via formspec. Friends are never attacked in any mode. Enemies are always attacked in `players_enemies` and `all` modes.
+Open the Killaura cheat settings in the cheat menu to manage friend and enemy lists via formspec. Friends are never attacked in any mode. Enemies are always attacked in `players_enemies` and `all` modes. AutoEvade never evades friends.
 
 ## API
 

@@ -2,5 +2,11 @@ killaura (Killaura) bool false
 friendlist (Friend List) string
 killaura.hph (Hits per hit) int 1 1 10
 killaura.hit_y (Vertical hit offset) float -0.1 -5 5
-killaura.range (Attack range) int 10 1 30
+killaura.range (Attack range) float 4.5 1 30
 killaura.target_mode (Target mode) enum players_enemies players_enemies,players_all,mobs,all
+auto_evade (Auto Evade) bool false
+auto_evade.range (Evade scan range) float 8 3 20
+auto_evade.player_min_distance (Player min distance) float 6 3 20
+auto_evade.cooldown (Evade cooldown) float 0.3 0.1 2
+auto_evade.evade_projectiles (Evade projectiles) bool true
+auto_evade.evade_players (Evade players) bool true

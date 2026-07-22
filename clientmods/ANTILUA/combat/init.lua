@@ -233,6 +233,53 @@ _G.killaura = {
 	find_closest_non_friend = find_closest_non_friend,
 }
 
+-- Auto-evade helpers
+local function heading_toward(proj_pos, proj_vel, player_pos)
+	if not proj_pos or not proj_vel then return false end
+	local dx = player_pos.x - proj_pos.x
+	local dy = player_pos.y - proj_pos.y
+	local dz = player_pos.z - proj_pos.z
+	local to_len = math.sqrt(dx * dx + dy * dy + dz * dz)
+	if to_len < 0.001 then return false end
+	local tdx = dx / to_len
+	local tdy = dy / to_len
+	local tdz = dz / to_len
+	local speed = math.sqrt(proj_vel.x * proj_vel.x + proj_vel.y * proj_vel.y + proj_vel.z * proj_vel.z)
+	if speed < 0.01 then return false end
+	local vdx = proj_vel.x / speed
+	local vdy = proj_vel.y / speed
+	local vdz = proj_vel.z / speed
+	local dot = tdx * vdx + tdy * vdy + tdz * vdz
+	return dot > 0.707
+end
+
+local function is_pos_safe(pos)
+	if not pos then return false end
+	local head = core.get_node_or_nil(vector.offset(pos, 0, 1, 0))
+	if not head or head.name ~= "air" then return false end
+	local feet = core.get_node_or_nil(pos)
+	if not feet then return true end
+	return feet.name == "air" or (core.get_node_def(feet.name) or {}).buildable_to
+end
+
+local function find_safe_evade(from_pos, candidates)
+	for _, offset in ipairs(candidates) do
+		local p = vector.add(from_pos, offset)
+		if is_pos_safe(p) then return p end
+	end
+	return nil
+end
+
+local function killaura_attacking(obj)
+	if not core.settings:get_bool("killaura") then return false end
+	local mode = resolve_mode(core.settings:get("killaura.target_mode"))
+	local filter = make_filter(mode)
+	if not filter then return false end
+	local lp = core.localplayer:get_pos()
+	if not lp then return false end
+	return filter(obj) and vector.distance(lp, obj:get_pos()) <= killaura.get("range")
+end
+
 local function textlist_selected(field_value, items)
 	if not field_value or field_value == "" or not items then return nil end
 	local colon = field_value:find(":")
@@ -390,12 +437,12 @@ ws.rg("Killaura", {
 					if cur ~= weapon_slot then
 						core.localplayer:set_wield_index(weapon_slot)
 					end
-					if is_mace then
-						local d = tonumber(core.settings:get("killaura.mace_fall_distance")) or 10
-						local v = math.sqrt(d * 40)
-						core.localplayer:set_velocity({x = 0, y = -v, z = 0})
-						core.localplayer:set_pos(saved_pos)
-						action = "use"
+				if is_mace then
+					local d = tonumber(core.settings:get("killaura.mace_fall_distance")) or 10
+					local v = math.sqrt(d * 40)
+					core.localplayer:set_velocity({x = 0, y = -v, z = 0})
+					core.localplayer:set_pos(saved_pos)
+					action = "use"
 					elseif vel.y >= -0.5 then
 						core.localplayer:set_velocity({x = vel.x, y = -3, z = vel.z})
 						core.localplayer:set_pos(saved_pos)
@@ -415,9 +462,12 @@ ws.rg("Killaura", {
 						core.localplayer:set_wield_index(saved_wield)
 					end
 					if is_mace then
-						core.after(0.05, restore)
-						core.after(0.1, restore)
-						core.after(0.2, restore)
+						local ctrl = core.localplayer:get_control()
+						if ctrl.movement_x == 0 and ctrl.movement_y == 0 then
+							core.after(0.05, restore)
+							core.after(0.1, restore)
+							core.after(0.2, restore)
+						end
 					end
 				end
 			end
@@ -433,7 +483,7 @@ ws.rg("Killaura", {
 	cheat_settings = {
 		hph = { type = "number", default = 1, min = 1, max = 10 },
 		hit_y = { type = "number", default = -0.1, min = -5, max = 5 },
-		range = { type = "number", default = 10, min = 1, max = 30 },
+		range = { type = "number", default = 4.5, min = 1, max = 30 },
 		attack_hostile_mobs = { type = "bool", default = false },
 		attack_all_mobs = { type = "bool", default = false },
 		target_mode = {
@@ -446,6 +496,97 @@ ws.rg("Killaura", {
 		mace_fall_distance = { type = "number", default = 10, min = 2, max = 50 },
 	},
 	get_formspec = build_formspec,
+})
+
+ws.rg("AutoEvade", {
+	category = "Combat",
+	setting = "auto_evade",
+	description = "Auto-evade projectiles and enemy players",
+	on_start = function(self)
+		return core.localplayer ~= nil
+	end,
+	on_step = function(self, dtime)
+		self._cooldown = (self._cooldown or 0) - dtime
+		if self._cooldown > 0 then return end
+		local lp = core.localplayer:get_pos()
+		if not lp then return end
+		local range = tonumber(core.settings:get("auto_evade.range")) or 8
+		local evade = nil
+
+		if core.settings:get_bool("auto_evade.evade_projectiles") ~= false then
+			for _, obj in pairs(core.get_objects_inside_radius(lp, range)) do
+				if is_projectile(obj) then
+					local ppos = obj:get_pos()
+					local pvel = obj:get_velocity()
+					if heading_toward(ppos, pvel, lp) then
+						local dir = vector.direction(ppos, lp)
+						local candidates = {
+							{x =  dir.z * 2, y = 0, z = -dir.x * 2},
+							{x = -dir.z * 2, y = 0, z =  dir.x * 2},
+							{x =  dir.z * 3, y = 0, z = -dir.x * 3},
+							{x = -dir.z * 3, y = 0, z =  dir.x * 3},
+							{x =  dir.z * 2, y = 1, z = -dir.x * 2},
+							{x = -dir.z * 2, y = 1, z =  dir.x * 2},
+							{x = 0, y = 1, z = 0},
+							{x = 0, y = -1, z = 0},
+						}
+						evade = find_safe_evade(lp, candidates)
+						if evade then break end
+					end
+				end
+			end
+		end
+
+		if not evade and core.settings:get_bool("auto_evade.evade_players") ~= false then
+			local min_dist = tonumber(core.settings:get("auto_evade.player_min_distance")) or 6
+			local closest_threat, closest_d = nil, math.huge
+			for _, obj in pairs(core.get_objects_inside_radius(lp, range)) do
+				if obj and obj:is_player() and not obj:is_local_player()
+						and not_in_friendlist(obj)
+						and not killaura_attacking(obj) then
+					local d = vector.distance(lp, obj:get_pos())
+					if d < min_dist and d < closest_d then
+						closest_d = d
+						closest_threat = obj
+					end
+				end
+			end
+			if closest_threat then
+				local tpos = closest_threat:get_pos()
+				local ax = lp.x - tpos.x
+				local az = lp.z - tpos.z
+				local alen = math.sqrt(ax * ax + az * az)
+				if alen < 0.01 then
+					ax, az = 1, 0
+				else
+					ax, az = ax / alen, az / alen
+				end
+				local run_dist = math.max(min_dist - closest_d + 1, 2)
+				local candidates = {
+					{x = ax * run_dist, y = 0, z = az * run_dist},
+					{x = ax * (run_dist + 1), y = 0, z = az * (run_dist + 1)},
+					{x = ax * run_dist, y = 1, z = az * run_dist},
+					{x = ax * run_dist, y = -1, z = az * run_dist},
+				}
+				evade = find_safe_evade(lp, candidates)
+			end
+		end
+
+		if evade then
+			core.localplayer:set_pos(evade)
+			self._cooldown = tonumber(core.settings:get("auto_evade.cooldown")) or 0.3
+		end
+	end,
+	on_stop = function(self)
+		self._cooldown = nil
+	end,
+	cheat_settings = {
+		range = { type = "number", default = 8, min = 3, max = 20 },
+		player_min_distance = { type = "number", default = 6, min = 3, max = 20 },
+		cooldown = { type = "number", default = 0.3, min = 0.1, max = 2 },
+		evade_projectiles = { type = "bool", default = true },
+		evade_players = { type = "bool", default = true },
+	},
 })
 
 local function rm_item(list, input, tl_field, items)
