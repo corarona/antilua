@@ -17,6 +17,8 @@ set(BUILTIN_MAINMENU_SRCS
 	mainmenu/dlg_server_list_mods.lua
 	mainmenu/dlg_version_info.lua
 	mainmenu/game_theme.lua
+	mainmenu/account_manager.lua
+	mainmenu/dlg_account_manager.lua
 	mainmenu/init.lua
 	mainmenu/serverlistmgr.lua
 	mainmenu/tab_about.lua
