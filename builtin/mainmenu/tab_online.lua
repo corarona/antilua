@@ -57,9 +57,9 @@ local function match_account_to_server(address, port)
 	if not tabdata then return false end
 	local server_key = address .. ":" .. tostring(port)
 	local accounts = account_manager.get_accounts()
-	local filtered = tabdata._filtered_map
-	-- Search for exact server match in filtered list
-	for fi, ai in ipairs(filtered or {}) do
+
+	-- Search all accounts for an exact server match
+	for fi, ai in ipairs(tabdata._filtered_map or {}) do
 		local account = accounts[ai]
 		if account and account.server == server_key then
 			tabdata.selected_account_index = fi
@@ -67,10 +67,9 @@ local function match_account_to_server(address, port)
 			return true
 		end
 	end
-	-- Fallback: search all accounts
 	for i, account in ipairs(accounts) do
 		if account.server == server_key then
-			tabdata.selected_account_index = filtered and #filtered + 1 or i
+			tabdata.selected_account_index = tabdata._filtered_map and #tabdata._filtered_map + 1 or i
 			core.settings:set("name", account.username)
 			return true
 		end
@@ -171,12 +170,10 @@ local function get_formspec(tabview, name, tabdata)
 		tabdata.search_for = ""
 	end
 
-	-- Auto-match account to current server address
-	if not tabdata.selected_account_index then
-		match_account_to_server(
-			core.settings:get("address"),
-			tonumber(core.settings:get("remote_port")))
-	end
+	-- Auto-match account to current server address (always run to handle server changes)
+	match_account_to_server(
+		core.settings:get("address"),
+		tonumber(core.settings:get("remote_port")))
 
 	local retval =
 		-- Search
@@ -626,22 +623,24 @@ local function main_button_handler(tabview, fields, name, tabdata)
 	if fields.btn_join_account then
 		local account = get_selected_online_account()
 		if not account then return true end
+		local addr, port
 		if account.server and account.server ~= "" then
-			local srv_addr, srv_port = account.server:match("^(.-):(.-)$")
-			if srv_addr and srv_port then
-				fields.te_address = srv_addr
-				fields.te_port = srv_port
-				core.settings:set("address", srv_addr)
-				core.settings:set("remote_port", srv_port)
-			end
+			local a, p = account.server:match("^(.-):(.-)$")
+			addr, port = a, p
 		end
-		local name = fields.te_name or account.username
-		local pwd = fields.te_pwd or account.password or ""
+		if not addr then
+			addr = fields.te_address or core.settings:get("address")
+			port = fields.te_port or core.settings:get("remote_port")
+		end
+		local name = fields.te_name
+		if name == "" then name = account.username end
+		local pwd = fields.te_pwd
+		if pwd == "" then pwd = account.password or "" end
 		gamedata.mode       = "join"
 		gamedata.playername = name
 		gamedata.password   = pwd
-		gamedata.address    = fields.te_address
-		gamedata.port       = tonumber(fields.te_port)
+		gamedata.address    = addr
+		gamedata.port       = tonumber(port)
 		if not gamedata.address or not gamedata.port then
 			return true
 		end
