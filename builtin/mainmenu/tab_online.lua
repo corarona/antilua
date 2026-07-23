@@ -25,6 +25,7 @@ end
 
 local function match_account_to_server(address, port)
 	if not account_manager or not address or address == "" or not port then return end
+	if not tabdata then return false end
 	local server_key = address .. ":" .. tostring(port)
 	local accounts = account_manager.get_accounts()
 	for i, account in ipairs(accounts) do
