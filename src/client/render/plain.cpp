@@ -409,13 +409,11 @@ void DrawTracersAndESP::drawNodeESP(PipelineContext &context, const v3f &camera_
 	const NodeDefManager *ndef = context.client->getNodeDefManager();
 
 	const auto &node_list = context.client->getNodeEspList();
-	errorstream << "[NodeESP] list size=" << node_list.size() << std::endl;
 	if (node_list.empty())
 		return;
 
 	bool show_esp = g_settings->getBool("enable_node_esp");
 	bool show_tracers = g_settings->getBool("enable_node_tracers");
-	errorstream << "[NodeESP] show_esp=" << show_esp << " show_tracers=" << show_tracers << std::endl;
 
 	v3s16 offset_s16 = env.getCameraOffset();
 	v3f offset_f = intToFloat(offset_s16, BS);
@@ -448,9 +446,6 @@ void DrawTracersAndESP::drawNodeESP(PipelineContext &context, const v3f &camera_
 	v3s16 cam_pos = floatToInt(world_camera_pos, BS);
 	v3s16 blocks_min, blocks_max;
 	map.getBlocksInViewRange(cam_pos, &blocks_min, &blocks_max);
-	errorstream << "[NodeESP] blocks range: " << blocks_min.X << "," << blocks_min.Y << "," << blocks_min.Z
-		<< " - " << blocks_max.X << "," << blocks_max.Y << "," << blocks_max.Z << std::endl;
-
 	int total_matches = 0;
 	for (s16 bz = blocks_min.Z; bz <= blocks_max.Z; bz++)
 	for (s16 by = blocks_min.Y; by <= blocks_max.Y; by++)
@@ -482,7 +477,6 @@ void DrawTracersAndESP::drawNodeESP(PipelineContext &context, const v3f &camera_
 				driver->draw3DLine(camera_pos, pos, tracer_color);
 		}
 	}
-	errorstream << "[NodeESP] total_matches=" << total_matches << std::endl;
 }
 
 void populatePlainPipeline(RenderPipeline *pipeline, Client *client)

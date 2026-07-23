@@ -17,6 +17,7 @@ dofile(clientpath .. "chatcommands.lua")
 dofile(clientpath .. "chatcommands_al.lua")
 dofile(clientpath .. "death_formspec.lua")
 dofile(clientpath .. "cheats.lua")
+dofile(clientpath .. "misc.lua")
 
 -- unset, as promised in initializeSecurityClient()
 debug.getinfo = nil
