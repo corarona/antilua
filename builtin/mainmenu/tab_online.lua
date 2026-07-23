@@ -170,6 +170,9 @@ local function get_formspec(tabview, name, tabdata)
 		tabdata.search_for = ""
 	end
 
+	-- Build filtered account list FIRST so the filtered_map exists for matching
+	local account_list = account_list_text()
+
 	-- Auto-match account to current server address (always run to handle server changes)
 	if not match_account_to_server(
 		core.settings:get("address"),
@@ -216,7 +219,7 @@ local function get_formspec(tabview, name, tabdata)
 
 		-- Account selector
 		"container[0,4.5]" ..
-		"dropdown[0.25,0.22;3.5,0.7;account_list;" .. account_list_text() .. ";" ..
+		"dropdown[0.25,0.22;3.5,0.7;account_list;" .. account_list .. ";" ..
 			(tabdata and tabdata.selected_account_index or 1) .. ";true]" ..
 		"button[3.75,0.22;0.75,0.7;btn_join_account;" .. fgettext("Join") .. "]" ..
 		"tooltip[btn_join_account;" .. fgettext("Connect with this account") .. "]" ..
