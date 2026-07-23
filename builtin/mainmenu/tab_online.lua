@@ -212,11 +212,10 @@ local function get_formspec(tabview, name, tabdata)
 
 		-- Description Background
 		"label[0.25,1.6;" .. fgettext("Server Description") .. "]" ..
-		"box[0.25,1.85;5.25,2.5;#999999]"..
+		"box[0.25,1.99;5.25,2.5;#999999]"..
 
 		-- Account selector
 		"container[0,4.5]" ..
-		"label[0.25,0;" .. fgettext("Account") .. "]" ..
 		"dropdown[0.25,0.22;3.5,0.7;account_list;" .. account_list_text() .. ";" ..
 			(tabdata and tabdata.selected_account_index or 1) .. ";true]" ..
 		"button[3.75,0.22;0.75,0.7;btn_join_account;" .. fgettext("Join") .. "]" ..
@@ -235,7 +234,7 @@ local function get_formspec(tabview, name, tabdata)
 
 	local save_pwd_state = tabdata.save_password and "true" or "false"
 	local save_pwd_label = tabdata.save_password and fgettext("Save password: ON") or fgettext("Save password: OFF")
-	retval = retval .. "button[0.25,6.35;2.5,0.75;btn_toggle_save;" .. save_pwd_label .. "]"
+	retval = retval .. "button[0.25,6.65;3.5,0.75;btn_toggle_save;" .. save_pwd_label .. "]"
 	-- Hidden field so the save state persists across form resubmissions
 	retval = retval .. "field[0,0;0,0;save_pwd;;" .. save_pwd_state .. "]"
 
@@ -353,7 +352,7 @@ local function get_formspec(tabview, name, tabdata)
 		"align=inline,padding=0.25,width=1.5;" ..
 		"color,align=inline,span=1;" ..
 		"text,align=inline,padding=1]" ..
-		"table[0.25,1;9.25,5.8;servers;"
+		"table[0.25,1;9.25,7.2;servers;"
 
 	local servers = get_sorted_servers()
 
