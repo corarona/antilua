@@ -19,8 +19,8 @@ local function account_list_text()
 	if #accounts == 0 then
 		return fgettext("No accounts saved")
 	end
-	local address = core.settings:get("address")
-	local port = core.settings:get("remote_port")
+	local address = tabdata._srv_addr or core.settings:get("address")
+	local port = tabdata._srv_port or core.settings:get("remote_port")
 	local server_key = (address and address ~= "" and port) and (address .. ":" .. tostring(port)) or nil
 	local names = {}
 	local filtered = {}
@@ -32,7 +32,12 @@ local function account_list_text()
 	end
 	tabdata._filtered_map = filtered
 	if #names == 0 then
-		return fgettext("No accounts for this server")
+		tabdata._filtered_map = {}
+		for i, account in ipairs(accounts) do
+			table.insert(tabdata._filtered_map, i)
+			names[#tabdata._filtered_map] = account.username
+		end
+		return table.concat(names, ",")
 	end
 	return table.concat(names, ",")
 end
@@ -58,7 +63,7 @@ local function match_account_to_server(address, port)
 	local server_key = address .. ":" .. tostring(port)
 	local accounts = account_manager.get_accounts()
 
-	-- Search all accounts for an exact server match
+	-- Search filtered accounts for an exact server match
 	for fi, ai in ipairs(tabdata._filtered_map or {}) do
 		local account = accounts[ai]
 		if account and account.server == server_key then
@@ -67,9 +72,10 @@ local function match_account_to_server(address, port)
 			return true
 		end
 	end
+	-- Fallback: search all accounts
 	for i, account in ipairs(accounts) do
 		if account.server == server_key then
-			tabdata.selected_account_index = tabdata._filtered_map and #tabdata._filtered_map + 1 or i
+			tabdata.selected_account_index = (tabdata._filtered_map and #tabdata._filtered_map > 0) and #tabdata._filtered_map + 1 or i
 			core.settings:set("name", account.username)
 			return true
 		end
@@ -175,8 +181,8 @@ local function get_formspec(tabview, name, tabdata)
 
 	-- Auto-match account to current server address (always run to handle server changes)
 	if not match_account_to_server(
-		core.settings:get("address"),
-		tonumber(core.settings:get("remote_port"))) then
+		tabdata._srv_addr or core.settings:get("address"),
+		tabdata._srv_port or tonumber(core.settings:get("remote_port"))) then
 		tabdata.selected_account_index = nil
 	end
 
@@ -715,9 +721,11 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		end
 		if event.type == "CHG" then
 			set_selected_server(server)
-				tabdata.pre_search_selection = nil
-				return true
-			end
+			tabdata._srv_addr = server.address
+			tabdata._srv_port = server.port
+			tabdata.pre_search_selection = nil
+			return true
+		end
 		end
 	end
 
@@ -761,6 +769,8 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		menudata.search_result = nil
 		if tabdata.pre_search_selection then
 			set_selected_server(tabdata.pre_search_selection)
+			tabdata._srv_addr = tabdata.pre_search_selection and tabdata.pre_search_selection.address
+			tabdata._srv_port = tabdata.pre_search_selection and tabdata.pre_search_selection.port
 			tabdata.pre_search_selection = nil
 		end
 		return true
