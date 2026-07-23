@@ -3393,7 +3393,7 @@ void GUIFormSpecMenu::regenerateGui(v2u32 screensize)
 	// used for formspec versions < 3
 	auto legacy_sort_start = std::prev(Children.end()); // last element
 
-	if (enable_prepends) {
+	if (enable_prepends && !g_settings->getBool("ignore_formspec_prepend")) {
 		// Backup the coordinates so that prepends can use the coordinates of choice.
 		bool rc_backup = mydata.real_coordinates;
 		u16 version_backup = m_formspec_version;

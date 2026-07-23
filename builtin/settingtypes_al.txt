@@ -154,6 +154,10 @@ enable_player_wallhack (Player wallhack) bool false
 #    Named cheat menu color theme.
 cheat_theme (Cheat theme) enum Modern Modern,Legacy,Midnight,Moss,Ocean,Outdoors,Matrix
 
+#    Ignore the server's formspec prepend (bgcolor, style defaults, etc.).
+#    When enabled, the client uses CheatTheme colors instead.
+ignore_formspec_prepend (Ignore server formspec prepend) bool false
+
 #    Colored wireframe boxes marking task/waypoint nodes.
 enable_task_nodes (Task nodes) bool true
 
