@@ -37,7 +37,7 @@ local function get_formspec(dialogdata)
 		"label[5.3,1.1;" .. fgettext("Username") .. ":]",
 		"field[5.3,1.45;5.45,0.8;username;;" .. core.formspec_escape(current_username) .. "]",
 		"label[5.3,2.6;" .. fgettext("Password") .. ":]",
-		"pwdfield[5.3,2.95;5.45,0.75;password;;" .. core.formspec_escape(current_password) .. "]",
+		"pwdfield[5.3,2.95;5.45,0.75;password;]",
 		"label[5.3,4.0;" .. fgettext("Server") .. ": " .. core.formspec_escape(mapped_server) .. "]",
 		"button[5.3,4.8;5.45,0.75;save;" .. fgettext("Add / Update") .. "]",
 		"button[5.3,5.7;5.45,0.75;set_default;" .. fgettext("Set Default") .. "]",
