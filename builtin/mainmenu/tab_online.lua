@@ -3,11 +3,19 @@
 -- SPDX-License-Identifier: LGPL-2.1-or-later
 
 local function account_list_text()
+	if not tabdata then
+		local accounts = account_manager and account_manager.get_accounts() or {}
+		if #accounts == 0 then return fgettext("No accounts saved") end
+		local names = {}
+		for i, account in ipairs(accounts) do
+			names[i] = account.username
+		end
+		return table.concat(names, ",")
+	end
 	local accounts = account_manager and account_manager.get_accounts and account_manager.get_accounts() or {}
 	if #accounts == 0 then
 		return fgettext("No accounts saved")
 	end
-	-- Filter accounts by current server if one is selected
 	local address = core.settings:get("address")
 	local port = core.settings:get("remote_port")
 	local server_key = (address and address ~= "" and port) and (address .. ":" .. tostring(port)) or nil
@@ -27,10 +35,9 @@ local function account_list_text()
 end
 
 local function get_selected_online_account()
-	local filtered = tabdata and tabdata._filtered_map
-	if filtered and #filtered > 0 then
-		local fi = tonumber(tabdata and tabdata.selected_account_index)
-		local ai = filtered[fi or 1]
+	if tabdata and tabdata._filtered_map and #tabdata._filtered_map > 0 then
+		local fi = tonumber(tabdata.selected_account_index)
+		local ai = tabdata._filtered_map[fi or 1]
 		local accounts = account_manager and account_manager.get_accounts() or {}
 		return accounts[ai]
 	end
@@ -209,7 +216,7 @@ local function get_formspec(tabview, name, tabdata)
 		"container[0,4.5]" ..
 		"label[0.25,0;" .. fgettext("Account") .. "]" ..
 		"dropdown[0.25,0.22;3.5,0.7;account_list;" .. account_list_text() .. ";" ..
-			(tabdata.selected_account_index or 1) .. ";true]" ..
+			(tabdata and tabdata.selected_account_index or 1) .. ";true]" ..
 		"button[3.75,0.22;0.75,0.7;btn_join_account;" .. fgettext("Join") .. "]" ..
 		"tooltip[btn_join_account;" .. fgettext("Connect with this account") .. "]" ..
 		"button[4.5,0.22;0.75,0.7;btn_accounts;" .. fgettext("...") .. "]" ..
