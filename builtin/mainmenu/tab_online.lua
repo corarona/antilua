@@ -2,80 +2,76 @@
 -- Copyright (C) 2014 sapier
 -- SPDX-License-Identifier: LGPL-2.1-or-later
 
--- tabdata is set by the tabview framework as a global
-tabdata = nil
+-- The tabview framework passes the per-tab tabdata as a LOCAL parameter to
+-- get_formspec / main_button_handler; it is NOT set as a global despite the
+-- historical comment above. The helpers below read it through the
+-- active_tabdata upvalue, which those entry points set on every call.
+local active_tabdata
 
 local function account_list_text()
-	if not tabdata then
-		local accounts = account_manager and account_manager.get_accounts() or {}
-		if #accounts == 0 then return fgettext("No accounts saved") end
+	local accounts = account_manager and account_manager.get_accounts and account_manager.get_accounts() or {}
+	if #accounts == 0 then
+		if active_tabdata then active_tabdata._filtered_map = {} end
+		return fgettext("No accounts saved")
+	end
+	-- Called outside the tab (active_tabdata unset): return all usernames.
+	if not active_tabdata then
 		local names = {}
 		for i, account in ipairs(accounts) do
 			names[i] = account.username
 		end
 		return table.concat(names, ",")
 	end
-	local accounts = account_manager and account_manager.get_accounts and account_manager.get_accounts() or {}
-	if #accounts == 0 then
-		return fgettext("No accounts saved")
-	end
-	local address = tabdata._srv_addr or core.settings:get("address")
-	local port = tabdata._srv_port or core.settings:get("remote_port")
+	local address = active_tabdata._srv_addr or core.settings:get("address")
+	local port = active_tabdata._srv_port or core.settings:get("remote_port")
 	local server_key = (address and address ~= "" and port) and (address .. ":" .. tostring(port)) or nil
+	-- No server selected -> show all accounts.
+	if not server_key then
+		local names = {}
+		active_tabdata._filtered_map = {}
+		for i, account in ipairs(accounts) do
+			active_tabdata._filtered_map[#active_tabdata._filtered_map + 1] = i
+			names[#active_tabdata._filtered_map] = account.username
+		end
+		return table.concat(names, ",")
+	end
+	-- Strict: only accounts mapped to exactly this server.
 	local names = {}
 	local filtered = {}
 	for i, account in ipairs(accounts) do
-		if not server_key or account.server == server_key or account.server == "" then
-			table.insert(filtered, i)
+		if account.server == server_key then
+			filtered[#filtered + 1] = i
 			names[#filtered] = account.username
 		end
 	end
-	tabdata._filtered_map = filtered
+	active_tabdata._filtered_map = filtered
 	if #names == 0 then
-		tabdata._filtered_map = {}
-		for i, account in ipairs(accounts) do
-			table.insert(tabdata._filtered_map, i)
-			names[#tabdata._filtered_map] = account.username
-		end
-		return table.concat(names, ",")
+		return fgettext("No accounts for this server")
 	end
 	return table.concat(names, ",")
 end
 
 local function get_selected_online_account()
-	if tabdata and tabdata._filtered_map and #tabdata._filtered_map > 0 then
-		local fi = tonumber(tabdata.selected_account_index)
-		local ai = tabdata._filtered_map[fi or 1]
-		local accounts = account_manager and account_manager.get_accounts() or {}
-		return accounts[ai]
+	if not active_tabdata or not active_tabdata._filtered_map or #active_tabdata._filtered_map == 0 then
+		return nil
 	end
 	local accounts = account_manager and account_manager.get_accounts and account_manager.get_accounts() or {}
-	local index = tonumber(tabdata and tabdata.selected_account_index)
-	if not index and account_manager and account_manager.get_selected_index then
-		index = account_manager.get_selected_index()
-	end
-	return accounts[index or 1]
+	local fi = tonumber(active_tabdata.selected_account_index) or 1
+	local ai = active_tabdata._filtered_map[fi]
+	return accounts[ai]
 end
 
 local function match_account_to_server(address, port)
 	if not account_manager or not address or address == "" or not port then return end
-	if not tabdata then return false end
+	if not active_tabdata then return false end
 	local server_key = address .. ":" .. tostring(port)
 	local accounts = account_manager.get_accounts()
 
-	-- Search filtered accounts for an exact server match
-	for fi, ai in ipairs(tabdata._filtered_map or {}) do
+	-- Search the server-scoped filtered list for an exact match.
+	for fi, ai in ipairs(active_tabdata._filtered_map or {}) do
 		local account = accounts[ai]
 		if account and account.server == server_key then
-			tabdata.selected_account_index = fi
-			core.settings:set("name", account.username)
-			return true
-		end
-	end
-	-- Fallback: search all accounts
-	for i, account in ipairs(accounts) do
-		if account.server == server_key then
-			tabdata.selected_account_index = (tabdata._filtered_map and #tabdata._filtered_map > 0) and #tabdata._filtered_map + 1 or i
+			active_tabdata.selected_account_index = fi
 			core.settings:set("name", account.username)
 			return true
 		end
@@ -135,12 +131,21 @@ local function is_selected_fav(server)
 	return false
 end
 
--- Persists the selected server in the "address" and "remote_port" settings
+-- Persists the selected server in the "address"/"remote_port" settings, caches
+-- it on active_tabdata, rebuilds the filtered account dropdown via
+-- account_list_text(), and recreates the formspec via ui.update(). Owns
+-- active_tabdata._srv_addr / _srv_port -- callers must not set those directly.
 
 local function set_selected_server(server)
 	if server == nil then -- reset selection
 		core.settings:remove("address")
 		core.settings:remove("remote_port")
+		if active_tabdata then
+			active_tabdata._srv_addr = nil
+			active_tabdata._srv_port = nil
+			account_list_text()
+		end
+		ui.update()
 		return
 	end
 	local address = server.address
@@ -149,7 +154,13 @@ local function set_selected_server(server)
 	if address and port then
 		core.settings:set("address", address)
 		core.settings:set("remote_port", port)
+		if active_tabdata then
+			active_tabdata._srv_addr = address
+			active_tabdata._srv_port = port
+			account_list_text()
+		end
 	end
+	ui.update()
 end
 
 local function find_selected_server()
@@ -168,6 +179,7 @@ local function find_selected_server()
 end
 
 local function get_formspec(tabview, name, tabdata)
+	active_tabdata = tabdata
 	-- Update the cached supported proto info,
 	-- it may have changed after a change by the settings menu.
 	common_update_cached_supp_proto()
@@ -603,6 +615,7 @@ local function search_server_list(input, tabdata)
 end
 
 local function main_button_handler(tabview, fields, name, tabdata)
+	active_tabdata = tabdata
 	if fields.te_name then
 		gamedata.playername = fields.te_name
 		core.settings:set("name", fields.te_name)
@@ -614,13 +627,11 @@ local function main_button_handler(tabview, fields, name, tabdata)
 			tabdata.selected_account_index = fi
 			local filtered = tabdata._filtered_map
 			local ai = filtered and filtered[fi]
-			local account = ai and account_manager.get_accounts()[ai]
-			if not account and filtered then
-				-- no filter: use fi directly
-				account = account_manager.get_accounts()[fi]
-			end
-			if account then
-				core.settings:set("name", account.username)
+			if ai then
+				local account = account_manager.get_accounts()[ai]
+				if account then
+					core.settings:set("name", account.username)
+				end
 			end
 		end
 	end
@@ -664,7 +675,10 @@ local function main_button_handler(tabview, fields, name, tabdata)
 	end
 
 	if fields.btn_accounts then
-		local dlg = create_account_manager_dlg()
+		local address = tabdata._srv_addr or core.settings:get("address")
+		local port = tabdata._srv_port or core.settings:get("remote_port")
+		local server_key = (address and address ~= "" and port) and (address .. ":" .. tostring(port)) or nil
+		local dlg = create_account_manager_dlg(server_key)
 		dlg:set_parent(tabview)
 		tabview:hide()
 		dlg:show()
@@ -721,8 +735,6 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		end
 		if event.type == "CHG" then
 			set_selected_server(server)
-			tabdata._srv_addr = server.address
-			tabdata._srv_port = server.port
 			tabdata.pre_search_selection = nil
 			return true
 		end
@@ -769,8 +781,6 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		menudata.search_result = nil
 		if tabdata.pre_search_selection then
 			set_selected_server(tabdata.pre_search_selection)
-			tabdata._srv_addr = tabdata.pre_search_selection and tabdata.pre_search_selection.address
-			tabdata._srv_port = tabdata.pre_search_selection and tabdata.pre_search_selection.port
 			tabdata.pre_search_selection = nil
 		end
 		return true
