@@ -138,7 +138,7 @@ local function get_formspec(tabview, name, tabdata)
 		"container_end[]" ..
 
 		"container[9.75,0]" ..
-		"box[0,0;5.75,8.0;#666666]" ..
+		"box[0,0;5.75,8.5;#666666]" ..
 
 		-- TRANSLATORS: Network address
 		"label[0.25,0.35;" .. fgettext("Address") .. "]" ..
@@ -168,15 +168,16 @@ local function get_formspec(tabview, name, tabdata)
 		"label[2.875,0;" .. fgettext("Password") .. "]" ..
 		"field[0.25,0.2;2.625,0.75;te_name;;" .. core.formspec_escape(core.settings:get("name")) .. "]" ..
 		"pwdfield[2.875,0.2;2.625,0.75;te_pwd;]" ..
+		"checkbox[0.25,1.1;save_pwd;" .. fgettext("Save password") .. ";false]" ..
 		"container_end[]"
 
 	-- Connect
 	if core.settings:get_bool("enable_split_login_register") then
 		-- TRANSLATORS: Register an account on a server
-		retval = retval .. "button[0.25,6.9;2.5,0.75;btn_mp_register;" .. fgettext("Register") .. "]"
+		retval = retval .. "button[0.25,7.5;2.5,0.75;btn_mp_register;" .. fgettext("Register") .. "]"
 	end
 	-- TRANSLATORS: Login to server
-	retval = retval .. "button[3,6.9;2.5,0.75;btn_mp_login;" .. fgettext("Login") .. "]"
+	retval = retval .. "button[3,7.5;2.5,0.75;btn_mp_login;" .. fgettext("Login") .. "]"
 
 	local selected_server = find_selected_server()
 
@@ -581,6 +582,11 @@ local function main_button_handler(tabview, fields, name, tabdata)
 					gamedata.password = pwd
 				end
 
+				if fields.save_pwd and name and name ~= "" and pwd and pwd ~= "" and account_manager then
+					local server_key = gamedata.address .. ":" .. gamedata.port
+					account_manager.upsert(name, pwd, server_key)
+				end
+
 				if gamedata.address and gamedata.port then
 					set_selected_server(server)
 					core.start()
@@ -702,6 +708,11 @@ local function main_button_handler(tabview, fields, name, tabdata)
 
 		core.settings:set("address",     gamedata.address)
 		core.settings:set("remote_port", gamedata.port)
+
+		if fields.save_pwd and name and name ~= "" and pwd and pwd ~= "" and account_manager then
+			local server_key = gamedata.address .. ":" .. gamedata.port
+			account_manager.upsert(name, pwd, server_key)
+		end
 
 		core.start()
 		return true
