@@ -7,14 +7,33 @@ local function account_list_text()
 	if #accounts == 0 then
 		return fgettext("No accounts saved")
 	end
+	-- Filter accounts by current server if one is selected
+	local address = core.settings:get("address")
+	local port = core.settings:get("remote_port")
+	local server_key = (address and address ~= "" and port) and (address .. ":" .. tostring(port)) or nil
 	local names = {}
+	local filtered = {}
 	for i, account in ipairs(accounts) do
-		names[i] = account.username
+		if not server_key or account.server == server_key or account.server == "" then
+			table.insert(filtered, i)
+			names[#filtered] = account.username
+		end
+	end
+	tabdata._filtered_map = filtered
+	if #names == 0 then
+		return fgettext("No accounts for this server")
 	end
 	return table.concat(names, ",")
 end
 
 local function get_selected_online_account()
+	local filtered = tabdata and tabdata._filtered_map
+	if filtered and #filtered > 0 then
+		local fi = tonumber(tabdata and tabdata.selected_account_index)
+		local ai = filtered[fi or 1]
+		local accounts = account_manager and account_manager.get_accounts() or {}
+		return accounts[ai]
+	end
 	local accounts = account_manager and account_manager.get_accounts and account_manager.get_accounts() or {}
 	local index = tonumber(tabdata and tabdata.selected_account_index)
 	if not index and account_manager and account_manager.get_selected_index then
@@ -28,9 +47,20 @@ local function match_account_to_server(address, port)
 	if not tabdata then return false end
 	local server_key = address .. ":" .. tostring(port)
 	local accounts = account_manager.get_accounts()
+	local filtered = tabdata._filtered_map
+	-- Search for exact server match in filtered list
+	for fi, ai in ipairs(filtered or {}) do
+		local account = accounts[ai]
+		if account and account.server == server_key then
+			tabdata.selected_account_index = fi
+			core.settings:set("name", account.username)
+			return true
+		end
+	end
+	-- Fallback: search all accounts
 	for i, account in ipairs(accounts) do
 		if account.server == server_key then
-			tabdata.selected_account_index = i
+			tabdata.selected_account_index = filtered and #filtered + 1 or i
 			core.settings:set("name", account.username)
 			return true
 		end
@@ -178,9 +208,11 @@ local function get_formspec(tabview, name, tabdata)
 		-- Account selector
 		"container[0,4.5]" ..
 		"label[0.25,0;" .. fgettext("Account") .. "]" ..
-		"dropdown[0.25,0.22;4,0.7;account_list;" .. account_list_text() .. ";" ..
-			(account_manager and account_manager.get_selected_index() or 1) .. ";true]" ..
-		"button[4.25,0.22;0.75,0.7;btn_accounts;" .. fgettext("...") .. "]" ..
+		"dropdown[0.25,0.22;3.5,0.7;account_list;" .. account_list_text() .. ";" ..
+			(tabdata.selected_account_index or 1) .. ";true]" ..
+		"button[3.75,0.22;0.75,0.7;btn_join_account;" .. fgettext("Join") .. "]" ..
+		"tooltip[btn_join_account;" .. fgettext("Connect with this account") .. "]" ..
+		"button[4.5,0.22;0.75,0.7;btn_accounts;" .. fgettext("...") .. "]" ..
 		"tooltip[btn_accounts;" .. fgettext("Manage accounts") .. "]" ..
 		"container_end[]" ..
 
@@ -560,10 +592,16 @@ local function main_button_handler(tabview, fields, name, tabdata)
 	end
 
 	if fields.account_list then
-		local selected = tonumber(fields.account_list)
-		if selected then
-			tabdata.selected_account_index = selected
-			local account = account_manager.get_accounts()[selected]
+		local fi = tonumber(fields.account_list)
+		if fi then
+			tabdata.selected_account_index = fi
+			local filtered = tabdata._filtered_map
+			local ai = filtered and filtered[fi]
+			local account = ai and account_manager.get_accounts()[ai]
+			if not account and filtered then
+				-- no filter: use fi directly
+				account = account_manager.get_accounts()[fi]
+			end
 			if account then
 				core.settings:set("name", account.username)
 			end
@@ -572,6 +610,37 @@ local function main_button_handler(tabview, fields, name, tabdata)
 
 	if fields.btn_toggle_save then
 		tabdata.save_password = not tabdata.save_password
+		return true
+	end
+
+	if fields.btn_join_account then
+		local account = get_selected_online_account()
+		if not account then return true end
+		if account.server and account.server ~= "" then
+			local srv_addr, srv_port = account.server:match("^(.-):(.-)$")
+			if srv_addr and srv_port then
+				fields.te_address = srv_addr
+				fields.te_port = srv_port
+				core.settings:set("address", srv_addr)
+				core.settings:set("remote_port", srv_port)
+			end
+		end
+		local name = fields.te_name or account.username
+		local pwd = fields.te_pwd or account.password or ""
+		gamedata.mode       = "join"
+		gamedata.playername = name
+		gamedata.password   = pwd
+		gamedata.address    = fields.te_address
+		gamedata.port       = tonumber(fields.te_port)
+		if not gamedata.address or not gamedata.port then
+			return true
+		end
+		gamedata.selected_world = 0
+		gamedata.allow_login_or_register = "any"
+		serverlistmgr.add_favorite({ address = gamedata.address, port = gamedata.port })
+		core.settings:set("address", gamedata.address)
+		core.settings:set("remote_port", gamedata.port)
+		core.start()
 		return true
 	end
 
