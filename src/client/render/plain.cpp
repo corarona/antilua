@@ -415,7 +415,9 @@ void DrawTracersAndESP::drawNodeESP(PipelineContext &context, const v3f &camera_
 	bool show_esp = g_settings->getBool("enable_node_esp");
 	bool show_tracers = g_settings->getBool("enable_node_tracers");
 
-	v3f offset_f = intToFloat(env.getCameraOffset(), BS);
+	v3s16 offset_s16 = env.getCameraOffset();
+	v3f offset_f = intToFloat(offset_s16, BS);
+	v3f world_camera_pos = camera_pos + offset_f;
 
 	auto esp_opt = g_settings->getV3F("node_esp_color");
 	v3f esp_col = esp_opt.value_or(v3f(255, 255, 0));
@@ -440,7 +442,8 @@ void DrawTracersAndESP::drawNodeESP(PipelineContext &context, const v3f &camera_
 	box_mat.ZWriteEnable = video::EZW_OFF;
 	box_mat.Thickness = 2.0f;
 
-	v3s16 cam_pos = floatToInt(camera_pos, BS);
+	// Camera position in world node coordinates (with camera offset)
+	v3s16 cam_pos = floatToInt(world_camera_pos, BS);
 	v3s16 blocks_min, blocks_max;
 	map.getBlocksInViewRange(cam_pos, &blocks_min, &blocks_max);
 
