@@ -31,25 +31,19 @@ local function get_formspec(dialogdata)
 	end
 
 	return table.concat({
-		"formspec_version[8]",
+		"formspec_version[6]",
 		"size[11.4,9.1]",
-		"bgcolor[;neither;]",
-		"box[0,0;11.4,9.1;#1f2328]",
-		"style_type[*;border=false;textcolor=white;font_size=*1.25;font=bold]",
-		"label[0.55,1.12;" .. fgettext("Account Manager") .. "]",
-		"style_type[image_button;border=false;textcolor=white;font_size=*1.7;padding=0;font=bold;" ..
-			"bgimg=" .. core.formspec_escape(defaulttexturedir .. "menu_button.png") .. ";" ..
-			"bgimg_hovered=" .. core.formspec_escape(defaulttexturedir .. "menu_button_hovered.png") .. "]",
-		"textlist[0.45,1.7;4.35,6.35;accounts;" .. account_list_text() .. ";" .. selected .. "]",
-		"label[5.3,1.7;" .. fgettext("Username") .. ":]",
-		"field[5.3,2.05;5.45,0.8;username;;" .. core.formspec_escape(dialogdata.username or "") .. "]",
-		"label[5.3,3.0;" .. fgettext("Server") .. ": " .. core.formspec_escape(mapped_server) .. "]",
-		"label[5.3,3.55;" .. fgettext("Password") .. ":]",
-		"pwdfield[5.3,3.9;5.45,0.75;password;]",
-		"image_button[5.3,4.8;5.45,0.75;;save;" .. fgettext("Add / Update") .. "]",
-		"image_button[5.3,5.7;5.45,0.75;;set_default;" .. fgettext("Set Default") .. "]",
-		"image_button[5.3,6.6;5.45,0.75;;remove;" .. fgettext("Remove") .. "]",
-		"image_button[5.3,7.5;5.45,0.75;;back;" .. fgettext("Back") .. "]"
+		"label[0.55,0.55;" .. fgettext("Account Manager") .. "]",
+		"textlist[0.45,1.1;4.35,7.2;accounts;" .. account_list_text() .. ";" .. selected .. "]",
+		"label[5.3,1.1;" .. fgettext("Username") .. ":]",
+		"field[5.3,1.45;5.45,0.8;username;;" .. core.formspec_escape(dialogdata.username or "") .. "]",
+		"label[5.3,2.6;" .. fgettext("Password") .. ":]",
+		"pwdfield[5.3,2.95;5.45,0.75;password;]",
+		"label[5.3,4.0;" .. fgettext("Server") .. ": " .. core.formspec_escape(mapped_server) .. "]",
+		"button[5.3,4.8;5.45,0.75;save;" .. fgettext("Add / Update") .. "]",
+		"button[5.3,5.7;5.45,0.75;set_default;" .. fgettext("Set Default") .. "]",
+		"button[5.3,6.6;5.45,0.75;remove;" .. fgettext("Remove") .. "]",
+		"button[5.3,7.5;5.45,0.75;back;" .. fgettext("Back") .. "]"
 	}, "\n")
 end
 
