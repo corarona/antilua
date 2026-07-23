@@ -568,8 +568,16 @@ local function main_button_handler(tabview, fields, name, tabdata)
 					local account = get_selected_online_account()
 					if account then
 						name = account.username
-						pwd = pwd or account.password or ""
+						if pwd == "" then
+							pwd = account.password or ""
+						end
 					end
+				end
+
+				-- Save password to account manager if requested
+				if fields.save_pwd and name and name ~= "" and pwd and pwd ~= "" and account_manager then
+					local server_key = server.address .. ":" .. server.port
+					account_manager.upsert(name, pwd, server_key)
 				end
 
 				gamedata.mode       = "join"
@@ -580,11 +588,6 @@ local function main_button_handler(tabview, fields, name, tabdata)
 
 				if pwd then
 					gamedata.password = pwd
-				end
-
-				if fields.save_pwd and name and name ~= "" and pwd and pwd ~= "" and account_manager then
-					local server_key = gamedata.address .. ":" .. gamedata.port
-					account_manager.upsert(name, pwd, server_key)
 				end
 
 				if gamedata.address and gamedata.port then
@@ -668,13 +671,21 @@ local function main_button_handler(tabview, fields, name, tabdata)
 			local account = get_selected_online_account()
 			if account then
 				name = account.username
-				pwd = pwd or account.password or ""
+				if pwd == "" then
+					pwd = account.password or ""
+				end
 				if account_manager.mark_used then
 					account_manager.mark_used(tabdata.selected_account_index or
 						account_manager.get_selected_index())
 					tabdata.selected_account_index = 1
 				end
 			end
+		end
+
+		-- Save password to account manager if requested
+		if fields.save_pwd and name and name ~= "" and pwd and pwd ~= "" and account_manager then
+			local server_key = fields.te_address .. ":" .. te_port_number
+			account_manager.upsert(name, pwd, server_key)
 		end
 
 		gamedata.mode       = "join"
@@ -708,11 +719,6 @@ local function main_button_handler(tabview, fields, name, tabdata)
 
 		core.settings:set("address",     gamedata.address)
 		core.settings:set("remote_port", gamedata.port)
-
-		if fields.save_pwd and name and name ~= "" and pwd and pwd ~= "" and account_manager then
-			local server_key = gamedata.address .. ":" .. gamedata.port
-			account_manager.upsert(name, pwd, server_key)
-		end
 
 		core.start()
 		return true
