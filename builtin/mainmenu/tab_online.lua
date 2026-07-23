@@ -171,9 +171,11 @@ local function get_formspec(tabview, name, tabdata)
 	end
 
 	-- Auto-match account to current server address (always run to handle server changes)
-	match_account_to_server(
+	if not match_account_to_server(
 		core.settings:get("address"),
-		tonumber(core.settings:get("remote_port")))
+		tonumber(core.settings:get("remote_port"))) then
+		tabdata.selected_account_index = nil
+	end
 
 	local retval =
 		-- Search
