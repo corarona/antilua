@@ -146,6 +146,10 @@ static void set_al_default_settings()
 	settings->setDefault("autohit", "false");
 	settings->setDefault("antislip", "false");
 	settings->setDefault("enable_node_esp", "false");
+	settings->setDefault("enable_node_tracers", "false");
+	settings->setDefault("node_esp_color", "(255,255,0)");
+	settings->setDefault("node_esp_alpha", "80");
+	settings->setDefault("node_tracers_color", "(255,255,0)");
 	settings->setDefault("enable_entity_esp", "false");
 	settings->setDefault("enable_entity_tracers", "false");
 	settings->setDefault("enable_player_esp", "false");

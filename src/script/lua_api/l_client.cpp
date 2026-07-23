@@ -1478,6 +1478,20 @@ int ModApiClient::l_set_fast_speed(lua_State *L)
 	return 0;
 }
 
+// set_node_esp_list({names})
+int ModApiClient::l_set_node_esp_list(lua_State *L)
+{
+	std::vector<std::string> names;
+	luaL_checktype(L, 1, LUA_TTABLE);
+	lua_pushnil(L);
+	while (lua_next(L, 1)) {
+		names.push_back(luaL_checkstring(L, -1));
+		lua_pop(L, 1);
+	}
+	getClient(L)->setNodeEspList(names);
+	return 0;
+}
+
 // get_all_objects()
 int ModApiClient::l_get_all_objects(lua_State *L)
 {
@@ -1742,6 +1756,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(get_description);
 	API_FCT(find_path);
 	API_FCT(load_media);
+	API_FCT(set_node_esp_list);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)

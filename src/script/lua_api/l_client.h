@@ -211,6 +211,9 @@ private:
 	// set_fast_speed(speed)
 	static int l_set_fast_speed(lua_State *L);
 
+	// set_node_esp_list({names}) — set node names for Node ESP
+	static int l_set_node_esp_list(lua_State *L);
+
 	// get_all_objects() — return all active objects (no radius filter)
 	static int l_get_all_objects(lua_State *L);
 

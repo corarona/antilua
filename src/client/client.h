@@ -373,6 +373,14 @@ public:
 	void setCamera(Camera* camera) { m_camera = camera; }
 
 	Camera* getCamera () { return m_camera; }
+
+	void setNodeEspList(const std::vector<std::string> &names) {
+		m_node_esp_list.clear();
+		m_node_esp_list.insert(names.begin(), names.end());
+	}
+	const std::unordered_set<std::string> &getNodeEspList() const {
+		return m_node_esp_list;
+	}
 	scene::ISceneManager *getSceneManager();
 
 	// IGameDef interface
@@ -627,4 +635,6 @@ private:
 
 	// The number of blocks the client will combine for mesh generation.
 	MeshGrid m_mesh_grid;
+
+	std::unordered_set<std::string> m_node_esp_list;
 };

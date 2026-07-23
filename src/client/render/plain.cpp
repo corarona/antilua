@@ -22,7 +22,9 @@
 #include "nodedef.h"
 #include "gui/cheatMenu.h"
 #include "gui/mainmenumanager.h"
+#include "client/client.h"
 #include <vector>
+#include <CMeshBuffer.h>
 
 /// Draw3D pipeline step
 void Draw3D::run(PipelineContext &context)
@@ -56,6 +58,9 @@ void DrawTracersAndESP::run(PipelineContext &context)
 
 	if (g_settings->getBool("enable_player_esp") || g_settings->getBool("enable_player_tracers") || g_settings->getBool("enable_player_wallhack"))
 		drawPlayerESP(context, camera_pos);
+
+	if (g_settings->getBool("enable_node_esp") || g_settings->getBool("enable_node_tracers"))
+		drawNodeESP(context, camera_pos);
 }
 
 video::SColor DrawTracersAndESP::parseColor(const std::string &setting, u8 alpha)
@@ -351,6 +356,122 @@ RenderStep* addUpscaling(RenderPipeline *pipeline, RenderStep *previousStep, v2f
 	pipeline->addStep(upscale);
 
 	return upscale;
+}
+
+// Build a colored cube mesh buffer for a node-sized box
+static void buildNodeBoxMesh(scene::SMeshBuffer *buf, v3f center, video::SColor color)
+{
+	static const v3f verts[8] = {
+		v3f(-0.5f, -0.5f, -0.5f), v3f( 0.5f, -0.5f, -0.5f),
+		v3f(-0.5f,  0.5f, -0.5f), v3f( 0.5f,  0.5f, -0.5f),
+		v3f(-0.5f, -0.5f,  0.5f), v3f( 0.5f, -0.5f,  0.5f),
+		v3f(-0.5f,  0.5f,  0.5f), v3f( 0.5f,  0.5f,  0.5f),
+	};
+	static const int faces[6][4] = {
+		{0, 1, 2, 3}, {4, 5, 6, 7}, {1, 5, 3, 7},
+		{0, 4, 2, 6}, {2, 3, 6, 7}, {0, 1, 4, 5},
+	};
+	static const v3f norms[6] = {
+		v3f( 0,  0, -1), v3f( 0,  0,  1), v3f( 1,  0,  0),
+		v3f(-1,  0,  0), v3f( 0,  1,  0), v3f( 0, -1,  0),
+	};
+
+	video::S3DVertex vb[24];
+	u16 ib[36];
+	u32 vi = 0, ii = 0;
+	for (int f = 0; f < 6; f++) {
+		for (int j = 0; j < 4; j++) {
+			int idx = faces[f][j];
+			vb[vi].Pos = center + verts[idx];
+			vb[vi].Normal = norms[f];
+			vb[vi].Color = color;
+			vi++;
+		}
+		ib[ii++] = vi - 4; ib[ii++] = vi - 3; ib[ii++] = vi - 2;
+		ib[ii++] = vi - 2; ib[ii++] = vi - 3; ib[ii++] = vi - 1;
+	}
+	buf->append(vb, 24, ib, 36);
+}
+
+void DrawTracersAndESP::drawNodeBox(video::IVideoDriver *driver, v3f center, video::SColor color)
+{
+	scene::SMeshBuffer buf;
+	buildNodeBoxMesh(&buf, center, color);
+	driver->drawMeshBuffer(&buf);
+}
+
+void DrawTracersAndESP::drawNodeESP(PipelineContext &context, const v3f &camera_pos)
+{
+	ClientEnvironment &env = context.client->getEnv();
+	video::IVideoDriver *driver = context.device->getVideoDriver();
+	ClientMap &map = context.client->getEnv().getClientMap();
+	const NodeDefManager *ndef = context.client->getNodeDefManager();
+
+	const auto &node_list = context.client->getNodeEspList();
+	if (node_list.empty())
+		return;
+
+	bool show_esp = g_settings->getBool("enable_node_esp");
+	bool show_tracers = g_settings->getBool("enable_node_tracers");
+
+	v3f offset_f = intToFloat(env.getCameraOffset(), BS);
+
+	auto esp_opt = g_settings->getV3F("node_esp_color");
+	v3f esp_col = esp_opt.value_or(v3f(255, 255, 0));
+	u32 esp_alpha = g_settings->getU32("node_esp_alpha");
+	video::SColor fill_color(esp_alpha, esp_col.X, esp_col.Y, esp_col.Z);
+	video::SColor outline_color(255, esp_col.X, esp_col.Y, esp_col.Z);
+
+	auto tracer_opt = g_settings->getV3F("node_tracers_color");
+	v3f tracer_col = tracer_opt.value_or(v3f(255, 255, 0));
+	video::SColor tracer_color(200, tracer_col.X, tracer_col.Y, tracer_col.Z);
+
+	// Set up material for through-walls filled rendering
+	video::SMaterial fill_mat;
+	fill_mat.ZBuffer = video::ECFN_ALWAYS;
+	fill_mat.ZWriteEnable = video::EZW_OFF;
+	fill_mat.MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
+	fill_mat.BackfaceCulling = false;
+
+	// Set up material for wireframe outline
+	video::SMaterial box_mat;
+	box_mat.ZBuffer = video::ECFN_ALWAYS;
+	box_mat.ZWriteEnable = video::EZW_OFF;
+	box_mat.Thickness = 2.0f;
+
+	v3s16 cam_pos = floatToInt(camera_pos, BS);
+	v3s16 blocks_min, blocks_max;
+	map.getBlocksInViewRange(cam_pos, &blocks_min, &blocks_max);
+
+	for (s16 bz = blocks_min.Z; bz <= blocks_max.Z; bz++)
+	for (s16 by = blocks_min.Y; by <= blocks_max.Y; by++)
+	for (s16 bx = blocks_min.X; bx <= blocks_max.X; bx++) {
+		MapBlock *block = map.getBlockNoCreateNoEx(v3s16(bx, by, bz));
+		if (!block)
+			continue;
+		v3s16 base = block->getPosRelative();
+		for (s16 nz = 0; nz < MAP_BLOCKSIZE; nz++)
+		for (s16 ny = 0; ny < MAP_BLOCKSIZE; ny++)
+		for (s16 nx = 0; nx < MAP_BLOCKSIZE; nx++) {
+			v3s16 p = base + v3s16(nx, ny, nz);
+			MapNode n = map.getNode(p);
+			const std::string &node_name = ndef->get(n).name;
+			if (node_list.find(node_name) == node_list.end())
+				continue;
+
+			v3f pos = intToFloat(p, BS) - offset_f;
+
+			if (show_esp) {
+				driver->setMaterial(fill_mat);
+				drawNodeBox(driver, pos, fill_color);
+				driver->setMaterial(box_mat);
+				aabb3f box(pos - v3f(BS/2.0f), pos + v3f(BS/2.0f));
+				driver->draw3DBox(box, outline_color);
+			}
+			if (show_tracers)
+				driver->draw3DLine(camera_pos, pos, tracer_color);
+		}
+	}
 }
 
 void populatePlainPipeline(RenderPipeline *pipeline, Client *client)

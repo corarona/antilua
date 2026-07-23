@@ -79,6 +79,8 @@ private:
 			const v3f &camera_pos, bool is_player);
 	void drawEntityESP(PipelineContext &context, const v3f &camera_pos);
 	void drawPlayerESP(PipelineContext &context, const v3f &camera_pos);
+	void drawNodeESP(PipelineContext &context, const v3f &camera_pos);
+	void drawNodeBox(video::IVideoDriver *driver, v3f center, video::SColor color);
 };
 
 /**

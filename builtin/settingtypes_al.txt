@@ -158,6 +158,21 @@ cheat_theme (Cheat theme) enum Modern Modern,Legacy,Midnight,Moss,Ocean,Outdoors
 #    When enabled, the client uses CheatTheme colors instead.
 ignore_formspec_prepend (Ignore server formspec prepend) bool false
 
+#    Enable Node ESP box highlighting through walls.
+enable_node_esp (Node ESP) bool false
+
+#    Enable Node ESP tracer lines from camera to nodes.
+enable_node_tracers (Node tracers) bool false
+
+#    Node ESP box fill color (RGB 0-255).
+node_esp_color (Node ESP color) string (255,255,0)
+
+#    Node ESP box fill opacity (0-255).
+node_esp_alpha (Node ESP alpha) int 80
+
+#    Node ESP tracer line color (RGB 0-255).
+node_tracers_color (Node tracer color) string (255,255,0)
+
 #    Colored wireframe boxes marking task/waypoint nodes.
 enable_task_nodes (Task nodes) bool true
 
