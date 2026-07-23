@@ -361,11 +361,12 @@ RenderStep* addUpscaling(RenderPipeline *pipeline, RenderStep *previousStep, v2f
 // Build a colored cube mesh buffer for a node-sized box
 static void buildNodeBoxMesh(scene::SMeshBuffer *buf, v3f center, video::SColor color)
 {
+	static const float hbs = BS / 2.0f;
 	static const v3f verts[8] = {
-		v3f(-0.5f, -0.5f, -0.5f), v3f( 0.5f, -0.5f, -0.5f),
-		v3f(-0.5f,  0.5f, -0.5f), v3f( 0.5f,  0.5f, -0.5f),
-		v3f(-0.5f, -0.5f,  0.5f), v3f( 0.5f, -0.5f,  0.5f),
-		v3f(-0.5f,  0.5f,  0.5f), v3f( 0.5f,  0.5f,  0.5f),
+		v3f(-hbs, -hbs, -hbs), v3f( hbs, -hbs, -hbs),
+		v3f(-hbs,  hbs, -hbs), v3f( hbs,  hbs, -hbs),
+		v3f(-hbs, -hbs,  hbs), v3f( hbs, -hbs,  hbs),
+		v3f(-hbs,  hbs,  hbs), v3f( hbs,  hbs,  hbs),
 	};
 	static const int faces[6][4] = {
 		{0, 1, 2, 3}, {4, 5, 6, 7}, {1, 5, 3, 7},
