@@ -2,6 +2,9 @@
 -- Copyright (C) 2014 sapier
 -- SPDX-License-Identifier: LGPL-2.1-or-later
 
+-- tabdata is set by the tabview framework as a global
+tabdata = nil
+
 local function account_list_text()
 	if not tabdata then
 		local accounts = account_manager and account_manager.get_accounts() or {}
