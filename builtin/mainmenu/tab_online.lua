@@ -23,6 +23,20 @@ local function get_selected_online_account()
 	return accounts[index or 1]
 end
 
+local function match_account_to_server(address, port)
+	if not account_manager or not address or address == "" or not port then return end
+	local server_key = address .. ":" .. tostring(port)
+	local accounts = account_manager.get_accounts()
+	for i, account in ipairs(accounts) do
+		if account.server == server_key then
+			tabdata.selected_account_index = i
+			core.settings:set("name", account.username)
+			return true
+		end
+	end
+	return false
+end
+
 local function get_sorted_servers()
 	local servers = {
 		fav = {},
@@ -116,6 +130,13 @@ local function get_formspec(tabview, name, tabdata)
 		tabdata.search_for = ""
 	end
 
+	-- Auto-match account to current server address
+	if not tabdata.selected_account_index then
+		match_account_to_server(
+			core.settings:get("address"),
+			tonumber(core.settings:get("remote_port")))
+	end
+
 	local retval =
 		-- Search
 		"field[0.25,0.25;7,0.75;te_search;;" .. core.formspec_escape(tabdata.search_for) .. "]" ..
@@ -168,8 +189,13 @@ local function get_formspec(tabview, name, tabdata)
 		"label[2.875,0;" .. fgettext("Password") .. "]" ..
 		"field[0.25,0.2;2.625,0.75;te_name;;" .. core.formspec_escape(core.settings:get("name")) .. "]" ..
 		"pwdfield[2.875,0.2;2.625,0.75;te_pwd;]" ..
-		"checkbox[0.25,1.1;save_pwd;" .. fgettext("Save password") .. ";false]" ..
 		"container_end[]"
+
+	local save_pwd_state = tabdata.save_password and "true" or "false"
+	local save_pwd_label = tabdata.save_password and fgettext("Save password: ON") or fgettext("Save password: OFF")
+	retval = retval .. "button[0.25,6.35;2.5,0.75;btn_toggle_save;" .. save_pwd_label .. "]"
+	-- Hidden field so the save state persists across form resubmissions
+	retval = retval .. "field[0,0;0,0;save_pwd;;" .. save_pwd_state .. "]"
 
 	-- Connect
 	if core.settings:get_bool("enable_split_login_register") then
@@ -543,6 +569,11 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		end
 	end
 
+	if fields.btn_toggle_save then
+		tabdata.save_password = not tabdata.save_password
+		return true
+	end
+
 	if fields.btn_accounts then
 		local dlg = create_account_manager_dlg()
 		dlg:set_parent(tabview)
@@ -574,13 +605,13 @@ local function main_button_handler(tabview, fields, name, tabdata)
 					end
 				end
 
-				-- Save password to account manager if requested
-				if fields.save_pwd and name and name ~= "" and pwd and pwd ~= "" and account_manager then
-					local server_key = server.address .. ":" .. server.port
-					account_manager.upsert(name, pwd, server_key)
-				end
+			-- Save password to account manager if requested
+			if tabdata.save_password and name and name ~= "" and pwd and pwd ~= "" and account_manager then
+				local server_key = server.address .. ":" .. server.port
+				account_manager.upsert(name, pwd, server_key)
+			end
 
-				gamedata.mode       = "join"
+			gamedata.mode       = "join"
 				gamedata.address    = server.address
 				gamedata.port       = server.port
 				gamedata.playername = name
@@ -590,14 +621,17 @@ local function main_button_handler(tabview, fields, name, tabdata)
 					gamedata.password = pwd
 				end
 
-				if gamedata.address and gamedata.port then
-					set_selected_server(server)
-					core.start()
-				end
-				return true
-			end
-			if event.type == "CHG" then
+			-- Auto-match account to this server
+			match_account_to_server(server.address, server.port)
+
+			if gamedata.address and gamedata.port then
 				set_selected_server(server)
+				core.start()
+			end
+			return true
+		end
+		if event.type == "CHG" then
+			set_selected_server(server)
 				tabdata.pre_search_selection = nil
 				return true
 			end
@@ -664,6 +698,9 @@ local function main_button_handler(tabview, fields, name, tabdata)
 	local te_port_number = tonumber(fields.te_port)
 
 	if (fields.btn_mp_login or fields.key_enter) and host_filled then
+		-- Auto-match account to server address
+		match_account_to_server(fields.te_address, fields.te_port)
+
 		-- Fill name/password from selected account if fields are empty
 		local name = fields.te_name
 		local pwd = fields.te_pwd
@@ -683,7 +720,7 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		end
 
 		-- Save password to account manager if requested
-		if fields.save_pwd and name and name ~= "" and pwd and pwd ~= "" and account_manager then
+		if tabdata.save_password and name and name ~= "" and pwd and pwd ~= "" and account_manager then
 			local server_key = fields.te_address .. ":" .. te_port_number
 			account_manager.upsert(name, pwd, server_key)
 		end
