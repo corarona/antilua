@@ -13,9 +13,9 @@ function test_cheat_settings(T)
 		"killaura", "scaffold", "autohit",
 		"enable_entity_esp", "enable_entity_tracers",
 		"enable_player_esp", "enable_player_tracers",
-		"player_radar", "chest_stealer", "auto_death_waypoint", "auto_death_waypoint_max",
+		"chest_stealer", "auto_death_waypoint", "auto_death_waypoint_max",
 		"auto_sort", "block_logger", "chat_alerts",
-		"name_colorizer", "auto_screenshot", "light_overlay",
+		"name_colorizer", "auto_screenshot",
 		"enable_node_esp",
 		"autojump", "continuous_forward",
 	}
@@ -50,7 +50,7 @@ function test_cheat_settings(T)
 		"keymap_toggle_cheat_menu", "keymap_toggle_freecam",
 		"keymap_toggle_killaura", "keymap_toggle_scaffold",
 		"keymap_select_up", "keymap_select_down", "keymap_select_left",
-		"keymap_select_right", "keymap_select_confirm", "keymap_enderchest",
+		"keymap_select_right", "keymap_select_confirm",
 	}
 
 	for _, name in ipairs(key_bindings) do

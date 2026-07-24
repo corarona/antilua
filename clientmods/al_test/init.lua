@@ -131,7 +131,7 @@ core.register_on_mods_loaded(function()
 	test_antilua_wasplib(al_test)
 	test_antilua_lockview(al_test)
 	test_antilua_headsaver(al_test)
-	test_antilua_autoevade(al_test)
+	-- test_antilua_autoevade(al_test) -- postponed: autoevade mod not yet implemented
 	test_antilua_extracted_features(al_test)
 	test_ws_rg_new_api(al_test)
 

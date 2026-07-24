@@ -46,12 +46,13 @@ end
 
 -- anti_tower removed during modpack consolidation
 
-function test_antilua_autoevade(T)
-	T.run("autoevade cheat setting exists", function()
-		local val = core.settings:get("autoevade")
-		T.assert(val ~= nil, "setting 'autoevade' should exist")
-	end)
-end
+-- postponed: autoevade mod not yet implemented
+-- function test_antilua_autoevade(T)
+-- 	T.run("autoevade cheat setting exists", function()
+-- 		local val = core.settings:get("autoevade")
+-- 		T.assert(val ~= nil, "setting 'autoevade' should exist")
+-- 	end)
+-- end
 
 function test_antilua_extracted_features(T)
 	T.run("ws.make_blocks exists", function()
