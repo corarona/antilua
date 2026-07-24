@@ -33,7 +33,7 @@ end
 
 core.register_chatcommand("tplace", {
 	description = "tp-place",
-	param = "Y",
+	params = "Y",
 	func = function(param)
 		return ws.tplace(core.string_to_pos(param))
 	end
