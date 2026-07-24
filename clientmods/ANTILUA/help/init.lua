@@ -60,7 +60,6 @@ local function keybind_category(name)
 	return "Other"
 end
 
--- Show auto-generated keybind reference
 local function show_keybinds()
 	local all = core.settings:get_names()
 	local cats = {}
@@ -72,28 +71,28 @@ local function show_keybinds()
 		end
 	end
 
-	local fs = "formspec_version[4]size[13,12,true]no_prepend[]"
-	fs = fs .. "label[0,0;Key Bindings]"
+	local sb = al_formspec.begin("size[13,12,true]")
+	sb:add(al_formspec.label(0, 0, "Key Bindings"))
 	local y = 0.6
 	local order = {"Cheat Menu", "Cheat Toggles", "Movement", "Interaction", "Camera", "UI", "Other"}
 	for _, cat in ipairs(order) do
 		if cats[cat] then
 			table.sort(cats[cat])
-			fs = fs .. "label[0," .. y .. ";■ " .. cat .. "]"
+			sb:add(al_formspec.label(0, y, "■ " .. cat))
 			y = y + 0.55
 			for _, name in ipairs(cats[cat]) do
 				if y > 11 then break end
 				local val = core.settings:get(name) or ""
 				local action = name:gsub("^keymap_", "")
-				fs = fs .. "label[0.5," .. y .. ";" .. core.formspec_escape(action) .. "]"
-				fs = fs .. "label[7," .. y .. ";" .. core.formspec_escape(format_key(val)) .. "]"
+				sb:add(al_formspec.label(0.5, y, action))
+				sb:add(al_formspec.label(7, y, format_key(val)))
 				y = y + 0.45
 			end
 			y = y + 0.25
 		end
 	end
-	fs = fs .. "button[5," .. math.min(y + 0.3, 11.5) .. ";3,0.8;__close;Close]"
-	core.show_formspec("help:keybinds", fs)
+	sb:add(al_formspec.button(5, math.min(y + 0.3, 11.5), 3, 0.8, "__close", "Close"))
+	core.show_formspec("help:keybinds", sb:get())
 end
 
 -- Show searchable help index (mods + cheats)
@@ -130,24 +129,25 @@ local function show_index(filter)
 		end
 	end
 
-	local fs = "formspec_version[4]size[9,12,true]no_prepend[]"
-	fs = fs .. "field[0,0;6.5,0.8;filter;Filter:;" .. core.formspec_escape(filter) .. "]"
-	fs = fs .. "button[7,0;1.7,0.8;__search;Go]"
-	fs = fs .. "label[0,0.9;Help \226\128\148 Select a mod]"
-	fs = fs .. "scroll_container[0,1.5;9,9.5;mscroll;vertical]"
+	local sb = al_formspec.begin("size[9,12,true]")
+	sb:add(
+		al_formspec.field(0, 0, 6.5, 0.8, "filter", "Filter:", filter),
+		al_formspec.button(7, 0, 1.7, 0.8, "__search", "Go"),
+		al_formspec.label(0, 0.9, "Help \226\128\148 Select a mod"),
+		"scroll_container[0,1.5;9,9.5;mscroll;vertical]"
+	)
 	local sy = 0
 	for i, entry in ipairs(results) do
 		local label = entry.name
 		if entry.note then
 			label = label .. " (\226\128\164" .. entry.note .. ")"
 		end
-		fs = fs .. "button[0," .. sy .. ";9,0.6;mod|" .. entry.name .. ";"
-			.. core.formspec_escape(label) .. "]"
+		sb:add(al_formspec.button(0, sy, 9, 0.6, "mod|" .. entry.name, label))
 		sy = sy + 0.6
 	end
-	fs = fs .. "scroll_container_end[]"
-	fs = fs .. "button_exit[3.5,11.2;2,0.8;;Close]"
-	core.show_formspec("help:index|" .. filter, fs)
+	sb:add("scroll_container_end[]")
+	sb:add(al_formspec.button_exit(3.5, 11.2, 2, 0.8, "", "Close"))
+	core.show_formspec("help:index|" .. filter, sb:get())
 end
 
 -- Show a mod's README in a formspec textarea
@@ -162,11 +162,13 @@ local function show_readme(modname)
 	if #text > 32000 then
 		text = text:sub(1, 32000) .. "\n\n[... truncated ...]"
 	end
-	local fs = "formspec_version[4]size[10,11,true]no_prepend[]"
-	fs = fs .. "button[0,0;2,0.7;__back;< Back]"
-	fs = fs .. "label[2.5,0.15;" .. core.formspec_escape(modname) .. " README]"
-	fs = fs .. "textarea[0,0.8;10,9.5;;;" .. core.formspec_escape(text) .. "]"
-	core.show_formspec("help:readme|" .. modname, fs)
+	local sb = al_formspec.begin("size[10,11,true]")
+	sb:add(
+		al_formspec.button(0, 0, 2, 0.7, "__back", "< Back"),
+		al_formspec.label(2.5, 0.15, modname .. " README"),
+		"textarea[0,0.8;10,9.5;;;" .. core.formspec_escape(text) .. "]"
+	)
+	core.show_formspec("help:readme|" .. modname, sb:get())
 end
 
 -- Show help for a specific cheat setting (opens its mod's README)
