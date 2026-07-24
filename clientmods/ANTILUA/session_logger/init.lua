@@ -11,14 +11,14 @@ local start_time = 0
 local deaths = 0
 local damage_taken = 0
 
-core.register_on_connect(function()
+ws.on_connect(function()
 	start_time = core.get_us_time() / 1000000
 	deaths = 0
 	damage_taken = 0
 	ws.notify("Session started", ws.NOTIFY_INFO, {toast = false})
 end)
 
-core.register_on_death(function()
+ws.on_death(function()
 	deaths = deaths + 1
 end)
 

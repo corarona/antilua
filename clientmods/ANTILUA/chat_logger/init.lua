@@ -1,6 +1,6 @@
 local log_path
 
-core.register_on_connect(function()
+ws.on_connect(function()
 	if not core.settings:get_bool("chat_logging", false) then
 		log_path = nil
 		return

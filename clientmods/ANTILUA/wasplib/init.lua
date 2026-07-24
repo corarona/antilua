@@ -182,3 +182,27 @@ if ws.register_keypress_cheat then
 	end, "Automatically sneak when moving")
 	ws.register_keypress_cheat("autosprint", "AutoSprint", "Movement", "aux1", nil, "Automatically sprint when moving")
 end
+
+-- Lifecycle registries: shared on_death / on_connect / on_disconnect
+local on_death_callbacks = {}
+local on_connect_callbacks = {}
+
+function ws.on_death(fn)
+	table.insert(on_death_callbacks, fn)
+end
+
+function ws.on_connect(fn)
+	table.insert(on_connect_callbacks, fn)
+end
+
+core.register_on_death(function()
+	for _, fn in ipairs(on_death_callbacks) do
+		fn()
+	end
+end)
+
+core.register_on_connect(function()
+	for _, fn in ipairs(on_connect_callbacks) do
+		fn()
+	end
+end)

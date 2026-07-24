@@ -31,7 +31,7 @@ local function load_profile()
 	end
 end
 
-core.register_on_connect(function()
+ws.on_connect(function()
 	core.after(1.0, load_profile)
 end)
 

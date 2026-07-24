@@ -4,10 +4,9 @@
 local storage = core.get_mod_storage("event_logger")
 local prefix = ""
 
-core.register_on_connect(function()
+ws.on_connect(function()
 	local info = core.get_server_info()
 	prefix = info.address .. ":" .. info.port .. ":"
-	-- "Session started" toast is owned by session_logger to avoid duplicates.
 end)
 
 local function k(name)

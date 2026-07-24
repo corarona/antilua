@@ -25,7 +25,7 @@ end
 
 restore_job()
 
-core.register_on_connect(function()
+ws.on_connect(function()
 	restore_job()
 end)
 

@@ -277,7 +277,7 @@ function sbots.register_bot(name, def)
 	})
 end
 
-core.register_on_death(function()
+ws.on_death(function()
 	if not core.localplayer then return end
 	local pos = vector.round(core.localplayer:get_pos())
 	for _, bot in pairs(registered_bots) do

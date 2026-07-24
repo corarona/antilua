@@ -48,7 +48,7 @@ local function reset_gui_state()
 	hud_wp = nil
 end
 
-core.register_on_connect(function()
+ws.on_connect(function()
 	local info = core.get_server_info()
 	if info and info.address and info.address ~= "" then
 		stprefix = "POI-" .. info.address .. ":" .. info.port .. ":"
@@ -281,7 +281,7 @@ local function trim_death_waypoints(max)
 end
 
 local death_counter = 0
-core.register_on_death(function()
+ws.on_death(function()
 	if not core.localplayer then return end
 	local my_death = death_counter
 	death_counter = death_counter + 1
@@ -773,7 +773,7 @@ core.register_cheat("POIs", { category = "Misc",
 	description = "Open POI management formspec",
 	func = poi.display_formspec })
 
-core.register_on_death(function()
+ws.on_death(function()
 	if not core.settings:get_bool("auto_screenshot") then return end
 	core.after(0.5, function()
 		core.make_screenshot()
