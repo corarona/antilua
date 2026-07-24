@@ -256,3 +256,37 @@ core.register_on_receiving_chat_message(function(msg)
 	end
 	-- Return the original message (or nil) to let it through unchanged
 end)
+
+--------------------------------------------------------------------------------
+-- Constraint visualization: draw a wireframe box when constraints are active
+--------------------------------------------------------------------------------
+local CONSTRAINTS_VIZ_GROUP = 9001
+
+ws.rg("ShowConstraints", {
+	category = "Render",
+	setting = "show_constraints",
+	description = "Show a wireframe box around the constraint area",
+	delay = 0,
+	on_step = function()
+		core.draw3d:clear(CONSTRAINTS_VIZ_GROUP)
+
+		local p1 = ws.constraint_pos1
+		local p2 = ws.constraint_pos2
+		if not p1 or not p2 then return end
+
+		local minp = vector.new(
+			math.min(p1.x, p2.x) - 0.5,
+			math.min(p1.y, p2.y) - 0.5,
+			math.min(p1.z, p2.z) - 0.5
+		)
+		local maxp = vector.new(
+			math.max(p1.x, p2.x) + 0.5,
+			math.max(p1.y, p2.y) + 0.5,
+			math.max(p1.z, p2.z) + 0.5
+		)
+		core.draw3d:add_wirebox(minp, maxp, "#00FF00", CONSTRAINTS_VIZ_GROUP)
+	end,
+	on_stop = function()
+		core.draw3d:clear(CONSTRAINTS_VIZ_GROUP)
+	end,
+})
