@@ -66,12 +66,26 @@ local function match_account_to_server(address, port)
 	if not active_tabdata then return false end
 	local server_key = address .. ":" .. tostring(port)
 	local accounts = account_manager.get_accounts()
+	local filtered = active_tabdata._filtered_map or {}
+
+	-- Same server as the last successful auto-match and the current selection
+	-- is still valid in the server-scoped list: keep the user's manual
+	-- selection instead of snapping back to the first account on every
+	-- formspec regen (the online tab regenerates on server-list refreshes,
+	-- dialog closes, searches, etc.).
+	if active_tabdata._matched_server_key == server_key then
+		local fi = tonumber(active_tabdata.selected_account_index)
+		if fi and fi >= 1 and fi <= #filtered then
+			return true
+		end
+	end
 
 	-- Search the server-scoped filtered list for an exact match.
-	for fi, ai in ipairs(active_tabdata._filtered_map or {}) do
+	for fi, ai in ipairs(filtered) do
 		local account = accounts[ai]
 		if account and account.server == server_key then
 			active_tabdata.selected_account_index = fi
+			active_tabdata._matched_server_key = server_key
 			core.settings:set("name", account.username)
 			return true
 		end
@@ -143,6 +157,7 @@ local function set_selected_server(server)
 		if active_tabdata then
 			active_tabdata._srv_addr = nil
 			active_tabdata._srv_port = nil
+			active_tabdata._matched_server_key = nil
 			account_list_text()
 		end
 		ui.update()
@@ -623,7 +638,11 @@ local function main_button_handler(tabview, fields, name, tabdata)
 
 	if fields.account_list then
 		local fi = tonumber(fields.account_list)
-		if fi then
+		-- Only act on a real change; the dropdown value accompanies every
+		-- submission (including Join/Login presses), so acting unconditionally
+		-- would swallow those. Returning true on a change triggers ui.update()
+		-- so te_name/te_pwd sync to the newly picked account before any Join.
+		if fi and fi ~= tonumber(tabdata.selected_account_index) then
 			tabdata.selected_account_index = fi
 			local filtered = tabdata._filtered_map
 			local ai = filtered and filtered[fi]
@@ -633,6 +652,7 @@ local function main_button_handler(tabview, fields, name, tabdata)
 					core.settings:set("name", account.username)
 				end
 			end
+			return true
 		end
 	end
 
