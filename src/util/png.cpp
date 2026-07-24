@@ -1,13 +1,10 @@
-// Antilua
-// SPDX-License-Identifier: LGPL-2.1-or-later
-// Copyright (C) 2021 hecks
-// Rewritten to use libpng for proper filter support
-
 #include "png_encoder.h"
 #include <string>
 #include <vector>
 #include <memory>
 #include <cstring>
+
+#if __has_include(<png.h>)
 #include <png.h>
 #include "irrlichttypes.h"
 
@@ -28,7 +25,6 @@ static int choose_color_type(const u8 *data, u32 width, u32 height,
 			return PNG_COLOR_TYPE_RGBA;
 	}
 
-	// All opaque. Convert to grayscale or RGB.
 	if (gray) {
 		converted.resize(width * height);
 		for (u32 i = 0; i < npixels; i++)
@@ -44,13 +40,11 @@ static int choose_color_type(const u8 *data, u32 width, u32 height,
 
 std::string encodePNG(const u8 *data, u32 width, u32 height, s32 compression)
 {
-	// Optimize: reduce color type when possible
 	std::vector<u8> converted;
 	int color_type = choose_color_type(data, width, height, converted);
 	if (!converted.empty())
 		data = converted.data();
 
-	// Create write structs
 	png_structp png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING,
 		nullptr, nullptr, nullptr);
 	if (!png_ptr)
@@ -62,31 +56,26 @@ std::string encodePNG(const u8 *data, u32 width, u32 height, s32 compression)
 		return {};
 	}
 
-	// Error handler
 	if (setjmp(png_jmpbuf(png_ptr))) {
 		png_destroy_write_struct(&png_ptr, &info_ptr);
 		return {};
 	}
 
-	// Write-to-string callback
 	struct Sink { std::string buf; } sink;
 	png_set_write_fn(png_ptr, &sink, [](png_structp p, png_bytep d, png_size_t l) {
 		static_cast<Sink *>(png_get_io_ptr(p))->buf.append(
 			reinterpret_cast<const char *>(d), l);
 	}, nullptr);
 
-	// Header
 	png_set_IHDR(png_ptr, info_ptr, width, height, 8, color_type,
 		PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
-	// Compression & filters
 	if (compression >= 0)
 		png_set_compression_level(png_ptr, compression);
 	png_set_filter(png_ptr, 0, PNG_ALL_FILTERS);
 
 	png_write_info(png_ptr, info_ptr);
 
-	// Write rows
 	u32 bpp = png_get_rowbytes(png_ptr, info_ptr) / width;
 	std::vector<png_bytep> rows(height);
 	for (u32 y = 0; y < height; y++)
@@ -98,3 +87,9 @@ std::string encodePNG(const u8 *data, u32 width, u32 height, s32 compression)
 
 	return std::move(sink.buf);
 }
+
+#else
+
+std::string encodePNG(const u8 *, u32, u32, s32) { return {}; }
+
+#endif
