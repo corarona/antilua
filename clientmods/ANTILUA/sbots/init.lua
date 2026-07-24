@@ -296,11 +296,17 @@ if nlist and dig then
 			return sbots.find_nearest(pos, nlist.get(nlist.selected), 60, ws.inside_constraints)
 		end,
 		do_pos = function(self, pos)
+			local now = os.clock()
 			local range = tonumber(core.settings:get("diglist.range")) or ws.range or 4
 			local nn = core.find_nodes_near(pos, range, nlist.get(nlist.selected), true)
 			if nn then
 				for _, v in ipairs(nn) do
-					if ws.inside_constraints(v) then return false end
+					if ws.inside_constraints(v) then
+						local key = core.pos_to_string(v)
+						if not dig_active[key] or now >= dig_active[key] then
+							return false
+						end
+					end
 				end
 			end
 			return true
