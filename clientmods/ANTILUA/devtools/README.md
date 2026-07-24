@@ -1,6 +1,6 @@
 # devtools
 
-Development and debugging tools, including metadata inspection, node definition dumps, void-air pocket finding, auto-build scaffolding, and particle/sound leak detection.
+Development and debugging tools, including metadata inspection, node definition dumps, void-air pocket finding, and particle/sound leak detection.
 
 ## Player usage
 
@@ -14,14 +14,8 @@ Development and debugging tools, including metadata inspection, node definition 
 **Cheats (other categories):**
 
 - `FindVoidAir` (category: DevTools) — Scans a 60×52 area below the player (y: -180 to -128) for air nodes and marks the first pocket found with a waypoint.
-- `NoWaterStop` (category: Bots) — Disables `continuous_forward` and itself when no water source is found within 50 nodes.
-- `Pyramid` (category: Scaffold) — Builds a pyramid structure from red sandstone at a hardcoded position using reachable-position placement.
 
 **Additional behavior:** Detects remote particle spawners (>256 nodes away) and far-away sounds, marking them as POI waypoints and logging a message.
-
-## API
-
-None.
 
 ## Cheats
 
@@ -32,4 +26,3 @@ None.
 | PointedMeta | (func) | Dumps metadata table of node at pointed position. |
 | PosMeta | (func) | Dumps metadata table of node at player's current position. |
 | PointedDef | (func) | Dumps node definition of node at pointed position. |
-| NoWaterStop | nowaterstop | Disables continuous_forward when no water found within range. |

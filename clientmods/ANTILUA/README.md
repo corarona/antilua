@@ -45,7 +45,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 
 | Mod | Description |
 |-----|-------------|
-| **dig** | Dig timing library + auto-dig + bulk dig operations. DigCustom, Excavator, Nuke, Digcyl (sponge dig), IceBreaker. |
+| **dig** | Dig timing library + auto-dig + bulk dig operations. Excavator, Nuke, Digcyl, DigFreeSponge. |
 | **place** | Block placement cheats: MultiScaff, PlaceOn, BlockWater/BlockLava, SpongeBot. |
 
 ### Farming / Bots

@@ -24,7 +24,7 @@ instead of crashing the game.
 - **LUA EDITOR** — code editor with Run, Clear, Save buttons. Output is
   displayed in a colored textlist below. Multiple named files can be switched
   via dropdown.
-- **LUA CONSOLE** — placeholder (coming soon).
+- **LUA CONSOLE** — REPL console with history support.
 - **FILES** — manage Lua files: create, delete, open by double-click.
 - **STARTUP** — choose files to run automatically when joining a world.
 - **FUNCTIONS** — placeholder (coming soon).

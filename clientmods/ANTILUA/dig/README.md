@@ -10,9 +10,7 @@ Dig timing library (merged from diglib + digcustom) and bulk digging operations 
 |-------|---------|-------------|
 | DigList | `diglist` | Dig all nodes from the selected nlist within range. Configure target nodes via nlist commands (`/nla`, `/nlapn`). |
 | DigHead | `dighead` | Dig the node directly above the player's head. |
-| Excavator | `excavator` | Tunnel excavation — digs a width×depth area in front of the player (horizontal slice at player eye level). Enables continuous forward movement. |
-| TBM | `excavator` | Tunnel Boring Machine — same as Excavator, but also places tunnel-lining walls using the selected nodelist item (set via `/list select`). |
-| TExcavator | `texcavator` | Full tunnel excavation (digs all nodes in the width×depth area including floor and ceiling). |
+| Excavator | `excavator` | Tunnel excavation — digs a width×depth area. Modes: `walls` (TBM, places lining) and `full` (full slice including floor/ceiling). |
 | WallExcavator | `wallexcavator` | Wall-facing excavator — digs nodes that are part of a wall structure in front of the player. |
 | Nuke | `nuke` | Radial blast dig — digs all diggable nodes within a configurable radius around the player. |
 | Digcyl | `digcyl` | Cylinder dig — digs nodes within a cylindrical volume (center set via `/digcyl`, radius via `/digcyl_rad`). Stops at configurable floor Y. |
