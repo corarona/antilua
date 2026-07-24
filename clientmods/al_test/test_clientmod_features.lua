@@ -83,12 +83,6 @@ function test_clientmod_features(T)
 			"BlockLogger should be in Info category")
 	end)
 
-	T.run("BlockStats cheat in Info category", function()
-		T.assert(type(core.cheats.Info) == "table", "Info category exists")
-		T.assert(core.cheats.Info.BlockStats ~= nil,
-			"BlockStats should be in Info category")
-	end)
-
 	-- Cheat settings sub-fields (stored in cheat_defs keyed by setting name)
 	T.run("sign_reader.range cheat setting exists", function()
 		local def = core.cheat_defs["sign_reader"]

@@ -7,7 +7,7 @@ local prefix = ""
 core.register_on_connect(function()
 	local info = core.get_server_info()
 	prefix = info.address .. ":" .. info.port .. ":"
-	ws.notify("Session started", ws.NOTIFY_INFO, {toast = false})
+	-- "Session started" toast is owned by session_logger to avoid duplicates.
 end)
 
 local function k(name)
@@ -95,8 +95,6 @@ core.register_chatcommand("blockstats", {
 
 		local placed = collect_stats(storage, "^" .. prefix .. "blocks_placed:(.+)$")
 		local dug = collect_stats(storage, "^" .. prefix .. "blocks_dug:(.+)$")
-		local entity_appearances = storage:get_int(k("entity_appearances"))
-		local entity_hp_changes = storage:get_int(k("entity_hp_changes"))
 
 		local lines = {}
 		local pnames, dnames = {}, {}
@@ -116,12 +114,6 @@ core.register_chatcommand("blockstats", {
 
 		format_items(pnames, placed, "Placed: ")
 		format_items(dnames, dug, "Dug:    ")
-		if entity_appearances > 0 then
-			table.insert(lines, "Entities appeared: " .. entity_appearances)
-		end
-		if entity_hp_changes > 0 then
-			table.insert(lines, "Entity HP changes: " .. entity_hp_changes)
-		end
 
 		if #lines == 0 then
 			core.display_chat_message("No stats recorded for this server yet.")
@@ -133,9 +125,3 @@ core.register_chatcommand("blockstats", {
 		return true
 	end,
 })
-
-core.register_cheat("BlockStats", { category = "Info",
-	description = "Show block placement statistics",
-	func = function()
-	core.registered_chatcommands["blockstats"].func()
-end })
