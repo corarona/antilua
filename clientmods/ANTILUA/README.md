@@ -33,7 +33,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 | **inventory** | Unified inventory mod: AutoRefill, AutoEject, DumpFull, AutoSort, AutoBlock. `.craft`, `.openlist` commands. Punch-to-open-node-inventory. |
 | **autocraft** | Automatic crafting system. Custom GUI, recipe memory, auto-craft loop. `.autocraft`, `.autocraft_list`, `.autocraft_clear`. |
 | **autoeat** | Auto-eat food when hunger drops. Settings for threshold and cooldown. |
-| **invhooks** | Inventory logger + snapshot differ for debugging inventory changes. |
+| **inspectors** | Inventory and node metadata change sniffers: InvLogger, InvSnapshot, NodeMetaSniffer. |
 
 ### Combat
 
@@ -82,7 +82,6 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 |-----|-------------|
 | **session_logger** | Chat logger, session stats. `.stats` command. |
 | **event_logger** | Entity/node/block event logger. BlockLogger logs digs/places with nlist-based ignore. |
-| **nodemetasniffer** | Node metadata change detector. |
 | **particle_hooks** | Particle blocker + saver for filtering server particles. |
 
 ### Other
