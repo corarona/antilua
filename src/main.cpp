@@ -70,7 +70,7 @@ extern "C" {
 #endif
 
 // TODO: migration from minetest.conf
-#define CONFIGFILE AL_CONFIGFILE
+#define CONFIGFILE "antilua.conf"
 #define DEBUGFILE "debug.txt"
 #define DEFAULT_SERVER_PORT 30000
 

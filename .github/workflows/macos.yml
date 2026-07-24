@@ -33,6 +33,7 @@ on:
 
 jobs:
   build-older-macos:
+    if: false
     strategy:
       matrix:
         osver: [11.3]

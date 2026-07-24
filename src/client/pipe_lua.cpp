@@ -10,6 +10,11 @@
 #include <fstream>
 #include <sstream>
 
+// Lua 5.1 compat: LUA_OK was introduced in 5.2
+#ifndef LUA_OK
+#define LUA_OK 0
+#endif
+
 #ifndef _WIN32
 #include <fcntl.h>
 #include <sys/stat.h>
