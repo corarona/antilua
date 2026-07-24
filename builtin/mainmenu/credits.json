@@ -1,4 +1,6 @@
 {
+	"antilua" : [ "cora" ],
+	"other_cheats" : [ "LizzyFleckenstein (DragonfireClient)", "Team Acedia (CloakV4)", "mia (lunarchy)", "tux (DevClient)"  ],
 	"#": "https://github.com/orgs/luanti-org/teams/engine/members",
 	"core_developers": [
 		"Perttu Ahola (celeron55) <celeron55@gmail.com> [Project founder]",

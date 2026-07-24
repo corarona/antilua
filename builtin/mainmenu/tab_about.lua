@@ -56,6 +56,18 @@ return {
 		local credits = get_credits()
 
 		table.insert_all(hypertext, {
+			"<heading>", fgettext_ne("Antilua"), "</heading>\n",
+		})
+		prepare_credits(hypertext, credits.antilua)
+
+
+		table.insert_all(hypertext, {
+			"<heading>", fgettext_ne("Other Cheatclients, inspirations, Backports"), "</heading>\n",
+		})
+		prepare_credits(hypertext, credits.other_cheats)
+
+		table.insert_all(hypertext, {
+			"<heading>", fgettext_ne("Luanti"), "</heading>\n",
 			"<heading>", fgettext_ne("Core Developers"), "</heading>\n",
 		})
 		prepare_credits(hypertext, credits.core_developers)
