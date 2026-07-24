@@ -1,17 +1,29 @@
--- DigCustom: auto-dig configurable nodes (from digcustom)
+-- DigList: dig all nodes from the selected nlist within range
 
-coroutine.wrap(function()
-	while true do
-		if core.settings:get_bool("digcustom") and core.localplayer then
-			local list = (core.settings:get("digcustom_nodes") or ""):split(",")
-			local node_pos = core.find_node_near(core.localplayer:get_pos(), 5, list, true)
-			local max_time = tonumber(core.settings:get("digcustom_max_time"))
-			if node_pos then
-				dig.dig_node(node_pos, max_time)
-			end
+local diglist_next = 0
+
+ws.rg("DigList", {
+	category = "Dig",
+	setting = "diglist",
+	description = "Dig all nodes from selected nlist in range",
+	delay = 0,
+	on_step = function(self)
+		local now = core.get_us_time() / 1000000
+		if now < diglist_next then return end
+		diglist_next = now + (tonumber(core.settings:get(self.setting .. ".delay")) or 0.5)
+
+		local range = tonumber(core.settings:get(self.setting .. ".range")) or ws.range
+		local lp = core.localplayer:get_pos()
+		local tnodes = nlist.get(nlist.selected)
+		if #tnodes == 0 then return end
+		local nds = core.find_nodes_near(lp, range, tnodes, true)
+		if nds and #nds > 0 then
+			ws.select_best_tool(nds[1])
+			dig.dig_node(nds[1])
 		end
-		lua_async.yield()
-	end
-end)()
-
-core.register_cheat("DigCustom", { category = "Dig", setting = "digcustom", description = "Custom digging pattern" })
+	end,
+	cheat_settings = {
+		range = { type = "number", default = 4, min = 1, max = 20 },
+		delay = { type = "number", default = 0.5, min = 0.1, max = 10 },
+	},
+})

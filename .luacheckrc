@@ -135,5 +135,6 @@ stds.al_client = {
 files["clientmods/ANTILUA/wasplib/init.lua"] = { std = "+al_client" }
 files["clientmods/ANTILUA/wasplib/*.lua"] = { std = "+al_client" }
 files["clientmods/ANTILUA/**/init.lua"] = { std = "+al_client" }
+files["clientmods/ANTILUA/**/*.lua"] = { std = "+al_client" }
 files["clientmods/al_test/init.lua"] = { std = "+al_client" }
 files["clientmods/al_test/*.lua"] = { std = "+al_client" }

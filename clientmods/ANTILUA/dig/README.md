@@ -8,7 +8,7 @@ Dig timing library (merged from diglib + digcustom) and bulk digging operations 
 
 | Cheat | Setting | Description |
 |-------|---------|-------------|
-| DigCustom | `digcustom` | Auto-dig configurable nodes within range. Configure target nodes via `/list digcustom`. |
+| DigList | `diglist` | Dig all nodes from the selected nlist within range. Configure target nodes via nlist commands (`/nla`, `/nlapn`). |
 | DigHead | `dighead` | Dig the node directly above the player's head. |
 | Excavator | `excavator` | Tunnel excavation — digs a width×depth area in front of the player (horizontal slice at player eye level). Enables continuous forward movement. |
 | TBM | `excavator` | Tunnel Boring Machine — same as Excavator, but also places tunnel-lining walls using the selected nodelist item (set via `/list select`). |
@@ -20,8 +20,8 @@ Dig timing library (merged from diglib + digcustom) and bulk digging operations 
 
 ### Settings
 
-- `digcustom_nodes` — comma-separated list of node names for DigCustom to target
-- `digcustom_max_time` — maximum dig time for DigCustom (skip nodes that take longer)
+- `diglist.range` — search range for DigList (default: 4)
+- `diglist.delay` — delay between digs in seconds (default: 0.5)
 - `dig.width` — excavation width (default: 5)
 - `dig.depth` — excavation depth (default: 1)
 - `nuke.radius` — blast radius for Nuke (default: 4, max: 20)
@@ -35,7 +35,7 @@ Dig timing library (merged from diglib + digcustom) and bulk digging operations 
 |---------|-------------|
 | `/digcyl [x,y,z]` | Set dig cylinder center (defaults to player pos if no coords given) |
 | `/digcyl_rad <radius>` | Set dig cylinder radius |
-| `/list digcustom [nodes]` | Configure custom auto-dig node list |
+| `/nls <listname>` | Select the nlist to use as DigList target |
 
 ## API
 
