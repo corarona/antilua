@@ -812,6 +812,7 @@ if(BUILD_SERVER)
 		lstrpack
 		sha256
 		${GMP_LIBRARY}
+		PNG::PNG
 		${PLATFORM_LIBS}
 	)
 	target_compile_definitions(${PROJECT_NAME}server PRIVATE "MT_BUILDTARGET=2")
