@@ -149,9 +149,9 @@ void ClientLuaPipe::processLine(const std::string &line)
 	if (response_file.empty()) {
 #ifdef _WIN32
 		static const std::string fallback = fs::TempPath() + "\\antilua_lua_response";
-  	response_file = fallback;
+	response_file = fallback;
 #else
-  	response_file = "/tmp/antilua_lua_response";
+	response_file = "/tmp/antilua_lua_response";
 #endif
 	}
 

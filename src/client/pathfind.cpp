@@ -450,11 +450,11 @@ std::vector<PathNode> Pathfind::get_path(v3f start, v3f end, Client *client,
 			   << start.Y << "," << start.Z << ") to (" << end.X
 			   << "," << end.Y << "," << end.Z << ")" << std::endl;
 		errorstream << "Result: "
-			   << (result_node &&
-					   to_v3s16(result_node->position) == end_pos
-				   ? "Full path found"
-				   : "Fallback path")
-			   << std::endl;
+			<< (result_node &&
+				to_v3s16(result_node->position) == end_pos
+				? "Full path found"
+				: "Fallback path")
+			<< std::endl;
 		errorstream << "Total time: " << total_duration_ms << " ms"
 			   << std::endl;
 		errorstream << "Nodes checked from open set: "
