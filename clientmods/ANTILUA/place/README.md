@@ -1,6 +1,6 @@
 # place
 
-Block placement and world-building cheats (formerly scaffold). Provides
+Block placement and world-building cheats. Provides
 automated scaffolding, wall building, fluid blocking, lantern placement,
 highway construction, moss farming, and bot-driven sponge/water clearing.
 
@@ -40,42 +40,4 @@ highway construction, moss farming, and bot-driven sponge/water clearing.
 | `spongebot.travel_range` | int | 200 | Max travel distance |
 | `slow_blocks_per_second` | int | 8 | Blocks placed per second |
 
-## API
 
-### Global
-
-`scaffold` — namespace table (backward compat with legacy scaffold mod name).
-
-### Functions
-
-The `scaffold` namespace delegates to `ws.*` functions:
-
-`scaffold.setting(key)` — read `place.<key>` setting as number.
-
-`scaffold.in_cube(pos, p1, p2)` — delegate to `ws.in_cube`.
-
-`scaffold.can_place_at(pos)` — delegate to `ws.can_place_at`.
-
-`scaffold.can_place_wielded_at(pos)` — delegate to `ws.can_place_wielded_at`.
-
-`scaffold.find_any_swap(items, hslot)` — delegate to `ws.find_any_swap`.
-
-`scaffold.in_list(val, list)` — delegate to `ws.in_list`.
-
-`scaffold.place_if_needed(items, pos, place)` — delegate to `ws.place_if_needed`.
-
-`scaffold.place_if_able(pos)` — delegate to `ws.place_if_able`.
-
-`scaffold.dig(pos)` — delegate to `ws.dig_if_able`.
-
-`scaffold.set_pos1(pos)` — delegate to `ws.set_pos1`.
-
-`scaffold.set_pos2(pos)` — delegate to `ws.set_pos2`.
-
-`scaffold.reset()` — delegate to `ws.reset_constraints`.
-
-`scaffold.template(setting, func, offset, funcstop)` — create a simple place-loop
-function that places at a relative offset every tick when the setting is active.
-
-`scaffold.register_template_scaffold(name, setting, func, offset, funcstop)` — register
-a cheat via `ws.rg` using the template system with `Place` category.

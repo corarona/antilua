@@ -125,21 +125,9 @@ function test_dig_mod(T)
 end
 
 ------------------------------------------------------------------------------
--- place mod (renamed from scaffold)
+-- place mod
 ------------------------------------------------------------------------------
 function test_place_mod(T)
-	T.run("scaffold namespace exists (backward compat)", function()
-		T.assert(type(scaffold) == "table")
-	end)
-	T.run("scaffold.place_if_needed delegates to ws", function()
-		T.assert(type(scaffold.place_if_needed) == "function")
-	end)
-	T.run("scaffold.place_if_able delegates to ws", function()
-		T.assert(type(scaffold.place_if_able) == "function")
-	end)
-	T.run("scaffold.dig delegates to ws", function()
-		T.assert(type(scaffold.dig) == "function")
-	end)
 	T.run("place/init: BlockSources setting exists", function()
 		T.assert(core.settings:get("block_sources") ~= nil, "block_sources setting should exist")
 	end)

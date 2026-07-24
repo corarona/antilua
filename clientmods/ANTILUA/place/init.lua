@@ -1,67 +1,6 @@
 -- CC0/Unlicense Emilia & cora 2020
 -- place: world-building/block-placement cheats (renamed from scaffold)
 
-scaffold = {}
-
-function scaffold.setting(key)
-	return ws.get_number("place", key)
-end
-
-scaffold.in_cube = ws.in_cube
-scaffold.can_place_at = ws.can_place_at
-scaffold.can_place_wielded_at = ws.can_place_wielded_at
-scaffold.find_any_swap = ws.find_any_swap
-scaffold.in_list = ws.in_list
-
-function scaffold.place_if_needed(items, pos, place)
-	return ws.place_if_needed(items, pos, place)
-end
-
-function scaffold.place_if_able(pos)
-	return ws.place_if_able(pos)
-end
-
-function scaffold.dig(pos)
-	return ws.dig_if_able(pos)
-end
-
-local function inside_constraints(pos)
-	return ws.inside_constraints(pos)
-end
-
-function scaffold.set_pos1(pos)
-	ws.set_pos1(pos)
-end
-
-function scaffold.set_pos2(pos)
-	ws.set_pos2(pos)
-end
-
-function scaffold.reset()
-	ws.reset_constraints()
-end
-
-function scaffold.template(setting, func, offset, funcstop)
-	offset = offset or {x = 0, y = -1, z = 0}
-	funcstop = funcstop or function() end
-	return function()
-		if core.localplayer and core.settings:get_bool(setting) then
-			local tgt = vector.add(core.localplayer:get_pos(), offset)
-			if not inside_constraints(tgt) then return end
-			func(tgt)
-		end
-	end
-end
-
-function scaffold.register_template_scaffold(name, setting, func, offset, funcstop, description)
-	ws.rg(name, {
-		category = "Place",
-		setting = setting,
-		description = description,
-		on_step = scaffold.template(setting, func, offset),
-		on_stop = funcstop,
-	})
-end
 local mpath = core.get_modpath(core.get_current_modname())
 dofile(mpath .. "/spongebot.lua")
 
@@ -113,16 +52,22 @@ ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "B
 
 
 
-scaffold.register_template_scaffold("RandomScaff", "place_rnd", function()
-	local below=ws.dircoord(0,-1,0)
-	local n = core.get_node_or_nil(below)
-	local nl=nlist.get('randomscaffold')
-	table.shuffle(nl)
-	if n and not ws.in_list(n.name, nl) then
-		scaffold.dig(below)
-		scaffold.place_if_needed(nl, below)
-	end
-end, nil, nil, "Place random block scaffold")
+ws.rg("RandomScaff", { category = "Place", setting = "place_rnd",
+	description = "Place random block scaffold",
+	on_step = function(self, dtime)
+		if not core.localplayer then return end
+		local tgt = vector.add(core.localplayer:get_pos(), {x = 0, y = -1, z = 0})
+		if not ws.inside_constraints(tgt) then return end
+		local below = ws.dircoord(0, -1, 0)
+		local n = core.get_node_or_nil(below)
+		local nl = nlist.get('randomscaffold')
+		table.shuffle(nl)
+		if n and not ws.in_list(n.name, nl) then
+			ws.dig_if_able(below)
+			ws.place_if_needed(nl, below)
+		end
+	end,
+})
 
 
 
