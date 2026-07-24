@@ -55,7 +55,7 @@ void CameraRollController::step(f32 dtime, LocalPlayer *player,
 					m_at_reset_start = current_roll;
 				}
 				m_reset_timer += dtime;
-				f32 t = fmin(m_reset_timer / duration, 1.0f);
+				f32 t = fminf(m_reset_timer / duration, 1.0f);
 				f32 smooth = t * t * (3.0f - 2.0f * t);
 				f32 new_roll = m_at_reset_start * (1.0f - smooth);
 				player->setCameraRoll(new_roll);

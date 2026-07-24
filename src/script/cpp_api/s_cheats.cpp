@@ -129,7 +129,7 @@ void ScriptApiCheats::init_cheats()
 						lua_pushnil(L);
 						while (lua_next(L, -2)) {
 							if (lua_isstring(L, -1))
-								cheat->m_conflicts_with.push_back(lua_tostring(L, -1));
+								cheat->m_conflicts_with.emplace_back(lua_tostring(L, -1));
 							lua_pop(L, 1);
 						}
 					}

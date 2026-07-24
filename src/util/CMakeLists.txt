@@ -23,4 +23,5 @@ set(util_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/srp.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/timetaker.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/enum_string.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/png.cpp
 	PARENT_SCOPE)

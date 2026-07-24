@@ -622,9 +622,9 @@ int ModApiClient::l_make_screenshot(lua_State *L)
 	auto filename = getClient(L)->makeScreenshot();
 	if (!filename.empty()) {
 		// return just the basename (no path) for formspec use
-		auto pos = filename.rfind("/");
+		auto pos = filename.rfind('/');
 		if (pos == std::string::npos)
-			pos = filename.rfind("\\");
+			pos = filename.rfind('\\');
 		if (pos != std::string::npos)
 			filename = filename.substr(pos + 1);
 		lua_pushstring(L, filename.c_str());
@@ -1532,7 +1532,7 @@ int ModApiClient::l_set_node_esp_list(lua_State *L)
 	luaL_checktype(L, 1, LUA_TTABLE);
 	lua_pushnil(L);
 	while (lua_next(L, 1)) {
-		names.push_back(luaL_checkstring(L, -1));
+		names.emplace_back(luaL_checkstring(L, -1));
 		lua_pop(L, 1);
 	}
 	getClient(L)->setNodeEspList(names);

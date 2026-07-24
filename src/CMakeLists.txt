@@ -801,6 +801,7 @@ if(BUILD_SERVER)
 	get_target_property(
 		IRRLICHT_INCLUDES IrrlichtMt::IrrlichtMt INTERFACE_INCLUDE_DIRECTORIES)
 	target_include_directories(${PROJECT_NAME}server PRIVATE ${IRRLICHT_INCLUDES})
+	find_package(PNG QUIET)
 	target_link_libraries(
 		${PROJECT_NAME}server
 		${ZLIB_LIBRARIES}
@@ -812,6 +813,7 @@ if(BUILD_SERVER)
 		lstrpack
 		sha256
 		${GMP_LIBRARY}
+		${PNG_LIBRARY}
 		${PLATFORM_LIBS}
 	)
 	target_compile_definitions(${PROJECT_NAME}server PRIVATE "MT_BUILDTARGET=2")
