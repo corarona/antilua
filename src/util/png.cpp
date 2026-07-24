@@ -3,12 +3,12 @@
 // Copyright (C) 2021 hecks
 // Rewritten to use libpng for proper filter support
 
-#include "png.h"
+#include "png_encoder.h"
 #include <string>
 #include <vector>
 #include <memory>
 #include <cstring>
-#include "png.h"
+#include <png.h>
 #include "irrlichttypes.h"
 
 static int choose_color_type(const u8 *data, u32 width, u32 height,

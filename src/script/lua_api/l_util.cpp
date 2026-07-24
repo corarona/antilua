@@ -25,7 +25,7 @@
 #include "version.h"
 #include "util/hex.h"
 #include "util/hashing.h"
-#include "util/png.h"
+#include "util/png_encoder.h"
 #include "player.h"
 #include "daynightratio.h"
 #include "constants.h"
