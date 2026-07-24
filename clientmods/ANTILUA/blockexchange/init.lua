@@ -260,6 +260,26 @@ end
 -- Download with progress callback
 ---------------------------------------------------------------------------
 
+local function store_download(uid, name, mts_data, sx, sy, sz)
+	local idx = json_decode(storage:get_string("download_idx")) or {}
+	local found
+	for i, entry in ipairs(idx) do
+		if entry.uid == uid then
+			found = i
+			entry.name = name
+			entry.size_x = sx
+			entry.size_y = sy
+			entry.size_z = sz
+			break
+		end
+	end
+	if not found then
+		table.insert(idx, { uid = uid, name = name, size_x = sx, size_y = sy, size_z = sz })
+	end
+	storage:set_string("download_idx", json_encode(idx))
+	storage:set_string("mts_" .. uid, core.encode_base64(mts_data))
+end
+
 function blockexchange.download(uid, name, size_x, size_y, size_z, progress_cb, done_cb)
 	local parts = {}
 	local parts_xy = math.ceil(size_x / 16)
@@ -338,30 +358,7 @@ function blockexchange.download(uid, name, size_x, size_y, size_z, progress_cb, 
 	try_next()
 end
 
----------------------------------------------------------------------------
--- Storage for downloaded schematics
----------------------------------------------------------------------------
 
-local function store_download(uid, name, mts_data, sx, sy, sz)
-	local idx = json_decode(storage:get_string("download_idx")) or {}
-	-- Check if already exists, update if so
-	local found
-	for i, entry in ipairs(idx) do
-		if entry.uid == uid then
-			found = i
-			entry.name = name
-			entry.size_x = sx
-			entry.size_y = sy
-			entry.size_z = sz
-			break
-		end
-	end
-	if not found then
-		table.insert(idx, { uid = uid, name = name, size_x = sx, size_y = sy, size_z = sz })
-	end
-	storage:set_string("download_idx", json_encode(idx))
-	storage:set_string("mts_" .. uid, core.encode_base64(mts_data))
-end
 
 function blockexchange.get_downloaded_list()
 	local idx = json_decode(storage:get_string("download_idx")) or {}
