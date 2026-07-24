@@ -1,7 +1,4 @@
-tps_client = {
-	ping_tolerance = 0.5,
-	tps_tolerance = 10
-}
+tps_client = {}
 local ch = core.mod_channel_join("tps")
 core.after(5, function()
 	if ch and ch:is_writeable() then
@@ -44,22 +41,5 @@ core.register_globalstep(function(dtime)
 		if ping_hud and core.localplayer then
 			core.localplayer:hud_change(ping_hud, "text", tostring(math.floor(tps_client.ping * 1000)))
 		end
-		if tps_client.ping > 1000 and hud and core.localplayer then
-			core.localplayer:hud_change(hud, "text", tostring(tps_client.tps))
-		end
 	end
 end)
-
-core.register_chatcommand("tps_set_ping_tolerance", { func = function(param)
-	local n = tonumber(param)
-	if n then
-		tps_client.ping_tolerance = n
-	end
-end })
-
-core.register_chatcommand("tps_set_tps_tolerance", { func = function(param)
-	local n = tonumber(param)
-	if n then
-		tps_client.tps_tolerance = n
-	end
-end })
