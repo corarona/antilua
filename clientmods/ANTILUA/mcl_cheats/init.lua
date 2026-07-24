@@ -4,7 +4,7 @@ local mpath = core.get_modpath(core.get_current_modname())
 core.register_cheat('IceBreaker', { category = 'Dig', setting = 'icebreaker',
 	description = "Break ice by walking on it" })
 
-core.register_on_globalstep(function()
+core.register_globalstep(function()
 	if not core.settings:get_bool("icebreaker") then return end
 	if not core.localplayer then return end
 	local owx = core.localplayer:get_wield_index()
