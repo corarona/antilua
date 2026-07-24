@@ -11,6 +11,7 @@ void CameraRollController::resetIdleTimer()
 	m_idle_time = 0.0f;
 }
 
+// Force CI rerun - integration test fixes in 2b1b55c36
 void CameraRollController::step(f32 dtime, LocalPlayer *player,
 	bool roll_left, bool roll_right, bool any_movement_key)
 {
