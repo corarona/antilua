@@ -813,9 +813,11 @@ if(BUILD_SERVER)
 		lstrpack
 		sha256
 		${GMP_LIBRARY}
-		${PNG_LIBRARY}
 		${PLATFORM_LIBS}
 	)
+	if(PNG_FOUND)
+		target_link_libraries(${PROJECT_NAME}server ${PNG_LIBRARY})
+	endif()
 	target_compile_definitions(${PROJECT_NAME}server PRIVATE "MT_BUILDTARGET=2")
 	if(NOT USE_LUAJIT)
 		set_target_properties(${PROJECT_NAME}server PROPERTIES
