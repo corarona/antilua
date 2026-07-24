@@ -24,7 +24,6 @@ highway construction, moss farming, and bot-driven sponge/water clearing.
 | BlockSources | `block_sources` | Place | Fill water and lava sources in radius |
 | SpongeBot | `spongebot` | Bots | Autonomous sponge bot — finds and digs water sources |
 | Autosponge | `autosponge` | Place | Place sponge at nearby water source |
-| AutoCombatLog | `autoclog` | Player | Disconnect and teleport randomly when other players are detected nearby |
 
 ### Settings
 
@@ -36,7 +35,6 @@ highway construction, moss farming, and bot-driven sponge/water clearing.
 | `placeon.use_wielded` | bool | true | Use wielded item instead of configured node |
 | `placeon.range` | int | 5 | Range for PlaceOn |
 | `placeon.node` | string | `mcl_core:dirt_with_grass` | Node to place (when use_wielded is false) |
-| `autoclog.detect_range` | int | 270 | Player detection range |
 | `autosponge.range` | int | 10 | Sponge search range |
 | `spongebot.search_range` | int | 50 | Water search range |
 | `spongebot.travel_range` | int | 200 | Max travel distance |

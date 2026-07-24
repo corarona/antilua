@@ -39,14 +39,14 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 
 | Mod | Description |
 |-----|-------------|
-| **combat** | Killaura (with target mode: players/mobs/all, nlist-based friends), PatrolGuard bot. Retaliation tracking. |
+| **combat** | Killaura (with target mode: players/mobs/all, nlist-based friends), PatrolGuard bot, AutoCombatLog. Retaliation tracking. |
 
 ### World building / Digging
 
 | Mod | Description |
 |-----|-------------|
 | **dig** | Dig timing library + auto-dig + bulk dig operations. DigCustom, Excavator, Nuke, Digcyl (sponge dig), IceBreaker. |
-| **place** | Block placement cheats: MultiScaff, PlaceOn, BlockWater/BlockLava, SpongeBot, AutoCombatLog. |
+| **place** | Block placement cheats: MultiScaff, PlaceOn, BlockWater/BlockLava, SpongeBot. |
 
 ### Farming / Bots
 

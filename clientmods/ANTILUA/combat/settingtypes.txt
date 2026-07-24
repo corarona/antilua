@@ -10,3 +10,5 @@ auto_evade.player_min_distance (Player min distance) float 6 3 20
 auto_evade.cooldown (Evade cooldown) float 0.3 0.1 2
 auto_evade.evade_projectiles (Evade projectiles) bool true
 auto_evade.evade_players (Evade players) bool true
+autoclog (Auto Combat Log) bool false
+autoclog.detect_range (Player detection range) int 270 10 500

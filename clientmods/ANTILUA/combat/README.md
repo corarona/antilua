@@ -1,6 +1,6 @@
 # Combat cheats
 
-Killaura and AutoEvade — client-side combat enhancements.
+Killaura, AutoEvade, and AutoCombatLog — client-side combat enhancements.
 
 ## killaura
 
@@ -16,6 +16,7 @@ Auto-evade incoming projectiles and maintain distance from enemy players. The he
 |-------|----------|---------|-------------|
 | Killaura | Combat | `killaura` | Auto-punch nearby targets (configurable mode) |
 | AutoEvade | Combat | `auto_evade` | Auto-evade projectiles and enemy players |
+| AutoCombatLog | Player | `autoclog` | Disconnect and teleport randomly when other players are detected nearby |
 
 ### Killaura targeting modes
 
@@ -57,6 +58,16 @@ Displays: target name, current/max HP, ASCII health bar (10 segments), distance.
 ### Friend/enemy list
 
 Open the Killaura cheat settings in the cheat menu to manage friend and enemy lists via formspec. Friends are never attacked in any mode. Enemies are always attacked in `players_enemies` and `all` modes. AutoEvade never evades friends.
+
+## AutoCombatLog
+
+Disconnects and teleports randomly when other players are detected within range. A combat-evasion cheat for avoiding unwanted encounters.
+
+### AutoCombatLog settings
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `autoclog.detect_range` | 270 | Player detection range (10–500) |
 
 ## API
 

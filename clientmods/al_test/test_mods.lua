@@ -164,7 +164,7 @@ function test_place_mod(T)
 	T.run("place/spongebot: SpongeBot setting exists", function()
 		T.assert(core.settings:get("spongebot") ~= nil)
 	end)
-	T.run("place/bot_tools: AutoCombatLog setting exists", function()
+	T.run("combat: AutoCombatLog setting exists", function()
 		T.assert(core.settings:get("autoclog") ~= nil)
 	end)
 	-- deprecate scaffold aliases removed

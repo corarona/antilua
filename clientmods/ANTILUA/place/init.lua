@@ -63,7 +63,6 @@ function scaffold.register_template_scaffold(name, setting, func, offset, funcst
 	})
 end
 local mpath = core.get_modpath(core.get_current_modname())
-dofile(mpath .. "/bot_tools.lua")
 dofile(mpath .. "/spongebot.lua")
 
 local function mscaffold(self, f, npt)
