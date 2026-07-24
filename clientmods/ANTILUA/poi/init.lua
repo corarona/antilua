@@ -746,7 +746,6 @@ ws.register_chatcommand_alias("add_waypoint_here", "wah", "add_wph")
 core.register_chatcommand("clear_waypoint", {
 	description = "Hide the displayed waypoint.",
 	func = function()
-		if poi.flying then poi.flying = false end
 		if hud_wp then
 			core.localplayer:hud_remove(hud_wp)
 			hud_wp = nil
