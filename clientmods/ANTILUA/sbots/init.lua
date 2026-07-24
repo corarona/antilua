@@ -289,6 +289,7 @@ core.register_on_death(function()
 end)
 
 if nlist and dig then
+	local dig_active = {}
 	sbots.register_bot("listDigBot", {
 		description = "Bot that digs nodes from selected nlist, respecting DigList range and constraints",
 		find_pos = function(self, pos)
@@ -310,15 +311,22 @@ if nlist and dig then
 			local range = tonumber(core.settings:get("diglist.range")) or ws.range or 4
 			local nn = core.find_nodes_near(pos, range, nlist.get(nlist.selected), true)
 			if not nn then return end
+			local now = os.clock()
 			local npt = ws.get_nodes_per_tick()
 			local count = 0
 			for _, v in ipairs(nn) do
 				if count >= npt then break end
-				if ws.inside_constraints(v) then
+				local key = core.pos_to_string(v)
+				if not dig_active[key] and ws.inside_constraints(v) then
+					local tm = dig.get_dig_time(v)
+					dig_active[key] = now + (tm or 1) + 1
 					ws.select_best_tool(v)
 					dig.dig_node(v)
 					count = count + 1
 				end
+			end
+			for k, expires in pairs(dig_active) do
+				if now >= expires then dig_active[k] = nil end
 			end
 		end,
 	})
