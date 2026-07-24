@@ -7,13 +7,13 @@ core.localplayer:set_pos({x = tree_pos.x + 1, y = tree_pos.y, z = tree_pos.z})
 
 -- Find nearby logs and dig them
 local nearby = core.find_nodes_in_area(
-  {x = tree_pos.x - 3, y = tree_pos.y - 2, z = tree_pos.z - 3},
-  {x = tree_pos.x + 3, y = tree_pos.y + 5, z = tree_pos.z + 3},
-  "mcl_trees:tree_pale_oak"
+	{x = tree_pos.x - 3, y = tree_pos.y - 2, z = tree_pos.z - 3},
+	{x = tree_pos.x + 3, y = tree_pos.y + 5, z = tree_pos.z + 3},
+	"mcl_trees:tree_pale_oak"
 )
 
 for _, lp in ipairs(nearby) do
-  core.dig_node(lp)
+	core.dig_node(lp)
 end
 
 -- Walk around to pick up drops
