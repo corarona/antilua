@@ -15,8 +15,6 @@ on wasplib.
 | `/giveme` | Give items from the currently selected nlist |
 | `/givegear` | Give diamond armor/tools with enchants |
 | `/tplace <pos>` | Teleport to position, place a node, teleport back |
-| `/dumpto` | Dump inventory (non-hotbar) to pointed storage node |
-| `/loot` | Take all items from pointed storage node |
 | `/cpos1 [x,y,z]` | Set constraint position 1 (defaults to current pos) |
 | `/cpos2 [x,y,z]` | Set constraint position 2 |
 | `/creset` | Reset constraint positions |
@@ -32,7 +30,6 @@ on wasplib.
 | AutoTool | `autotool` | Inventory | Automatically switches to best tool on dig |
 | mcl2-invul | `mcl2-invul` | Player | Invulnerability via damage spam |
 | MakeBlocks | — | Inventory | Auto-craft 9x9 blocks from wielded item |
-| Loot | — | Inventory | Dump pointed container into player inventory |
 | IceBreaker | `icebreaker` | Dig | Dig all ice blocks within 4m radius |
 
 ### Settings
@@ -238,17 +235,7 @@ Legacy signature: `ws.rg(name, category, setting, func, funcstart, funcstop, dau
 
 `ws.make_blocks()` — auto-craft blocks from 9 of the wielded item.
 
-`ws.invdump(src, dst)` — dump inventory contents between two locations using quint.
-
-`ws.dumpto()` — dump non-hotbar inventory to pointed container.
-
-`ws.loot()` — dump pointed container into player inventory.
-
 `ws.icebreaker()` — dig all ice blocks within 4m radius.
-
-`ws.invtoec()` — move non-hotbar inventory and armor to ender chest.
-
-`ws.ectoinv()` — move ender chest contents to inventory and auto-equip armor.
 
 ---
 
@@ -297,7 +284,6 @@ Legacy signature: `ws.rg(name, category, setting, func, funcstart, funcstop, dau
 | Cheat | Setting | Description |
 |-------|---------|-------------|
 | MakeBlocks | (func) | Auto-craft 9x9 blocks from wielded item |
-| Loot | (func) | Dump pointed container into player inventory |
 | IceBreaker | icebreaker | Dig all ice blocks within 4m radius |
 | AutoTool | autotool | Automatically switches to best tool on dig |
 | HeadSaver | headsaver | Prevents suffocation in solid blocks |
