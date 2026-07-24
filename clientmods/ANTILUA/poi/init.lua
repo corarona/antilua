@@ -778,7 +778,6 @@ core.register_chatcommand("dump_pois", {
 --
 -- Server-specific extras (loaded conditionally, may not exist)
 --
-pcall(dofile, core.get_modpath(core.get_current_modname()) .. "/oysterity_rail.lua")
 
 --
 -- Cheat registrations

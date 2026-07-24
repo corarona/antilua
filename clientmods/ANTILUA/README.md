@@ -72,8 +72,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 | Mod | Description |
 |-----|-------------|
 | **always_day** | Lock time-of-day to a fixed value. |
-| **clean_hud** | Hide server HUD elements (health, breath, etc). |
-| **hudlocker** | HUD change notifier — alerts when server modifies HUD. |
+| **hud** | HUD control: block server HUD adds and notify on HUD changes. |
 
 | **tps_client** | Server TPS and ping HUD display. Exports `tps_client.tps`, `tps_client.ping`. |
 
