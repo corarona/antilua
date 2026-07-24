@@ -593,7 +593,7 @@ core.register_on_formspec_input(function(formname, fields)
 			local idx = tonumber(fields.wp_color)
 			if idx then
 				local c = WP_COLORS[idx]
-				if c then
+				if c and name then
 					poi.set_color(name, c.hex)
 					for title, id in pairs(shown_huds) do
 						core.localplayer:hud_remove(id)
