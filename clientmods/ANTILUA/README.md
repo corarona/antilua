@@ -63,7 +63,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 | **devtools** | Item/pointed/node metadata dumpers, particle/sound leak detector. |
 | **dte** | In-game Lua IDE with tabbed formspec editor, file management, startup scripts. `.dte` to open, `.dte_load <file>` to run external files. |
 | **schembuilder** | Schematic builder: load/preview via particles, place via PlaceLiteM/SchemBuilderBot, auto-loot materials. `.schembuild`, `.spos1`, `.spos2`, `.ssave`. |
-| **findbiome** | Spiral-search biome finder + stronghold predictor. Exports `find_biome(pos, biomes)`. |
+| **findbiome** | Spiral-search biome finder. Exports `find_biome(pos, biomes)`. |
 | **mapart** | PNG to MTS schematic converter for pixel art. `.mapart <file> [w] [h]`. |
 | **blockexchange** | BlockExchange server client for downloading schematics. `.bx_login`, `.bx_search`, `.bx_download`. |
 
