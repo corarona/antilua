@@ -1,15 +1,7 @@
--- Session logger: merged from cchat + session_stats
 
-local mod_name = core.get_current_modname()
 
-local function log(level, message)
-	core.log(level, ('[%s] %s'):format(mod_name, message))
-end
-
-local LOG_LEVEL = 'action'
-local server_info = core.get_server_info()
-local server_id = server_info.address .. ':' .. server_info.port
-local my_name = ''
+-- Chat logger (persistent per-server file) handles the file sink — see chat_logger mod.
+-- session_logger handles ChatAlerts, NameColorizer, join/leave toasts, and session stats.
 
 --
 -- Session stats (from cchat + session_stats)
@@ -75,12 +67,7 @@ core.register_cheat("NameColorizer", {
 core.register_on_receiving_chat_message(function(message)
 	local stripped = core.strip_colors(message)
 
-	-- 1. Log
-	if stripped ~= '' then
-		log(LOG_LEVEL, ('%s@%s %s'):format(my_name, server_id, stripped))
-	end
-
-	-- 2. Join/leave toast
+	-- Join/leave toast
 	if stripped:find("^%*%*%* .+ joined the game%.?$") then
 		local name = stripped:match("^%*%*%* (.+) joined")
 		if name then
@@ -96,7 +83,7 @@ core.register_on_receiving_chat_message(function(message)
 		end
 	end
 
-	-- 3. Chat alerts
+	-- Chat alerts
 	if core.settings:get_bool("chat_alerts") then
 		for _, kw in ipairs(alert_keywords) do
 			if stripped:lower():find(kw:lower()) then
@@ -106,7 +93,7 @@ core.register_on_receiving_chat_message(function(message)
 		end
 	end
 
-	-- 4. Name colorizer
+	-- Name colorizer
 	if core.settings:get_bool("name_colorizer") then
 		local result = message
 		for _, entry in ipairs(name_colors) do
