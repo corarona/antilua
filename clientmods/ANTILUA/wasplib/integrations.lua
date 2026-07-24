@@ -4,14 +4,39 @@
 ------------------------------------------------------------------------------
 -- Constraint system (from scaffold)
 ------------------------------------------------------------------------------
+local function load_constraint_pos(setting, field)
+	local s = core.settings:get(setting)
+	if s and s ~= "" then
+		local p = core.string_to_pos(s)
+		if p then
+			ws[field] = p
+			return p
+		end
+	end
+	ws[field] = false
+	return nil
+end
+
+local function save_constraint_pos(setting, pos)
+	if pos then
+		core.settings:set(setting, core.pos_to_string(pos))
+	else
+		core.settings:set(setting, "")
+	end
+end
+
 ws.constraint_pos1 = false
 ws.constraint_pos2 = false
 local hwps = {}
+
+load_constraint_pos("wasplib_constraint_pos1", "constraint_pos1")
+load_constraint_pos("wasplib_constraint_pos2", "constraint_pos2")
 
 function ws.set_pos1(pos)
 	if type(pos) == "string" then pos = core.string_to_pos(pos) end
 	if not pos then pos = ws.dircoord(0, 0, 0) end
 	ws.constraint_pos1 = vector.round(pos)
+	save_constraint_pos("wasplib_constraint_pos1", ws.constraint_pos1)
 	local pstr = core.pos_to_string(ws.constraint_pos1)
 	hwps[#hwps + 1] = ws.display_wp(pstr, ws.constraint_pos1)
 	ws.notify("Constraint pos1 set to " .. pstr, ws.NOTIFY_INFO, {toast=false})
@@ -21,6 +46,7 @@ function ws.set_pos2(pos)
 	if type(pos) == "string" then pos = core.string_to_pos(pos) end
 	if not pos then pos = ws.dircoord(0, 0, 0) end
 	ws.constraint_pos2 = vector.round(pos)
+	save_constraint_pos("wasplib_constraint_pos2", ws.constraint_pos2)
 	local pstr = core.pos_to_string(ws.constraint_pos2)
 	hwps[#hwps + 1] = ws.display_wp(pstr, ws.constraint_pos2)
 	ws.notify("Constraint pos2 set to " .. pstr, ws.NOTIFY_INFO, {toast=false})
@@ -29,6 +55,8 @@ end
 function ws.reset_constraints()
 	ws.constraint_pos1 = false
 	ws.constraint_pos2 = false
+	save_constraint_pos("wasplib_constraint_pos1")
+	save_constraint_pos("wasplib_constraint_pos2")
 	for k, v in pairs(hwps) do
 		if core.localplayer then
 			core.localplayer:hud_remove(v)
