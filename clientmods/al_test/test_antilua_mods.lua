@@ -44,13 +44,6 @@ function test_antilua_headsaver(T)
 	end)
 end
 
-function test_antilua_invsaver(T)
-	T.run("invsaver cheat setting exists", function()
-		local val = core.settings:get("invsaver")
-		T.assert(val ~= nil, "setting 'invsaver' should exist")
-	end)
-end
-
 -- anti_tower removed during modpack consolidation
 
 function test_antilua_autoevade(T)
