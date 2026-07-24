@@ -1,6 +1,5 @@
 autominer (AutoMiner active) bool false
 autominer.lava_nodes (Lava node names, comma-sep) string mcl_core:lava_source,mcl_core:lava_flowing,mcl_nether:nether_lava_source,mcl_nether:nether_lava_flowing,default:lava_source,default:lava_flowing
 autominer.search_range (Search range) int 50 5 200
-autominer.tp_step (Teleport step distance) float 3.8 1 20
 autominer.min_hp (Minimum HP) int 15 1 40
 autominer.lava_range (Safe distance from lava) int 10 1 50

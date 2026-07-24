@@ -8,7 +8,6 @@ Automated mining bot. Finds the nearest target node (selected via `nlist`), tele
 - Automatically enables `autoeat` on start.
 - **Settings:**
   - `autominer.search_range` (int, default 50) — node search radius
-  - `autominer.tp_step` (float, default 3.8) — teleport step distance
   - `autominer.min_hp` (int, default 15) — minimum HP to continue
   - `autominer.lava_range` (int, default 10) — safe distance from lava
   - `autominer.lava_nodes` (string) — comma-separated lava node names

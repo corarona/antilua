@@ -1,3 +1,2 @@
 fishbot (FishBot active) bool false
-fishbot.water_range (Water search range) int 10 1 50
 fishbot.bobber_range (Bobber detection range) int 10 1 50

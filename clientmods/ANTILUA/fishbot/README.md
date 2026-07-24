@@ -14,7 +14,6 @@ Automated fishing bot for MineClone (and similar). Uses a state machine to cast,
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `fishbot.water_range` | 10 | Range to search for water sources |
 | `fishbot.bobber_range` | 10 | Range to detect bobber entity |
 
 ### State machine

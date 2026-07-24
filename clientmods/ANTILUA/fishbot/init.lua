@@ -82,7 +82,6 @@ sbots.register_bot("FishBot", {
 	delay = 0.2,
 	daughters = {"autodump", "autoeject", "lockview"},
 	cheat_settings = {
-		water_range = { type = "number", default = 10, min = 1, max = 50 },
 		bobber_range = { type = "number", default = 10, min = 1, max = 50 },
 	},
 })

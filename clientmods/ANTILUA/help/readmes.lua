@@ -446,7 +446,6 @@ Automated fishing bot for MineClone (and similar). Uses a state machine to cast,
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `fishbot.water_range` | 10 | Range to search for water sources |
 | `fishbot.bobber_range` | 10 | Range to detect bobber entity |
 
 ### State machine
@@ -698,7 +697,6 @@ Automated mining bot. Finds the nearest target node (from `nlist.selected`), jum
 - **Settings:**
   - `autominer.lava_nodes` (string) — comma-separated lava/ hazard node names
   - `autominer.search_range` (int, default 50) — node search radius
-  - `autominer.tp_step` (float, default 3.8) — teleport step distance
   - `autominer.min_hp` (int, default 15) — minimum HP to operate
   - `autominer.lava_range` (int, default 10) — safe distance from lava
 

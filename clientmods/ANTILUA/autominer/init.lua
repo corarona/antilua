@@ -125,7 +125,6 @@ sbots.register_bot("AutoMiner", {
 	delay = 0.2,
 	cheat_settings = {
 		lava_nodes = { type = "string", default = "mcl_core:lava_source,mcl_core:lava_flowing,mcl_nether:nether_lava_source,mcl_nether:nether_lava_flowing,default:lava_source,default:lava_flowing" },
-		tp_step = { type = "number", default = 3.8, min = 1, max = 20 },
 		min_hp = { type = "number", default = 15, min = 1, max = 40 },
 		lava_range = { type = "number", default = 10, min = 1, max = 50 },
 		search_range = { type = "number", default = 50, min = 5, max = 200 },
