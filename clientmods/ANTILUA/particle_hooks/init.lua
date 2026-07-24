@@ -16,8 +16,15 @@ local function matches_filter(texture, keyword_str)
 	return false
 end
 
+local texture_count = 0
+
 core.register_on_receive_particlespawner(function(spawner)
+	if texture_count > 500 then
+		saved_textures = {}
+		texture_count = 0
+	end
 	saved_textures[spawner.id] = spawner.texture
+	texture_count = texture_count + 1
 end)
 
 core.register_on_spawn_particle(function(particle)
@@ -45,6 +52,8 @@ core.register_on_receive_particlespawner(function(spawner)
 end)
 
 core.register_on_delete_particlespawner(function(server_id)
+	local tex = saved_textures[server_id]
+	saved_textures[server_id] = nil
 	if not core.settings:get_bool("particlesaver") then
 		return
 	end
@@ -52,8 +61,7 @@ core.register_on_delete_particlespawner(function(server_id)
 	if filter == "" then
 		return true
 	end
-	local tex = saved_textures[server_id] or ""
-	if tex:lower():find(filter:lower()) then
+	if tex and tex:lower():find(filter:lower()) then
 		return true
 	end
 end)
