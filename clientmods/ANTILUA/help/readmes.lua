@@ -1,7 +1,7 @@
 -- readmes.lua: README content for all mods, embedded as Lua strings
 -- Auto-generated. Regenerate after changing README.md files.
 return {
-  ["autocraft"] = [[
+	["autocraft"] = [[
 # autocraft
 
 Automated crafting GUI that fills the craft grid from inventory and repeatedly crafts items. Recipes are auto-detected when you arrange items on the grid and are persisted via `core.settings`.
@@ -30,7 +30,7 @@ None.
 |-------|---------|-------------|
 | Autocraft | autocraft | Automated crafting — fills craft grid and repeatedly crafts selected recipes. |
 ]],
-  ["autoeat"] = [[
+	["autoeat"] = [[
 # autoeat
 
 Automatically eats food when the player's hunger drops below a configurable threshold. Integrates with the `autodupe` mod when only one food type is available.
@@ -59,7 +59,7 @@ All exported on the global `autoeat` table.
 |-------|---------|-------------|
 | AutoEat | autoeat | Automatically eats food when hunger drops below configurable threshold. |
 ]],
-  ["autoevade"] = [[
+	["autoevade"] = [[
 # autoevade
 
 Teleports the player a random horizontal distance when a projectile (arrow, splash potion, or shulker bullet) comes within trigger range.
@@ -86,7 +86,7 @@ None.
 |-------|---------|-------------|
 | AutoEvade | autoevade | Teleports player away from incoming projectiles within trigger range. |
 ]],
-  ["autokey"] = [[
+	["autokey"] = [[
 # autokey
 
 Continuously holds a key (e.g. sneak, sprint) while a cheat setting is enabled, releasing it when the cheat is toggled off.
@@ -103,12 +103,12 @@ Continuously holds a key (e.g. sneak, sprint) while a cheat setting is enabled, 
 All exported on the global `autokey` table.
 
 - `autokey.register_keypress_cheat(setting, desc, category, keyname, condition)` — Registers a new keypress cheat.
-  - `setting` (string) — `core.settings` bool key that controls the cheat.
-  - `desc` (string) — Display name for the cheat menu.
-  - `category` (string) — Cheat menu category.
-  - `keyname` (string) — Key to hold (e.g. `"sneak"`, `"aux1"`).
-  - `condition` (function or nil) — Optional function returning a bool; the key is only held when this returns true.
-  - Returns nothing. Internally registers a `core.register_cheat` and a globalstep that calls `core.set_keypress`.
+	- `setting` (string) — `core.settings` bool key that controls the cheat.
+	- `desc` (string) — Display name for the cheat menu.
+	- `category` (string) — Cheat menu category.
+	- `keyname` (string) — Key to hold (e.g. `"sneak"`, `"aux1"`).
+	- `condition` (function or nil) — Optional function returning a bool; the key is only held when this returns true.
+	- Returns nothing. Internally registers a `core.register_cheat` and a globalstep that calls `core.set_keypress`.
 
 ## Cheats
 
@@ -117,7 +117,7 @@ All exported on the global `autokey` table.
 | AutoSneak | autosneak | Continuously holds the sneak key while touching the ground. |
 | AutoSprint | autosprint | Continuously holds the aux1 key. |
 ]],
-  ["basic_moves"] = [[
+	["basic_moves"] = [[
 # basic_moves
 
 Flight automation, axis snapping, auto-forward-sprint, and POI-based transport methods. Provides several auto-pilot modes that navigate toward a selected POI.
@@ -163,7 +163,7 @@ All exported on the global `autofly` table.
 | FlyNRoof | aflynroof | Aims toward Nether-ratio target for portal-based travel. |
 | FlightHUD | flight_hud | Shows flight mode HUD overlay. |
 ]],
-  ["cchat"] = [[
+	["cchat"] = [[
 # cchat
 
 Logs received chat messages to the engine log at the `action` level. Each log line includes the server address, port, and the stripped message text.
@@ -180,7 +180,7 @@ None.
 
 None. Passive logging mod — no cheats registered.
 ]],
-  ["devtools"] = [[
+	["devtools"] = [[
 # devtools
 
 Development and debugging tools, including metadata inspection, node definition dumps, void-air pocket finding, auto-build scaffolding, and particle/sound leak detection.
@@ -217,7 +217,7 @@ None.
 | PointedDef | (func) | Dumps node definition of node at pointed position. |
 | NoWaterStop | nowaterstop | Disables continuous_forward when no water found within range. |
 ]],
-  ["dig"] = [[
+	["dig"] = [[
 # dig
 
 Dig timing library (merged from diglib + digcustom) and bulk digging operations (ported from scaffold). Provides accurate dig-time calculation, node-by-node digging, and a suite of automated excavation tools.
@@ -290,7 +290,7 @@ Dig a single node at `pos`, respecting dig time with async sleep. Only digs if t
 - `pos` — `Vector` position of the node to dig
 - `max_time` — `number|nil` — skip digging if the node takes longer than this (optional)
 ]],
-  ["dte"] = [[
+	["dte"] = [[
 # dte
 
 Client-Side Mod Development & Testing Environment. An in-game Lua and formspec
@@ -315,8 +315,8 @@ instead of crashing the game.
 ### UI Tabs
 
 - **LUA EDITOR** — code editor with Run, Clear, Save buttons. Output is
-  displayed in a colored textlist below. Multiple named files can be switched
-  via dropdown.
+	displayed in a colored textlist below. Multiple named files can be switched
+	via dropdown.
 - **LUA CONSOLE** — placeholder (coming soon).
 - **FILES** — manage Lua files: create, delete, open by double-click.
 - **STARTUP** — choose files to run automatically when joining a world.
@@ -367,7 +367,7 @@ with the mod (used by the formspec editor).
 |-------|---------|-------------|
 | Run DTE | (func) | Run the currently loaded script in the editor |
 ]],
-  ["farmtool"] = [[
+	["farmtool"] = [[
 # farmtool
 
 Automated farming tools: harvest, till, sow, and repair farmland. Also provides a FarmBot that autonomously plants seeds on nearby soil.
@@ -412,7 +412,7 @@ None.
 | FarmRepair | `farmrepair` | Repair water channels and fill holes around water sources |
 | FarmBot | — | Autonomous bot that navigates to soil and plants seeds (registered via sbots) |
 ]],
-  ["findbiome"] = [[
+	["findbiome"] = [[
 # findbiome
 
 Searches for a suitable biome position using a square spiral search grid. Given a starting position and a list of biome names, returns the closest matching spawn position within the world boundaries.
@@ -429,7 +429,7 @@ No chat commands or cheats.
 
 None. Library mod — no cheats registered.
 ]],
-  ["fishbot"] = [[
+	["fishbot"] = [[
 # fishbot
 
 Automated fishing bot for MineClone (and similar). Uses a state machine to cast, wait for a bite, and reel in.
@@ -473,7 +473,7 @@ None.
 |-------|---------|-------------|
 | FishBot | `fishbot` | Automated fishing — casts rod, waits for bobber movement, reels in |
 ]],
-  ["inv_open"] = [[
+	["inv_open"] = [[
 # inv_open
 
 Inventory and crafting GUI tools (merged from open_inv + enderchest + punchinv). Provides a crafting grid formspec, an inventory list viewer for arbitrary player lists and nearby node inventories, and punch-to-open node inventories.
@@ -511,7 +511,7 @@ None.
 | OpenCraftGrid | — | Open the portable crafting grid formspec |
 | PunchInv | `punchinv` | Open a node's inventory when punching it |
 ]],
-  ["invutil"] = [[
+	["invutil"] = [[
 # invutil
 
 Inventory utility tools: auto-refill wielded item stacks, auto-eject unwanted items, dump a pointed container's inventory, and auto-craft blocks from full stacks.
@@ -552,7 +552,7 @@ None.
 | DumpFull | — | Dump entire player inventory into the pointed container |
 | AutoBlock | `autoblock` | Auto-craft block items from full stacks of their constituent materials |
 ]],
-  ["killaura"] = [[
+	["killaura"] = [[
 # killaura
 
 Auto-attack nearby entities with configurable targeting. Supports player enemies, all players (except friends), mobs, and combined modes. Includes friend/enemy list management via settings formspec.
@@ -607,7 +607,7 @@ Punch an object multiple times (`hph` times) while preserving the player's origi
 **Parameters:**
 - `obj` — `ObjectRef` to punch
 ]],
-  ["schembuilder"] = [[
+	["schembuilder"] = [[
 # SchemBuilder
 
 Schematic preview and placement tool. Loads MTS schematics as colored particle overlays in the world, and provides multiple ways to place the schematic nodes. Based on Gregon's Litematica (see README for credits).
@@ -615,19 +615,19 @@ Schematic preview and placement tool. Loads MTS schematics as colored particle o
 ## Player usage
 
 - **Chat commands:**
-  - `/schembuild <schematic>` — Load and display a schematic (`$` for schembuilder_output setting, or `file:<path>` for MTS files).
-  - `/spos1` — Set region corner 1 at player position.
-  - `/spos2` — Set region corner 2 at player position.
-  - `/ssave` — Save nodes between pos1 and pos2 to `schembuilder_output` setting.
+	- `/schembuild <schematic>` — Load and display a schematic (`$` for schembuilder_output setting, or `file:<path>` for MTS files).
+	- `/spos1` — Set region corner 1 at player position.
+	- `/spos2` — Set region corner 2 at player position.
+	- `/ssave` — Save nodes between pos1 and pos2 to `schembuilder_output` setting.
 - **Cheats:**
-  - `PlaceLiteM` (Place category) — Place loaded schematic nodes within range around the player.
-  - `SchemBuilderBot` (Bots category) — Walks to the nearest unplaced schematic node and places it.
-  - `SchematicLooter` (Inventory category) — Loots building materials from nearby containers.
+	- `PlaceLiteM` (Place category) — Place loaded schematic nodes within range around the player.
+	- `SchemBuilderBot` (Bots category) — Walks to the nearest unplaced schematic node and places it.
+	- `SchematicLooter` (Inventory category) — Loots building materials from nearby containers.
 - **Settings:**
-  - `schembuilder_output` — stores serialized schematic data.
-  - `placelitem.range` — Placement range for PlaceLiteM.
-  - `schembuilderbot.*` — SchemBuilderBot settings (cooldown, batch size).
-  - `schematic_looter.*` — Looter settings (range, max per scan).
+	- `schembuilder_output` — stores serialized schematic data.
+	- `placelitem.range` — Placement range for PlaceLiteM.
+	- `schembuilderbot.*` — SchemBuilderBot settings (cooldown, batch size).
+	- `schematic_looter.*` — Looter settings (range, max per scan).
 
 ## Cheats
 
@@ -637,7 +637,7 @@ Schematic preview and placement tool. Loads MTS schematics as colored particle o
 | SchemBuilderBot | Bots | `schembuilderbot` | Walk-to-and-place bot |
 | SchematicLooter | Inventory | `schematic_looter` | Loot materials from nearby containers |
 ]],
-  ["lua_async"] = [[
+	["lua_async"] = [[
 # lua_async
 
 Coroutine-based async library for client-side mods. Provides cooperative multithreading with yield-based scheduling, task queues, and time-sliced iteration to avoid blocking the game loop.
@@ -652,15 +652,15 @@ No chat commands or cheats.
 
 - `async` / `lua_async` — Global table exposing all functions below.
 - `async.Async()` — Factory returning a new async instance. Instance fields:
-  - `maxtime` (default 200 ms) — max wall-clock per slice before yielding.
-  - `queue_threads` (default 8) — max concurrent queue workers.
-  - `iterate(from, to, func, callback)` — Iterate `from..to`, calling `func(i)` per step. Yields after `maxtime`.
-  - `foreach(_pairs, func, callback)` — Iterate a table via `_pairs`, calling `func(k, v)`.
-  - `do_while(condition_func, func, callback)` — Loop while `condition_func()` is truthy.
-  - `register_globalstep(func)` — Register a persistent globalstep callback running in a coroutine.
-  - `chain_task(tasks, callback)` — Run an array of functions sequentially, passing the return of each to the next.
-  - `queue_task(func, callback)` — Enqueue a function for worker-thread execution.
-  - `single_task(func, callback)` — Run a function once (no queue).
+	- `maxtime` (default 200 ms) — max wall-clock per slice before yielding.
+	- `queue_threads` (default 8) — max concurrent queue workers.
+	- `iterate(from, to, func, callback)` — Iterate `from..to`, calling `func(i)` per step. Yields after `maxtime`.
+	- `foreach(_pairs, func, callback)` — Iterate a table via `_pairs`, calling `func(k, v)`.
+	- `do_while(condition_func, func, callback)` — Loop while `condition_func()` is truthy.
+	- `register_globalstep(func)` — Register a persistent globalstep callback running in a coroutine.
+	- `chain_task(tasks, callback)` — Run an array of functions sequentially, passing the return of each to the next.
+	- `queue_task(func, callback)` — Enqueue a function for worker-thread execution.
+	- `single_task(func, callback)` — Run a function once (no queue).
 - `async.yield()` — Yield the current coroutine, resuming next globalstep.
 - `async.sleep(ms)` — Suspend the current coroutine for `ms` milliseconds.
 
@@ -668,11 +668,11 @@ No chat commands or cheats.
 
 None. Library mod — no cheats registered.
 ]],
-  ["mineclone"] = [[
+	["mineclone"] = [[
 
 None.
 ]],
-  ["autominer"] = [[
+	["autominer"] = [[
 # AutoMiner
 
 Automated mining bot. Finds the nearest target node (from `nlist.selected`), jump-teleports toward it using rhythmic teleport, digs the node before teleporting to its position (avoids noclip damage), and includes a lava panic system. Depends on `nlist` for node-type selection.
@@ -682,10 +682,10 @@ Automated mining bot. Finds the nearest target node (from `nlist.selected`), jum
 - **Cheat:** `AutoMiner` (category Bots, setting `autominer`)
 - Automatically enables `autoeat` and `dighead` on start.
 - **Settings:**
-  - `autominer.lava_nodes` (string) — comma-separated lava/ hazard node names
-  - `autominer.search_range` (int, default 50) — node search radius
-  - `autominer.min_hp` (int, default 15) — minimum HP to operate
-  - `autominer.lava_range` (int, default 10) — safe distance from lava
+	- `autominer.lava_nodes` (string) — comma-separated lava/ hazard node names
+	- `autominer.search_range` (int, default 50) — node search radius
+	- `autominer.min_hp` (int, default 15) — minimum HP to operate
+	- `autominer.lava_range` (int, default 10) — safe distance from lava
 
 ## Cheats
 
@@ -697,7 +697,7 @@ Automated mining bot. Finds the nearest target node (from `nlist.selected`), jum
 
 None.
 ]],
-  ["nlist"] = [[
+	["nlist"] = [[
 # nlist
 
 Named, persistent node/item list manager. Provides a UI and chat commands to
@@ -782,7 +782,7 @@ as a minetest setting; otherwise it uses mod storage.
 
 `nlist.set_nled_hud(ttext)` — create or update the HUD text element displaying list info; returns `true`.
 ]],
-  ["place"] = [[
+	["place"] = [[
 # place
 
 Block placement and world-building cheats. Provides
@@ -829,7 +829,7 @@ highway construction, moss farming, and bot-driven sponge/water clearing.
 | `slow_blocks_per_second` | int | 8 | Blocks placed per second |
 
 ]],
-  ["poi"] = [[
+	["poi"] = [[
 # poi
 
 Persistent waypoint (POI) system. Stores named positions per-server, displays
@@ -911,7 +911,7 @@ management, and supports a transport callback system for teleportation mods.
 
 `poi.display_formspec()` — open the waypoint management formspec with textlist, display/rename/delete buttons, and registered transport buttons.
 ]],
-  ["rhythmtp"] = [[
+	["rhythmtp"] = [[
 # rhythmtp
 
 Burst-teleport movement system. Teleports the player forward (or to a target position) in steps, respecting an anticheat pool budget. Toggle on for continuous auto-forward movement.
@@ -919,16 +919,16 @@ Burst-teleport movement system. Teleports the player forward (or to a target pos
 ## Player usage
 
 - **Cheat:** `RhythmTP` (category Movement, setting `rhythmtp`)
-  - When toggled on, continuously teleports forward at the configured distance.
+	- When toggled on, continuously teleports forward at the configured distance.
 - **Chat commands:**
-  - `/rhythmtp [dist]` — One-shot burst forward by `dist` meters (default 100). Use `stop` as argument to cancel active movement.
-  - `/rhythmtp_to <x,y,z>` — Burst-teleport to specific coordinates.
+	- `/rhythmtp [dist]` — One-shot burst forward by `dist` meters (default 100). Use `stop` as argument to cancel active movement.
+	- `/rhythmtp_to <x,y,z>` — Burst-teleport to specific coordinates.
 - **Settings:**
-  - `rhythmtp.budget` (number, 1–14, default 10) — pool budget in seconds
-  - `rhythmtp.dist` (number, default 100) — forward teleport distance
-  - `rhythmtp.h_speed` (number, default 4.0) — horizontal speed factor
-  - `rhythmtp.vup_speed` (number, default 26.0) — vertical ascent speed
-  - `rhythmtp.drain_factor` (number, 0.5–1, default 0.98) — cooldown drain per step
+	- `rhythmtp.budget` (number, 1–14, default 10) — pool budget in seconds
+	- `rhythmtp.dist` (number, default 100) — forward teleport distance
+	- `rhythmtp.h_speed` (number, default 4.0) — horizontal speed factor
+	- `rhythmtp.vup_speed` (number, default 26.0) — vertical ascent speed
+	- `rhythmtp.drain_factor` (number, 0.5–1, default 0.98) — cooldown drain per step
 
 ## Cheats
 
@@ -940,7 +940,7 @@ Burst-teleport movement system. Teleports the player forward (or to a target pos
 
 None.
 ]],
-  ["sbots"] = [[
+	["sbots"] = [[
 # sbots
 
 Simple bot library. Provides a framework for creating autonomous bots that fly
@@ -983,67 +983,67 @@ is already active and `allow_cobot` is false, activation is rejected.
 
 ```lua
 {
-    -- Callbacks (all optional, defaults provided for each):
+	-- Callbacks (all optional, defaults provided for each):
 
-    find_pos = function(self, pos) end,
-    -- Called in stage 0 to find a target position. Return a position vector
-    -- or nil/false. pos is the player's current position. When nil is returned
-    -- and stand_waiting is false, the bot deactivates itself.
+	find_pos = function(self, pos) end,
+	-- Called in stage 0 to find a target position. Return a position vector
+	-- or nil/false. pos is the player's current position. When nil is returned
+	-- and stand_waiting is false, the bot deactivates itself.
 
-    do_pos = function(self, pos) end,
-    -- Called when the bot reaches its target (stage 2). Return true to signal
-    -- completion and move to stage 0 (find next target).
+	do_pos = function(self, pos) end,
+	-- Called when the bot reaches its target (stage 2). Return true to signal
+	-- completion and move to stage 0 (find next target).
 
-    do_step = function(self, dtime) end,
-    -- Called every globalstep while the bot is active, regardless of stage.
+	do_step = function(self, dtime) end,
+	-- Called every globalstep while the bot is active, regardless of stage.
 
-    update_pos = function(self, pos) return self:find_pos(self, pos) end,
-    -- Called every globalstep when moving_target is true to update the
-    -- target position mid-flight. Defaults to re-running find_pos.
+	update_pos = function(self, pos) return self:find_pos(self, pos) end,
+	-- Called every globalstep when moving_target is true to update the
+	-- target position mid-flight. Defaults to re-running find_pos.
 
-    on_activate = function(self) end,
-    -- Called when the bot is activated. Return true to abort activation.
+	on_activate = function(self) end,
+	-- Called when the bot is activated. Return true to abort activation.
 
-    on_deactivate = function(self) end,
-    -- Called when the bot is deactivated.
+	on_deactivate = function(self) end,
+	-- Called when the bot is deactivated.
 
-    -- Properties:
+	-- Properties:
 
-    landing_distance = 1,
-    -- Distance from target at which the bot stops flying and enters stage 2.
+	landing_distance = 1,
+	-- Distance from target at which the bot stops flying and enters stage 2.
 
-    moving_target = false,
-    -- Whether the target can move; enables update_pos every tick.
+	moving_target = false,
+	-- Whether the target can move; enables update_pos every tick.
 
-    stand_waiting = false,
-    -- If true, the bot stays active even when find_pos returns nil.
+	stand_waiting = false,
+	-- If true, the bot stays active even when find_pos returns nil.
 
-    daughters = {},
-    -- Sub-settings to toggle with this bot.
+	daughters = {},
+	-- Sub-settings to toggle with this bot.
 
-    delay = nil,
-    -- Override the default hack delay.
+	delay = nil,
+	-- Override the default hack delay.
 
-    allow_cobot = false,
-    -- Set to true in the def to allow concurrent bot operation.
+	allow_cobot = false,
+	-- Set to true in the def to allow concurrent bot operation.
 
-    -- Internal (set at runtime):
+	-- Internal (set at runtime):
 
-    active = false,
-    orig_pos = nil,
-    target_pos = nil,
-    stage = 0,
+	active = false,
+	orig_pos = nil,
+	target_pos = nil,
+	stage = 0,
 }
 ```
 
 ### Bot lifecycle
 
 1. **Stage 0**: Calls `find_pos`. If a position is returned, sets `target_pos`
-   and transitions to stage 1. If nil and `stand_waiting` is false, deactivates.
+	and transitions to stage 1. If nil and `stand_waiting` is false, deactivates.
 2. **Stage 1**: Aims at `target_pos` and enables forward movement. When within
-   `landing_distance`, transitions to stage 2.
+	`landing_distance`, transitions to stage 2.
 3. **Stage 2**: Disables forward movement, calls `do_pos`. If `do_pos` returns
-   true, transitions back to stage 0.
+	true, transitions back to stage 0.
 4. Every tick: calls `do_step`. If `moving_target`, calls `update_pos`.
 
 ### Built-in: listDigBot
@@ -1055,7 +1055,7 @@ selected list within 60m, flies to it, and digs all matching nodes within 1m.
 
 None directly. Bot framework — bots are registered by other mods via sbots.register_bot().
 ]],
-  ["tps_client"] = [[
+	["tps_client"] = [[
 # tps_client
 
 Displays server TPS and client ping in a HUD overlay. Communicates with the server-side `tps` mod via mod channels. Requires the server to have the companion mod installed (https://github.com/ClamityAnarchy/tps).
@@ -1067,14 +1067,14 @@ None — purely passive HUD display.
 ## API
 
 - `tps_client` — Global table with fields:
-  - `tps` — current server TPS (populated via mod channel)
-  - `ping` — seconds since last TPS update (accumulated in globalstep, displayed as ms)
+	- `tps` — current server TPS (populated via mod channel)
+	- `ping` — seconds since last TPS update (accumulated in globalstep, displayed as ms)
 
 ## Cheats
 
 None. HUD utility — no cheats registered.
 ]],
-  ["wasplib"] = [[
+	["wasplib"] = [[
 # wasplib
 
 Core utility library for Antilua client-side mods. Provides the `ws`
@@ -1139,16 +1139,16 @@ Registers a cheat with a lifecycle template. The `def` table can have:
 
 ```lua
 {
-    name     = "CheatName",       -- display name
-    category = "Player",          -- cheat category
-    setting  = "cheat_setting",   -- minetest setting toggling this cheat
-    on_step  = function(self, dtime) end,  -- called every tick when active
-    on_start = function(self) end,         -- called on activation (return true to abort)
-    on_stop  = function(self) end,         -- called on deactivation
-    daughters = {},               -- sub-settings to enable/disable with parent
-    delay    = 0.2,               -- min seconds between on_step calls
-    cheat_settings = {},          -- formspec settings UI definitions
-    get_formspec = function(setting) end,  -- custom formspec builder for settings
+	name     = "CheatName",       -- display name
+	category = "Player",          -- cheat category
+	setting  = "cheat_setting",   -- minetest setting toggling this cheat
+	on_step  = function(self, dtime) end,  -- called every tick when active
+	on_start = function(self) end,         -- called on activation (return true to abort)
+	on_stop  = function(self) end,         -- called on deactivation
+	daughters = {},               -- sub-settings to enable/disable with parent
+	delay    = 0.2,               -- min seconds between on_step calls
+	cheat_settings = {},          -- formspec settings UI definitions
+	get_formspec = function(setting) end,  -- custom formspec builder for settings
 }
 ```
 
@@ -1368,7 +1368,7 @@ Legacy signature: `ws.rg(name, category, setting, func, funcstart, funcstop, dau
 | mcl2-invul | mcl2-invul | Invulnerability via damage spam |
 | LockView | lockview | Locks camera pitch/yaw to current angles |
 ]],
-  ["witherbot"] = [[
+	["witherbot"] = [[
 # witherbot
 
 Combat automation for mcl worlds. Provides aura-style cheats for player evasion, selective kill-aura against mobs, and wither-skull dodge. Also registers bot definitions via `sbots` for automated mob/player/crystal/item farming.
@@ -1376,11 +1376,11 @@ Combat automation for mcl worlds. Provides aura-style cheats for player evasion,
 ## Player usage
 
 - **Cheats:**
-  - `SafeAura` (category Combat, setting `safeaura`) — Teleports away from nearby non-local players to a safe spot.
-  - `SelKillaura` (category Combat, setting `selkillaura`) — Punches nearby objects matching the `obsbot` nlist within range.
-  - `EvadeWither` (category Combat, setting `evade_wither`) — Dodges wither projectiles by teleporting to the farthest air node.
+	- `SafeAura` (category Combat, setting `safeaura`) — Teleports away from nearby non-local players to a safe spot.
+	- `SelKillaura` (category Combat, setting `selkillaura`) — Punches nearby objects matching the `obsbot` nlist within range.
+	- `EvadeWither` (category Combat, setting `evade_wither`) — Dodges wither projectiles by teleporting to the farthest air node.
 - **Registered bots** (via `sbots.register_bot`):
-  - `ObsBot`, `PlBot` (player killer), `CrystalBot` (end crystal breaker), `MobsBot`, `HostileMobs`, `ItemBot` (item collector).
+	- `ObsBot`, `PlBot` (player killer), `CrystalBot` (end crystal breaker), `MobsBot`, `HostileMobs`, `ItemBot` (item collector).
 
 ## Cheats
 
