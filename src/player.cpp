@@ -158,9 +158,9 @@ u16 Player::getMaxHotbarItemcount()
 }
 
 PlayerControl &Player::getPlayerControl() {
-	return 	(g_settings->getBool("freecam") && !g_settings->getBool("lua_control")) ? empty_control :
-			(g_settings->getBool("lua_control"))               						? lua_control :
-	                                                    		 					  control;
+	return (g_settings->getBool("freecam") && !g_settings->getBool("lua_control")) ? empty_control :
+		(g_settings->getBool("lua_control")) ? lua_control :
+		control;
 }
 
 void PlayerControl::setMovementFromKeys()
