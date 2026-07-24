@@ -261,36 +261,27 @@ core.register_globalstep(function(dtime)
 	end
 end)
 
--- Custom autocraft GUI
 local function show_gui()
 	local on = is_on()
 	local sel = ACTIVE_KEY and RECIPES[ACTIVE_KEY]
 	local output = (sel and sel.output) or "-"
 
-	local fs = "formspec_version[4]size[11.75,10.425]"
-	fs = fs .. "label[2.25,0.375;Autocraft]"
-	fs = fs .. "label[0.375,0.375;Recipe: " .. core.formspec_escape(output) .. "]"
-
-	-- Craft grid 3x3
-	fs = fs .. "list[current_player;craft;2.25,0.75;3,3;]"
-	-- Arrow + preview
-	fs = fs .. "image[6.125,2;1.5,1;gui_crafting_arrow.png]"
-	fs = fs .. "list[current_player;craftpreview;8.2,2;1,1;]"
-
-	-- Inventory
-	fs = fs .. "list[current_player;main;0.375,5.1;9,3;9]"
-	fs = fs .. "list[current_player;main;0.375,9.05;9,1;]"
-
-	-- Listrings
-	fs = fs .. "listring[current_player;craft]"
-	fs = fs .. "listring[current_player;main]"
-
-	-- Buttons
-	local btn = on and "Autocraft: ON" or "Autocraft: OFF"
-	fs = fs .. "button[6.1,3.5;2.5,0.8;autocraft_toggle;" .. btn .. "]"
-	fs = fs .. "button[8.2,3.5;2,0.8;show_recipes;Recipes]"
-
-	core.show_formspec("autocraft:gui", fs)
+	local sb = al_formspec.begin("size[11.75,10.425]")
+	sb:add(
+		al_formspec.label(2.25, 0.375, "Autocraft"),
+		al_formspec.label(0.375, 0.375, "Recipe: " .. output),
+		"list[current_player;craft;2.25,0.75;3,3;]",
+		"image[6.125,2;1.5,1;gui_crafting_arrow.png]",
+		"list[current_player;craftpreview;8.2,2;1,1;]",
+		"list[current_player;main;0.375,5.1;9,3;9]",
+		"list[current_player;main;0.375,9.05;9,1;]",
+		"listring[current_player;craft]",
+		"listring[current_player;main]",
+		al_formspec.button(6.1, 3.5, 2.5, 0.8, "autocraft_toggle",
+			on and "Autocraft: ON" or "Autocraft: OFF"),
+		al_formspec.button(8.2, 3.5, 2, 0.8, "show_recipes", "Recipes")
+	)
+	core.show_formspec("autocraft:gui", sb:get())
 end
 
 local function show_list()
@@ -304,17 +295,15 @@ local function show_list()
 	end
 
 	local h = math.min(count, 12)
-	local theme_bg = core.settings:get("theme_bg") or "#121212"
-	local fs = "formspec_version[10]size[9," .. (2 + h) .. ",true]"
-	fs = fs .. "bgcolor[" .. theme_bg .. ";true]"
-	fs = fs .. "label[0,0;Known Recipes]"
+	local sb = al_formspec.cheat_form_begin("size[9," .. (2 + h) .. ",true]")
+	sb:add(al_formspec.label(0, 0, "Known Recipes"))
 
 	local y = 0.6
 	for key, recipe in pairs(RECIPES) do
 		local btn = "sel|" .. key
 		local sel = ACTIVE_KEY == key
 		local lb = sel and ">" or " "
-		fs = fs .. "button[0," .. y .. ";1.5,0.7;" .. btn .. ";" .. lb .. "]"
+		sb:add(al_formspec.button(0, y, 1.5, 0.7, btn, lb))
 		local label = recipe.output or key
 		local details = {}
 		for i = 1, 9 do
@@ -329,11 +318,11 @@ local function show_list()
 		if #label > 45 then
 			label = label:sub(1, 45) .. ".."
 		end
-		fs = fs .. "label[1.7," .. y .. ";" .. core.formspec_escape(label) .. "]"
+		sb:add(al_formspec.label(1.7, y, label))
 		y = y + 0.8
 	end
-	fs = fs .. "button[3.5," .. (y + 0.3) .. ";2,0.8;__close;Close]"
-	core.show_formspec("autocraft:list", fs)
+	sb:add(al_formspec.button(3.5, y + 0.3, 2, 0.8, "__close", "Close"))
+	core.show_formspec("autocraft:list", sb:get())
 end
 
 core.register_on_formspec_input(function(formname, fields)
