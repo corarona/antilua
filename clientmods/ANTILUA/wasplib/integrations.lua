@@ -262,31 +262,63 @@ end)
 --------------------------------------------------------------------------------
 local CONSTRAINTS_VIZ_GROUP = 9001
 
+local function show_constraints_wp(self, field, pos, label)
+	local cur = self[field]
+	if not pos then
+		if cur then
+			core.localplayer:hud_remove(cur)
+			self[field] = nil
+		end
+		return
+	end
+	if cur then
+		core.localplayer:hud_remove(cur)
+	end
+	self[field] = core.localplayer:hud_add({
+		type = "waypoint",
+		name = label,
+		text = label,
+		number = 0x00FF00,
+		world_pos = pos,
+	})
+end
+
 ws.rg("ShowConstraints", {
 	category = "Render",
 	setting = "show_constraints",
 	description = "Show a wireframe box around the constraint area",
 	delay = 0,
-	on_step = function()
+	on_step = function(self)
 		core.draw3d:clear(CONSTRAINTS_VIZ_GROUP)
 
 		local p1 = ws.constraint_pos1
 		local p2 = ws.constraint_pos2
-		if not p1 or not p2 then return end
+		if p1 and p2 then
+			local minp = vector.new(
+				math.min(p1.x, p2.x) - 0.5,
+				math.min(p1.y, p2.y) - 0.5,
+				math.min(p1.z, p2.z) - 0.5
+			)
+			local maxp = vector.new(
+				math.max(p1.x, p2.x) + 0.5,
+				math.max(p1.y, p2.y) + 0.5,
+				math.max(p1.z, p2.z) + 0.5
+			)
+			core.draw3d:add_wirebox(minp, maxp, "#00FF00", CONSTRAINTS_VIZ_GROUP)
+		end
 
-		local minp = vector.new(
-			math.min(p1.x, p2.x) - 0.5,
-			math.min(p1.y, p2.y) - 0.5,
-			math.min(p1.z, p2.z) - 0.5
-		)
-		local maxp = vector.new(
-			math.max(p1.x, p2.x) + 0.5,
-			math.max(p1.y, p2.y) + 0.5,
-			math.max(p1.z, p2.z) + 0.5
-		)
-		core.draw3d:add_wirebox(minp, maxp, "#00FF00", CONSTRAINTS_VIZ_GROUP)
+		show_constraints_wp(self, "_wp1", p1, "Pos1")
+		show_constraints_wp(self, "_wp2", p2, "Pos2")
 	end,
-	on_stop = function()
+	on_stop = function(self)
 		core.draw3d:clear(CONSTRAINTS_VIZ_GROUP)
+		if self._wp1 then
+			core.localplayer:hud_remove(self._wp1)
+			self._wp1 = nil
+		end
+		if self._wp2 then
+			core.localplayer:hud_remove(self._wp2)
+			self._wp2 = nil
+		end
 	end,
 })
