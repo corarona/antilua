@@ -41,14 +41,11 @@ local function reset_gui_state()
 	filter_group = ""
 	sort_by_distance = false
 	lpos = nil
-	for _, id in pairs(shown_huds) do
-		if core.localplayer then core.localplayer:hud_remove(id) end
+	for title in pairs(shown_huds) do
+		if core.localplayer then ws.hud_remove_waypoint(title) end
 	end
 	shown_huds = {}
-	if hud_wp then
-		if core.localplayer then core.localplayer:hud_remove(hud_wp) end
-		hud_wp = nil
-	end
+	hud_wp = nil
 end
 
 core.register_on_connect(function()
@@ -212,20 +209,8 @@ function poi.set_hud_wp(pos, title)
 	poi.last_name = title
 	poi.last_pos = pos
 	local color = poi.color_int(title)
-	if shown_huds[title] then
-		core.localplayer:hud_change(shown_huds[title], "name", title)
-		core.localplayer:hud_change(shown_huds[title], "world_pos", pos)
-		core.localplayer:hud_change(shown_huds[title], "number", color)
-	else
-		hud_wp = core.localplayer:hud_add({
-			type = "waypoint",
-			name = title,
-			text = "m",
-			number = color,
-			world_pos = pos,
-		})
-	end
-	shown_huds[title] = hud_wp
+	ws.hud_waypoint(title, pos, color, "m")
+	shown_huds[title] = true
 	return true
 end
 
@@ -595,11 +580,10 @@ core.register_on_formspec_input(function(formname, fields)
 				local c = WP_COLORS[idx]
 				if c and name then
 					poi.set_color(name, c.hex)
-					for title, id in pairs(shown_huds) do
-						core.localplayer:hud_remove(id)
+					for title in pairs(shown_huds) do
+						ws.hud_remove_waypoint(title)
 					end
 					shown_huds = {}
-					hud_wp = nil
 				end
 			end
 			poi.display_formspec()
@@ -667,11 +651,10 @@ core.register_on_formspec_input(function(formname, fields)
 		cancel = function() poi.display_formspec() end,
 		clear_all = function() show_clear_all_fs() end,
 		clear_all_confirm = function()
-			for title, id in pairs(shown_huds) do
-				core.localplayer:hud_remove(id)
+			for title in pairs(shown_huds) do
+				ws.hud_remove_waypoint(title)
 			end
 			shown_huds = {}
-			hud_wp = nil
 			poi.last_name = nil
 			poi.last_pos = nil
 			poi.display_formspec()
@@ -746,13 +729,14 @@ ws.register_chatcommand_alias("add_waypoint_here", "wah", "add_wph")
 core.register_chatcommand("clear_waypoint", {
 	description = "Hide the displayed waypoint.",
 	func = function()
-		if hud_wp then
-			core.localplayer:hud_remove(hud_wp)
-			hud_wp = nil
+		if shown_huds and next(shown_huds) then
+			for title in pairs(shown_huds) do
+				ws.hud_remove_waypoint(title)
+			end
 			shown_huds = {}
-			return true, "Waypoint hidden."
+			return true, "Waypoints hidden."
 		end
-		return false, "No waypoint is currently displayed."
+		return false, "No waypoints are currently displayed."
 	end,
 })
 ws.register_chatcommand_alias("clear_waypoint", "cwp", "cls")

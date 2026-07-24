@@ -21,7 +21,6 @@ local function decode_sign_text(meta)
 	return table.concat(parts)
 end
 
-local hud_id = nil
 local last_sign_pos = nil
 local logged_positions = {}
 
@@ -52,9 +51,8 @@ local function append_log(pos, text)
 end
 
 local function remove_hud()
-	if hud_id then
-		core.localplayer:hud_remove(hud_id)
-		hud_id = nil
+	if last_sign_pos then
+		ws.hud_remove_waypoint("sign:" .. core.pos_to_string(last_sign_pos))
 		last_sign_pos = nil
 	end
 end
@@ -108,17 +106,9 @@ ws.rg("SignReader", {
 			return
 		end
 
-		last_sign_pos = pos
 		remove_hud()
-
-		local display = truncate_text(text, 64)
-		hud_id = core.localplayer:hud_add({
-			type = "waypoint",
-			name = display,
-			text = "",
-			number = 0xFFFF00,
-			world_pos = pos,
-		})
+		last_sign_pos = pos
+		ws.hud_waypoint("sign:" .. core.pos_to_string(pos), pos, 0xFFFF00, "")
 
 		if ws.get_bool("sign_reader", "log", false) then
 			append_log(pos, text)

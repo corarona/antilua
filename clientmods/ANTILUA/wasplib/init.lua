@@ -22,7 +22,6 @@ dofile(core.get_modpath("wasplib") .. "/tools.lua")
 dofile(core.get_modpath("wasplib") .. "/world.lua")
 dofile(core.get_modpath("wasplib") .. "/combat.lua")
 dofile(core.get_modpath("wasplib") .. "/waypoints.lua")
-dofile(core.get_modpath("wasplib") .. "/compat.lua")
 dofile(core.get_modpath("wasplib") .. "/notification.lua")
 
 local cheat_defaults = {

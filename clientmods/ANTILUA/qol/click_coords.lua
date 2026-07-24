@@ -18,23 +18,12 @@ end
 
 local function show_coord_waypoint(pos, source)
 	if not pos then return end
+	local key = "coord:" .. pos.x .. "," .. pos.y .. "," .. pos.z
 	local label = string.format("Chat coord: %.0f, %.0f, %.0f", pos.x, pos.y, pos.z)
-	if poi and poi.add_waypoint then
-		poi.add_waypoint(pos, label)
-	elseif core.localplayer and core.localplayer.hud_add then
-		local id = core.localplayer:hud_add({
-			hud_elem_type = "waypoint",
-			name = label,
-			world_pos = pos,
-			color = 0x00FF00,
-			precision = 0,
-		})
-		if id then
-			core.after(60, function()
-				pcall(core.localplayer.hud_remove, core.localplayer, id)
-			end)
-		end
-	end
+	ws.hud_waypoint(key, pos, 0x00FF00, label)
+	core.after(60, function()
+		ws.hud_remove_waypoint(key)
+	end)
 	core.display_chat_message("Coord: " .. label .. " — use .teleport to go there")
 end
 
