@@ -570,6 +570,9 @@ list(APPEND client_SRCS
 	${unittest_client_SRCS}
 )
 
+# Client-only: util/png.cpp depends on libpng which isn't linked to the server
+list(APPEND client_SRCS ${CMAKE_CURRENT_SOURCE_DIR}/util/png.cpp)
+
 # Server sources
 # (nothing here because a client always comes with a server)
 set(server_SRCS
