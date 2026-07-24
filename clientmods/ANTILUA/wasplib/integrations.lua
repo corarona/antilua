@@ -38,7 +38,7 @@ function ws.set_pos1(pos)
 	ws.constraint_pos1 = vector.round(pos)
 	save_constraint_pos("wasplib_constraint_pos1", ws.constraint_pos1)
 	local pstr = core.pos_to_string(ws.constraint_pos1)
-	hwps[#hwps + 1] = ws.display_wp(pstr, ws.constraint_pos1)
+	hwps[#hwps + 1] = ws.display_wp(ws.constraint_pos1, pstr)
 	ws.notify("Constraint pos1 set to " .. pstr, ws.NOTIFY_INFO, {toast=false})
 end
 
@@ -48,7 +48,7 @@ function ws.set_pos2(pos)
 	ws.constraint_pos2 = vector.round(pos)
 	save_constraint_pos("wasplib_constraint_pos2", ws.constraint_pos2)
 	local pstr = core.pos_to_string(ws.constraint_pos2)
-	hwps[#hwps + 1] = ws.display_wp(pstr, ws.constraint_pos2)
+	hwps[#hwps + 1] = ws.display_wp(ws.constraint_pos2, pstr)
 	ws.notify("Constraint pos2 set to " .. pstr, ws.NOTIFY_INFO, {toast=false})
 end
 
