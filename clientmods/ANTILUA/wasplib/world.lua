@@ -300,12 +300,4 @@ function ws.loot_list(items, range, max_per_scan)
 	return moved
 end
 
--- IceBreaker: dig ice in range (extracted from emicor)
-function ws.icebreaker()
-	local owx = core.localplayer:get_wield_index()
-	local nds = core.find_nodes_near(ws.dircoord(0, 0, 0), 4, {'mcl_core:ice'}, true)
-	ws.dignodes(nds)
-	core.localplayer:set_wield_index(owx)
-end
 
-core.register_cheat('IceBreaker', { category = 'Dig', setting = 'icebreaker', description = "Break ice by walking on it" })

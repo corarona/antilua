@@ -90,6 +90,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 | Mod | Description |
 |-----|-------------|
 | **help** | README viewer, keybind reference. `.help` command. |
+| **mcl_cheats** | MCL-specific cheats: IceBreaker (auto-dig ice), givegear (spawn diamond gear with enchants). |
 
 ## Cheat categories
 

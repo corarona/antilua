@@ -57,10 +57,6 @@ function test_antilua_extracted_features(T)
 	T.run("ws.make_blocks exists", function()
 		T.assert(type(ws.make_blocks) == "function", "ws.make_blocks should be a function")
 	end)
-
-	T.run("ws.icebreaker exists", function()
-		T.assert(type(ws.icebreaker) == "function", "ws.icebreaker should be a function")
-	end)
 end
 
 function test_ws_rg_new_api(T)
