@@ -313,6 +313,53 @@ int ModApiClient::l_find_nodes_near(lua_State *L)
 	return 1;
 }
 
+// find_nodes_near_under_air_except(pos, radius, except_nodenames, search_center) -> {pos,...}
+int ModApiClient::l_find_nodes_near_under_air_except(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+
+	v3s16 pos = read_v3s16(L, 1);
+	int radius = luaL_checkinteger(L, 2);
+	int start_radius = (lua_isboolean(L, 4) && readParam<bool>(L, 4)) ? 0 : 1;
+
+	Client *client = getClient(L);
+	radius = client->CSMClampRadius(pos, radius);
+
+	const NodeDefManager *ndef = client->getNodeDefManager();
+	std::vector<content_t> except_filter;
+	if (lua_istable(L, 3)) {
+		LuaHelper::for_ipairs(L, 3, [&]() {
+			luaL_checktype(L, -1, LUA_TSTRING);
+			ndef->getIds(readParam<std::string>(L, -1), except_filter);
+		});
+	} else if (lua_isstring(L, 3)) {
+		ndef->getIds(readParam<std::string>(L, 3), except_filter);
+	}
+
+	lua_newtable(L);
+	int table_idx = lua_gettop(L);
+	u32 index = 1;
+
+	for (int d = start_radius; d <= radius; d++) {
+		const std::vector<v3s16> &list = FacePositionCache::getFacePositions(d);
+		for (const v3s16 &p : list) {
+			v3s16 check_pos = pos + p;
+			v3s16 above_pos = check_pos + v3s16(0, 1, 0);
+			bool pos_ok, above_ok;
+			content_t c = client->CSMGetNode(check_pos, &pos_ok).getContent();
+			content_t c_above = client->CSMGetNode(above_pos, &above_ok).getContent();
+			if (pos_ok && above_ok &&
+					c != CONTENT_AIR && c_above == CONTENT_AIR &&
+					!CONTAINS(except_filter, c)) {
+				push_v3s16(L, check_pos);
+				lua_rawseti(L, table_idx, index++);
+			}
+		}
+	}
+
+	return 1;
+}
+
 // get_langauge()
 int ModApiClient::l_get_language(lua_State *L)
 {
@@ -1697,6 +1744,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(get_node_or_nil);
 	API_FCT(disconnect);
 	API_FCT(find_nodes_near);
+	API_FCT(find_nodes_near_under_air_except);
 	API_FCT(get_meta);
 	// FIXME: sound_play/stop/fade need ISoundManager porting
 	API_FCT(get_server_info);

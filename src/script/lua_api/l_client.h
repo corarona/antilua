@@ -75,6 +75,9 @@ private:
 	// find_nodes_near(pos, radius, nodenames, search_center)
 	static int l_find_nodes_near(lua_State *L);
 
+	// find_nodes_near_under_air_except(pos, radius, except_nodenames, search_center)
+	static int l_find_nodes_near_under_air_except(lua_State *L);
+
 	// get_language()
 	static int l_get_language(lua_State *L);
 

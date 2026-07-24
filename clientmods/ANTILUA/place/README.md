@@ -18,14 +18,10 @@ highway construction, moss farming, and bot-driven sponge/water clearing.
 
 | Cheat | Setting | Category | Description |
 |-------|---------|----------|-------------|
-| PlaceOnTop | `place_on_top` | Place | Place wielded block under air in radius |
-| MultiScaff | `scaffold` | Place | Place blocks in a grid below player (configurable width/depth/above/mod) |
+| PlaceOn | `placeon` | Place | Place blocks on top of exposed surfaces (use wielded item or configured node) |
+| MultiScaff | `scaffold` | Place | Place blocks in a grid below player (configurable width/depth/above) |
 | RandomScaff | `place_rnd` | Place | Replace blocks below with random items from `randomscaffold` nlist |
-| BlockWater | `block_water` | Place | Fill water sources in radius |
-| BlockLava | `block_lava` | Place | Fill lava sources in radius |
-| BlockSources | `block_sources` | Place | Fill water and lava sources with wielded block |
-| BlockLavaSources | `block_lava_sources` | Place | Fill lava sources only |
-| PlaceOn | `scaffold_placeon` | Place | Place specified block under air in radius from selected nlist |
+| BlockSources | `block_sources` | Place | Fill water and lava sources in radius |
 | SpongeBot | `spongebot` | Bots | Autonomous sponge bot — finds and digs water sources |
 | Autosponge | `autosponge` | Place | Place sponge at nearby water source |
 | AutoCombatLog | `autoclog` | Player | Disconnect and teleport randomly when other players are detected nearby |
@@ -37,8 +33,9 @@ highway construction, moss farming, and bot-driven sponge/water clearing.
 | `place.width` | int | 5 | Width for MultiScaff |
 | `place.depth` | int | 1 | Depth for MultiScaff |
 | `place.above` | int | 0 | Above-ground offset for MultiScaff |
-| `placeon.range` | int | 4 | Range for PlaceOn |
-| `placeon.node` | string | `mcl_core:dirt_with_grass` | Node to place |
+| `placeon.use_wielded` | bool | true | Use wielded item instead of configured node |
+| `placeon.range` | int | 5 | Range for PlaceOn |
+| `placeon.node` | string | `mcl_core:dirt_with_grass` | Node to place (when use_wielded is false) |
 | `autoclog.detect_range` | int | 270 | Player detection range |
 | `autosponge.range` | int | 10 | Sponge search range |
 | `spongebot.search_range` | int | 50 | Water search range |
