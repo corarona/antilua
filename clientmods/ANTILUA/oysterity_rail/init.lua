@@ -1,7 +1,6 @@
 -- Oysterity Nether Railway Network
--- Server-specific: finds nearest rail portal on the Oysterity Minecraft server
--- and sets a waypoint at it.  Coordinate constants are for that server only
--- and may not apply elsewhere.  Loaded via pcall so it won't block other servers.
+-- Finds nearest rail portal on the Oysterity Minecraft server
+-- and sets a waypoint at it.
 
 local RAIL_PORTAL_SPACING = 200
 local RAIL_PORTAL_MAX = 3800
