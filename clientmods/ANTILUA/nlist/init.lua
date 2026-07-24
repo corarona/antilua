@@ -54,10 +54,8 @@ function nlist.clear(list)
 	return true
 end
 
-function nlist.delete(list)
-	storage:set_string(list, "")
-	return true
-end
+--- Alias kept for legacy callers (delete and clear were byte-identical).
+nlist.delete = nlist.clear
 
 function nlist.select(list)
 	sl = list
