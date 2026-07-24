@@ -17,9 +17,14 @@ ws.rg("DigList", {
 		local tnodes = nlist.get(nlist.selected)
 		if #tnodes == 0 then return end
 		local nds = core.find_nodes_near(lp, range, tnodes, true)
-		if nds and #nds > 0 then
-			ws.select_best_tool(nds[1])
-			dig.dig_node(nds[1])
+		if nds then
+			for _, n in ipairs(nds) do
+				if ws.inside_constraints(n) then
+					ws.select_best_tool(n)
+					dig.dig_node(n)
+					return
+				end
+			end
 		end
 	end,
 	cheat_settings = {
