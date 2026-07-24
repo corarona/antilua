@@ -288,25 +288,37 @@ core.register_on_death(function()
 	end
 end)
 
-if nlist then
+if nlist and dig then
 	sbots.register_bot("listDigBot", {
-		description = "Bot that digs nodes from a list",
+		description = "Bot that digs nodes from selected nlist, respecting DigList range and constraints",
 		find_pos = function(self, pos)
-			return sbots.find_nearest(pos, nlist.get(nlist.selected), 60)
+			return sbots.find_nearest(pos, nlist.get(nlist.selected), 60, ws.inside_constraints)
 		end,
 		do_pos = function(self, pos)
-			local nn = core.find_nodes_near(pos, ws.range or 4, nlist.get(nlist.selected), true)
-			return not nn or #nn == 0
+			local range = tonumber(core.settings:get("diglist.range")) or ws.range or 4
+			local nn = core.find_nodes_near(pos, range, nlist.get(nlist.selected), true)
+			if nn then
+				for _, v in ipairs(nn) do
+					if ws.inside_constraints(v) then return false end
+				end
+			end
+			return true
 		end,
 		do_step = function(self, dtime)
 			local pos = core.localplayer:get_pos()
 			if not pos then return end
-			local nn = core.find_nodes_near(pos, ws.range or 4, nlist.get(nlist.selected), true)
+			local range = tonumber(core.settings:get("diglist.range")) or ws.range or 4
+			local nn = core.find_nodes_near(pos, range, nlist.get(nlist.selected), true)
 			if not nn then return end
 			local npt = ws.get_nodes_per_tick()
-			for i, v in ipairs(nn) do
-				if i > npt then break end
-				ws.dig(v)
+			local count = 0
+			for _, v in ipairs(nn) do
+				if count >= npt then break end
+				if ws.inside_constraints(v) then
+					ws.select_best_tool(v)
+					dig.dig_node(v)
+					count = count + 1
+				end
 			end
 		end,
 	})
