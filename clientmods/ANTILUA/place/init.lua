@@ -35,7 +35,7 @@ end
 
 ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "Build scaffold beneath you",
 	on_step = function(self, dtime)
-		if tps_client and tonumber(tps_client.ping) and tps_client.ping > (tonumber(core.settngs.get("scaffold.ping_tolerance")) or 1500) then return end
+		if tps_client and tonumber(tps_client.ping) and tps_client.ping > (tonumber(core.settings:get("scaffold.ping_tolerance")) or 1500) then return end
 		mscaffold(self)
 	end,
 	on_start = function(self)
