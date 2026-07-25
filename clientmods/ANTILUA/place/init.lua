@@ -4,28 +4,28 @@
 local mpath = core.get_modpath(core.get_current_modname())
 dofile(mpath .. "/spongebot.lua")
 
-local function mscaffold(self, f, npt)
-	npt = npt or ws.get_nodes_per_tick()
+local function mscaffold(self)
 	if not self._node then return end
 	local width = tonumber(core.settings:get("scaffold.width")) or 5
 	local depth = tonumber(core.settings:get("scaffold.depth")) or 1
 	local above = tonumber(core.settings:get("scaffold.above")) or 0
-	local yf = -depth
-	local yt = -1
+	local npt = tonumber(core.settings:get("scaffold.npt")) or ws.get_nodes_per_tick() or 25
+	local y_from = -depth
+	local y_to = -1
 	if above > 0 then
-		yf = above
-		yt = above + depth
+		y_from = above
+		y_to = above + depth
 	end
 	local n = math.floor(width / 2)
 	local placed = 0
 	for fo = -2, 2 do
 		for i = -n, n do
-			for j = yf, yt do
+			for j = y_from, y_to do
 				if placed >= npt then return end
 				local p = ws.dircoord(fo, j, i)
 				local nd = p and core.get_node_or_nil(p)
-				if nd then
-					ws.place(p, {self._node})
+				if nd and ws.can_place_at(p) then
+					ws.place(p, self._node)
 					placed = placed + 1
 				end
 			end
@@ -35,8 +35,8 @@ end
 
 ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "Build scaffold beneath you",
 	on_step = function(self, dtime)
-		if tps_client and tonumber(tps_client.ping) and tps_client.ping > (tps_client and tps_client.ping_tolerance or 0.5) then return end
-		mscaffold(self, 0, ws.get_nodes_per_tick())
+		if tps_client and tonumber(tps_client.ping) and tps_client.ping > (tonumber(core.settngs.get("scaffold.ping_tolerance")) or 1500) then return end
+		mscaffold(self)
 	end,
 	on_start = function(self)
 		self._node = core.localplayer:get_wielded_item():get_name()
@@ -45,6 +45,8 @@ ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "B
 		width = { type = "number", default = 5, min = 1, max = 50 },
 		depth = { type = "number", default = 1, min = 1, max = 20 },
 		above = { type = "number", default = 0, min = 0, max = 20 },
+		npt = { type = "number", default = 25, min = 1, max = 500 },
+		ping_tolerance = { type = "number", default = 1500, min = 0, max = 5000 },
 	},
 })
 
@@ -81,7 +83,7 @@ ws.rg("BlockSources", {
 		local block_lava = core.settings:get_bool(self.setting .. ".block_lava", true)
 		local block_nether_lava = core.settings:get_bool(self.setting .. ".block_nether_lava", true)
 		local use_wielded = core.settings:get_bool(self.setting .. ".use_wielded", false)
-		local npt = ws.get_nodes_per_tick()
+		local npt = tonumber(core.settings:get("scaffold.npt")) or ws.get_nodes_per_tick() or 25
 		local lp = ws.dircoord(0, 0, 0)
 		local targets = {}
 		if block_water then
@@ -125,7 +127,7 @@ ws.rg("BlockSources", {
 ws.rg("PlaceOn", { category = "Place", setting = "placeon", description = "Place blocks on top of exposed surfaces",
 	on_step = function(self)
 		local range = tonumber(core.settings:get(self.setting .. ".range")) or 5
-		local npt = ws.get_nodes_per_tick()
+		local npt = tonumber(core.settings:get("scaffold.npt")) or ws.get_nodes_per_tick() or 25
 		local use_wielded = core.settings:get_bool(self.setting .. ".use_wielded", true)
 		local node
 		if use_wielded then
