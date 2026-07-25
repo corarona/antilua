@@ -1,6 +1,7 @@
 unittests = {}
 
 core.log("info", "Hello World")
+minetest = core
 
 unittests.custom_metatable = {}
 core.register_portable_metatable("unittests:custom_metatable", unittests.custom_metatable)

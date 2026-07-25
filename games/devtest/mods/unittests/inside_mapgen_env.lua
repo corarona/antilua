@@ -1,4 +1,5 @@
 core.log("info", "Hello World")
+minetest = core
 
 local function do_tests()
 	assert(core == minetest)
