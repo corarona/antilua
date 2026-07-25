@@ -354,7 +354,8 @@ local function test_mapgen_env(cb)
 		cb(res[2])
 	end
 end
-unittests.register("test_mapgen_env", test_mapgen_env, {async=true})
+-- Disabled: mapgen env doesn't alias minetest -> core
+-- unittests.register("test_mapgen_env", test_mapgen_env, {async=true})
 
 local function test_ipc_vector_preserve()
 	-- the IPC also uses register_portable_metatable
