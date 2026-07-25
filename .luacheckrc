@@ -3,8 +3,10 @@ allow_defined_top = true
 
 ignore = {
 	"131", -- Unused global variable
+	"421", -- Shadowing a local variable
 	"431", -- Shadowing an upvalue
 	"432", -- Shadowing an upvalue argument
+	"631", -- Line is too long
 }
 
 read_globals = {
