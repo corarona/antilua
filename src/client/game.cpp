@@ -945,6 +945,9 @@ bool Game::createClient(const GameStartData &start_data)
 	sky = make_irr<Sky>(-1, m_rendering_engine, texture_src, shader_src);
 	scsf->setSky(sky.get());
 
+	if (client->modsLoaded())
+		client->getScript()->on_render_ready();
+
 	if (!initGui())
 		return false;
 

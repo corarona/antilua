@@ -12,24 +12,16 @@ LuaSky::LuaSky(Sky *m) : m_sky(m)
 
 void LuaSky::create(lua_State *L, Sky *m)
 {
-	lua_getglobal(L, "core");
-	luaL_checktype(L, -1, LUA_TTABLE);
-
-	lua_getfield(L, -1, "sky");
-	if (lua_type(L, -1) == LUA_TUSERDATA) {
-		lua_pop(L, 1);
-		return;
-	}
-	lua_pop(L, 1);
-
 	auto *o = new LuaSky(m);
 	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 
-	lua_pushvalue(L, lua_gettop(L));
-	lua_setfield(L, -3, "sky");
-	lua_pop(L, 1);
+	lua_getglobal(L, "core");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	lua_pushvalue(L, -2);
+	lua_setfield(L, -2, "sky");
+	lua_pop(L, 2);
 }
 
 int LuaSky::l_set_sun_visible(lua_State *L)

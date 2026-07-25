@@ -159,6 +159,10 @@ void ClientScripting::on_camera_ready(Camera *camera)
 void ClientScripting::on_minimap_ready(Minimap *minimap)
 {
 	LuaMinimap::create(getStack(), minimap);
+}
+
+void ClientScripting::on_render_ready()
+{
 	LuaSky::create(getStack(), g_game->sky.get());
 	LuaClouds::create(getStack(), g_game->clouds.get());
 	LuaDraw3D::create(getStack());

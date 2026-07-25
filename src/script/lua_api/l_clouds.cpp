@@ -12,24 +12,16 @@ LuaClouds::LuaClouds(Clouds *m) : m_clouds(m)
 
 void LuaClouds::create(lua_State *L, Clouds *m)
 {
-	lua_getglobal(L, "core");
-	luaL_checktype(L, -1, LUA_TTABLE);
-
-	lua_getfield(L, -1, "clouds");
-	if (lua_type(L, -1) == LUA_TUSERDATA) {
-		lua_pop(L, 1);
-		return;
-	}
-	lua_pop(L, 1);
-
 	auto *o = new LuaClouds(m);
 	*(void **)(lua_newuserdata(L, sizeof(void *))) = o;
 	luaL_getmetatable(L, className);
 	lua_setmetatable(L, -2);
 
-	lua_pushvalue(L, lua_gettop(L));
-	lua_setfield(L, -3, "clouds");
-	lua_pop(L, 1);
+	lua_getglobal(L, "core");
+	luaL_checktype(L, -1, LUA_TTABLE);
+	lua_pushvalue(L, -2);
+	lua_setfield(L, -2, "clouds");
+	lua_pop(L, 2);
 }
 
 int LuaClouds::l_set_density(lua_State *L)
