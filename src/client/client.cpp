@@ -346,6 +346,9 @@ void Client::loadMods()
 	}
 	if (m_camera)
 		m_script->on_camera_ready(m_camera);
+	if (m_minimap)
+		m_script->on_minimap_ready(m_minimap.get());
+	m_script->on_render_ready();
 }
 
 const std::string &Client::getBuiltinLuaPath()
