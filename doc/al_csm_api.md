@@ -19,7 +19,7 @@ Table of Contents
 5. Cheat System
 6. Custom Settings
 7. Key Bindings
-8. Rendering: ESP & Tracers
+8. Rendering: ESP and Tracers
 9. Raw Packet API
 10. Client-Side Item Override
 11. Schematic API
@@ -38,8 +38,7 @@ Table of Contents
 
 ---
 
-1. Core API Extensions
-======================
+## 1. Core API Extensions
 
 These functions are added to the global `core.*` table (also available as
 `minetest.*`).
@@ -152,8 +151,7 @@ and `core.get_nearby_objects()`.
 
 ---
 
-2. ClientObjectRef (LocalPlayer & entities)
-===========================================
+## 2. ClientObjectRef (LocalPlayer & entities)
 
 ### LocalPlayer (`core.localplayer:*`)
 
@@ -240,8 +238,7 @@ Methods available on entity/ObjectRef references:
 
 ---
 
-3. Callback Registration
-========================
+## 3. Callback Registration
 
 All callbacks available to client-side mods, organized by category.
 
@@ -378,8 +375,7 @@ core.register_on_receive_particlespawner(func(spawner) -> true to cancel)
 
 ---
 
-4. Chat Commands
-================
+## 4. Chat Commands
 
 All commands use the `.` prefix. Register via `core.registered_chatcommands`:
 
@@ -411,8 +407,7 @@ core.registered_chatcommands["name"] = {
 
 ---
 
-5. Cheat System
-===============
+## 5. Cheat System
 
 Cheats are registered in the `core.cheats` table, organized by category:
 
@@ -534,8 +529,7 @@ corresponding setting to `"true"` / `"false"`.
 
 ---
 
-6. Custom Settings
-==================
+## 6. Custom Settings
 
 These settings exist only in Antilua. Set via `core.settings:set()`,
 `.set` command, or the cheat menu.
@@ -645,8 +639,7 @@ Colors use RGB tuple format `(R, G, B)`.
 
 ---
 
-7. Key Bindings
-===============
+## 7. Key Bindings
 
 | Key | Default | Action |
 |-----|---------|--------|
@@ -665,8 +658,7 @@ Colors use RGB tuple format `(R, G, B)`.
 
 ---
 
-8. Rendering: ESP & Tracers
-============================
+## 8. Rendering: ESP and Tracers
 
 Entity and Player ESP/Tracer rendering is implemented as a custom render
 pipeline step in `DrawTracersAndESP`.
@@ -691,8 +683,7 @@ pipeline step in `DrawTracersAndESP`.
 
 ---
 
-9. Raw Packet API
-=================
+## 9. Raw Packet API
 
 See AGENTS.md for the full raw packet API documentation. Key functions:
 
@@ -707,8 +698,7 @@ numeric IDs. Certain init-phase opcodes are blacklisted.
 
 ---
 
-10. Client-Side Item Override
-============================
+## 10. Client-Side Item Override
 
 ```lua
 core.override_item(name, redefinition)
@@ -720,8 +710,7 @@ redefinition table are rejected (raises a Lua error). Mirrors the server-side
 
 ---
 
-11. Schematic API (Client-Side)
-==============================
+## 11. Schematic API (Client-Side)
 
 Deserialize/serialize MTS schematics client-side:
 
@@ -741,8 +730,7 @@ coordinates within the schematic.
 
 ---
 
-12. Client Lua Pipe
-==================
+## 12. Client Lua Pipe
 
 An optional named pipe (FIFO) for sending Lua code to the client and receiving
 results. Controlled by the `pipe_lua_enable` setting.
@@ -763,8 +751,7 @@ On error, the first line is `error` followed by the error message.
 
 ---
 
-13. Session Detach / Reattach
-============================
+# 13. Session Detach / Reattach
 
 The client can detach (hide its window, run headlessly) and later reattach.
 
@@ -777,8 +764,7 @@ The client can detach (hide its window, run headlessly) and later reattach.
 
 ---
 
-14. The `ws.*` Library (wasplib, ANTILUA modpack)
-================================
+## 14. The `ws.*` Library (wasplib, ANTILUA modpack)
 
 The `ws` global namespace is provided by the `wasplib` mod (part of the
 `ANTILUA` modpack). Load order: settings → coord → inventory → tools →
@@ -912,8 +898,7 @@ ws.clear_wps()                           -- Clear all
 
 ---
 
-15. Globalhack System (wasplib)
-=====================
+## 15. Globalhack System (wasplib)
 
 The globalhack system provides a framework for toggleable cheat features that
 run every globalstep. It is part of wasplib.
@@ -1003,8 +988,7 @@ ws.rg("Killaura", {
 
 ---
 
-16. Notification System (wasplib)
-==================================
+## 16. Notification System (wasplib)
 
 The notification system provides chat and toast notifications via `ws.*`:
 
@@ -1026,8 +1010,7 @@ ws.set_notify_handler(handler)           -- Override notification handler
 
 ---
 
-17. Constraint System (wasplib)
-================================
+## 17. Constraint System (wasplib)
 
 The constraint system limits world interactions to a defined region:
 
@@ -1051,8 +1034,7 @@ ws.get_itemslot_bg_v4(x, y, w, h, [margin])
 
 ---
 
-18. Particle System
-===================
+## 18. Particle System
 
 Client-side particle API (no server required). Uses tween table format — fields
 accept either a single value or `{min=..., max=...}` for random range:
@@ -1117,8 +1099,7 @@ core.clear_all_particles()               -- Remove all particles and spawners
 
 ---
 
-19. Pathfinding
-=================
+## 19. Pathfinding
 
 ### `core.find_path(start, end)`
 
@@ -1142,8 +1123,7 @@ Uses `Pathfind` (C++ class in `src/client/pathfind.h`). The pathfinder:
 
 ---
 
-20. Task Markers & Tracers
-==========================
+## 20. Task Markers & Tracers
 
 Persistent colored visual markers rendered in-world. Implemented on top of
 `DrawLuaShapes` — no separate render step needed.
@@ -1230,8 +1210,7 @@ Available themes: `Modern`, `Matrix`, `Legacy`, `Midnight`, `Moss`,
 
 ---
 
-21. Extended Object & Entity API
-=================================
+## 21. Extended Object & Entity API
 
 These functions extend `core.*` with methods from DevClient's client-side
 API. Some are registered under improved names with the original names
@@ -1309,8 +1288,7 @@ core.load_media(filename) -> string|nil
 
 ---
 
-22. LocalPlayer & ClientObjectRef Extensions
-=============================================
+## 22. LocalPlayer & ClientObjectRef Extensions
 
 ### LocalPlayer (`core.localplayer:*`)
 
@@ -1346,8 +1324,7 @@ core.load_media(filename) -> string|nil
 
 ---
 
-23. Strata Pathfinding Bot
-===========================
+## 23. Strata Pathfinding Bot
 
 The Strata mod (`clientmods/ANTILUA/strata/`) provides autonomous player
 movement using A* pathfinding, block mining, and block placement. It
@@ -1404,8 +1381,7 @@ Strata.clear_path_visuals()  -- Remove all task nodes and tracers
 
 ---
 
-24. Draw3D API
-==============
+## 24. Draw3D API
 
 Client-side 3D shape rendering. Shapes are rendered via a dedicated render
 pipeline and persist until cleared. Each shape belongs to an optional group
@@ -1439,8 +1415,7 @@ core.draw3d:clear([group_id])
 
 ---
 
-25. Sky API
-===========
+## 25. Sky API
 
 Control sky, sun, moon, stars, fog, and cloud parameters client-side.
 
@@ -1467,8 +1442,7 @@ local cloud_col = core.sky:get_cloud_color()       -- {r,g,b,a} table
 
 ---
 
-26. Clouds API
-==============
+## 26. Clouds API
 
 Control cloud parameters client-side.
 
@@ -1488,8 +1462,7 @@ local inside = core.clouds:is_camera_inside()       -- bool
 
 ---
 
-27. Minimap Marker API
-======================
+## 27. Minimap Marker API
 
 Add colored world-position markers rendered on the minimap surface.
 
@@ -1512,8 +1485,7 @@ core.ui.minimap:get_shape() / :set_shape(shape)
 
 ---
 
-28. Camera Nametag API
-======================
+## 28. Camera Nametag API
 
 Add world-space nametags rendered as projected 2D text.
 
@@ -1541,8 +1513,7 @@ core.camera:set_camera_mode(mode) / :get_camera_mode() -> int
 
 ---
 
-29. IPC API (Inter-Mod Communication)
-=====================================
+## 29. IPC API (Inter-Mod Communication)
 
 A shared key-value store accessible from any client-side mod. Supports
 compare-and-swap for synchronisation and polling for coordination.
