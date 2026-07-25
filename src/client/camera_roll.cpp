@@ -97,3 +97,4 @@ void CameraRollController::applyAdaptiveMouse(LocalPlayer *player,
 		out_pitch = raw_dy * fabsf(cos_r);
 	}
 }
+
