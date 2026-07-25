@@ -201,6 +201,17 @@ and `core.get_nearby_objects()`.
 :hud_get(id) -> table
 
 :get_object() -> ObjectRef           -- CAO for local player
+
+:get_roll() -> radians               -- Camera roll angle
+:set_roll(radians)                   -- Set camera roll angle
+
+:get_collisionbox() -> [minX, minY, minZ, maxX, maxY, maxZ]
+:get_eye_offset() -> {x,y,z}         -- Camera eye offset from player pos (BS)
+:get_standing_node() -> {x,y,z}|nil  -- Node under the player's feet
+:get_gravity() -> number             -- Current effective gravity (BS/s²)
+:can_jump() -> bool                  -- Whether player can jump this frame
+:get_autojump() -> bool              -- Current autojump state
+:set_autojump(bool)                  -- Enable/disable autojump
 ```
 
 ### Generic ObjectRef
@@ -606,6 +617,32 @@ Colors use RGB tuple format `(R, G, B)`.
 | `cheat_menu_item_bg` | `(45, 45, 55)` | Item background |
 | `cheat_menu_item_bg_alt` | `(45, 45, 65)` | Alternate item background |
 
+### Camera Roll
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `camera_roll_speed` | `90` | Degrees per second |
+| `camera_roll_max` | `180` | Maximum roll angle (set to 360 for full barrel roll) |
+| `camera_roll_auto_reset` | `true` | Auto-reset roll to 0 when idle |
+| `camera_roll_auto_reset_delay` | `3.0` | Seconds of idle before reset starts |
+| `camera_roll_auto_reset_duration` | `0.3` | Duration of smooth roll decay |
+| `camera_roll_adaptive_mouse` | `both` | `both` or `pitch` — adapt mouse to roll |
+
+### Pitch Wraparound
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `pitch_wraparound` | `false` | Allow pitch past ±90° for loopings |
+
+### Auto Reconnect
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `auto_reconnect` | `false` | Auto-reconnect on disconnect |
+| `auto_reconnect_delay` | `3.0` | Initial reconnect delay (seconds) |
+| `auto_reconnect_max_backoff` | `60.0` | Maximum backoff between retries |
+| `auto_reconnect_max` | `10` | Maximum reconnect attempts |
+
 ---
 
 7. Key Bindings
@@ -618,6 +655,8 @@ Colors use RGB tuple format `(R, G, B)`.
 | `keymap_toggle_freecam` | `G` | Toggle freecam |
 | `keymap_toggle_scaffold` | `Y` | Toggle scaffold assist |
 | `keymap_enderchest` | `H` | Open ender chest |
+| `keymap_camera_roll_left` | `Q` | Roll camera counter-clockwise |
+| `keymap_camera_roll_right` | `E` | Roll camera clockwise |
 | `keymap_select_up` | `Up` | Cheat menu up |
 | `keymap_select_down` | `Down` | Cheat menu down |
 | `keymap_select_left` | `Left` | Cheat menu back |
@@ -1362,6 +1401,163 @@ Strata.clear_path_visuals()  -- Remove all task nodes and tracers
   `core.add_task_tracer/clear_task_tracer`,
   `core.localplayer:set_lua_control()`, `core.interact()`,
   `core.get_inventory()`, `InventoryAction`
+
+---
+
+24. Draw3D API
+==============
+
+Client-side 3D shape rendering. Shapes are rendered via a dedicated render
+pipeline and persist until cleared. Each shape belongs to an optional group
+(default `0`); `clear()` with a group ID removes only that group's shapes.
+
+```lua
+core.draw3d:add_sphere(pos, radius, color [, segments, group_id])
+    -- pos: v3f center position
+    -- radius: float
+    -- color: CSS color string or {r,g,b,a} table
+    -- segments: int (default 16), sphere tessellation
+    -- group_id: int (default 0), grouping for bulk clear
+
+core.draw3d:add_wiresphere(pos, radius, color [, segments, group_id])
+
+core.draw3d:add_box(minp, maxp, color [, group_id])
+    -- Axis-aligned filled box from minp to maxp
+
+core.draw3d:add_wirebox(minp, maxp, color [, group_id])
+    -- Wireframe (outline) box
+
+core.draw3d:add_line(from, to, color [, group_id])
+    -- Line between two positions
+
+core.draw3d:add_circle(pos, radius, color [, segments, group_id])
+    -- Horizontal circle at pos (in XZ plane)
+
+core.draw3d:clear([group_id])
+    -- Remove all shapes, or all shapes in a specific group
+```
+
+---
+
+25. Sky API
+===========
+
+Control sky, sun, moon, stars, fog, and cloud parameters client-side.
+
+```lua
+core.sky:set_sun_visible(bool)
+core.sky:set_moon_visible(bool)
+core.sky:set_stars_visible(bool)
+core.sky:set_star_count(int)
+core.sky:set_star_color("#RRGGBB")
+core.sky:set_star_scale(float)
+core.sky:set_sun_scale(float)
+core.sky:set_moon_scale(float)
+core.sky:set_body_orbit_tilt(float)      -- Earth axial tilt in degrees
+core.sky:set_clouds_enabled(bool)
+core.sky:set_fog_distance(float)          -- Far plane distance
+core.sky:set_fog_start(float)             -- Fog start ratio (0.0-1.0)
+core.sky:set_fog_color("#RRGGBB")
+
+local brightness = core.sky:get_brightness()       -- float 0.0-1.0
+local sun_dir   = core.sky:get_sun_direction()     -- {x,y,z} normalized
+local moon_dir  = core.sky:get_moon_direction()    -- {x,y,z} normalized
+local cloud_col = core.sky:get_cloud_color()       -- {r,g,b,a} table
+```
+
+---
+
+26. Clouds API
+==============
+
+Control cloud parameters client-side.
+
+```lua
+core.clouds:set_density(float)            -- 0.0-1.0 cloud coverage
+core.clouds:set_height(float)             -- Cloud layer Y height
+core.clouds:set_thickness(float)          -- Cloud layer thickness
+core.clouds:set_speed({x, z})             -- Cloud movement vector
+
+core.clouds:set_color_bright("#RRGGBB")
+core.clouds:set_color_ambient("#RRGGBB")
+core.clouds:set_color_shadow("#RRGGBB")
+
+local c = core.clouds:get_color()                   -- {r,g,b,a} table
+local inside = core.clouds:is_camera_inside()       -- bool
+```
+
+---
+
+27. Minimap Marker API
+======================
+
+Add colored world-position markers rendered on the minimap surface.
+
+```lua
+local id = core.ui.minimap:add_marker({
+    pos   = { x = 0, y = 10, z = 0 },
+    color = "#FF0000",        -- optional: CSS color string (default red)
+})  -- returns numeric id
+
+local ok = core.ui.minimap:remove_marker(id)    -- Remove by id
+core.ui.minimap:clear_markers()                  -- Remove all markers
+
+-- Also available on the minimap object:
+core.ui.minimap:show() / :hide()
+core.ui.minimap:get_pos() / :set_pos(pos)
+core.ui.minimap:get_angle() / :set_angle(angle)
+core.ui.minimap:get_mode() / :set_mode(mode)
+core.ui.minimap:get_shape() / :set_shape(shape)
+```
+
+---
+
+28. Camera Nametag API
+======================
+
+Add world-space nametags rendered as projected 2D text.
+
+```lua
+local id = core.camera:add_nametag({
+    pos      = { x = 0, y = 10, z = 0 },
+    text     = "Hello World",
+    color    = "#FFFFFF",        -- optional (default white)
+    bgcolor  = "#000000",        -- optional (default transparent)
+    size     = 24,               -- optional font size (default 16)
+    scale_z  = true,             -- optional distance-based scaling
+})
+
+local ok = core.camera:remove_nametag(id)
+core.camera:clear_nametags()
+
+-- Also available on the camera object:
+core.camera:get_pos() -> pos
+core.camera:get_look_dir() -> {x,y,z}
+core.camera:get_look_vertical() / :get_look_horizontal() -> degrees
+core.camera:get_fov() -> float
+core.camera:get_aspect_ratio() -> float
+core.camera:set_camera_mode(mode) / :get_camera_mode() -> int
+```
+
+---
+
+29. IPC API (Inter-Mod Communication)
+=====================================
+
+A shared key-value store accessible from any client-side mod. Supports
+compare-and-swap for synchronisation and polling for coordination.
+
+```lua
+core.ipc_get(key)                -- Read a value (any Lua type, nil if missing)
+core.ipc_set(key, value)         -- Write a value (overwrites existing)
+core.ipc_cas(key, old, new)      -- Atomic compare-and-swap (returns bool)
+    -- Sets key to new only if current value == old (by reference).
+    -- Returns true on success, false on mismatch.
+
+core.ipc_poll(key, timeout_ms)   -- Block until key is set, then return value
+    -- Polls every ~1ms for up to timeout_ms. Returns nil on timeout.
+    -- Useful for synchronisation between mods.
+```
 
 ---
 
