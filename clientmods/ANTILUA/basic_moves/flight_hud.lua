@@ -51,16 +51,16 @@ local function compass_string(yaw)
 	return table.concat(parts, " │ ")
 end
 
-local hud_layout = {
-	bg =			{ anchor = "center",      dy = 0,    type = "image", scale = {x=2,y=2},                  text = "df_horizon.png" },
-	line =			{ anchor = "center",      dy = 0,    type = "image", scale = {x=HORIZON_SCALE,y=HORIZON_SCALE}, text = "horizon_indicator.png" },
-	compass =		{ anchor = "top_center",  dy = 8,    type = "text",  color = 0xFFFFF0,                   text = "" },
-	pitch =			{ anchor = "top_center",  dy = 32,   type = "text",  color = 0xFF66AAFF,                 text = "" },
-	target =		{ anchor = "top_center",  dy = 56,   type = "text",  color = 0xFF88FF88,                 text = "" },
-	alt_bar =		{ anchor = "right_center", dx = -8,   type = "text",  color = 0xFF88FF88,                 text = "" },
-	alt =			{ anchor = "bottom_right", dx = -8,   dy = -8,    type = "text",  color = 0xFF88FF88,                 text = "" },
-	speed =			{ anchor = "bottom_right", dx = -8,   dy = -48,   type = "text",  color = 0xFFFFCC66,                 text = "" },
-	speed_bar =		{ anchor = "bottom_right", dx = -8,   dy = -36,   type = "text",  color = 0xFFAAAAAA,                 text = "" },
+local hud_defs = {
+	{key = "bg",      type = "image", pos = {x=1,y=1}, align = {x=1,y=1}, offset={x=-262,y=-309}, scale={x=2,y=2},               text="df_horizon.png"},
+	{key = "line",    type = "image", pos = {x=1,y=1}, align = {x=1,y=1}, offset={x=-247,y=-294}, scale={x=HORIZON_SCALE,y=HORIZON_SCALE}, text="horizon_indicator.png"},
+	{key = "compass", type = "text",  pos = {x=1,y=1}, align = {x=0.5,y=0.5}, offset={x=-177,y=-177}, color=0xFFFFF0,             text=""},
+	{key = "pitch",   type = "text",  pos = {x=1,y=1}, align = {x=0.5,y=1},   offset={x=-174,y=-340}, color=0xFF66AAFF,             text=""},
+	{key = "target",  type = "text",  pos = {x=1,y=1}, align = {x=0.5,y=1},   offset={x=-174,y=-400}, color=0xFF88FF88,             text=""},
+	{key = "alt_bar", type = "text",  pos = {x=1,y=1}, align = {x=0.5,y=1},   offset={x=-15,y=-290},  color=0xFF88FF88,             text=""},
+	{key = "alt",     type = "text",  pos = {x=1,y=1}, align = {x=0.5,y=1},   offset={x=-30,y=-50},   color=0xFF88FF88,             text=""},
+	{key = "speed",   type = "text",  pos = {x=1,y=1}, align = {x=1,y=1},     offset={x=-200,y=-50},  color=0xFFFFCC66,             text=""},
+	{key = "speed_bar",type = "text", pos = {x=1,y=1}, align = {x=1,y=1},     offset={x=-200,y=-38},  color=0xFFAAAAAA,             text=""},
 }
 
 ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
@@ -68,18 +68,17 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 	on_start = function(self)
 		if not core.localplayer then return true end
 		self._hud_ids = {}
-		for key, def in pairs(hud_layout) do
-			local a = ws.hud_anchor(def.anchor, def.dx, def.dy)
+		for _, def in ipairs(hud_defs) do
 			local args = {
 				type = def.type,
-				position = a.position,
-				alignment = a.alignment,
-				offset = a.offset,
+				position = def.pos,
+				alignment = def.align,
+				offset = def.offset,
 				text = def.text,
 			}
 			if def.scale then args.scale = def.scale end
 			if def.color then args.number = def.color end
-			self._hud_ids[key] = core.localplayer:hud_add(args)
+			self._hud_ids[def.key] = core.localplayer:hud_add(args)
 		end
 		self._last_roll_tex = nil
 	end,
@@ -91,8 +90,8 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		local pitch = -lp:get_pitch()
 		local roll = math.deg(lp:get_roll() or 0)
 
-		local a_line = ws.hud_anchor("center", 0, math.floor(pitch * 1.5))
-		set(hid.line, "offset", a_line.offset)
+		local ind_y = clamp(-294 + math.floor(pitch * 1.5), -399, -189)
+		set(hid.line, "offset", {x = -247, y = ind_y})
 
 		local ri = math.floor((roll + 5) / 10) * 10
 		ri = clamp(ri, -90, 90)
