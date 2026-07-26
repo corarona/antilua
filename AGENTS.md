@@ -106,13 +106,16 @@ luacheck builtin
 
 ### CI workflows
 
-| Workflow | What it checks | How to run locally |
-|----------|---------------|-------------------|
-| `linux.yml` | Build + unit tests on GCC 9/14, Clang 11/20, ARM64 | `cmake --build build -j3 && ./bin/antilua --run-unittests` |
-| `lua.yml` | Luacheck on `builtin/` and `games/devtest/` | `luacheck builtin && luacheck --config=games/devtest/.luacheckrc games/devtest` |
-| `cpp_lint.yml` | clang-tidy on changed C++ files | `./util/ci/clang-tidy.sh` |
-| `whitespace_checks.yml` | Trailing whitespace, tabs in wrong places | — |
-| `png_file_checks.yml` | PNG file integrity | — |
+| Workflow | What it checks | Run locally? |
+|----------|---------------|--------------|
+| `linux.yml` | Build + unit tests on GCC 9/14, Clang 11/20, ARM64 | Yes — `cmake --build build -j3 && ./bin/antilua --run-unittests` |
+| `lua.yml` | Luacheck on `builtin/` and `games/devtest/` | Yes — `luacheck builtin && luacheck --config=games/devtest/.luacheckrc games/devtest` |
+| `cpp_lint.yml` | clang-tidy on changed C++ files | Yes — `./util/ci/clang-tidy.sh` |
+| `whitespace_checks.yml` | Trailing whitespace, tabs in wrong places | Yes — `git ls-files '*.cpp' '*.h' \| xargs grep -n '\s$'` etc. |
+| `png_file_checks.yml` | PNG file integrity | Yes — `./util/ci/check_png_optimized.sh` (needs optipng) |
+| `macos.yml` | Build + test on macOS (Xcode) | No — needs macOS runner |
+| `windows.yml` | Build + test on Windows (MSVC) | No — needs Windows runner |
+| `android.yml` | Build Android APK | No — needs Android SDK/NDK |
 
 ### Policy
 
