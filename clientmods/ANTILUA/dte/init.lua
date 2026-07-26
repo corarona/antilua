@@ -139,6 +139,17 @@ end
 -- CODE EXECUTION
 ----------
 
+-- Check Lua syntax, returns {line=num, msg=string} on error or nil
+local function check_syntax(code)
+	if not code or code == "" then return nil end
+	local f, err = loadstring(code)
+	if f then return nil end
+	local line = err:match(":(%d+):")
+	if not line then return { line = 1, msg = err } end
+	local msg = err:match(":%d+:(.*)$")
+	return { line = tonumber(line), msg = msg and msg:match("^%s*(.-)%s*$") or err }
+end
+
 local function run(code, name)  -- run a script
 	if name == nil then
 		name = saved_file
@@ -305,8 +316,9 @@ local function lua_editor()  -- the main formspec for editing
 	"button[0," .. data.height-3.5 .. ";1,0;run;RUN]"..
 	"button[1," .. data.height-3.5 .. ";1,0;clear;CLEAR]"..
 	"button[2," .. data.height-3.5 .. ";1,0;save;SAVE]"..
-	"button[3.1," .. data.height-3.5 .. ";1,0;load_ext;LOAD]"..
-	"dropdown[5.3,"..data.height-3.8 ..";3;lua_select;"..lua_files_item_str..";"..idx.."]" ..
+	"button[3," .. data.height-3.5 .. ";1,0;check;CHECK]"..
+	"button[4.1," .. data.height-3.5 .. ";1,0;load_ext;LOAD]"..
+	"dropdown[6.3,"..data.height-3.8 ..";3;lua_select;"..lua_files_item_str..";"..idx.."]" ..
 	"textlist[0,"..data.height-3 ..";"..data.width-0.2 ..","..data.height-7 ..";output;"..output_str..";".. #output .."]"..
 	"" .. create_tabs(1)
 	return form
@@ -522,8 +534,22 @@ core.register_on_formspec_input(function(formname, fields)
 	if formname == "lua:editor" then
 		if fields.run then  --[RUN] button
 			save_lua(fields.editor)
-			run(fields.editor)
+			local syn = check_syntax(fields.editor)
+			if syn then
+				table.insert(output, "#ff4444Line " .. syn.line .. ": " .. syn.msg)
+			else
+				run(fields.editor)
+			end
+			core.show_formspec("lua:editor", lua_editor())
 
+		elseif fields.check then  --[CHECK] button
+			save_lua(fields.editor)
+			local syn = check_syntax(fields.editor)
+			if syn then
+				table.insert(output, "#ff4444Line " .. syn.line .. ": " .. syn.msg)
+			else
+				table.insert(output, "#44ff44Syntax OK")
+			end
 			core.show_formspec("lua:editor", lua_editor())
 
 		elseif fields.save then  --[SAVE] button
