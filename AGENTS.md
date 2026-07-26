@@ -10,12 +10,9 @@ open-source voxel game engine with client-side enhancements.
 ## Remotes
 
 - `luanti` — upstream Luanti at https://github.com/luanti-org/luanti/
-- `origin` — antilua fork on Codeberg
-- `ws` — waspsaliva (related fork)
-
-The project is being actively rebased onto `luanti/master` on the `df-rebased`
-branch, splitting the old single-branch DF history (~199 commits) into clean
-feature commits.
+- `origin` — antilua fork on GitHub (`git@github.com:corarona/antilua.git`)
+- `kreepy` — Codeberg mirror at https://codeberg.org/notkreepy/Antilua.git
+- `ws` — waspsaliva (related fork at https://repo.or.cz/waspsaliva.git)
 
 ## Build
 Building can take a long time. Always use long timeouts( > 30 minutes!)
@@ -83,6 +80,47 @@ For interactive testing on the active X server (requires i3 and xprintidle):
 Opens the test world with `--go` on workspace 11. If idle >10 min, runs
 headless and reports results instead.
 
+## CI
+
+Only commit and push code after all CI checks pass locally.
+
+### Running CI checks locally
+
+```sh
+# 1. Build (catches compile errors)
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DRUN_IN_PLACE=TRUE -DBUILD_SERVER=OFF
+cmake --build build -j3
+
+# 2. C++ unit tests
+./bin/antilua --run-unittests
+
+# 3. Lua lint (catches code issues in builtin/)
+luacheck builtin
+
+# 4. C++ static analysis (uses compile_commands.json from build/)
+./util/ci/clang-tidy.sh
+
+# 5. Integration tests (if C++ or Lua changed)
+./util/ci/run_al_tests.sh
+```
+
+### CI workflows
+
+| Workflow | What it checks | How to run locally |
+|----------|---------------|-------------------|
+| `linux.yml` | Build + unit tests on GCC 9/14, Clang 11/20, ARM64 | `cmake --build build -j3 && ./bin/antilua --run-unittests` |
+| `lua.yml` | Luacheck on `builtin/` and `games/devtest/` | `luacheck builtin && luacheck --config=games/devtest/.luacheckrc games/devtest` |
+| `cpp_lint.yml` | clang-tidy on changed C++ files | `./util/ci/clang-tidy.sh` |
+| `whitespace_checks.yml` | Trailing whitespace, tabs in wrong places | — |
+| `png_file_checks.yml` | PNG file integrity | — |
+
+### Policy
+
+- **Never commit failing code.** All C++ unit tests (50 modules) must pass.
+- **Never force-push to `origin/main`.** Rebase onto `luanti/master` on a feature branch, not main.
+- **Run the full CI suite before pushing** — partial checks miss issues (e.g., the static init order fiasco only crashes under ASan/LTO in CI, not in debug builds).
+- **Fix all clang-tidy warnings-as-errors** (`modernize-use-emplace`, `performance-*`) introduced by your changes.
+
 ## Code conventions
 
 - **C++17** standard, GCC >= 7.5 or Clang >= 7.0.1
@@ -90,7 +128,7 @@ headless and reports results instead.
 - **No clang-format** — uses clang-tidy for linting with a limited check set:
   `modernize-use-emplace`, `performance-*`, misc checks
   (`util/ci/clang-tidy.sh`)
-- Lua: luacheck (see `.luacheckrc`), run via `.github/workflows/lua.yml`
+- Lua: luacheck (see `.luacheckrc`)
 - **Small atomic commits** whenever possible — each commit should be one
   logical change, compile, and pass tests independently
 - **Fix all errors and warnings as soon as it makes sense** — do not put them
