@@ -344,6 +344,7 @@ function mapart.process_conv_chunk()
 	if pct - prev_pct >= 5 then
 		s._last_pct = pct
 	end
+	s._conv_pct = pct
 	s.status = "Converting " .. pct .. "%..."
 	if pct > 0 and pct % 10 == 0 and pct ~= s._last_refresh then
 		s._last_refresh = pct

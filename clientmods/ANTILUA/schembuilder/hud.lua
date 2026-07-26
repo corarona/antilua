@@ -19,16 +19,21 @@ function format_per_item(count)
 end
 
 hud_id = nil
+local place_nodes_initial = 0
 
 function update_hud()
 	if not core.localplayer then return end
 	if #place_nodes == 0 then
+		place_nodes_initial = 0
 		clear_job()
 		if hud_id then
 			core.localplayer:hud_remove(hud_id)
 			hud_id = nil
 		end
 		return
+	end
+	if #place_nodes > place_nodes_initial then
+		place_nodes_initial = #place_nodes
 	end
 	-- Count nodes by name
 	local counts = {}
@@ -44,18 +49,23 @@ function update_hud()
 		table.insert(sorted, {name = name, count = count})
 	end
 	table.sort(sorted, function(a, b) return a.count > b.count end)
-	-- Truncate to top 45
+	local placed = place_nodes_initial - #place_nodes
+	local pct = place_nodes_initial > 0 and math.floor(placed * 100 / place_nodes_initial) or 0
+	-- Truncate to top 44 (save one line for progress)
 	local lines = {"Missing:"}
 	local total = 0
-	for i = 1, math.min(#sorted, 45) do
+	for i = 1, math.min(#sorted, 44) do
 		local s = sorted[i]
 		table.insert(lines, format_per_item(s.count) .. " X " .. s.name)
 		total = total + s.count
 	end
-	if #sorted > 45 then
-		table.insert(lines, "... +" .. (#sorted - 45) .. " more")
+	if #sorted > 44 then
+		table.insert(lines, "... +" .. (#sorted - 44) .. " more")
 	end
 	table.insert(lines, "Total: " .. total)
+	if place_nodes_initial > 0 then
+		table.insert(lines, "Progress: " .. pct .. "% (" .. placed .. "/" .. place_nodes_initial .. ")")
+	end
 
 	local text = table.concat(lines, "\n")
 

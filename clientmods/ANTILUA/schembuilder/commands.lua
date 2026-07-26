@@ -233,11 +233,12 @@ core.register_on_formspec_input(function(formname, fields)
 			_bx_status = "Downloading " .. entry.name .. "..."
 			show_browser_form(2)
 			if blockexchange and blockexchange.download then
-				blockexchange.download(entry.uid, entry.name, entry.size_x, entry.size_y, entry.size_z,
-					function(current, total)
-						_bx_status = "Downloading: " .. current .. "/" .. total .. " parts"
-						show_browser_form(2)
-					end,
+			blockexchange.download(entry.uid, entry.name, entry.size_x, entry.size_y, entry.size_z,
+				function(current, total)
+					_bx_status = "Downloading: " .. current .. "/" .. total .. " parts"
+					ws.notify_progress("bx_dl", "Downloading " .. entry.name, math.floor(current * 100 / total))
+					show_browser_form(2)
+				end,
 					function(ok, result)
 						if ok then
 							_bx_status = "Done! Saved as " .. result

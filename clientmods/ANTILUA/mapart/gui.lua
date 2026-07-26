@@ -71,7 +71,13 @@ get_mapart_tab = function(fs, tab)
 	end
 	local st_y = btn_y + 0.9
 	if s.status ~= "" then
-		fs = fs .. "label[0.3," .. st_y .. ";" .. core.formspec_escape(s.status) .. "]"
+		if s._conv_pct then
+			local af = core.al_formspec
+			local bar = af.progress_bar(0.3, st_y, 9, 0.5, "conv_prog", s._conv_pct, 100)
+			fs = fs .. bar[1] .. bar[2] .. bar[3]
+		else
+			fs = fs .. "label[0.3," .. st_y .. ";" .. core.formspec_escape(s.status) .. "]"
+		end
 	end
 	if s.conv_done and s.conv_filename ~= "" then
 		fs = fs .. "button[0.3," .. (st_y + 0.6) .. ";9,0.8;mapart_view_builder;View in Schembuilder]"

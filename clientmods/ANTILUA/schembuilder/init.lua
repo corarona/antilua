@@ -7,6 +7,7 @@ schembuilder_api = nil
 
 schembuilder = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
 place_nodes = {}
+place_nodes_total = 0
 supply_chests = {}
 
 storage = nil
