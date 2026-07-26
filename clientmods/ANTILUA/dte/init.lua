@@ -405,9 +405,9 @@ local function scan_mods()
 						if not seen[entry] then
 							seen[entry] = true
 							local modpath = entry_path
-							if ok_modpack and modfiles then
+							if ok_modpack and files then
 								local file_list = {}
-								for _, f in ipairs(modfiles) do
+								for _, f in ipairs(files) do
 									if f:match("%.lua$") then
 										table.insert(file_list, {
 											name = f,
@@ -699,21 +699,21 @@ core.register_on_formspec_input(function(formname, fields)
 		if fields.mod_list then
 			local ev = core.explode_textlist_event(fields.mod_list)
 			if ev.type == "DCL" then
-				mod_selected = mod_list[ev.row] and mod_list[ev.row].name
+				mod_selected = mod_list[ev.index] and mod_list[ev.index].name
 				core.show_formspec("lua:mods", mod_browser())
 			end
 		elseif fields.mod_files then
 			local ev = core.explode_textlist_event(fields.mod_files)
 			if ev.type == "DCL" then
-				local files = {}
+				local mod_files = {}
 				for _, mod in ipairs(mod_list) do
 					if mod.name == mod_selected then
-						files = mod.files
+						mod_files = mod.files
 						break
 					end
 				end
-				if files[ev.row] then
-					mod_file_selected = files[ev.row].path
+				if mod_files[ev.index] then
+					mod_file_selected = mod_files[ev.index].path
 					local ok, content = pcall(core.read_file, mod_file_selected)
 					mod_file_content = ok and content or ""
 					core.show_formspec("lua:mod_editor", mod_editor())
