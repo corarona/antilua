@@ -673,12 +673,12 @@ local function main_button_handler(tabview, fields, name, tabdata)
 			addr = fields.te_address or core.settings:get("address")
 			port = fields.te_port or core.settings:get("remote_port")
 		end
-		local name = fields.te_name
-		if name == "" then name = account.username end
+		local playername = fields.te_name
+		if playername == "" then playername = account.username end
 		local pwd = fields.te_pwd
 		if pwd == "" then pwd = account.password or "" end
 		gamedata.mode       = "join"
-		gamedata.playername = name
+		gamedata.playername = playername
 		gamedata.password   = pwd
 		gamedata.address    = addr
 		gamedata.port       = tonumber(port)
@@ -716,12 +716,12 @@ local function main_button_handler(tabview, fields, name, tabdata)
 					return true
 				end
 
-				local name = fields.te_name
+				local playername = fields.te_name
 				local pwd = fields.te_pwd
-				if (name == "" or name == nil) and account_manager then
+				if (playername == "" or playername == nil) and account_manager then
 					local account = get_selected_online_account()
 					if account then
-						name = account.username
+						playername = account.username
 						if pwd == "" then
 							pwd = account.password or ""
 						end
@@ -729,15 +729,15 @@ local function main_button_handler(tabview, fields, name, tabdata)
 				end
 
 			-- Save password to account manager if requested
-			if tabdata.save_password and name and name ~= "" and pwd and pwd ~= "" and account_manager then
+			if tabdata.save_password and playername and playername ~= "" and pwd and pwd ~= "" and account_manager then
 				local server_key = server.address .. ":" .. server.port
-				account_manager.upsert(name, pwd, server_key)
+				account_manager.upsert(playername, pwd, server_key)
 			end
 
 			gamedata.mode       = "join"
 				gamedata.address    = server.address
 				gamedata.port       = server.port
-				gamedata.playername = name
+				gamedata.playername = playername
 				gamedata.selected_world = 0
 
 				if pwd then
@@ -825,12 +825,12 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		match_account_to_server(fields.te_address, fields.te_port)
 
 		-- Fill name/password from selected account if fields are empty
-		local name = fields.te_name
+		local playername = fields.te_name
 		local pwd = fields.te_pwd
-		if (name == "" or name == nil) and account_manager then
+		if (playername == "" or playername == nil) and account_manager then
 			local account = get_selected_online_account()
 			if account then
-				name = account.username
+				playername = account.username
 				if pwd == "" then
 					pwd = account.password or ""
 				end
@@ -843,13 +843,13 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		end
 
 		-- Save password to account manager if requested
-		if tabdata.save_password and name and name ~= "" and pwd and pwd ~= "" and account_manager then
+		if tabdata.save_password and playername and playername ~= "" and pwd and pwd ~= "" and account_manager then
 			local server_key = fields.te_address .. ":" .. te_port_number
-			account_manager.upsert(name, pwd, server_key)
+			account_manager.upsert(playername, pwd, server_key)
 		end
 
 		gamedata.mode       = "join"
-		gamedata.playername = name
+		gamedata.playername = playername
 		gamedata.password   = pwd
 		gamedata.address    = fields.te_address
 		gamedata.port       = te_port_number
