@@ -98,7 +98,7 @@ function al_formspec.field(x, y, w, h, id, label, default)
 	return s
 end
 
-function al_formspec.textlist(x, y, w, h, id, items)
+function al_formspec.textlist(x, y, w, h, id, items, selected_idx)
 	local s = "textlist[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";" .. id .. ";"
 	if items and #items > 0 then
 		local escaped = {}
@@ -109,7 +109,7 @@ function al_formspec.textlist(x, y, w, h, id, items)
 	else
 		s = s .. " "
 	end
-	s = s .. ";1]"
+	s = s .. ";" .. (selected_idx or 1) .. "]"
 	return s
 end
 
@@ -158,6 +158,97 @@ end
 
 function al_formspec.refresh_cheat_form(setting_name)
 	core.show_cheat_settings_form(setting_name)
+end
+
+--
+-- searchbar: returns { field, button } pair for a filter/search bar.
+-- Button uses id "__<id>_search". Consumers check for this field in
+-- register_on_formspec_input, or check key_enter_field on the field id.
+--
+function al_formspec.searchbar(x, y, w, id, opts)
+	opts = opts or {}
+	local bw = opts.button_width or 1.7
+	local bw_half = bw / 2
+	local field_w = w - bw - 0.3
+	return {
+		al_formspec.field(x, y, field_w, 0.8, id, opts.placeholder or "Filter:", opts.default or ""),
+		al_formspec.button(x + field_w + 0.3, y, bw, 0.8, "__" .. id .. "_search", opts.button or "Go"),
+	}
+end
+
+--
+-- confirm_layout: returns { label, btn_no, btn_yes } for embedding in a
+-- larger formspec. Caller positions x,y and the dialog spans w wide.
+-- opts: { yes_label, no_label }
+--
+function al_formspec.confirm_layout(x, y, w, text, yes_id, no_id, opts)
+	opts = opts or {}
+	local btn_w = math.max((w - 0.3) / 2, 2)
+	return {
+		al_formspec.label(x, y, text),
+		al_formspec.button(x, y + 0.8, btn_w, 0.7, no_id or "cancel", opts.no_label or "Cancel"),
+		al_formspec.button(x + btn_w + 0.3, y + 0.8, btn_w, 0.7, yes_id or "confirm", opts.yes_label or "Confirm"),
+	}
+end
+
+--
+-- confirm_dialog: returns a complete standalone formspec string for a
+-- confirmation popup. Wraps confirm_layout with begin()/get().
+-- opts: { size, yes_label, no_label }
+--
+function al_formspec.confirm_dialog(text, yes_id, no_id, opts)
+	opts = opts or {}
+	local sb = al_formspec.begin(opts.size or "size[6,2.5]")
+	sb:add(al_formspec.confirm_layout(0.35, 0.25, 5.3, text, yes_id, no_id, {
+		yes_label = opts.yes_label,
+		no_label = opts.no_label,
+	}))
+	return sb:get()
+end
+
+--
+-- progress_bar: returns { box_bg, box_fill, label } for a visual progress
+-- indicator. Use with sb:add() which flattens tables.
+-- opts: { fill_color, bg_color }
+--
+function al_formspec.progress_bar(x, y, w, h, id, value, max, opts)
+	opts = opts or {}
+	max = math.max(max or 1, 1)
+	local pct = math.max(0, math.min(value / max, 1))
+	local fill_w = (w - 0.2) * pct
+	local fill_color = opts.fill_color or al_formspec.ACCENT
+	local bg_color = opts.bg_color or al_formspec.BG_COLOR
+	local pct_text = math.floor(pct * 100) .. "%"
+	return {
+		"box[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";" .. bg_color .. "]",
+		"box[" .. (x + 0.1) .. "," .. (y + 0.1) .. ";" .. math.max(fill_w, 0) .. "," .. (h - 0.2) .. ";" .. fill_color .. "]",
+		al_formspec.label(x + w / 2 - 0.3, y + h / 2 - 0.25, pct_text),
+	}
+end
+
+function al_formspec.tabheader(x, y, id, tabs, current)
+	local s = "tabheader[" .. x .. "," .. y .. ";" .. id .. ";"
+	if tabs and #tabs > 0 then
+		local escaped = {}
+		for _, v in ipairs(tabs) do
+			table.insert(escaped, al_formspec.escape(v))
+		end
+		s = s .. table.concat(escaped, ",")
+	end
+	s = s .. ";" .. (current or 1) .. "]"
+	return s
+end
+
+function al_formspec.box(x, y, w, h, color)
+	return "box[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";" .. (color or al_formspec.BG_COLOR) .. "]"
+end
+
+function al_formspec.scroll_container(x, y, w, h, id, orientation)
+	return "scroll_container[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";" .. id .. ";" .. (orientation or "vertical") .. "]"
+end
+
+function al_formspec.scroll_container_end()
+	return "scroll_container_end[]"
 end
 
 core.al_formspec = al_formspec

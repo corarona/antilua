@@ -180,4 +180,122 @@ function test_formspec(T)
 		local s = core.al_formspec.color("#ff0", "test")
 		T.assert(type(s) == "string", "color should return a string")
 	end)
+
+	-- textlist with selected_idx
+	T.run("al_formspec.textlist with selected_idx", function()
+		local result = core.al_formspec.textlist(0, 0, 5, 3, "mylist", {"a", "b"}, 2)
+		T.assert(result:match(";2%]") ~= nil, "should end with ;2]")
+		local result0 = core.al_formspec.textlist(0, 0, 5, 3, "empty", {}, 0)
+		T.assert(result0:match(";0%]") ~= nil, "empty list with selected_idx=0")
+	end)
+
+	-- searchbar
+	T.run("al_formspec.searchbar returns {field, button}", function()
+		local result = core.al_formspec.searchbar(0, 0, 8.2, "filter")
+		T.assert(type(result) == "table", "should be a table")
+		T.assert_eq(#result, 2, "should have 2 elements")
+		T.assert(result[1]:find("^field%[") ~= nil, "first element should be field")
+		T.assert(result[2]:find("^button%[") ~= nil, "second element should be button")
+		T.assert(result[2]:find("__filter_search") ~= nil, "button id should be __<id>_search")
+	end)
+
+	T.run("al_formspec.searchbar uses custom opts", function()
+		local result = core.al_formspec.searchbar(0, 0, 8.2, "test", {
+			placeholder = "Search:", button = "Find", default = "abc",
+		})
+		T.assert(result[1]:find("Search:") ~= nil, "should use custom placeholder")
+		T.assert(result[2]:find("Find") ~= nil, "should use custom button label")
+		T.assert(result[1]:find("abc") ~= nil, "should include default value")
+	end)
+
+	-- confirm_layout
+	T.run("al_formspec.confirm_layout returns {label, btn, btn}", function()
+		local result = core.al_formspec.confirm_layout(0, 0, 6, "Are you sure?", "yes_btn", "no_btn")
+		T.assert(type(result) == "table", "should be a table")
+		T.assert_eq(#result, 3, "should have 3 elements")
+		T.assert(result[1]:find("^label%[") ~= nil, "first should be label")
+		T.assert(result[2]:find("no_btn") ~= nil, "second should be no button")
+		T.assert(result[3]:find("yes_btn") ~= nil, "third should be yes button")
+	end)
+
+	T.run("al_formspec.confirm_layout custom labels", function()
+		local result = core.al_formspec.confirm_layout(0, 0, 6, "text", "ok", "cancel",
+			{ yes_label = "OK", no_label = "Cancel" })
+		T.assert(result[2]:find("Cancel") ~= nil, "custom no label")
+		T.assert(result[3]:find("OK") ~= nil, "custom yes label")
+	end)
+
+	-- confirm_dialog
+	T.run("al_formspec.confirm_dialog returns complete formspec", function()
+		local result = core.al_formspec.confirm_dialog("Delete this?", "do_delete", "cancel")
+		T.assert(type(result) == "string", "should be a string")
+		T.assert(result:find("bgcolor") ~= nil, "should include bgcolor")
+		T.assert(result:find("do_delete") ~= nil, "should include yes button id")
+		T.assert(result:find("Delete this?") ~= nil, "should include confirmation text")
+	end)
+
+	T.run("al_formspec.confirm_dialog custom opts", function()
+		local result = core.al_formspec.confirm_dialog("Go?", "yes", "no", { yes_label = "Sure" })
+		T.assert(result:find("Sure") ~= nil, "should use custom yes label")
+		T.assert(result:find("no") ~= nil, "should use custom no id")
+	end)
+
+	-- progress_bar
+	T.run("al_formspec.progress_bar returns {box, box, label}", function()
+		local result = core.al_formspec.progress_bar(0, 0, 5, 0.5, "prog", 5, 10)
+		T.assert(type(result) == "table", "should be a table")
+		T.assert_eq(#result, 3, "should have 3 elements")
+		T.assert(result[1]:find("^box%[") ~= nil, "first should be box (bg)")
+		T.assert(result[2]:find("^box%[") ~= nil, "second should be box (fill)")
+		T.assert(result[3]:find("^label%[") ~= nil, "third should be label")
+	end)
+
+	T.run("al_formspec.progress_bar at 0%, 50%, 100%", function()
+		local empty = core.al_formspec.progress_bar(0, 0, 5, 0.5, "p", 0, 10)
+		T.assert(empty[3]:find("0%%") ~= nil, "0% label")
+		local half = core.al_formspec.progress_bar(0, 0, 5, 0.5, "p", 5, 10)
+		T.assert(half[3]:find("50%%") ~= nil, "50% label")
+		local full = core.al_formspec.progress_bar(0, 0, 5, 0.5, "p", 10, 10)
+		T.assert(full[3]:find("100%%") ~= nil, "100% label")
+	end)
+
+	T.run("al_formspec.progress_bar clamps values", function()
+		local under = core.al_formspec.progress_bar(0, 0, 5, 0.5, "p", -1, 10)
+		T.assert(under[3]:find("0%%") ~= nil, "negative clamps to 0%")
+		local over = core.al_formspec.progress_bar(0, 0, 5, 0.5, "p", 20, 10)
+		T.assert(over[3]:find("100%%") ~= nil, "over clamps to 100%")
+	end)
+
+	T.run("al_formspec.progress_bar accepts custom fill_color", function()
+		local result = core.al_formspec.progress_bar(0, 0, 5, 0.5, "p", 5, 10, { fill_color = "#ff0000" })
+		T.assert(result[2]:find("#ff0000") ~= nil, "fill box should use custom color")
+	end)
+
+	-- tabheader
+		T.run("al_formspec.tabheader produces correct format", function()
+		local result = core.al_formspec.tabheader(0, 0, "inv_tabs", {"A", "B"}, 2)
+		T.assert_eq(result, "tabheader[0,0;inv_tabs;A,B;2]", "tabheader format")
+		local default = core.al_formspec.tabheader(0, 0, "tabs", {"X"})
+		T.assert(default:match(";1%]") ~= nil, "defaults to selected_idx 1")
+	end)
+
+	-- box
+	T.run("al_formspec.box produces correct format", function()
+		local result = core.al_formspec.box(0, 0, 5, 0.5, "#fff")
+		T.assert_eq(result, "box[0,0;5,0.5;#fff]", "box format with color")
+		local default = core.al_formspec.box(0, 0, 5, 0.5)
+		T.assert(default:find("^box%[") ~= nil, "box without color should still work")
+	end)
+
+	-- scroll_container
+	T.run("al_formspec.scroll_container produces correct format", function()
+		local vert = core.al_formspec.scroll_container(0, 1, 9, 9, "mscroll")
+		T.assert_eq(vert, "scroll_container[0,1;9,9;mscroll;vertical]", "vertical scroll container")
+		local horiz = core.al_formspec.scroll_container(0, 1, 9, 9, "mscroll", "horizontal")
+		T.assert_eq(horiz, "scroll_container[0,1;9,9;mscroll;horizontal]", "horizontal scroll container")
+	end)
+
+	T.run("al_formspec.scroll_container_end", function()
+		T.assert_eq(core.al_formspec.scroll_container_end(), "scroll_container_end[]", "scroll_container_end")
+	end)
 end

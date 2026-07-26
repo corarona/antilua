@@ -131,8 +131,7 @@ local function show_index(filter)
 
 	local sb = al_formspec.begin("size[9,12,true]")
 	sb:add(
-		al_formspec.field(0, 0, 6.5, 0.8, "filter", "Filter:", filter),
-		al_formspec.button(7, 0, 1.7, 0.8, "__search", "Go"),
+		al_formspec.searchbar(0, 0, 8.2, "filter", { default = filter }),
 		al_formspec.label(0, 0.9, "Help \226\128\148 Select a mod"),
 		"scroll_container[0,1.5;9,9.5;mscroll;vertical]"
 	)
@@ -198,7 +197,7 @@ core.register_on_formspec_input(function(formname, fields)
 		end
 
 		-- Filter: Go button or Enter in filter field
-		if fields.__search or (fields.filter and fields.filter ~= filter) then
+		if fields.__filter_search or (fields.filter and fields.filter ~= filter) then
 			show_index(fields.filter or filter)
 			return
 		end

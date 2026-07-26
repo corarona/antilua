@@ -18,26 +18,26 @@ local function show_list_fs(param, ll, tab)
 	tab = tab or 0
 	local name = core.localplayer:get_name()
 	local inv = core.get_inventory("player:" .. name)
-	local theme_bg = core.settings:get("theme_bg") or "#121212"
+	local af = core.al_formspec
 
 	local form_h = (tab == 0) and "12.425" or "13.5"
-	local fs = "formspec_version[10]size[11.75," .. form_h .. "]no_prepend[]bgcolor[" .. theme_bg .. ";true]" ..
-		"tabheader[0,0;inv_tabs;Inventories,Nearby;" .. (tab + 1) .. "]" ..
-		"button[10.5," .. (tab == 0 and "11.5" or "12.5") .. ";1,0.8;close;Close]"
+	local sb = af.begin("size[11.75," .. form_h .. "]")
+	sb:add(
+		af.tabheader(0, 0, "inv_tabs", {"Inventories", "Nearby"}, tab + 1),
+		af.button_exit(10.5, tab == 0 and 11.5 or 12.5, 1, 0.8, "close", "Close")
+	)
 
 	if tab == 0 then
-		local dlists = ""
+		local dlist_tb = {}
 		local i, idx = 1, 1
-
 		for k in pairs(inv) do
 			if not param or param == "" then
 				param = k
 			end
-			dlists = dlists .. k .. ","
+			dlist_tb[i] = k
 			if k == param then idx = i end
 			i = i + 1
 		end
-		dlists = dlists:sub(1, -2)
 
 		if not inv[param] then
 			return false, "List doesn't exist"
@@ -48,18 +48,19 @@ local function show_list_fs(param, ll, tab)
 			if x < 9 then x = x + 1 elseif y < 3 then y = y + 1 end
 		end
 
-		fs = fs ..
-			"label[0.375,0.375;Show Inv List]" ..
-			"dropdown[8,0.175;3,1;select_list;" .. dlists .. ";" .. idx .. "]" ..
-			ws.get_itemslot_bg_v4(0.375, 1.75, x, y) ..
-			"list[current_player;" .. param .. ";0.375,1.75;" .. x .. "," .. y .. ";]" ..
-			"label[0.375,6.7;Inventory]" ..
-			ws.get_itemslot_bg_v4(0.375, 7.1, 9, 3) ..
-			"list[current_player;main;0.375,7.1;9,3;9]" ..
-			ws.get_itemslot_bg_v4(0.375, 11.05, 9, 1) ..
-			"list[current_player;main;0.375,11.05;9,1;]" ..
-			"listring[current_player;" .. param .. "]" ..
+		sb:add(
+			af.label(0.375, 0.375, "Show Inv List"),
+			af.dropdown(8, 0.175, 3, "select_list", dlist_tb, idx),
+			ws.get_itemslot_bg_v4(0.375, 1.75, x, y),
+			"list[current_player;" .. param .. ";0.375,1.75;" .. x .. "," .. y .. ";]",
+			af.label(0.375, 6.7, "Inventory"),
+			ws.get_itemslot_bg_v4(0.375, 7.1, 9, 3),
+			"list[current_player;main;0.375,7.1;9,3;9]",
+			ws.get_itemslot_bg_v4(0.375, 11.05, 9, 1),
+			"list[current_player;main;0.375,11.05;9,1;]",
+			"listring[current_player;" .. param .. "]",
 			"listring[current_player;main]"
+		)
 	else
 		local pos = core.localplayer and core.localplayer:get_pos()
 		local range = 6
@@ -74,7 +75,7 @@ local function show_list_fs(param, ll, tab)
 			local n = core.get_node_or_nil(p)
 			if n then
 				local label = n.name .. " (" .. p.x .. "," .. p.y .. "," .. p.z .. ")"
-				table.insert(node_entries, core.formspec_escape(label))
+				table.insert(node_entries, label)
 				if selected_node and vector.equals(p, selected_node) then
 					sel_idx = id
 					selected_node = p
@@ -85,13 +86,12 @@ local function show_list_fs(param, ll, tab)
 			selected_node = nodes[1]
 		end
 
-		fs = fs .. "label[0.375,0.375;Nearby inventory nodes]"
+		sb:add(af.label(0.375, 0.375, "Nearby inventory nodes"))
 
 		if #node_entries == 0 then
-			fs = fs .. "label[0.375,1.5;No inventory nodes nearby]"
+			sb:add(af.label(0.375, 1.5, "No inventory nodes nearby"))
 		else
-			fs = fs .. "textlist[0.375,1;5.5,7.5;nearby_nodes;" ..
-				table.concat(node_entries, ",") .. ";" .. sel_idx .. "]"
+			sb:add(af.textlist(0.375, 1, 5.5, 7.5, "nearby_nodes", node_entries, sel_idx))
 
 			if selected_node then
 				local spos = selected_node.x .. "," .. selected_node.y .. "," .. selected_node.z
@@ -111,11 +111,11 @@ local function show_list_fs(param, ll, tab)
 
 					local node_name = core.get_node_or_nil(selected_node)
 					node_name = node_name and node_name.name or "unknown"
-					fs = fs ..
-						"label[6.375,0.375;" .. core.formspec_escape(node_name) .. "]" ..
-						"label[6.375,0.75;" .. spos .. "]" ..
-						"dropdown[6.375,1.5;3,1;nearby_list;" ..
-							table.concat(list_keys, ",") .. ";" .. list_idx .. "]"
+					sb:add(
+						af.label(6.375, 0.375, node_name),
+						af.label(6.375, 0.75, spos),
+						af.dropdown(6.375, 1.5, 3, "nearby_list", list_keys, list_idx)
+					)
 
 					local list_data = ninv[chosen_list]
 					if list_data then
@@ -138,22 +138,22 @@ local function show_list_fs(param, ll, tab)
 						if slots > 54 then
 							table.insert(lines, "... and " .. (slots - 54) .. " more")
 						end
-						local text = table.concat(lines, ",")
-						fs = fs .. "textlist[6.375,2.5;5,4;nearby_items;" .. core.formspec_escape(text) .. ";0]"
+						sb:add(af.textlist(6.375, 2.5, 5, 4, "nearby_items", lines, 0))
 					end
 				end
 			end
 		end
 
-		fs = fs ..
-			"label[0.375,8.5;Your Inventory]" ..
-			ws.get_itemslot_bg_v4(0.375, 9, 9, 3) ..
-			"list[current_player;main;0.375,9;9,3;9]" ..
-			ws.get_itemslot_bg_v4(0.375, 12.05, 9, 1) ..
+		sb:add(
+			af.label(0.375, 8.5, "Your Inventory"),
+			ws.get_itemslot_bg_v4(0.375, 9, 9, 3),
+			"list[current_player;main;0.375,9;9,3;9]",
+			ws.get_itemslot_bg_v4(0.375, 12.05, 9, 1),
 			"list[current_player;main;0.375,12.05;9,1;]"
+		)
 	end
 
-	core.show_formspec("inv_list", fs)
+	core.show_formspec("inv_list", sb:get())
 	return true
 end
 

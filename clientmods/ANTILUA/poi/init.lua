@@ -531,24 +531,16 @@ end
 
 local function show_delete_fs(name)
 	local af = core.al_formspec
-	local sb = af.begin("size[6,2]")
-	sb:add(
-		af.label(0.35, 0.25, [[Are you sure you want to delete "]] .. name .. [["?]]),
-		af.button(0, 1, 3, 1, "cancel", "Cancel"),
-		af.button(3, 1, 3, 1, "delete_confirm", "Delete")
-	)
-	return core.show_formspec("poi-csm", sb:get())
+	return core.show_formspec("poi-csm", af.confirm_dialog(
+		[[Are you sure you want to delete "]] .. name .. [["?]],
+		"delete_confirm", "cancel"))
 end
 
 local function show_clear_all_fs()
 	local af = core.al_formspec
-	local sb = af.begin("size[6,2]")
-	sb:add(
-		af.label(0.35, 0.2, "Hide ALL displayed waypoints?"),
-		af.button(0, 1, 3, 1, "cancel", "Cancel"),
-		af.button(3, 1, 3, 1, "clear_all_confirm", "Hide All")
-	)
-	return core.show_formspec("poi-csm", sb:get())
+	return core.show_formspec("poi-csm", af.confirm_dialog(
+		"Hide ALL displayed waypoints?",
+		"clear_all_confirm", "cancel", { yes_label = "Hide All" }))
 end
 
 core.register_on_formspec_input(function(formname, fields)
