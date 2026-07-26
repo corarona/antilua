@@ -92,6 +92,12 @@ void ScriptApiCheats::init_cheats()
 {
 	SCRIPTAPI_PRECHECKHEADER
 
+	// Clear old cheat categories (avoids duplicates on mod reload)
+	for (auto *cat : m_cheat_categories)
+		delete cat;
+	m_cheat_categories.clear();
+	m_cheats_loaded = false;
+
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "cheats");
 	if (!lua_istable(L, -1)) {

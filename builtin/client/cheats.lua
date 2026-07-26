@@ -19,6 +19,11 @@ function core.register_cheat(name, ...)
 		end
 	end
 
+	-- Idempotent: skip if already registered (avoids duplicates on mod reload)
+	if core.cheats[def.category] and core.cheats[def.category][def.name] then
+		return core.cheats[def.category][def.name]
+	end
+
 	def.conflicts_with = def.conflicts_with or {}
 
 	if def.setting then
