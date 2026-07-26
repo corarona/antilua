@@ -104,6 +104,14 @@ files["builtin/common/settings"] = {
 	std = "+menu_common",
 }
 
+files["builtin/client/cheats.lua"] = {
+	read_globals = { "ws" },
+}
+
+files["builtin/client/misc.lua"] = {
+	read_globals = { "nlist" },
+}
+
 files["builtin/common/tests"] = {
 	read_globals = {
 		"describe",
