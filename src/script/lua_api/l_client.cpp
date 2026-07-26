@@ -31,6 +31,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/pathfind.h"
 #include "client/task_markers.h"
 #include "itemdef.h"
+#include "client/mod_vfs.h"
 #include "client/client.h"
 #include "client/clientevent.h"
 #include "client/sound.h"
@@ -119,6 +120,33 @@ int ModApiClient::l_get_modpath_real(lua_State *L)
 	} else {
 		lua_pushnil(L);
 	}
+	return 1;
+}
+
+// reload_mod(modname)
+int ModApiClient::l_reload_mod(lua_State *L)
+{
+	std::string modname = readParam<std::string>(L, 1);
+	Client *client = getClient(L);
+	ClientScripting *script = client->getScript();
+	if (modname.empty())
+		return 0;
+
+	const ModSpec *mod = client->getModSpec(modname);
+	if (!mod) {
+		warningstream << "reload_mod: mod \"" << modname << "\" not found" << std::endl;
+		return 0;
+	}
+
+	// Re-scan mod files from disk into VFS
+	client->getModVFS()->scanModIntoMemory(modname, mod->path);
+	// Re-execute init.lua in the existing Lua state
+	script->loadModFromMemory(modname);
+
+	// Re-initialize cheats/features if the mod defines them
+	script->init_cheats();
+
+	lua_pushboolean(L, true);
 	return 1;
 }
 
@@ -1805,6 +1833,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(find_path);
 	API_FCT(load_media);
 	API_FCT(set_node_esp_list);
+	API_FCT(reload_mod);
 }
 
 void ModApiClient::InitializeSSCSM(lua_State *L, int top)

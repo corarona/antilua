@@ -12,7 +12,7 @@ local F = core.formspec_escape  -- shorten the function
 
 local function create_tabs(selected)
 	return "tabheader[0,0;_option_tabs_;" ..
-	"  LUA EDITOR   , LUA CONSOLE  ,	 FILES	 ,	STARTUP	  ;"..selected..";;]"
+	"  LUA EDITOR   , LUA CONSOLE  ,	 FILES	 ,	STARTUP	  ,	 MODS   ;"..selected..";;]"
 end
 
 local function copy_table(t)
@@ -54,6 +54,12 @@ local lua_files = split(dte.modstorage:get_string("_lua_files_list"), ",")  -- t
 
 
 local selected_file = 0
+
+-- Mod browser state
+local mod_list = {}           -- list of {name, path, files[{name, path}]}
+local mod_selected = false    -- currently selected mod name
+local mod_file_selected = false  -- currently selected mod file path for editing
+local mod_file_content = ""   -- cached content of the file being edited
 
 ----------
 -- FILE READING AND SAVING
@@ -297,6 +303,142 @@ local function lua_editor()  -- the main formspec for editing
 end
 
 
+-- Mod reload: remove all registered callbacks from a given mod
+local function cleanup_mod(modname)
+	local cleaned = 0
+	for k, v in pairs(core) do
+		if type(v) == "table" and k:match("^registered_on_") then
+			for i = #v, 1, -1 do
+				local origin = core.callback_origins[v[i]]
+				if origin and origin.mod == modname then
+					core.callback_origins[v[i]] = nil
+					table.remove(v, i)
+					cleaned = cleaned + 1
+				end
+			end
+		end
+	end
+	-- Remove cheat definitions from that mod
+	if core.registered_cheats then
+		for cat, cheats in pairs(core.registered_cheats) do
+			if type(cheats) == "table" then
+				for i = #cheats, 1, -1 do
+					if cheats[i] and cheats[i].origin_mod == modname then
+						table.remove(cheats, i)
+					end
+				end
+			end
+		end
+	end
+	return cleaned
+end
+
+-- Scan mod directories and build the mod list
+local function scan_mods()
+	mod_list = {}
+	local seen = {}
+
+	-- Derive share path from builtin path
+	local builtin_path = core.get_builtin_path()
+	local share_root = builtin_path:match("^(.*/)builtin/")
+	local paths = {}
+	if share_root then
+		table.insert(paths, share_root .. "clientmods")
+	end
+	-- Derive user path from DTE mod's own location
+	local dte_path = core.get_modpath_real(core.get_current_modname())
+	if dte_path then
+		local user_root = dte_path:match("^(.*/)ANTILUA/")
+		if user_root then
+			table.insert(paths, user_root:sub(1, -2)) -- remove trailing slash
+		else
+			-- Fallback: DTE might be in user mods directly
+			local parent = dte_path:match("^(.*/)")
+			if parent then
+				table.insert(paths, parent:sub(1, -2))
+			end
+		end
+	end
+
+	for _, base in ipairs(paths) do
+		local ok, entries = pcall(core.get_dir_list, base, true)
+		if ok and entries then
+			for _, modname in ipairs(entries) do
+				if not seen[modname] then
+					seen[modname] = true
+					local modpath = base .. "/" .. modname
+					local ok2, files = pcall(core.get_dir_list, modpath, false)
+					if ok2 and files then
+						local file_list = {}
+						for _, f in ipairs(files) do
+							if f:match("%.lua$") then
+								table.insert(file_list, {
+									name = f,
+									path = modpath .. "/" .. f,
+								})
+							end
+						end
+						table.insert(mod_list, {
+							name = modname,
+							path = modpath,
+							files = file_list,
+						})
+					end
+				end
+			end
+		end
+	end
+	table.sort(mod_list, function(a, b) return a.name < b.name end)
+end
+
+-- Show the mod file editor formspec
+local function mod_editor()
+	local code = F(mod_file_content or "")
+	local form = "" ..
+		"size["..data.width..","..data.height.."]" ..
+		"label[0,0;Editing: " .. F(mod_file_selected or "") .. "]" ..
+		"codeedit[0.3,0.5;"..data.width..","..(data.height-2)
+			..";mod_editor_edit;Mod file;"..code.."]" ..
+		"button[0,"..(data.height-1.5)..";1.5,0.8;mod_editor_save;SAVE]" ..
+		"button[1.6,"..(data.height-1.5)..";2,0.8;mod_editor_savereload;SAVE & RELOAD]" ..
+		"button[3.7,"..(data.height-1.5)..";1.5,0.8;mod_editor_back;BACK]" ..
+		"" .. create_tabs(5)
+	return form
+end
+
+-- Show the mod browser formspec
+local function mod_browser()
+	scan_mods()
+	local mod_str = ""
+	for i, mod in ipairs(mod_list) do
+		if i > 1 then mod_str = mod_str .. "," end
+		mod_str = mod_str .. F(mod.name)
+	end
+	local file_str = ""
+	local files = {}
+	if mod_selected then
+		for _, mod in ipairs(mod_list) do
+			if mod.name == mod_selected then
+				files = mod.files
+				break
+			end
+		end
+		for i, f in ipairs(files) do
+			if i > 1 then file_str = file_str .. "," end
+			file_str = file_str .. F(f.name)
+		end
+	end
+
+	local form = "" ..
+		"size["..data.width..","..data.height.."]" ..
+		"label[0,0;MODS]" ..
+		"textlist[0,0.4;"..(data.width/2-0.1)..","..(data.height-1.3)..";mod_list;"..mod_str.."]" ..
+		"textlist["..(data.width/2)..",0.4;"..(data.width/2-0.1)..","..(data.height-1.3)..";mod_files;"..file_str.."]" ..
+		"label[0,"..(data.height-0.9)..";Double-click a file to edit it]" ..
+		"" .. create_tabs(5)
+	return form
+end
+
 local function file_viewer()  -- created with the formspec editor!
 	local lua_files_item_str = ""
 	for i, item in pairs(lua_files) do
@@ -507,8 +649,72 @@ core.register_on_formspec_input(function(formname, fields)
 			core.show_formspec("files:viewer", file_viewer())
 		elseif fields._option_tabs_ == "4" then
 			core.show_formspec("lua:startup", startup_form())
+		elseif fields._option_tabs_ == "5" then
+			core.show_formspec("lua:mods", mod_browser())
 		end
 
+	end
+
+	-- MOD BROWSER
+	if formname == "lua:mods" then
+		if fields.mod_list then
+			local ev = core.explode_textlist_event(fields.mod_list)
+			if ev.type == "DCL" then
+				mod_selected = mod_list[ev.row] and mod_list[ev.row].name
+				core.show_formspec("lua:mods", mod_browser())
+			end
+		elseif fields.mod_files then
+			local ev = core.explode_textlist_event(fields.mod_files)
+			if ev.type == "DCL" then
+				local files = {}
+				for _, mod in ipairs(mod_list) do
+					if mod.name == mod_selected then
+						files = mod.files
+						break
+					end
+				end
+				if files[ev.row] then
+					mod_file_selected = files[ev.row].path
+					local ok, content = pcall(core.read_file, mod_file_selected)
+					mod_file_content = ok and content or ""
+					core.show_formspec("lua:mod_editor", mod_editor())
+				end
+			end
+		end
+	end
+
+	-- MOD EDITOR
+	if formname == "lua:mod_editor" then
+		if fields.mod_editor_back then
+			core.show_formspec("lua:mods", mod_browser())
+		elseif fields.mod_editor_save or fields.mod_editor_savereload then
+			if mod_file_selected then
+				local ok, err = pcall(core.write_file, mod_file_selected, fields.mod_editor_edit)
+				if ok then
+					mod_file_content = fields.mod_editor_edit
+					table.insert(output, "#00ff00Saved: " .. mod_file_selected)
+				else
+					table.insert(output, "#ff0000Failed to save: " .. tostring(err))
+				end
+			end
+			if fields.mod_editor_savereload and mod_selected then
+				if core.features.codeedit_formspec and core.reload_mod then
+					local n = cleanup_mod(mod_selected)
+					table.insert(output, "#888888Cleaned " .. n .. " callbacks from " .. mod_selected)
+					local ok, err = pcall(core.reload_mod, mod_selected)
+					if ok then
+						table.insert(output, "#00ff00Reloaded: " .. mod_selected)
+					else
+						table.insert(output, "#ff0000Reload failed: " .. tostring(err))
+					end
+				else
+					table.insert(output, "#ff8800reload_mod not available on this client")
+				end
+				core.show_formspec("lua:mods", mod_browser())
+			else
+				core.show_formspec("lua:mod_editor", mod_editor())
+			end
+		end
 	end
 
 end)

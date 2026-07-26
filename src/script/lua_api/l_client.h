@@ -263,6 +263,9 @@ private:
 	// load_media(filename) — load custom media file
 	static int l_load_media(lua_State *L);
 
+	// reload_mod(modname) — re-scan mod files from disk and re-execute init.lua
+	static int l_reload_mod(lua_State *L);
+
 public:
 	static void Initialize(lua_State *L, int top);
 	static void InitializeSSCSM(lua_State *L, int top);
