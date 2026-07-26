@@ -346,7 +346,7 @@ local function scan_mods()
 		table.insert(paths, share_root .. "clientmods")
 	end
 	-- Derive user path from DTE mod's own location
-	local dte_path = core.get_modpath_real(core.get_current_modname())
+	local dte_path = core.get_modpath_real("dte")
 	if dte_path then
 		local user_root = dte_path:match("^(.*/)ANTILUA/")
 		if user_root then
