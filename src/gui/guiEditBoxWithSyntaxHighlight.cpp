@@ -400,6 +400,21 @@ static core::stringw deTab(const core::stringw &s)
 	return out;
 }
 
+// Compute line number gutter width in pixels
+static s32 calcGutterWidth(IGUIFont *font, s32 line_count)
+{
+	if (line_count < 1)
+		line_count = 1;
+	s32 n = line_count;
+	s32 digits = 1;
+	while (n >= 10) {
+		n /= 10;
+		digits++;
+	}
+	s32 char_w = font->getDimension(L"8").Width;
+	return char_w * (digits + 3); // digits + left/right padding
+}
+
 void GUIEditBoxWithSyntaxHighlight::calculateScrollPos()
 {
 	if (!AutoScroll)
@@ -412,6 +427,11 @@ void GUIEditBoxWithSyntaxHighlight::calculateScrollPos()
 	s32 cursLine = getLineFromPos(CursorPos);
 	if (cursLine < 0)
 		return;
+
+	// Account for line number gutter
+	s32 gutter_w = calcGutterWidth(font, (s32)BrokenText.size());
+	FrameRect.UpperLeftCorner.X += gutter_w;
+
 	setTextRect(cursLine);
 	const bool hasBrokenText = MultiLine || WordWrap;
 
@@ -524,17 +544,36 @@ void GUIEditBoxWithSyntaxHighlight::draw()
 
 	calculateFrameRect();
 
+	const bool ml = (!PasswordBox && (WordWrap || MultiLine));
+
+	// Line number gutter
+	IGUIFont *font = getActiveFont();
+	s32 gutter_w = 0;
+	if (font) {
+		s32 total_lines = ml ? (s32)BrokenText.size() : 1;
+		gutter_w = calcGutterWidth(font, total_lines);
+		core::rect<s32> gutter_bg = FrameRect;
+		gutter_bg.LowerRightCorner.X = gutter_bg.UpperLeftCorner.X + gutter_w;
+		skin->draw2DRectangle(this, video::SColor(0xFF252526),
+				gutter_bg, &AbsoluteClippingRect);
+		core::rect<s32> gutter_line;
+		gutter_line.UpperLeftCorner = core::vector2di(
+				gutter_bg.LowerRightCorner.X, gutter_bg.UpperLeftCorner.Y);
+		gutter_line.LowerRightCorner = core::vector2di(
+				gutter_bg.LowerRightCorner.X + 1, gutter_bg.LowerRightCorner.Y);
+		skin->draw2DRectangle(this, video::SColor(0xFF3c3c3c),
+				gutter_line, &AbsoluteClippingRect);
+	}
+	FrameRect.UpperLeftCorner.X += gutter_w;
+
 	core::rect<s32> localClipRect = FrameRect;
 	localClipRect.clipAgainst(AbsoluteClippingRect);
 
-	IGUIFont *font = getActiveFont();
 	if (!font)
 		return;
 
 	if (LastBreakFont != font)
 		breakText();
-
-	const bool ml = (!PasswordBox && (WordWrap || MultiLine));
 
 	// Re-tokenize if text changed (covers inputChar/inputString/delete paths)
 	if (m_tokenized_text_size != (u32)Text.size()
@@ -563,6 +602,29 @@ void GUIEditBoxWithSyntaxHighlight::draw()
 			c.clipAgainst(CurrentTextRect);
 			if (!c.isValid())
 				continue;
+
+			// Draw line number
+			if (gutter_w > 0) {
+				s32 line_no = i + 1;
+				core::stringw num;
+				wchar_t digit_buf[2] = {0, 0};
+				do {
+					digit_buf[0] = L'0' + (line_no % 10);
+					num = core::stringw(digit_buf) + num;
+					line_no /= 10;
+				} while (line_no);
+
+				s32 y = CurrentTextRect.UpperLeftCorner.Y;
+				s32 h = CurrentTextRect.LowerRightCorner.Y - y;
+				core::rect<s32> nr = core::rect<s32>(
+						FrameRect.UpperLeftCorner.X - gutter_w, y,
+						FrameRect.UpperLeftCorner.X - 4, y + h);
+				font->draw(num.c_str(), nr,
+						(i == getLineFromPos(CursorPos)) ?
+							video::SColor(0xFFcccccc) :
+							video::SColor(0xFF858585),
+						false, true, &AbsoluteClippingRect);
+			}
 
 			// Draw each token in its syntax color
 			s32 x_offset = CurrentTextRect.UpperLeftCorner.X;
