@@ -338,51 +338,90 @@ local function scan_mods()
 	mod_list = {}
 	local seen = {}
 
-	-- Derive share path from builtin path
+	-- Collect clientmods root directories
+	local roots = {}
 	local builtin_path = core.get_builtin_path()
 	local share_root = builtin_path:match("^(.*/)builtin/")
-	local paths = {}
 	if share_root then
-		table.insert(paths, share_root .. "clientmods")
+		roots[#roots + 1] = share_root .. "clientmods"
 	end
-	-- Derive user path from DTE mod's own location
 	local dte_path = core.get_modpath_real("dte")
 	if dte_path then
-		local user_root = dte_path:match("^(.*/)ANTILUA/")
-		if user_root then
-			table.insert(paths, user_root:sub(1, -2)) -- remove trailing slash
-		else
-			-- Fallback: DTE might be in user mods directly
-			local parent = dte_path:match("^(.*/)")
-			if parent then
-				table.insert(paths, parent:sub(1, -2))
-			end
+		-- DTE is at <clientmods>/ANTILUA/dte/, go up 2 levels to clientmods/
+		local clientmods = dte_path:match("^(.*/)[^/]+/[^/]+$")
+		if clientmods then
+			roots[#roots + 1] = clientmods:match("^(.*/)") and clientmods:sub(1, -2) or clientmods
 		end
 	end
 
-	for _, base in ipairs(paths) do
-		local ok, entries = pcall(core.get_dir_list, base, true)
+	for _, root in ipairs(roots) do
+		local ok, entries = pcall(core.get_dir_list, root, true)
 		if ok and entries then
-			for _, modname in ipairs(entries) do
-				if not seen[modname] then
-					seen[modname] = true
-					local modpath = base .. "/" .. modname
-					local ok2, files = pcall(core.get_dir_list, modpath, false)
-					if ok2 and files then
-						local file_list = {}
+			for _, entry in ipairs(entries) do
+				-- Skip hidden dirs
+				if entry:sub(1, 1) ~= "." then
+					local entry_path = root .. "/" .. entry
+					-- Check if this is a modpack (has modpack.conf)
+					local ok_modpack, files = pcall(core.get_dir_list, entry_path, false)
+					local is_modpack = false
+					if ok_modpack then
 						for _, f in ipairs(files) do
-							if f:match("%.lua$") then
-								table.insert(file_list, {
-									name = f,
-									path = modpath .. "/" .. f,
+							if f == "modpack.conf" then
+								is_modpack = true
+								break
+							end
+						end
+					end
+					if is_modpack then
+						-- Scan subdirectories as individual mods
+						local ok_sub, subdirs = pcall(core.get_dir_list, entry_path, true)
+						if ok_sub and subdirs then
+							for _, sub in ipairs(subdirs) do
+								if not seen[sub] then
+									seen[sub] = true
+									local modpath = entry_path .. "/" .. sub
+									local ok_f, modfiles = pcall(core.get_dir_list, modpath, false)
+									if ok_f and modfiles then
+										local file_list = {}
+										for _, f in ipairs(modfiles) do
+											if f:match("%.lua$") then
+												table.insert(file_list, {
+													name = f,
+													path = modpath .. "/" .. f,
+												})
+											end
+										end
+										table.insert(mod_list, {
+											name = sub,
+											path = modpath,
+											files = file_list,
+										})
+									end
+								end
+							end
+						end
+					else
+						-- Standalone mod
+						if not seen[entry] then
+							seen[entry] = true
+							local modpath = entry_path
+							if ok_modpack and modfiles then
+								local file_list = {}
+								for _, f in ipairs(modfiles) do
+									if f:match("%.lua$") then
+										table.insert(file_list, {
+											name = f,
+											path = modpath .. "/" .. f,
+										})
+									end
+								end
+								table.insert(mod_list, {
+									name = entry,
+									path = modpath,
+									files = file_list,
 								})
 							end
 						end
-						table.insert(mod_list, {
-							name = modname,
-							path = modpath,
-							files = file_list,
-						})
 					end
 				end
 			end
