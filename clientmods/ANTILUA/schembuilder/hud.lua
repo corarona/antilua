@@ -18,7 +18,7 @@ function format_per_item(count)
 	return table.concat(parts, ", ")
 end
 
-local hud_id = nil
+hud_id = nil
 
 function update_hud()
 	if not core.localplayer then return end

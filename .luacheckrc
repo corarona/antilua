@@ -141,6 +141,11 @@ stds.al_client = {
     },
 }
 
+-- schembuilder shared globals
+files["clientmods/ANTILUA/schembuilder/*.lua"] = {
+        globals = { "hud_id" },
+}
+
 -- Antilua client mods
 files["clientmods/ANTILUA/wasplib/init.lua"] = { std = "+al_client" }
 files["clientmods/ANTILUA/wasplib/*.lua"] = { std = "+al_client" }
