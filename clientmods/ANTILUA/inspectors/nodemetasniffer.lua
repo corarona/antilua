@@ -1,6 +1,7 @@
 -- NodeMetaSniffer: detect and report nodemetadata changes
 
 local prev_meta = {}
+local meta_debounce = {}
 
 core.register_on_nodemetadata_change(function(changes)
 	if not core.settings:get_bool("nodemetasniffer") then
@@ -12,12 +13,16 @@ core.register_on_nodemetadata_change(function(changes)
 	if not player_pos then
 		return
 	end
+	local now = os.time()
 	for _, change in ipairs(changes) do
 		local pos = change.pos
+		local pos_key = core.pos_to_string(pos)
+		local last = meta_debounce[pos_key] or 0
+		if now - last >= 1 then
+		meta_debounce[pos_key] = now
 		local dist = vector.distance(player_pos, pos)
 		if dist <= range then
 			local diffs = {}
-			-- Compare old vs new
 			for key, new_val in pairs(change.new) do
 				local old_val = (change.old or {})[key]
 				if old_val ~= new_val then
@@ -26,7 +31,6 @@ core.register_on_nodemetadata_change(function(changes)
 					diffs[#diffs + 1] = key .. ": " .. old_short .. " -> " .. new_short
 				end
 			end
-			-- Keys that were removed
 			for key, old_val in pairs(change.old or {}) do
 				if change.new[key] == nil then
 					local old_short = #old_val > 40 and old_val:sub(1, 40) .. "..." or old_val
@@ -34,14 +38,21 @@ core.register_on_nodemetadata_change(function(changes)
 				end
 			end
 			if #diffs > 0 then
-				local msg = "Meta at " .. core.pos_to_string(pos) .. ": " .. table.concat(diffs, "; ")
-				if notify == "toast" or notify == "both" then
-					ws.notify(msg, ws.NOTIFY_INFO)
-				end
+				local msg = "Meta at " .. pos_key .. ": " .. table.concat(diffs, "; ")
 				if notify == "chat" or notify == "both" then
 					core.display_chat_message(msg)
 				end
+				if notify ~= "off" then
+					ws.notify(msg, ws.NOTIFY_INFO, {chat = false})
+				end
 			end
+		end
+		end
+	end
+	-- Clean stale debounce entries
+	for k in pairs(meta_debounce) do
+		if now - meta_debounce[k] > 10 then
+			meta_debounce[k] = nil
 		end
 	end
 end)

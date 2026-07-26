@@ -24,7 +24,7 @@ local function show_coord_waypoint(pos, source)
 	core.after(60, function()
 		ws.hud_remove_waypoint(key)
 	end)
-	core.display_chat_message("Coord: " .. label .. " — use .teleport to go there")
+	ws.notify(label .. " — use .teleport to go there", ws.NOTIFY_INFO, {chat = false})
 end
 
 core.register_on_receiving_chat_message(function(msg)

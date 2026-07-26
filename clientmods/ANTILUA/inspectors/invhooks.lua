@@ -1,6 +1,8 @@
 -- InvLogger + InvSnapshot
 
 local prev_snapshot = nil
+local invlogger_debounce = 0
+local invsnap_debounce = 0
 
 local function get_inv_snapshot()
 	local inv = core.get_inventory("current_player")
@@ -52,9 +54,14 @@ core.register_on_inventory_action(function()
 	if notify == "off" then
 		return
 	end
+	local now = os.time()
+	if now - invlogger_debounce < 1 then
+		return
+	end
+	invlogger_debounce = now
 	local msg = "Inventory action"
-	if notify == "toast" or notify == "both" then
-		ws.notify(msg, ws.NOTIFY_INFO)
+	if notify ~= "off" then
+		ws.notify(msg, ws.NOTIFY_INFO, {chat = false})
 	end
 	if notify == "chat" or notify == "both" then
 		core.display_chat_message(msg)
@@ -65,6 +72,11 @@ core.register_on_inventory_update(function()
 	if not core.settings:get_bool("invsnapshot") then
 		return
 	end
+	local now = os.time()
+	if now - invsnap_debounce < 1 then
+		return
+	end
+	invsnap_debounce = now
 	local snap = get_inv_snapshot()
 	if not snap then
 		return
@@ -83,7 +95,7 @@ core.register_on_inventory_update(function()
 			end
 		end
 		if #msgs > 0 then
-			ws.notify(table.concat(msgs, ", "), ws.NOTIFY_INFO)
+			ws.notify(table.concat(msgs, ", "), ws.NOTIFY_INFO, {chat = false})
 		end
 	end
 	prev_snapshot = snap

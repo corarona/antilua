@@ -87,7 +87,7 @@ core.register_on_receiving_chat_message(function(message)
 	if core.settings:get_bool("chat_alerts") then
 		for _, kw in ipairs(alert_keywords) do
 			if stripped:lower():find(kw:lower()) then
-				ws.notify("Chat alert: " .. kw, ws.NOTIFY_WARNING)
+				ws.notify("Chat alert: " .. kw, ws.NOTIFY_WARNING, {chat = false})
 				return core.colorize("#ffff00", stripped)
 			end
 		end

@@ -18,10 +18,17 @@ end
 -- Movement display
 --
 
+local mov_display_debounce = 0
+
 core.register_on_receive_physics_override(function(movement)
 	if not core.settings:get_bool("movement_display") then
 		return
 	end
+	local now = os.time()
+	if now - mov_display_debounce < 2 then
+		return
+	end
+	mov_display_debounce = now
 	core.display_chat_message(string.format(
 		"Movement: walk=%.1f jump=%.1f gravity=%.1f climb=%.1f",
 		movement.speed_walk, movement.speed_jump,
