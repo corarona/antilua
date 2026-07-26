@@ -3090,11 +3090,16 @@ const std::unordered_map<std::string, std::function<void(GUIFormSpecMenu*, GUIFo
 };
 
 // Custom element parsers registered at startup (e.g. "codeedit")
-static std::unordered_map<std::string, GUIFormSpecMenu::ElementParserFunc> s_custom_parsers;
+// Function-local static to avoid static init order fiasco (called before main())
+static std::unordered_map<std::string, GUIFormSpecMenu::ElementParserFunc>& customParsers()
+{
+	static std::unordered_map<std::string, GUIFormSpecMenu::ElementParserFunc> s_custom_parsers;
+	return s_custom_parsers;
+}
 
 bool GUIFormSpecMenu::registerElementParser(const std::string &type, ElementParserFunc func)
 {
-	return s_custom_parsers.emplace(type, func).second;
+	return customParsers().emplace(type, func).second;
 }
 
 
@@ -3124,8 +3129,9 @@ void GUIFormSpecMenu::parseElement(parserData* data, const std::string &element)
 	}
 
 	// Check custom parsers registered at runtime
-	auto custom_it = s_custom_parsers.find(type);
-	if (custom_it != s_custom_parsers.end()) {
+	auto &parsers = customParsers();
+	auto custom_it = parsers.find(type);
+	if (custom_it != parsers.end()) {
 		custom_it->second(this, data, description);
 		return;
 	}
