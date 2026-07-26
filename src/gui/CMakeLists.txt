@@ -16,6 +16,7 @@ set(gui_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/guiChatConsole.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/statusTextHelper.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/guiEditBoxWithScrollbar.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/guiEditBoxWithSyntaxHighlight.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/guiEngine.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/guiFormSpecMenu.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/guiInventoryList.cpp

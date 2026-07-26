@@ -102,6 +102,12 @@ function core.override_item(name, redefinition)
 	core.register_item_raw(itemdef)
 end
 
+-- codeedit[] formspec widget availability
+if not core.features then
+	core.features = {}
+end
+core.features.codeedit_formspec = true
+
 -- First-run tutorial
 core.register_on_mods_loaded(function()
 	if core.settings:get("antilua_onboarded") == nil then

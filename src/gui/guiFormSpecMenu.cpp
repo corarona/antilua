@@ -3089,6 +3089,14 @@ const std::unordered_map<std::string, std::function<void(GUIFormSpecMenu*, GUIFo
 		{"allow_close",            &GUIFormSpecMenu::parseAllowClose},
 };
 
+// Custom element parsers registered at startup (e.g. "codeedit")
+static std::unordered_map<std::string, GUIFormSpecMenu::ElementParserFunc> s_custom_parsers;
+
+bool GUIFormSpecMenu::registerElementParser(const std::string &type, ElementParserFunc func)
+{
+	return s_custom_parsers.emplace(type, func).second;
+}
+
 
 void GUIFormSpecMenu::parseElement(parserData* data, const std::string &element)
 {
@@ -3112,6 +3120,13 @@ void GUIFormSpecMenu::parseElement(parserData* data, const std::string &element)
 	auto it = element_parsers.find(type);
 	if (it != element_parsers.end()) {
 		it->second(this, data, description);
+		return;
+	}
+
+	// Check custom parsers registered at runtime
+	auto custom_it = s_custom_parsers.find(type);
+	if (custom_it != s_custom_parsers.end()) {
+		custom_it->second(this, data, description);
 		return;
 	}
 

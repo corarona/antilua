@@ -274,14 +274,22 @@ local function lua_editor()  -- the main formspec for editing
 	local code = F(load_lua())
 
 	-- create the form
+	local editor_widget
+	if core.features.codeedit_formspec then
+		editor_widget = "codeedit[0.3,0.1;"..data.width ..","..data.height-3
+			..";editor;Lua editor;"..code.."]"
+	else
+		editor_widget = "textarea[0.3,0.1;"..data.width ..","..data.height-3
+			..";editor;Lua editor;"..code.."]"
+	end
 	local form = ""..
 	"size["..data.width..","..data.height.."]" ..
-	"textarea[0.3,0.1;"..data.width ..","..data.height-3 ..";editor;Lua editor;"..code.."]"..
+	"style[editor;bgcolor=#80000000]" ..
+	editor_widget ..
 	"button[0," .. data.height-3.5 .. ";1,0;run;RUN]"..
 	"button[1," .. data.height-3.5 .. ";1,0;clear;CLEAR]"..
 	"button[2," .. data.height-3.5 .. ";1,0;save;SAVE]"..
-	"button[3.1," .. data.height-3.5 .. ";1,0;preview;PREVIEW]"..
-	"button[4.2," .. data.height-3.5 .. ";1,0;load_ext;LOAD]"..
+	"button[3.1," .. data.height-3.5 .. ";1,0;load_ext;LOAD]"..
 	"dropdown[5.3,"..data.height-3.8 ..";3;lua_select;"..lua_files_item_str..";"..idx.."]" ..
 	"textlist[0,"..data.height-3 ..";"..data.width-0.2 ..","..data.height-7 ..";output;"..output_str..";".. #output .."]"..
 	"" .. create_tabs(1)

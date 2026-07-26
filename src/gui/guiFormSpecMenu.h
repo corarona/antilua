@@ -461,6 +461,11 @@ private:
 
 	static const std::unordered_map<std::string, std::function<void(GUIFormSpecMenu*, GUIFormSpecMenu::parserData *data, const std::string &description)>> element_parsers;
 
+public:
+	using ElementParserFunc = std::function<void(GUIFormSpecMenu*, parserData*, const std::string&)>;
+	static bool registerElementParser(const std::string &type, ElementParserFunc func);
+
+private:
 	struct fs_key_pending {
 		bool key_up;
 		bool key_down;
@@ -528,6 +533,9 @@ private:
 	void parseSetFocus(parserData *, const std::string &element);
 	void parseModel(parserData *data, const std::string &element);
 	void parseAllowClose(parserData *data, const std::string &element);
+
+	friend void parseCodeEdit(GUIFormSpecMenu *menu, parserData *data,
+		const std::string &element);
 
 	bool parseMiddleRect(const std::string &value, core::rect<s32> *parsed_rect);
 
