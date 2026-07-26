@@ -19,11 +19,16 @@ local function pos_ok(pos, lava_range)
 	return not p
 end
 
+local lavapanic_timer = 0
 local function lavapanic()
 	local head = vector.offset(core.localplayer:get_pos(), 0, 1, 0)
 	local headnode = core.get_node_or_nil(head)
 	if headnode and headnode.name:find("lava") then
 		core.localplayer:set_pos(vector.offset(head, 0, 10, 0))
+		if lavapanic_timer < os.time() then
+			ws.notify("AutoMiner: lava avoided!", ws.NOTIFY_WARNING, {chat = false})
+			lavapanic_timer = os.time() + 5
+		end
 	end
 end
 
@@ -53,10 +58,19 @@ sbots.register_bot("AutoMiner", {
 		local hp = core.localplayer:get_hp()
 		local min_hp = tonumber(core.settings:get("autominer.min_hp")) or 15
 
-		if hp < min_hp then return end
+		if hp < min_hp then
+			if not self._notified_lowhp then
+				ws.notify("AutoMiner: low HP (" .. hp .. "), stopping", ws.NOTIFY_WARNING, {chat = false})
+				self._notified_lowhp = true
+			end
+			return
+		end
+		self._notified_lowhp = false
 
 		-- After digging: wait until all dropped items are picked up
 		if self.pickup_wait then
+			self._notified_pickup = self._notified_pickup or 0
+			self._notified_pickup = self._notified_pickup + dtime
 			local objects = core.get_objects_inside_radius(lp, 4)
 			local has_items = false
 			for _, obj in ipairs(objects) do
@@ -69,10 +83,15 @@ sbots.register_bot("AutoMiner", {
 				end
 			end
 			if has_items then
+				if self._notified_pickup > 2 then
+					ws.notify_progress("autominer_pickup", "Pickup", 50)
+					self._notified_pickup = 0
+				end
 				return
 			end
 			self.pickup_wait = false
 			self.stage = 0
+			self._notified_pickup = 0
 			return
 		end
 
@@ -100,10 +119,13 @@ sbots.register_bot("AutoMiner", {
 			if dist <= reach then
 				-- Dig first, then teleport below so head is in the air pocket
 				local tpos = self.target
+				local nn = core.get_node_or_nil(tpos)
 				ws.dig(tpos)
 				core.localplayer:set_pos(vector.offset(tpos, 0, -1, 0))
+				ws.notify("AutoMiner: mined " .. (nn and nn.name or "?"), ws.NOTIFY_INFO, {chat = false})
 				self.target = nil
 				self.pickup_wait = true
+				self._notified_pickup = 0
 			end
 			-- Movement (stage 1) is handled by the sbots teleport strategy
 		end

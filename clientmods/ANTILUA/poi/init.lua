@@ -19,6 +19,7 @@ local shown_huds = {}
 local lpos
 local sort_by_distance = false
 local filter_group = ""
+local poi_search = ""
 
 local WP_COLORS = {
 	{ name = "Green",  hex = "00ff00" },
@@ -379,6 +380,15 @@ local function get_filtered_sorted_waypoints()
 		end
 		wps = filtered
 	end
+	if poi_search ~= "" then
+		local filtered = {}
+		for _, name in ipairs(wps) do
+			if ws.fuzzy_match(name, poi_search) then
+				table.insert(filtered, name)
+			end
+		end
+		wps = filtered
+	end
 	if sort_by_distance then
 		local with_dist = {}
 		for i, name in ipairs(wps) do
@@ -395,8 +405,7 @@ end
 
 local function build_header(sb, af)
 	sb:add(
-		"background9[1,1;1,1;blank.png;true;7]",
-		af.label(0.25, 0.5, "Waypoint list")
+		"background9[1,1;1,1;blank.png;true;7]"
 	)
 	sb:add("checkbox[0.25,0.2;poi_show_all;Show all servers;"
 		.. (core.settings:get_bool("poi_show_all_waypoints") and "true" or "false") .. "]")
@@ -409,7 +418,10 @@ local function build_header(sb, af)
 	for i, g in ipairs(filter_items) do
 		if g == filter_group then filter_sel = i end
 	end
-	sb:add(af.dropdown(3, 0.25, 2.5, "group_filter", filter_items, filter_sel))
+	sb:add(
+		af.dropdown(3, 0.25, 2.5, "group_filter", filter_items, filter_sel),
+		af.searchbar(6, 0.25, 6.5, "poi_search", { default = poi_search, placeholder = "Search:", button_width = 1.2 })
+	)
 end
 
 local function build_waypoint_list(sb, af, waypoints)
@@ -605,7 +617,18 @@ core.register_on_formspec_input(function(formname, fields)
 		end
 	end
 
+	-- Search: handle Enter in search field
+	if fields.key_enter_field == "poi_search" then
+		poi_search = fields.poi_search or ""
+		poi.display_formspec()
+		return true
+	end
+
 	local action_map = {
+		__poi_search_search = function()
+			poi_search = fields.poi_search or ""
+			poi.display_formspec()
+		end,
 		display = function()
 			if not name then
 				ws.notify("Please select a waypoint first.", ws.NOTIFY_ERROR)

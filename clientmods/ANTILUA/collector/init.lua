@@ -116,16 +116,20 @@ sbots.register_bot("ItemCollector", {
 				local lp = core.localplayer:get_pos()
 				if not lp then return end
 				core.settings:set_bool("continuous_forward", false)
+				ws.notify("Collector: inventory full, placing chest", ws.NOTIFY_INFO, {chat = false})
 				local cp = place_chest_nearby(lp)
 				if not cp then
+					ws.notify("Collector: could not place chest", ws.NOTIFY_ERROR, {chat = false})
 					return
 				end
 				self._chest_pos = cp
+				ws.notify("Collector: chest placed at " .. cp.x .. "," .. cp.y .. "," .. cp.z, ws.NOTIFY_SUCCESS, {chat = false})
 				self._deposit_pending = get_excess_slots()
 				self._deposit_phase = 2
 			end
 			if self._deposit_phase == 2 then
 				if #self._deposit_pending == 0 then
+					ws.notify("Collector: deposit complete", ws.NOTIFY_SUCCESS, {chat = false})
 					self._deposit_phase = nil
 					self._chest_pos = nil
 					return
@@ -143,7 +147,8 @@ sbots.register_bot("ItemCollector", {
 			for _, stack in ipairs(inv.main) do
 				if stack:is_empty() then free = free + 1 end
 			end
-			if free <= 2 and #get_excess_slots() > 0 then
+			local excess = #get_excess_slots()
+			if free <= 2 and excess > 0 then
 				self._deposit_phase = 1
 				self.stage = 0
 			end

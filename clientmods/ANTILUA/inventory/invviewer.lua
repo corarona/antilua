@@ -13,6 +13,8 @@ end
 
 local _sel_nearby_node
 local _sel_nearby_list
+local inv_node_filter = ""
+local inv_item_filter = ""
 
 local function show_list_fs(param, ll, tab)
 	tab = tab or 0
@@ -74,11 +76,13 @@ local function show_list_fs(param, ll, tab)
 		for id, p in ipairs(nodes) do
 			local n = core.get_node_or_nil(p)
 			if n then
-				local label = n.name .. " (" .. p.x .. "," .. p.y .. "," .. p.z .. ")"
-				table.insert(node_entries, label)
-				if selected_node and vector.equals(p, selected_node) then
-					sel_idx = id
-					selected_node = p
+				if inv_node_filter == "" or ws.fuzzy_match(n.name, inv_node_filter) then
+					local label = n.name .. " (" .. p.x .. "," .. p.y .. "," .. p.z .. ")"
+					table.insert(node_entries, label)
+					if selected_node and vector.equals(p, selected_node) then
+						sel_idx = #node_entries
+						selected_node = p
+					end
 				end
 			end
 		end
@@ -86,12 +90,15 @@ local function show_list_fs(param, ll, tab)
 			selected_node = nodes[1]
 		end
 
-		sb:add(af.label(0.375, 0.375, "Nearby inventory nodes"))
+		sb:add(
+			af.label(0.375, 0.375, "Nearby inventory nodes"),
+			af.searchbar(0.375, 0.7, 10.5, "inv_node_filter", { default = inv_node_filter, button_width = 1.2 })
+		)
 
 		if #node_entries == 0 then
-			sb:add(af.label(0.375, 1.5, "No inventory nodes nearby"))
+			sb:add(af.label(0.375, 1.5, inv_node_filter ~= "" and "No matching nodes" or "No inventory nodes nearby"))
 		else
-			sb:add(af.textlist(0.375, 1, 5.5, 7.5, "nearby_nodes", node_entries, sel_idx))
+			sb:add(af.textlist(0.375, 1.4, 5.5, 6.6, "nearby_nodes", node_entries, sel_idx))
 
 			if selected_node then
 				local spos = selected_node.x .. "," .. selected_node.y .. "," .. selected_node.z
@@ -114,7 +121,8 @@ local function show_list_fs(param, ll, tab)
 					sb:add(
 						af.label(6.375, 0.375, node_name),
 						af.label(6.375, 0.75, spos),
-						af.dropdown(6.375, 1.5, 3, "nearby_list", list_keys, list_idx)
+						af.dropdown(6.375, 1.4, 3, "nearby_list", list_keys, list_idx),
+						af.searchbar(6.375, 2.0, 5, "inv_item_filter", { default = inv_item_filter, button_width = 1.2 })
 					)
 
 					local list_data = ninv[chosen_list]
@@ -130,15 +138,20 @@ local function show_list_fs(param, ll, tab)
 							end
 							shown = shown + 1
 							if stack and not stack:is_empty() then
-								table.insert(lines, string.format("[%d] %s x%d", si, stack:get_name(), stack:get_count()))
-							else
+								if inv_item_filter == "" or ws.fuzzy_match(stack:get_name(), inv_item_filter) then
+									table.insert(lines, string.format("[%d] %s x%d", si, stack:get_name(), stack:get_count()))
+								end
+							elseif inv_item_filter == "" then
 								table.insert(lines, string.format("[%d] (empty)", si))
 							end
 						end
 						if slots > 54 then
 							table.insert(lines, "... and " .. (slots - 54) .. " more")
 						end
-						sb:add(af.textlist(6.375, 2.5, 5, 4, "nearby_items", lines, 0))
+						if #lines == 0 then
+							lines = {"(no matching items)"}
+						end
+						sb:add(af.textlist(6.375, 2.8, 5, 3.2, "nearby_items", lines, 0))
 					end
 				end
 			end
@@ -176,6 +189,18 @@ core.register_on_formspec_input(function(formname, fields)
 			return
 		end
 
+		-- Search: handle Enter in filter fields
+		if fields.key_enter_field == "inv_node_filter" then
+			inv_node_filter = fields.inv_node_filter or ""
+			show_list_fs(_sel_nearby_list, _sel_nearby_node, 1)
+			return
+		end
+		if fields.key_enter_field == "inv_item_filter" then
+			inv_item_filter = fields.inv_item_filter or ""
+			show_list_fs(_sel_nearby_list, _sel_nearby_node, 1)
+			return
+		end
+
 		local tab = 0
 		if fields.inv_tabs then
 			tab = tonumber(fields.inv_tabs) - 1
@@ -191,6 +216,16 @@ core.register_on_formspec_input(function(formname, fields)
 				return
 			end
 		else
+			if fields.__inv_node_filter_search then
+				inv_node_filter = fields.inv_node_filter or ""
+				show_list_fs(_sel_nearby_list, _sel_nearby_node, 1)
+				return
+			end
+			if fields.__inv_item_filter_search then
+				inv_item_filter = fields.inv_item_filter or ""
+				show_list_fs(_sel_nearby_list, _sel_nearby_node, 1)
+				return
+			end
 			if fields.nearby_nodes then
 				local event = fields.nearby_nodes
 				local colon = event and event:find(":")

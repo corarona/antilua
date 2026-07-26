@@ -99,3 +99,22 @@ end
 function ws.between(x, y, z)
 	return y <= x and x <= z
 end
+
+--- Case-insensitive fuzzy match: returns true if query appears as a
+--- substring of text, or if each word in query appears somewhere in text
+--- in order (partial word matching).
+function ws.fuzzy_match(text, query)
+	if not text or not query or query == "" then return true end
+	text = text:lower()
+	query = query:lower()
+	-- Direct substring match
+	if text:find(query, 1, true) then return true end
+	-- Word-by-word: each word in query must appear in order
+	local qi = 1
+	for word in query:gmatch("%S+") do
+		local si = text:find(word, qi, true)
+		if not si then return false end
+		qi = si + #word
+	end
+	return qi > 1
+end

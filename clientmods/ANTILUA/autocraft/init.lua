@@ -8,6 +8,7 @@ local TIMER = 0
 local INTERVAL = 0.3
 local SETTING = "autocraft"
 local WAS_ON = false
+local recipe_filter = ""
 
 local function recipe_key(grid)
 	local parts = {}
@@ -190,6 +191,7 @@ local function step()
 		if not fill_grid(recipe) then
 			PAUSED = true
 			msg(recipe.output .. " [OUT OF INGREDIENTS]")
+			ws.notify("Autocraft: " .. recipe.output .. " out of ingredients", ws.NOTIFY_WARNING, {chat = false})
 			return
 		end
 	end
@@ -294,12 +296,42 @@ local function show_list()
 		return
 	end
 
-	local h = math.min(count, 12)
-	local sb = al_formspec.cheat_form_begin("size[9," .. (2 + h) .. ",true]")
-	sb:add(al_formspec.label(0, 0, "Known Recipes"))
-
-	local y = 0.6
+	-- Build filtered list
+	local filtered = {}
 	for key, recipe in pairs(RECIPES) do
+		if recipe_filter ~= "" then
+			local label = recipe.output or key
+			local match = ws.fuzzy_match(label, recipe_filter)
+			if not match then
+				for i = 1, 9 do
+					local s = recipe.grid[i]
+					if s and not s:is_empty() and ws.fuzzy_match(s:get_name(), recipe_filter) then
+						match = true
+						break
+					end
+				end
+			end
+			if not match then
+				-- skip
+			else
+				table.insert(filtered, {key = key, recipe = recipe})
+			end
+		else
+			table.insert(filtered, {key = key, recipe = recipe})
+		end
+	end
+
+	local h = math.min(#filtered, 12)
+	local sb = al_formspec.cheat_form_begin("size[9," .. (3 + h) .. ",true]")
+	sb:add(
+		al_formspec.searchbar(0, 0, 8.5, "rfilter", { default = recipe_filter }),
+		al_formspec.label(0, 0.9, "Known Recipes (" .. #filtered .. "/" .. count .. ")")
+	)
+
+	local y = 1.5
+	for _, entry in ipairs(filtered) do
+		local key = entry.key
+		local recipe = entry.recipe
 		local btn = "sel|" .. key
 		local sel = ACTIVE_KEY == key
 		local lb = sel and ">" or " "
@@ -335,6 +367,11 @@ core.register_on_formspec_input(function(formname, fields)
 		end
 	elseif formname == "autocraft:list" then
 		if fields.__close then
+			return
+		end
+		if fields.__rfilter_search or (fields.key_enter_field == "rfilter" and fields.rfilter ~= recipe_filter) then
+			recipe_filter = fields.rfilter or ""
+			show_list()
 			return
 		end
 		for raw in pairs(fields) do
