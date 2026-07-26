@@ -350,3 +350,31 @@ ws.rg("ShowConstraints", {
 		end
 	end,
 })
+
+--
+-- HUD anchor helper: returns {position, alignment, offset} for a named anchor.
+-- Additional dx, dy are pixel offsets from the anchor point.
+--
+local hud_anchors = {
+	center =			{ pos = {x=0.5, y=0.5}, align = {x=0.5, y=0.5} },
+	top_center =		{ pos = {x=0.5, y=0},   align = {x=0.5, y=0}   },
+	top_left =			{ pos = {x=0,   y=0},   align = {x=0,   y=0}   },
+	top_right =			{ pos = {x=1,   y=0},   align = {x=1,   y=0}   },
+	bottom_center =		{ pos = {x=0.5, y=1},   align = {x=0.5, y=1}   },
+	bottom_left =		{ pos = {x=0,   y=1},   align = {x=0,   y=1}   },
+	bottom_right =		{ pos = {x=1,   y=1},   align = {x=1,   y=1}   },
+	right_center =		{ pos = {x=1,   y=0.5}, align = {x=1,   y=0.5} },
+	left_center =		{ pos = {x=0,   y=0.5}, align = {x=0,   y=0.5} },
+}
+
+function ws.hud_anchor(name, dx, dy)
+	local a = hud_anchors[name]
+	if not a then
+		a = hud_anchors.center
+	end
+	return {
+		position = a.pos,
+		alignment = a.align,
+		offset = { x = (dx or 0), y = (dy or 0) },
+	}
+end

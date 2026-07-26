@@ -15,19 +15,21 @@ core.register_on_modchannel_message(function(channel_name, sender, message)
 		if hud then
 			core.localplayer:hud_change(hud, "text", message)
 		else
+			local tr = ws.hud_anchor("top_right", -10, 10)
 			hud = core.localplayer:hud_add({
 				type = "text",
-				position = {x = 1, y = 1},
-				alignment = {x = -1, y = -1},
-				offset = {x = -25, y = -25},
+				position = tr.position,
+				alignment = tr.alignment,
+				offset = tr.offset,
 				text = message,
 				number = 0xFFFFFF,
 			})
+			tr.offset.x = tr.offset.x - 25
 			ping_hud = core.localplayer:hud_add({
 				type = "text",
-				position = {x = 1, y = 1},
-				alignment = {x = -1, y = -1},
-				offset = {x = -50, y = -25},
+				position = tr.position,
+				alignment = tr.alignment,
+				offset = tr.offset,
 				text = "0",
 				number = 0xFFF800,
 			})
