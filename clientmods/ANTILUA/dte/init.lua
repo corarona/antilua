@@ -61,6 +61,16 @@ local mod_selected = false    -- currently selected mod name
 local mod_file_selected = false  -- currently selected mod file path for editing
 local mod_file_content = ""   -- cached content of the file being edited
 
+-- Strip filesystem prefix for display (e.g. /.../clientmods/ANTILUA/dte/init.lua → ANTILUA/dte/init.lua)
+local function shortpath(p)
+	if not p then return "" end
+	local idx = p:find("clientmods/")
+	if idx then
+		return p:sub(idx + 11) -- 11 = len("clientmods/")
+	end
+	return p
+end
+
 ----------
 -- FILE READING AND SAVING
 ----------
@@ -436,7 +446,7 @@ local function mod_editor()
 	local form = "" ..
 		"size["..data.width..","..data.height.."]" ..
 		"style[mod_editor_edit;bgcolor=#80000000]" ..
-		"label[0,0;Editing: " .. F(mod_file_selected or "") .. "]" ..
+		"label[0,0;Editing: " .. F(shortpath(mod_file_selected)) .. "]" ..
 		"codeedit[0.3,0.5;"..data.width..","..(data.height-2)
 			..";mod_editor_edit;Mod file;"..code.."]" ..
 		"button[0,"..(data.height-1.5)..";1.5,0.8;mod_editor_save;SAVE]" ..
@@ -732,7 +742,7 @@ core.register_on_formspec_input(function(formname, fields)
 				local ok, err = pcall(core.write_file, mod_file_selected, fields.mod_editor_edit)
 				if ok then
 					mod_file_content = fields.mod_editor_edit
-					table.insert(output, "#00ff00Saved: " .. mod_file_selected)
+					table.insert(output, "#00ff00Saved: " .. shortpath(mod_file_selected))
 				else
 					table.insert(output, "#ff0000Failed to save: " .. tostring(err))
 				end
@@ -743,7 +753,7 @@ core.register_on_formspec_input(function(formname, fields)
 					table.insert(output, "#888888Cleaned " .. n .. " callbacks from " .. mod_selected)
 					local ok, err = pcall(core.reload_mod, mod_selected)
 					if ok then
-						table.insert(output, "#00ff00Reloaded: " .. mod_selected)
+						table.insert(output, "#00ff00Reloaded: " .. shortpath(mod_file_selected))
 					else
 						table.insert(output, "#ff0000Reload failed: " .. tostring(err))
 					end
