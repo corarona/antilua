@@ -4,6 +4,7 @@ local REF_GROUP = 9998
 ws.rg("ShowRange", {
 	category = "Render",
 	setting = "show_range",
+	description = "Show a wireframe sphere indicating your interaction range",
 	delay = 0,
 	cheat_settings = {
 		range = { default = 6.6, min = 1, max = 50 },
