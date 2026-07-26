@@ -59,6 +59,7 @@ sbots.register_bot("AutoMiner", {
 		local min_hp = tonumber(core.settings:get("autominer.min_hp")) or 15
 
 		if hp < min_hp then
+			sbots.set_status("AutoMiner", "low HP (" .. hp .. ")")
 			if not self._notified_lowhp then
 				ws.notify("AutoMiner: low HP (" .. hp .. "), stopping", ws.NOTIFY_WARNING, {chat = false})
 				self._notified_lowhp = true
@@ -69,6 +70,7 @@ sbots.register_bot("AutoMiner", {
 
 		-- After digging: wait until all dropped items are picked up
 		if self.pickup_wait then
+			sbots.set_status("AutoMiner", "pickup wait")
 			self._notified_pickup = self._notified_pickup or 0
 			self._notified_pickup = self._notified_pickup + dtime
 			local objects = core.get_objects_inside_radius(lp, 4)
@@ -116,6 +118,7 @@ sbots.register_bot("AutoMiner", {
 			local dist = vector.distance(lp, self.target)
 			local reach = get_reach()
 
+			sbots.set_status("AutoMiner", "moving (" .. math.floor(dist) .. "m)")
 			if dist <= reach then
 				-- Dig first, then teleport below so head is in the air pocket
 				local tpos = self.target
@@ -127,7 +130,6 @@ sbots.register_bot("AutoMiner", {
 				self.pickup_wait = true
 				self._notified_pickup = 0
 			end
-			-- Movement (stage 1) is handled by the sbots teleport strategy
 		end
 	end,
 	on_activate = function(self)

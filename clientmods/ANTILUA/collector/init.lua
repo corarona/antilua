@@ -115,6 +115,7 @@ sbots.register_bot("ItemCollector", {
 			if self._deposit_phase == 1 then
 				local lp = core.localplayer:get_pos()
 				if not lp then return end
+				sbots.set_status("ItemCollector", "placing chest")
 				core.settings:set_bool("continuous_forward", false)
 				ws.notify("Collector: inventory full, placing chest", ws.NOTIFY_INFO, {chat = false})
 				local cp = place_chest_nearby(lp)
@@ -128,6 +129,7 @@ sbots.register_bot("ItemCollector", {
 				self._deposit_phase = 2
 			end
 			if self._deposit_phase == 2 then
+				sbots.set_status("ItemCollector", "depositing (" .. #self._deposit_pending .. " slots left)")
 				if #self._deposit_pending == 0 then
 					ws.notify("Collector: deposit complete", ws.NOTIFY_SUCCESS, {chat = false})
 					self._deposit_phase = nil
@@ -153,6 +155,7 @@ sbots.register_bot("ItemCollector", {
 				self.stage = 0
 			end
 		end
+		sbots.set_status("ItemCollector", "collecting items")
 	end,
 	on_activate = function(self)
 		snapshot_inv()

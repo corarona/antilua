@@ -123,6 +123,34 @@ local registered_bots = {}
 
 -- Find the nearest node matching a list of names within range, sorted by distance.
 -- Optional filter(pos): return true to accept, false to skip.
+--- Set status text for a registered bot (shown in bot dashboard HUD).
+function sbots.set_status(name, text)
+	local bot = registered_bots[name]
+	if bot then
+		bot._status_text = text
+	elseif name == nil then
+		for _, b in pairs(registered_bots) do
+			b._status_text = text
+		end
+	end
+end
+
+--- Get all active bots with their status for dashboard display.
+function sbots.get_active_bots()
+	local active = {}
+	for name, bot in pairs(registered_bots) do
+		if bot.active then
+			table.insert(active, {
+				name = name,
+				status = bot._status_text or "active",
+				movement = bot.movement or "walk",
+			})
+		end
+	end
+	table.sort(active, function(a, b) return a.name < b.name end)
+	return active
+end
+
 function sbots.find_nearest(pos, node_names, range, filter)
 	local nds = core.find_nodes_near(pos, range, node_names, true)
 	if not nds or #nds == 0 then return end

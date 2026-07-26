@@ -34,19 +34,24 @@ sbots.register_bot("FishBot", {
 		local bpos = get_bobber_pos(bobber_range)
 		if not bpos then
 			self.state = 0
+			sbots.set_status("FishBot", "no bobber, casting")
 			return
 		end
 		if self.state == 0 then
 			core.interact("activate", {type="nothing"})
 			ws.notify("FishBot: cast", ws.NOTIFY_INFO, {chat = false})
+			sbots.set_status("FishBot", "casting")
 			self.state = 1
 		elseif self.state == 1 then
+			sbots.set_status("FishBot", "waiting for bite")
 			if vector.distance(bpos, self.obpos) == 0 then
 				self.state = 2
 			end
 		elseif self.state == 2 then
+			sbots.set_status("FishBot", "bait settled, watching")
 			local nd = core.get_node_or_nil(vector.add(bpos, vector.new(0, -0.5, 0)))
 			if vector.distance(bpos, self.obpos) > 0 then
+				sbots.set_status("FishBot", "bite! reeling")
 				ws.notify("FishBot: bite!", ws.NOTIFY_SUCCESS, {chat = false})
 				core.after(0.1, function()
 					core.interact("activate", {type="nothing"})
@@ -57,6 +62,7 @@ sbots.register_bot("FishBot", {
 				self.state = 0
 			end
 		elseif self.state == 3 then
+			sbots.set_status("FishBot", "cooldown")
 			if not get_bobber_pos(bobber_range) then
 				ws.notify("FishBot: reeling in", ws.NOTIFY_INFO, {chat = false})
 				self.state = 0
