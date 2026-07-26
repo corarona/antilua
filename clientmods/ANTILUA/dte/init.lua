@@ -435,6 +435,7 @@ local function mod_editor()
 	local code = F(mod_file_content or "")
 	local form = "" ..
 		"size["..data.width..","..data.height.."]" ..
+		"style[mod_editor_edit;bgcolor=#80000000]" ..
 		"label[0,0;Editing: " .. F(mod_file_selected or "") .. "]" ..
 		"codeedit[0.3,0.5;"..data.width..","..(data.height-2)
 			..";mod_editor_edit;Mod file;"..code.."]" ..
