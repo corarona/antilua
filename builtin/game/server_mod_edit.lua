@@ -22,7 +22,6 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 		return
 	end
 
-	-- All operations require server priv
 	if not core.check_player_privs(sender, {server = true}) then
 		send_response({
 			req_id = req.req_id,
@@ -33,7 +32,6 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 	end
 
 	if req.type == "list_mods" then
-		core.log("action", "[srv_edit] list_mods from " .. sender)
 		local mods = {}
 		for _, name in ipairs(core.get_modnames()) do
 			mods[#mods + 1] = {
@@ -44,7 +42,6 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 		send_response({req_id = req.req_id, type = "mod_list", mods = mods})
 
 	elseif req.type == "list_files" then
-		core.log("action", "[srv_edit] list_files " .. dump(req.mod) .. " from " .. sender)
 		local files = core.list_mod_files(req.mod)
 		send_response({
 			req_id = req.req_id,
@@ -54,7 +51,6 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 		})
 
 	elseif req.type == "read_file" then
-		core.log("action", "[srv_edit] read_file " .. dump(req.mod) .. "/" .. dump(req.file) .. " from " .. sender)
 		local content, err = core.read_mod_file(req.mod, req.file)
 		send_response({
 			req_id = req.req_id,
@@ -66,7 +62,6 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 		})
 
 	elseif req.type == "write_file" then
-		core.log("action", "[srv_edit] write_file " .. dump(req.mod) .. "/" .. dump(req.file) .. " from " .. sender)
 		local ok, err = core.write_mod_file(req.mod, req.file, req.content)
 		if ok == nil then
 			ok = false
@@ -79,13 +74,11 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 		})
 
 	elseif req.type == "write_and_reload" then
-		core.log("action", "[srv_edit] write_and_reload " .. dump(req.mod) .. "/" .. dump(req.file) .. " from " .. sender)
 		local ok, err = core.write_mod_file(req.mod, req.file, req.content)
 		if ok == nil then
 			ok = false
 		end
 		if ok then
-			core.log("action", "[srv_edit] write ok, reloading " .. dump(req.mod))
 			local r_ok, r_msg = core.reload_server_mod(req.mod)
 			if r_ok == nil then
 				r_ok = false
@@ -96,9 +89,7 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 				ok = r_ok,
 				msg = r_msg,
 			})
-			core.log("action", "[srv_edit] reload " .. dump(req.mod) .. " -> " .. tostring(r_ok))
 		else
-			core.log("action", "[srv_edit] write failed: " .. tostring(err))
 			send_response({
 				req_id = req.req_id,
 				type = "ack",
@@ -108,7 +99,6 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 		end
 
 	elseif req.type == "reload_mod" then
-		core.log("action", "[srv_edit] reload_mod " .. dump(req.mod) .. " from " .. sender)
 		local success, result = core.reload_server_mod(req.mod)
 		if success == nil then
 			success = false
@@ -119,7 +109,6 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 			ok = success,
 			msg = result,
 		})
-		core.log("action", "[srv_edit] reload_mod " .. dump(req.mod) .. " -> " .. tostring(success))
 	end
 end)
 

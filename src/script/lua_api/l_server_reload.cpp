@@ -34,7 +34,7 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 
 	const ModSpec *mod = server->getModSpec(modname);
 	if (!mod) {
-		infostream << "reload_server_mod: mod \"" << modname << "\" not found" << std::endl;
+		warningstream << "reload_server_mod: mod \"" << modname << "\" not found" << std::endl;
 		lua_pushboolean(L, false);
 		lua_pushstring(L, "mod not found");
 		return 2;
@@ -42,13 +42,27 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 
 	ServerScripting *script = server->getScriptIface();
 
-	infostream << "reload_server_mod: reloading \"" << modname << "\"" << std::endl;
+	// Step 1: Unfreeze registration tables first so cleanup can modify them
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "unfreeze_registration_tables");
+	if (lua_type(L, -1) == LUA_TFUNCTION) {
+		if (lua_pcall(L, 0, 0, 0) != 0) {
+			std::string err = lua_tostring(L, -1);
+			lua_pop(L, 2);
+			warningstream << "reload_server_mod: unfreeze failed: " << err << std::endl;
+			lua_pushboolean(L, false);
+			lua_pushstring(L, ("unfreeze failed: " + err).c_str());
+			return 2;
+		}
+	}
+	lua_pop(L, 1);
 
-	// Step 1: Run Lua cleanup — remove old callbacks, ABMs, LBMs, items, entities
+	// Step 2: Run Lua cleanup — remove old callbacks, ABMs, LBMs, items, entities
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "cleanup_server_mod");
 	if (lua_type(L, -1) != LUA_TFUNCTION) {
 		lua_pop(L, 2);
+		warningstream << "reload_server_mod: core.cleanup_server_mod not found" << std::endl;
 		lua_pushboolean(L, false);
 		lua_pushstring(L, "core.cleanup_server_mod not found");
 		return 2;
@@ -57,7 +71,7 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 	if (lua_pcall(L, 1, 0, 0) != 0) {
 		std::string err = lua_tostring(L, -1);
 		lua_pop(L, 2);
-		infostream << "reload_server_mod: cleanup failed for \"" << modname << "\": "
+		warningstream << "reload_server_mod: cleanup failed for \"" << modname << "\": "
 			<< err << std::endl;
 		lua_pushboolean(L, false);
 		lua_pushstring(L, ("cleanup failed: " + err).c_str());
@@ -65,25 +79,10 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 	}
 	lua_pop(L, 1);
 
-	// Step 2: Unfreeze registration tables
-	lua_getglobal(L, "core");
-	lua_getfield(L, -1, "unfreeze_registration_tables");
-	if (lua_type(L, -1) == LUA_TFUNCTION) {
-		if (lua_pcall(L, 0, 0, 0) != 0) {
-			std::string err = lua_tostring(L, -1);
-			lua_pop(L, 2);
-			infostream << "reload_server_mod: unfreeze failed: " << err << std::endl;
-			lua_pushboolean(L, false);
-			lua_pushstring(L, ("unfreeze failed: " + err).c_str());
-			return 2;
-		}
-	}
-	lua_pop(L, 1);
-
 	// Step 3: Re-execute the mod's init.lua
 	std::string script_path = mod->path + DIR_DELIM + "init.lua";
 	if (!fs::PathExists(script_path)) {
-		infostream << "reload_server_mod: init.lua not found for \"" << modname << "\""
+		warningstream << "reload_server_mod: init.lua not found for \"" << modname << "\""
 			<< std::endl;
 		lua_pushboolean(L, false);
 		lua_pushstring(L, "init.lua not found");
@@ -93,7 +92,7 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 	try {
 		script->loadMod(script_path, modname);
 	} catch (ModError &e) {
-		infostream << "reload_server_mod: loadMod failed for \"" << modname << "\": "
+		warningstream << "reload_server_mod: loadMod failed for \"" << modname << "\": "
 			<< e.what() << std::endl;
 		lua_pushboolean(L, false);
 		lua_pushstring(L, e.what());
@@ -107,7 +106,7 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 		try {
 			script->reloadABMs();
 		} catch (std::exception &e) {
-			infostream << "reload_server_mod: reloadABMs failed: " << e.what() << std::endl;
+			warningstream << "reload_server_mod: reloadABMs failed: " << e.what() << std::endl;
 			lua_pushboolean(L, false);
 			lua_pushstring(L, ("ABM reload failed: " + std::string(e.what())).c_str());
 			return 2;
@@ -121,7 +120,7 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 		server->getWritableNodeDefManager()->runNodeResolveCallbacks();
 		server->getWritableCraftDefManager()->initHashes(server);
 	} catch (std::exception &e) {
-		infostream << "reload_server_mod: post-reload maintenance failed: "
+		warningstream << "reload_server_mod: post-reload maintenance failed: "
 			<< e.what() << std::endl;
 	}
 
@@ -132,16 +131,13 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 		if (lua_pcall(L, 0, 0, 0) != 0) {
 			std::string err = lua_tostring(L, -1);
 			lua_pop(L, 2);
-			infostream << "reload_server_mod: refreeze failed: " << err << std::endl;
+			warningstream << "reload_server_mod: refreeze failed: " << err << std::endl;
 			lua_pushboolean(L, false);
 			lua_pushstring(L, ("refreeze failed: " + err).c_str());
 			return 2;
 		}
 	}
 	lua_pop(L, 1);
-
-	infostream << "reload_server_mod: \"" << modname << "\" reloaded successfully"
-		<< std::endl;
 	lua_pushboolean(L, true);
 	lua_pushstring(L, ("Mod '" + modname + "' reloaded").c_str());
 	return 2;
