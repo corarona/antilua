@@ -74,12 +74,25 @@ local server_req_id = 0
 local server_pending = {}
 
 local function server_send(req, callback)
+	if not server_mod_channel then
+		table.insert(output, "#ff8800Server mod channel not available")
+		return
+	end
+	if not server_mod_channel:is_writeable() then
+		-- Not yet joined — try again after a short delay
+		core.after(0.5, function()
+			if server_mod_channel:is_writeable() then
+				server_send(req, callback)
+			else
+				table.insert(output, "#ff8800Server mod channel not ready yet")
+			end
+		end)
+		return
+	end
 	server_req_id = server_req_id + 1
 	req.req_id = server_req_id
 	server_pending[server_req_id] = callback
-	if server_mod_channel and server_mod_channel:is_writeable() then
-		server_mod_channel:send_all(core.serialize(req))
-	end
+	server_mod_channel:send_all(core.serialize(req))
 end
 
 core.register_on_modchannel_message(function(channel, sender, msg)
@@ -584,6 +597,7 @@ local function server_refresh_mod_list()
 			server_mod_list = resp.mods or {}
 			server_mod_selected = false
 			server_mod_files = {}
+			core.show_formspec("lua:server_mods", server_mod_browser())
 		end
 	end)
 end
@@ -593,6 +607,7 @@ local function server_refresh_file_list()
 	server_send({type = "list_files", mod = server_mod_selected}, function(resp)
 		if resp.type == "file_list" then
 			server_mod_files = resp.files or {}
+			core.show_formspec("lua:server_mods", server_mod_browser())
 		end
 	end)
 end
