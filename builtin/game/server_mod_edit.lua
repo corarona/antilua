@@ -63,7 +63,10 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 		})
 
 	elseif req.type == "write_file" then
-		local ok, err = pcall(core.write_mod_file, req.mod, req.file, req.content)
+		local ok, err = core.write_mod_file(req.mod, req.file, req.content)
+		if ok == nil then
+			ok = false
+		end
 		send_response({
 			req_id = req.req_id,
 			type = "ack",
@@ -72,12 +75,15 @@ core.register_on_modchannel_message(function(channel, sender, msg)
 		})
 
 	elseif req.type == "reload_mod" then
-		local ok, err = pcall(core.reload_server_mod, req.mod)
+		local success, result = core.reload_server_mod(req.mod)
+		if success == nil then
+			success = false
+		end
 		send_response({
 			req_id = req.req_id,
 			type = "ack",
-			ok = ok,
-			msg = ok and "reloaded" or tostring(err),
+			ok = success,
+			msg = result,
 		})
 	end
 end)
