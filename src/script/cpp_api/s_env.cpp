@@ -172,6 +172,12 @@ void ScriptApiEnv::initializeEnvironment(ServerEnvironment *env)
 	readLBMs();
 }
 
+void ScriptApiEnv::reloadABMs()
+{
+	SCRIPTAPI_PRECHECKHEADER
+	readABMs();
+}
+
 // Reads a single or a list of node names into a vector
 bool ScriptApiEnv::read_nodenames(lua_State *L, int idx, std::vector<std::string> &to)
 {

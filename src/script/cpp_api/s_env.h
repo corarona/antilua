@@ -44,6 +44,9 @@ public:
 	// Initializes environment and loads some definitions from Lua
 	void initializeEnvironment(ServerEnvironment *env);
 
+	// Re-read ABMs from Lua after reloading a mod
+	void reloadABMs();
+
 	void triggerABM(int id, v3s16 p, MapNode n,
 			u32 active_object_count, u32 active_object_count_wider);
 

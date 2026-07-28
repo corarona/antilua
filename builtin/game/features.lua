@@ -28,6 +28,7 @@ core.features = {
 	sound_params_start_time = true,
 	physics_overrides_v2 = true,
 	hud_def_type_field = true,
+	server_mod_reload = true,
 	random_state_restore = true,
 	after_order_expiry_registration = true,
 	wallmounted_rotate = true,

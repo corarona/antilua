@@ -33,6 +33,7 @@
 #include "lua_api/l_http.h"
 #include "lua_api/l_storage.h"
 #include "lua_api/l_ipc.h"
+#include "lua_api/l_server_reload.h"
 
 extern "C" {
 #include <lualib.h>
@@ -157,6 +158,7 @@ void ServerScripting::InitializeModApi(lua_State *L, int top)
 	ModApiStorage::Initialize(L, top);
 	ModApiChannels::Initialize(L, top);
 	ModApiIPC::Initialize(L, top);
+	ModApiServerReload::Initialize(L, top);
 }
 
 void ServerScripting::InitializeAsync(lua_State *L, int top)

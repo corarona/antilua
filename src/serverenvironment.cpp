@@ -588,6 +588,13 @@ void ServerEnvironment::addActiveBlockModifier(ActiveBlockModifier *abm)
 	m_abms.emplace_back(abm);
 }
 
+void ServerEnvironment::clearActiveBlockModifiers()
+{
+	for (auto &abm_state : m_abms)
+		delete abm_state.abm;
+	m_abms.clear();
+}
+
 void ServerEnvironment::addLoadingBlockModifierDef(LoadingBlockModifierDef *lbm)
 {
 	m_lbm_mgr.addLBMDef(lbm);
