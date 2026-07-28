@@ -108,6 +108,9 @@ if not core.features then
 end
 core.features.codeedit_formspec = true
 
+-- Server mod editing via mod channel
+core.features.dte_server_edit = true
+
 -- First-run tutorial
 core.register_on_mods_loaded(function()
 	if core.settings:get("antilua_onboarded") == nil then

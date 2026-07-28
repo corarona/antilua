@@ -125,10 +125,6 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 			<< e.what() << std::endl;
 	}
 
-	// saveGlobals is intentionally skipped:
-	// core.get_globals_to_transfer is unset after the first call,
-	// and async workers don't re-read it on reload anyway.
-
 	// Step 6: Refreeze registration tables
 	lua_getglobal(L, "core");
 	lua_getfield(L, -1, "refreeze_registration_tables");
@@ -151,7 +147,102 @@ int ModApiServerReload::l_reload_server_mod(lua_State *L)
 	return 2;
 }
 
+// list_mod_files(modname) — returns array of filenames in the mod directory
+int ModApiServerReload::l_list_mod_files(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	std::string modname = readParam<std::string>(L, 1);
+	Server *server = getServer(L);
+	const ModSpec *mod = server->getModSpec(modname);
+	if (!mod) {
+		lua_pushnil(L);
+		lua_pushstring(L, "mod not found");
+		return 2;
+	}
+
+	std::vector<fs::DirListNode> list = fs::GetDirListing(mod->path);
+	lua_newtable(L);
+	int index = 0;
+	for (const fs::DirListNode &dln : list) {
+		if (!dln.dir) {
+			lua_pushstring(L, dln.name.c_str());
+			lua_rawseti(L, -2, ++index);
+		}
+	}
+	return 1;
+}
+
+// read_mod_file(modname, filename) — reads a file from within the mod directory
+int ModApiServerReload::l_read_mod_file(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	std::string modname = readParam<std::string>(L, 1);
+	std::string filename = readParam<std::string>(L, 2);
+	Server *server = getServer(L);
+	const ModSpec *mod = server->getModSpec(modname);
+	if (!mod) {
+		lua_pushnil(L);
+		lua_pushstring(L, "mod not found");
+		return 2;
+	}
+
+	std::string fullpath = mod->path + DIR_DELIM + filename;
+	std::string normalized = fs::AbsolutePath(fullpath);
+	if (normalized.empty() || !fs::PathStartsWith(normalized, mod->path)) {
+		lua_pushnil(L);
+		lua_pushstring(L, "Access denied");
+		return 2;
+	}
+
+	std::string content;
+	if (fs::ReadFile(normalized, content)) {
+		lua_pushlstring(L, content.data(), content.size());
+		return 1;
+	}
+
+	lua_pushnil(L);
+	lua_pushstring(L, "File not found");
+	return 2;
+}
+
+// write_mod_file(modname, filename, content) — writes a file within the mod directory
+int ModApiServerReload::l_write_mod_file(lua_State *L)
+{
+	NO_MAP_LOCK_REQUIRED;
+	std::string modname = readParam<std::string>(L, 1);
+	std::string filename = readParam<std::string>(L, 2);
+	size_t data_len = 0;
+	const char *content = luaL_checklstring(L, 3, &data_len);
+	Server *server = getServer(L);
+	const ModSpec *mod = server->getModSpec(modname);
+	if (!mod) {
+		lua_pushnil(L);
+		lua_pushstring(L, "mod not found");
+		return 2;
+	}
+
+	std::string fullpath = mod->path + DIR_DELIM + filename;
+	std::string normalized = fs::AbsolutePath(fullpath);
+	if (normalized.empty() || !fs::PathStartsWith(normalized, mod->path)) {
+		lua_pushnil(L);
+		lua_pushstring(L, "Access denied");
+		return 2;
+	}
+
+	if (fs::safeWriteToFile(normalized, std::string_view(content, data_len))) {
+		lua_pushboolean(L, true);
+		return 1;
+	}
+
+	lua_pushnil(L);
+	lua_pushstring(L, "Failed to write file");
+	return 2;
+}
+
 void ModApiServerReload::Initialize(lua_State *L, int top)
 {
 	API_FCT(reload_server_mod);
+	API_FCT(list_mod_files);
+	API_FCT(read_mod_file);
+	API_FCT(write_mod_file);
 }

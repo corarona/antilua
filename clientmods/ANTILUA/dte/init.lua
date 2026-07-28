@@ -12,7 +12,7 @@ local F = core.formspec_escape  -- shorten the function
 
 local function create_tabs(selected)
 	return "tabheader[0,0;_option_tabs_;" ..
-	"  LUA EDITOR   , LUA CONSOLE  ,	 FILES	 ,	STARTUP	  ,	 MODS   ;"..selected..";;]"
+	"  LUA EDITOR   , LUA CONSOLE  ,	 FILES	 ,	STARTUP	  ,	 MODS   , SERVER MODS;"..selected..";;]"
 end
 
 local function copy_table(t)
@@ -60,6 +60,42 @@ local mod_list = {}           -- list of {name, path, files[{name, path}]}
 local mod_selected = false    -- currently selected mod name
 local mod_file_selected = false  -- currently selected mod file path for editing
 local mod_file_content = ""   -- cached content of the file being edited
+
+-- Server mod browser state
+local server_mod_list = {}    -- list of {name, path}
+local server_mod_selected = false
+local server_mod_file_selected = false
+local server_mod_files = {}   -- files for the selected server mod
+local server_mod_file_content = ""
+
+-- Server mod channel
+local server_mod_channel
+local server_req_id = 0
+local server_pending = {}
+
+local function server_send(req, callback)
+	server_req_id = server_req_id + 1
+	req.req_id = server_req_id
+	server_pending[server_req_id] = callback
+	if server_mod_channel and server_mod_channel:is_writeable() then
+		server_mod_channel:send_all(core.serialize(req))
+	end
+end
+
+core.register_on_modchannel_message(function(channel, sender, msg)
+	if channel ~= "al_srvedit" then return end
+	local ok, resp = pcall(core.deserialize, msg)
+	if not ok or type(resp) ~= "table" or not resp.req_id then return end
+	local cb = server_pending[resp.req_id]
+	if cb then
+		server_pending[resp.req_id] = nil
+		cb(resp)
+	end
+end)
+
+pcall(function()
+	server_mod_channel = core.mod_channel_join("al_srvedit")
+end)
 
 -- Strip filesystem prefix for display (e.g. /.../clientmods/ANTILUA/dte/init.lua → ANTILUA/dte/init.lua)
 local function shortpath(p)
@@ -501,6 +537,66 @@ local function mod_browser()
 	return form
 end
 
+-- Server mod browser formspec
+local function server_mod_browser()
+	local mod_str = ""
+	for i, mod in ipairs(server_mod_list) do
+		if i > 1 then mod_str = mod_str .. "," end
+		mod_str = mod_str .. F(mod.name)
+	end
+	local file_str = ""
+	if server_mod_selected then
+		for i, f in ipairs(server_mod_files) do
+			if i > 1 then file_str = file_str .. "," end
+			file_str = file_str .. F(f)
+		end
+	end
+	local form = "" ..
+		"size["..data.width..","..data.height.."]" ..
+		"label[0,0;SERVER MODS]" ..
+		"textlist[0,0.4;"..(data.width/2-0.1)..","..(data.height-1.3)..";srv_mod_list;"..mod_str.."]" ..
+		"textlist["..(data.width/2)..",0.4;"..(data.width/2-0.1)..","..(data.height-1.3)..";srv_mod_files;"..file_str.."]" ..
+		"button[0,"..(data.height-0.9)..";1.5,0.8;srv_refresh;REFRESH]" ..
+		"label[1.6,"..(data.height-0.9)..";Double-click a file to edit it]" ..
+		"" .. create_tabs(6)
+	return form
+end
+
+local function server_mod_editor()
+	local code = F(server_mod_file_content or "")
+	local form = "" ..
+		"size["..data.width..","..data.height.."]" ..
+		"style[srv_mod_editor_edit;bgcolor=#80000000]" ..
+		"label[0,0;Editing: " .. F(server_mod_selected .. "/" .. server_mod_file_selected) .. "]" ..
+		"codeedit[0.3,0.5;"..data.width..","..(data.height-2)
+			..";srv_mod_editor_edit;Mod file;"..code.."]" ..
+		"button[0,"..(data.height-1.5)..";1.5,0.8;srv_mod_editor_save;SAVE]" ..
+		"button[1.6,"..(data.height-1.5)..";2,0.8;srv_mod_editor_savereload;SAVE & RELOAD]" ..
+		"button[3.7,"..(data.height-1.5)..";1.5,0.8;srv_mod_editor_back;BACK]" ..
+		"" .. create_tabs(6)
+	return form
+end
+
+-- Trigger a server mod list refresh via mod channel
+local function server_refresh_mod_list()
+	server_send({type = "list_mods"}, function(resp)
+		if resp.type == "mod_list" then
+			server_mod_list = resp.mods or {}
+			server_mod_selected = false
+			server_mod_files = {}
+		end
+	end)
+end
+
+local function server_refresh_file_list()
+	if not server_mod_selected then return end
+	server_send({type = "list_files", mod = server_mod_selected}, function(resp)
+		if resp.type == "file_list" then
+			server_mod_files = resp.files or {}
+		end
+	end)
+end
+
 local function file_viewer()  -- created with the formspec editor!
 	local lua_files_item_str = ""
 	for i, item in pairs(lua_files) do
@@ -727,6 +823,13 @@ core.register_on_formspec_input(function(formname, fields)
 			core.show_formspec("lua:startup", startup_form())
 		elseif fields._option_tabs_ == "5" then
 			core.show_formspec("lua:mods", mod_browser())
+		elseif fields._option_tabs_ == "6" then
+			if core.features.dte_server_edit and server_mod_channel then
+				server_refresh_mod_list()
+				core.show_formspec("lua:server_mods", server_mod_browser())
+			else
+				table.insert(output, "#ff8800Server mod editing not available")
+			end
 		end
 
 	end
@@ -789,6 +892,63 @@ core.register_on_formspec_input(function(formname, fields)
 				core.show_formspec("lua:mods", mod_browser())
 			else
 				core.show_formspec("lua:mod_editor", mod_editor())
+			end
+		end
+	end
+
+	-- SERVER MOD BROWSER
+	if formname == "lua:server_mods" then
+		if fields.srv_mod_list then
+			local ev = core.explode_textlist_event(fields.srv_mod_list)
+			if ev.type == "DCL" then
+				server_mod_selected = server_mod_list[ev.index] and server_mod_list[ev.index].name
+				server_mod_files = {}
+				server_refresh_file_list()
+				core.show_formspec("lua:server_mods", server_mod_browser())
+			end
+		elseif fields.srv_mod_files then
+			local ev = core.explode_textlist_event(fields.srv_mod_files)
+			if ev.type == "DCL" and server_mod_files[ev.index] then
+				server_mod_file_selected = server_mod_files[ev.index]
+				server_mod_file_content = ""
+				server_send({type = "read_file", mod = server_mod_selected, file = server_mod_file_selected}, function(resp)
+					if resp.type == "file_content" then
+						server_mod_file_content = resp.content or ""
+						core.show_formspec("lua:server_mod_editor", server_mod_editor())
+					end
+				end)
+			end
+		elseif fields.srv_refresh then
+			server_refresh_mod_list()
+			core.show_formspec("lua:server_mods", server_mod_browser())
+		end
+	end
+
+	-- SERVER MOD EDITOR
+	if formname == "lua:server_mod_editor" then
+		if fields.srv_mod_editor_back then
+			core.show_formspec("lua:server_mods", server_mod_browser())
+		elseif fields.srv_mod_editor_save or fields.srv_mod_editor_savereload then
+			local content = fields.srv_mod_editor_edit
+			server_send({type = "write_file", mod = server_mod_selected, file = server_mod_file_selected, content = content}, function(resp)
+				if resp.type == "ack" and resp.ok then
+					server_mod_file_content = content
+					table.insert(output, "#00ff00Saved: " .. server_mod_selected .. "/" .. server_mod_file_selected)
+				else
+					table.insert(output, "#ff0000Failed to save: " .. tostring(resp.msg))
+				end
+			end)
+			if fields.srv_mod_editor_savereload and server_mod_selected then
+				server_send({type = "reload_mod", mod = server_mod_selected}, function(resp)
+					if resp.type == "ack" and resp.ok then
+						table.insert(output, "#00ff00Reloaded: " .. server_mod_selected)
+					else
+						table.insert(output, "#ff0000Reload failed: " .. tostring(resp.msg))
+					end
+				end)
+				core.show_formspec("lua:server_mods", server_mod_browser())
+			else
+				core.show_formspec("lua:server_mod_editor", server_mod_editor())
 			end
 		end
 	end
