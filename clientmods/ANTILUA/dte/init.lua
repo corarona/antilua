@@ -943,7 +943,7 @@ core.register_on_formspec_input(function(formname, fields)
 	if formname == "lua:server_mod_editor" then
 		if fields.srv_mod_editor_back then
 			core.show_formspec("lua:server_mods", server_mod_browser())
-		elseif fields.srv_mod_editor_save or fields.srv_mod_editor_savereload then
+		elseif fields.srv_mod_editor_save and not fields.srv_mod_editor_savereload then
 			local content = fields.srv_mod_editor_edit
 			server_send({type = "write_file", mod = server_mod_selected, file = server_mod_file_selected, content = content}, function(resp)
 				if resp.type == "ack" and resp.ok then
@@ -952,19 +952,19 @@ core.register_on_formspec_input(function(formname, fields)
 				else
 					table.insert(output, "#ff0000Failed to save: " .. tostring(resp.msg))
 				end
-			end)
-			if fields.srv_mod_editor_savereload and server_mod_selected then
-				server_send({type = "reload_mod", mod = server_mod_selected}, function(resp)
-					if resp.type == "ack" and resp.ok then
-						table.insert(output, "#00ff00Reloaded: " .. server_mod_selected)
-					else
-						table.insert(output, "#ff0000Reload failed: " .. tostring(resp.msg))
-					end
-				end)
-				core.show_formspec("lua:server_mods", server_mod_browser())
-			else
 				core.show_formspec("lua:server_mod_editor", server_mod_editor())
-			end
+			end)
+		elseif fields.srv_mod_editor_savereload and server_mod_selected then
+			local content = fields.srv_mod_editor_edit
+			server_send({type = "write_and_reload", mod = server_mod_selected, file = server_mod_file_selected, content = content}, function(resp)
+				if resp.type == "ack" and resp.ok then
+					server_mod_file_content = content
+					table.insert(output, "#00ff00Saved & Reloaded: " .. server_mod_selected)
+				else
+					table.insert(output, "#ff0000Save & Reload failed: " .. tostring(resp.msg))
+				end
+				core.show_formspec("lua:server_mods", server_mod_browser())
+			end)
 		end
 	end
 
