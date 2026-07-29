@@ -1,5 +1,5 @@
--- State for formspec
-local state = {
+-- State for formspec (module-level so conversion.lua can access it)
+mapart.state = {
 	png_list = {},
 	png_dir = core.settings:get("mapart.png_dir") or (core.get_data_path() .. "images"),
 	selected = 0,
@@ -21,7 +21,7 @@ local state = {
 
 -- Mapart formspec tab (called from schembuilder)
 get_mapart_tab = function(fs, tab)
-	local s = state
+	local s = mapart.state
 	local preview = s.preview or ""
 
 	fs = fs .. "field[0.3,0.3;7,0.6;mapart_dir;;" ..
@@ -88,7 +88,7 @@ end
 
 -- Handle mapart tab events (called from schembuilder)
 handle_mapart_events = function(fields)
-	local s = state
+	local s = mapart.state
 
 	if fields.mapart_refresh then
 		local dir = fields.mapart_dir or s.png_dir

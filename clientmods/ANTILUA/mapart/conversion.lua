@@ -197,7 +197,8 @@ function mapart.image_to_wall_schem(width, height, pixel_data, opts)
 end
 
 function mapart.process_conv_chunk()
-	local s = state
+	local s = mapart.state
+	if not s then return end
 	local c = s._conv
 	if not c then return end
 	if s._conv_cancel then
