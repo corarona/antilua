@@ -1,17 +1,3 @@
-function ws.find_item_in_table(items, rnd)
-	if type(items) == 'string' then
-		return core.find_item(items)
-	end
-	if type(items) ~= 'table' then return end
-	if rnd then items = ws.shuffle(items) end
-	for i, v in pairs(items) do
-		local n = core.find_item(v)
-		if n then
-			return n
-		end
-	end
-	return false
-end
 
 function ws.find_empty(inv)
 	for i, v in ipairs(inv) do
@@ -22,15 +8,6 @@ function ws.find_empty(inv)
 	return false
 end
 
-function ws.count_empty_slots(inv)
-	local n = 0
-	for i, v in ipairs(inv) do
-		if v:is_empty() then
-			n = n + 1
-		end
-	end
-	return n
-end
 
 function ws.find_named(inv, name)
 	if not inv then return -1 end
@@ -42,19 +19,6 @@ function ws.find_named(inv, name)
 	end
 end
 
-function ws.itemnameformat(description)
-	description = description:gsub(string.char(0x1b) .. "%(.@[^)]+%)", "")
-	description = description:match("([^\n]*)")
-	return description
-end
-
-function ws.find_nametagged(list, name)
-	for i, v in ipairs(list) do
-		if ws.itemnameformat(v:get_description()) == name then
-			return i
-		end
-	end
-end
 
 function ws.to_hotbar(it, hslot)
 	local tpos = nil
@@ -91,40 +55,6 @@ function ws.switch_to_item(itname, hslot)
 	return false
 end
 
-function ws.in_inv(itname)
-	if not core.localplayer then return false end
-	local plinv = core.get_inventory("current_player")
-	local pos = ws.find_named(plinv.main, itname)
-	if pos then
-		return true
-	end
-end
-
-function ws.inv_full(item_to_add)
-	if not core.localplayer then return true end
-	local plinv = core.get_inventory("current_player")
-	for _, v in pairs(plinv.main) do
-		if v:is_empty() or (item_to_add and v:get_name() == item_to_add and v:get_count() < v:get_stack_max()) then
-			return false
-		end
-	end
-	return true
-end
-
-function ws.inv_get_space(item_to_add)
-	if not core.localplayer then return 0 end
-	local plinv = core.get_inventory("current_player")
-	local its = item_to_add and ItemStack(item_to_add):get_stack_max() or 99
-	local i = 0
-	for _, v in pairs(plinv.main) do
-		if v:is_empty() then
-			i = i + its
-		elseif v:get_name() == item_to_add and v:get_count() < its then
-			i = i + its - v:get_count()
-		end
-	end
-	return i
-end
 
 function core.switch_to_item(item)
 	return ws.switch_to_item(item)
@@ -155,37 +85,7 @@ function ws.switch_inv_or_echest(name, max_count, hslot)
 	return false
 end
 
-local function posround(n)
-	return math.floor(n + 0.5)
-end
 
-local function fmt(c)
-	return tostring(posround(c.x)) .. "," .. tostring(posround(c.y)) .. "," .. tostring(posround(c.z))
-end
-
-local function map_pos(value)
-	if value.x then
-		return value
-	else
-		return {x = value[1], y = value[2], z = value[3]}
-	end
-end
-
-function ws.invparse(location)
-	if type(location) == "string" then
-		if string.match(location, "^[-]?[0-9]+,[-]?[0-9]+,[-]?[0-9]+$") then
-			return "nodemeta:" .. location
-		else
-			return location
-		end
-	elseif type(location) == "table" then
-		return "nodemeta:" .. fmt(map_pos(location))
-	end
-end
-
-function ws.invpos(p)
-	return "nodemeta:" .. p.x .. "," .. p.y .. "," .. p.z
-end
 
 --- Move items between inventories. Wraps InventoryAction("move") boilerplate.
 -- If count is nil, moves the entire stack.
@@ -199,13 +99,6 @@ end
 
 --- Read a cheat setting number with fallback.
 -- self.setting .. "." .. key -> tonumber result or default
-function ws.cheat_setting(self, key, default)
-	local v = core.settings:get(self.setting .. "." .. key)
-	if v then
-		return tonumber(v) or default
-	end
-	return default
-end
 
 --- Register a key-hold cheat: holds a key while the setting is true.
 function ws.register_keypress_cheat(setting, desc, category, keyname, condition, description)
@@ -223,9 +116,4 @@ function ws.register_keypress_cheat(setting, desc, category, keyname, condition,
 	core.register_cheat(desc, { category = category, setting = setting, description = description })
 end
 
---- Nil-safe HUD change wrapper.
-function ws.hud_set(id, stat, data)
-	if id and core.localplayer then
-		core.localplayer:hud_change(id, stat, data)
-	end
-end
+

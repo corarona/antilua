@@ -145,14 +145,6 @@ end
 ------------------------------------------------------------------------------
 -- UI helpers (from enderchest/openinv/punchinv)
 ------------------------------------------------------------------------------
-function ws.get_slot(inv, filter)
-	for idx, stack in pairs(inv) do
-		if not filter or stack:get_name() == filter then
-			return idx
-		end
-	end
-	return nil
-end
 
 function ws.get_itemslot_bg_v4(x, y, w, h, margin)
 	margin = margin or 0.15

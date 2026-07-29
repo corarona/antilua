@@ -32,16 +32,6 @@ function ws.hud_remove_waypoint(name)
 	end
 end
 
-function ws.clear_waypoints()
-	if not core.localplayer then
-		ws.hud_waypoints = {}
-		return
-	end
-	for name, id in pairs(ws.hud_waypoints) do
-		core.localplayer:hud_remove(id)
-	end
-	ws.hud_waypoints = {}
-end
 
 function ws.display_wp(pos, name)
 	if not core.localplayer then return end

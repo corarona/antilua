@@ -39,13 +39,6 @@ core.register_chatcommand("tplace", {
 	end
 })
 
-function ws.ytp(param)
-	local y = tonumber(param)
-	local lp = ws.dircoord(0, 0, 0)
-	if lp.y < y + 50 then return false, "Can't TP up." end
-	if y < -30912 then return false, "Don't TP into the void lol." end
-	core.localplayer:set_pos(vector.new(lp.x, y, lp.z))
-end
 
 function ws.isnode(pos, arg)
 	local nodename = tablearg(arg)
@@ -100,12 +93,6 @@ function ws.place(pos, items, hslot, place)
 	end
 end
 
-function ws.place_if_able(pos)
-	if not pos then return end
-	if ws.can_place_wielded_at(pos) then
-		core.place_node(pos)
-	end
-end
 
 function ws.is_diggable(pos)
 	if not pos then return false end
@@ -130,18 +117,6 @@ function ws.dig(pos, condition, autotool)
 	return true
 end
 
-function ws.chunk_loaded()
-	local ign = core.find_nodes_near(ws.dircoord(0, 0, 0), 10, {'ignore'}, true)
-	if #ign == 0 then return true end
-	return false
-end
-
-function ws.get_near(nodes, range)
-	range = range or 5
-	local nds = core.find_nodes_near(ws.dircoord(0, 0, 0), range, nodes, true)
-	if #nds > 0 then return nds end
-	return false
-end
 
 function ws.is_laggy()
 	if tps_client and tps_client.ping and tps_client.ping > 1000 then return true end

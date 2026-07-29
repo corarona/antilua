@@ -19,45 +19,6 @@ function ws.relcoord(x, y, z, rpos)
 	return vector.add(vector.new(pos.x, math.ceil(pos.y), pos.z), ws.optcoord(x, y, z))
 end
 
-function ws.is_same_pos(pos1, pos2)
-	return vector.equals(vector.round(pos1), vector.round(pos2))
-end
-
-function ws.get_reachable_positions(range, under)
-	under = under or false
-	range = range or 4
-	local rt = {}
-	local lp = vector.round(core.localplayer:get_pos())
-	local ylim = range
-	if under then ylim = -1 end
-	for x = -range, range do
-		for y = -range, ylim do
-			for z = -range, range do
-				table.insert(rt, vector.offset(lp, x, y, z))
-			end
-		end
-	end
-	return rt
-end
-
-function ws.getaxis()
-	local dir = ws.getdir()
-	if dir == "north" or dir == "south" then return "z" end
-	return "x"
-end
-
-function ws.setdir(dir)
-	if dir == "north" then
-		core.localplayer:set_yaw(0)
-	elseif dir == "south" then
-		core.localplayer:set_yaw(180)
-	elseif dir == "east" then
-		core.localplayer:set_yaw(270)
-	elseif dir == "west" then
-		core.localplayer:set_yaw(90)
-	end
-end
-
 function ws.getdir(yaw)
 	if not core.localplayer then return "north" end
 	local rot = yaw or core.localplayer:get_yaw() % 360

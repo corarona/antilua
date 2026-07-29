@@ -7,14 +7,6 @@ function ws.s(name, value)
 	end
 end
 
-function ws.sb(name, value)
-	if value == nil then
-		return ws.c.settings:get_bool(name)
-	else
-		ws.c.settings:set_bool(name, value)
-		return ws.c.settings:get_bool(name)
-	end
-end
 
 function ws.dcm(msg)
 	return core.display_chat_message(msg)
@@ -46,13 +38,6 @@ function ws.in_list(val, list)
 	return false
 end
 
-function ws.random_table_element(tbl)
-	local ks = {}
-	for k in pairs(tbl) do
-		table.insert(ks, k)
-	end
-	return tbl[ks[math.random(#ks)]]
-end
 
 function ws.register_chatcommand_alias(old, ...)
 	local def = assert(core.registered_chatcommands[old])

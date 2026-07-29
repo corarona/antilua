@@ -14,39 +14,3 @@ function ws.aim(tpos)
 	core.localplayer:set_pitch(pitch)
 end
 
-function ws.gaim(tpos, v)
-	if not tpos then return end
-	local atan, pi, pow, sqrt = math.atan, math.pi, math.pow, math.sqrt
-	local player = core.localplayer
-	local ppos = player:get_pos()
-	local vec = vector.subtract(ppos, tpos)
-
-	local yaw = atan(vec.z / vec.x) - pi / 2
-	yaw = yaw + (tpos.x >= ppos.x and pi or 0)
-	player:set_yaw((yaw + pi) / pi * 180)
-
-	local g = -9.81
-	local y = vec.y
-	vec.y = 0
-	local x = vector.length(vec)
-
-	local pitch = atan(pow(v, 2) / (g * x) + sqrt(pow(v, 4) / (pow(g, 2) * pow(x, 2)) - 2 * pow(v, 2) * y / (g * pow(x, 2)) - 1))
-	player:set_pitch((pitch / pi * 180) * -1)
-end
-
-function ws.find_player(name)
-	local lp = ws.dircoord(0, 0, 0)
-	for k, v in ipairs(core.get_objects_inside_radius(lp, 500)) do
-		if v:get_name() == name then
-			return v:get_pos(), v
-		end
-	end
-end
-
-function ws.playeron(p)
-	local pls = core.get_player_names()
-	for k, v in pairs(pls) do
-		if v == p then return true end
-	end
-	return false
-end

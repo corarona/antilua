@@ -123,16 +123,6 @@ function ws.notify_progress(id, text, pct, ntype)
 	ws.notify(text .. bar, ntype, {chat = false, duration = 2, _id = id})
 end
 
---- Return recent notification history (table of {time, text, ntype, opts}).
-function ws.get_notification_log(n)
-	n = n or 20
-	local count = math.min(n, #notify_history)
-	local result = {}
-	for i = #notify_history - count + 1, #notify_history do
-		table.insert(result, notify_history[i])
-	end
-	return result
-end
 
 --- Override the notification handler (for testing or customization).
 -- Pass nil to restore the default handler.
