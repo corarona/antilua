@@ -31,7 +31,7 @@ function do_schembuild(param, use_pos)
 		place_nodes = {}
 		for _, entry in ipairs(schem.data) do
 			if entry.name ~= "air" and entry.prob ~= 0 then
-				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name}
+				local node = {x=pos.x + (entry.x or 0), y=pos.y + (entry.y or 0), z=pos.z + (entry.z or 0), name=entry.name, param2=entry.param2 or 0}
 				table.insert(place_nodes, node)
 				add_preview_if_needed(node, node.name)
 			end
@@ -77,7 +77,7 @@ function load_bx_schematic(uid, name, mts_data)
 	for _, node in ipairs(schem.data) do
 		if node.name ~= "air" and node.prob and node.prob > 0 then
 			local wp = vector.add(pos, { x = node.x or 0, y = node.y or 0, z = node.z or 0 })
-			table.insert(place_nodes, { x = wp.x, y = wp.y, z = wp.z, name = node.name })
+			table.insert(place_nodes, { x = wp.x, y = wp.y, z = wp.z, name = node.name, param2 = node.param2 or 0 })
 		end
 	end
 
@@ -381,7 +381,7 @@ core.register_on_formspec_input(function(formname, fields)
 		clear_supply_chests()
 		place_nodes = {}
 		for _, n in ipairs(rel_nodes) do
-			local wp = {x = origin.x + n.x, y = origin.y + n.y, z = origin.z + n.z, name = n.name}
+			local wp = {x = origin.x + n.x, y = origin.y + n.y, z = origin.z + n.z, name = n.name, param2 = n.param2 or 0}
 			table.insert(place_nodes, wp)
 			add_preview_if_needed(wp, wp.name)
 		end

@@ -206,7 +206,11 @@ ws.rg("PlaceLiteM", {
 						changed = true
 					end
 				else
-					if ws.place(pos_v, entry.name) then
+					local place_fn
+					if entry.param2 and entry.param2 ~= 0 then
+						place_fn = function(p) core.place_node(p) end
+					end
+					if ws.place(pos_v, entry.name, nil, place_fn) then
 						table.remove(place_nodes, i)
 						changed = true
 					end

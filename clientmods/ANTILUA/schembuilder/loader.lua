@@ -25,6 +25,7 @@ function load_schematic_nodes(value, pos)
 						y = pos.y + (entry.y or 0),
 						z = pos.z + (entry.z or 0),
 						name = entry.name,
+						param2 = entry.param2 or 0,
 					})
 				end
 			end

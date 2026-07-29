@@ -6,7 +6,7 @@ function shapes.generate_cube(w, h, d, mat, hollow)
 		for y = 0, h - 1 do
 			for z = 0, d - 1 do
 				if not hollow or x == 0 or x == w - 1 or y == 0 or y == h - 1 or z == 0 or z == d - 1 then
-					nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+					nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
 				end
 			end
 		end
@@ -22,7 +22,7 @@ function shapes.generate_sphere(r, mat, hollow)
 			for y = -r, r do
 				for z = -r, r do
 					if x * x + y * y + z * z <= r2 then
-						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
 					end
 				end
 			end
@@ -39,7 +39,7 @@ function shapes.generate_sphere(r, mat, hollow)
 							or x*x+(y-1)*(y-1)+z*z > r2
 							or x*x+y*y+(z+1)*(z+1) > r2
 							or x*x+y*y+(z-1)*(z-1) > r2 then
-							nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+							nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
 						end
 					end
 				end
@@ -72,7 +72,7 @@ function shapes.generate_ellipsoid(rx, ry, rz, mat, hollow)
 			for y = -ry, ry do
 				for z = -rz, rz do
 					if (x*x)/rx2 + (y*y)/ry2 + (z*z)/rz2 <= 1 then
-						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
 					end
 				end
 			end
@@ -89,7 +89,7 @@ function shapes.generate_ellipsoid(rx, ry, rz, mat, hollow)
 							or (x*x)/rx2 + ((y-1)*(y-1))/ry2 + (z*z)/rz2 > 1
 							or (x*x)/rx2 + (y*y)/ry2 + ((z+1)*(z+1))/rz2 > 1
 							or (x*x)/rx2 + (y*y)/ry2 + ((z-1)*(z-1))/rz2 > 1 then
-							nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+							nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
 						end
 					end
 				end
@@ -110,7 +110,7 @@ function shapes.generate_pyramid(base_w, height, mat, hollow)
 		for x = x1, x2 do
 			for z = x1, x2 do
 				if not hollow or y == 0 or x == x1 or x == x2 or z == x1 or z == x2 then
-					nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+					nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
 				end
 			end
 		end
@@ -127,9 +127,9 @@ function shapes.generate_cylinder(r, height, mat, hollow)
 				local d2 = x * x + z * z
 				if d2 <= r2 then
 					if not hollow then
-						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
 					elseif y == 0 or y == height - 1 or d2 >= (r - 1) * (r - 1) then
-						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat}
+						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
 					end
 				end
 			end

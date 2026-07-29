@@ -703,7 +703,11 @@ if sbots and sbots.register_bot then
 				end
 			end
 			local place_item = is_random and pick_random_block() or target_entry.name
-			if place_item and ws.place(target_entry, place_item) then
+			local place_fn
+			if target_entry.param2 and target_entry.param2 ~= 0 then
+				place_fn = function(p) core.place_node(p) end
+			end
+			if place_item and ws.place(target_entry, place_item, nil, place_fn) then
 				self._last_place_time = core.get_us_time() / 1000000
 				for i = #place_nodes, 1, -1 do
 					if place_nodes[i] == target_entry then
@@ -740,6 +744,10 @@ if sbots and sbots.register_bot then
 								-- Head safety: skip if this node is at the player's head level
 								if is_head_safe(pos, entry) then
 									local batch_item = is_random and pick_random_block() or entry.name
+									local batch_place_fn
+									if entry.param2 and entry.param2 ~= 0 then
+										batch_place_fn = function(p) core.place_node(p) end
+									end
 									if batch_item then
 										local epos = {x = entry.x, y = entry.y, z = entry.z}
 										local enode = core.get_node_or_nil(epos)
@@ -747,7 +755,7 @@ if sbots and sbots.register_bot then
 											if ws.dig then ws.dig(epos) end
 										end
 									end
-									if batch_item and ws.place(entry, batch_item) then
+									if batch_item and ws.place(entry, batch_item, nil, batch_place_fn) then
 										table.remove(place_nodes, i)
 										placed = placed + 1
 									else
