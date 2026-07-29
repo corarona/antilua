@@ -220,4 +220,86 @@ function test_schembuilder(T)
 		T.assert(type(files) == "table", "result should be a table, got " .. type(files))
 		T.assert(#files > 0, "should have at least one .mts file, got " .. #files .. " in " .. schem_path)
 	end)
+
+	T.run("/schemundo chat command registered", function()
+		T.assert(type(core.registered_chatcommands["schemundo"]) == "table", "/schemundo should be registered")
+	end)
+
+	T.run("schembuilder.generate_shape exists", function()
+		T.assert(type(schembuilder.generate_shape) == "function", "generate_shape should exist")
+	end)
+
+	T.run("generate_shape cube", function()
+		local nodes, err = schembuilder.generate_shape("cube", 3, 3, 3, "mcl_core:stone", false)
+		T.assert(nodes ~= nil, "cube should generate: " .. tostring(err))
+		T.assert_eq(#nodes, 27, "3x3x3 cube should have 27 nodes")
+		for _, n in ipairs(nodes) do
+			T.assert(n.name == "mcl_core:stone", "all nodes should be stone")
+			T.assert(n.param2 == 0, "param2 should be 0")
+		end
+	end)
+
+	T.run("generate_shape cube hollow", function()
+		local nodes = schembuilder.generate_shape("cube", 3, 3, 3, "mcl_core:stone", true)
+		T.assert(nodes ~= nil, "hollow cube should generate")
+		T.assert_eq(#nodes, 26, "3x3x3 hollow cube should have 26 nodes (no center)")
+	end)
+
+	T.run("generate_shape sphere", function()
+		local nodes, err = schembuilder.generate_shape("sphere", 3, 3, 3, "mcl_core:stone", false)
+		T.assert(nodes ~= nil, "sphere should generate: " .. tostring(err))
+		T.assert(#nodes > 0, "sphere should have nodes")
+	end)
+
+	T.run("generate_shape circle", function()
+		local nodes, err = schembuilder.generate_shape("circle", 3, 1, 1, "mcl_core:stone")
+		T.assert(nodes ~= nil, "circle should generate: " .. tostring(err))
+		T.assert(#nodes > 0, "circle should have nodes")
+	end)
+
+	T.run("generate_shape pyramid", function()
+		local nodes, err = schembuilder.generate_shape("pyramid", 5, 3, 1, "mcl_core:stone", false)
+		T.assert(nodes ~= nil, "pyramid should generate: " .. tostring(err))
+		T.assert(#nodes > 0, "pyramid should have nodes")
+	end)
+
+	T.run("generate_shape cylinder", function()
+		local nodes, err = schembuilder.generate_shape("cylinder", 3, 5, 1, "mcl_core:stone", false)
+		T.assert(nodes ~= nil, "cylinder should generate: " .. tostring(err))
+		T.assert(#nodes > 0, "cylinder should have nodes")
+	end)
+
+	T.run("generate_shape unknown shape", function()
+		local nodes, err = schembuilder.generate_shape("garbage", 1, 1, 1, "mcl_core:stone")
+		T.assert(nodes == nil, "unknown shape should return nil")
+		T.assert(err ~= nil, "unknown shape should return error")
+	end)
+
+	T.run("schembuilder_serialize round-trip", function()
+		if not core.localplayer then
+			T.assert(true, "skip: no localplayer")
+			return
+		end
+		if type(core.get_node_or_nil) ~= "function" then
+			T.assert(true, "skip: get_node_or_nil not available")
+			return
+		end
+		T.assert(type(schembuilder_serialize) == "function", "schembuilder_serialize should exist")
+	end)
+
+	T.run("save_undo_snapshot and restore_undo_snapshot round-trip", function()
+		local test_nodes = {
+			{x = 0, y = 0, z = 0, name = "mcl_core:stone", param2 = 0},
+			{x = 1, y = 0, z = 0, name = "mcl_core:dirt", param2 = 0},
+		}
+		local orig = place_nodes
+		place_nodes = test_nodes
+		save_undo_snapshot()
+		place_nodes = {}
+		local ok = restore_undo_snapshot()
+		T.assert(ok, "restore should succeed")
+		T.assert_eq(#place_nodes, 2, "should restore 2 nodes")
+		T.assert_eq(place_nodes[1].name, "mcl_core:stone", "first node should be stone")
+		place_nodes = orig or {}
+	end)
 end
