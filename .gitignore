@@ -151,3 +151,4 @@ client/mod_storage.sqlite-journal
 clientmods/ANTILUA/priv/
 clientmods/PRIV/
 __pycache__/
+tests/
