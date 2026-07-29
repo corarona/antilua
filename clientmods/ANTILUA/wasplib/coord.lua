@@ -62,3 +62,11 @@ function ws.get_dimension(pos)
 	else return "void"
 	end
 end
+
+function ws.in_cube(tpos, wpos1, wpos2)
+	local minp = vector.new(math.min(wpos1.x, wpos2.x), math.min(wpos1.y, wpos2.y), math.min(wpos1.z, wpos2.z))
+	local maxp = vector.new(math.max(wpos1.x, wpos2.x), math.max(wpos1.y, wpos2.y), math.max(wpos1.z, wpos2.z))
+	return tpos.x >= minp.x and tpos.x <= maxp.x
+		and tpos.y >= minp.y and tpos.y <= maxp.y
+		and tpos.z >= minp.z and tpos.z <= maxp.z
+end

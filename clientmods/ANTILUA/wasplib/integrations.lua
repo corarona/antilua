@@ -32,25 +32,19 @@ local hwps = {}
 load_constraint_pos("wasplib_constraint_pos1", "constraint_pos1")
 load_constraint_pos("wasplib_constraint_pos2", "constraint_pos2")
 
-function ws.set_pos1(pos)
+function ws.set_constraint_pos(n, pos)
 	if type(pos) == "string" then pos = core.string_to_pos(pos) end
 	if not pos then pos = ws.dircoord(0, 0, 0) end
-	ws.constraint_pos1 = vector.round(pos)
-	save_constraint_pos("wasplib_constraint_pos1", ws.constraint_pos1)
-	local pstr = core.pos_to_string(ws.constraint_pos1)
-	hwps[#hwps + 1] = ws.display_wp(ws.constraint_pos1, pstr)
-	ws.notify("Constraint pos1 set to " .. pstr, ws.NOTIFY_INFO, {toast=false})
+	local field = "constraint_pos" .. n
+	ws[field] = vector.round(pos)
+	save_constraint_pos("wasplib_constraint_pos" .. n, ws[field])
+	local pstr = core.pos_to_string(ws[field])
+	hwps[#hwps + 1] = ws.display_wp(ws[field], pstr)
+	ws.notify("Constraint pos" .. n .. " set to " .. pstr, ws.NOTIFY_INFO, {toast=false})
 end
 
-function ws.set_pos2(pos)
-	if type(pos) == "string" then pos = core.string_to_pos(pos) end
-	if not pos then pos = ws.dircoord(0, 0, 0) end
-	ws.constraint_pos2 = vector.round(pos)
-	save_constraint_pos("wasplib_constraint_pos2", ws.constraint_pos2)
-	local pstr = core.pos_to_string(ws.constraint_pos2)
-	hwps[#hwps + 1] = ws.display_wp(ws.constraint_pos2, pstr)
-	ws.notify("Constraint pos2 set to " .. pstr, ws.NOTIFY_INFO, {toast=false})
-end
+ws.set_pos1 = function(pos) ws.set_constraint_pos(1, pos) end
+ws.set_pos2 = function(pos) ws.set_constraint_pos(2, pos) end
 
 function ws.reset_constraints()
 	ws.constraint_pos1 = false

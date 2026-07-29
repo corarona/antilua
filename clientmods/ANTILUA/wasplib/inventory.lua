@@ -116,4 +116,74 @@ function ws.register_keypress_cheat(setting, desc, category, keyname, condition,
 	core.register_cheat(desc, { category = category, setting = setting, description = description })
 end
 
+function ws.make_blocks()
+	local it = core.get_wielded_item()
+	local wi = core.get_wield_index()
+	local nn = it:get_count() / 9
+	for i = 1, 9 do
+		ws.move_stack("current_player", "main", wi, "current_player", "craft", i, nn)
+	end
+	local craft_act = InventoryAction("craft")
+	craft_act:craft("current_player")
+	craft_act:apply()
+	local tslot = ws.find_empty(core.get_inventory("current_player").main)
+	if not tslot then tslot = 9 end
+	ws.move_stack("current_player", "craft_result", 1, "current_player", "main", tslot)
+end
+
+core.register_cheat("MakeBlocks", { category = "Inventory", func = ws.make_blocks, description = "Create a block of the selected node type" })
+
+--- Loot matching items from nearby containers into player inventory.
+function ws.loot_list(items, range, max_per_scan)
+	if not core.localplayer then return 0 end
+	range = range or 5
+	max_per_scan = max_per_scan or 16
+	if #items == 0 then return 0 end
+
+	local needed = {}
+	for _, name in ipairs(items) do
+		needed[name] = true
+	end
+
+	local pos = core.localplayer:get_pos()
+	local minp = vector.offset(pos, -range, -range, -range)
+	local maxp = vector.offset(pos, range, range, range)
+	local containers = core.find_nodes_with_meta(minp, maxp)
+	if #containers == 0 then return 0 end
+
+	local plinv = core.get_inventory("current_player")
+	if not plinv then return 0 end
+	local main_size = #plinv.main
+
+	local moved = 0
+	for _, cpos in ipairs(containers) do
+		if moved >= max_per_scan then break end
+		local loc = "nodemeta:" .. cpos.x .. "," .. cpos.y .. "," .. cpos.z
+		local inv = core.get_inventory(loc)
+		if inv then
+			for listname, stacks in pairs(inv) do
+				if moved >= max_per_scan then break end
+				for idx, stack in ipairs(stacks) do
+					if moved >= max_per_scan then break end
+					if not stack:is_empty() then
+						local name = stack:get_name()
+						if needed[name] then
+							for slot = 1, main_size do
+								local plstack = plinv.main[slot]
+								if plstack:is_empty() then
+									ws.move_stack(loc, listname, idx,
+										"current_player", "main", slot)
+									moved = moved + 1
+									break
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+	return moved
+end
+
 
