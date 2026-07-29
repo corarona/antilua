@@ -1,7 +1,3 @@
-function ws.coord(x, y, z)
-	return vector.new(x, y, z)
-end
-
 function ws.ordercoord(c)
 	if c.x == nil then
 		return {x = c[1], y = c[2], z = c[3]}
@@ -12,14 +8,10 @@ end
 
 function ws.optcoord(x, y, z)
 	if y and z then
-		return ws.coord(x, y, z)
+		return vector.new(x, y, z)
 	else
 		return ws.ordercoord(x)
 	end
-end
-
-function ws.cadd(c1, c2)
-	return vector.add(c1, c2)
 end
 
 function ws.relcoord(x, y, z, rpos)
@@ -28,7 +20,7 @@ function ws.relcoord(x, y, z, rpos)
 end
 
 function ws.is_same_pos(pos1, pos2)
-	return vector.distance(vector.round(pos1), vector.round(pos2)) == 0
+	return vector.equals(vector.round(pos1), vector.round(pos2))
 end
 
 function ws.get_reachable_positions(range, under)

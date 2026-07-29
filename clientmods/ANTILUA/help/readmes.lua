@@ -1190,13 +1190,9 @@ Legacy signature: `ws.rg(name, category, setting, func, funcstart, funcstop, dau
 
 ### coord.lua — Coordinate math
 
-`ws.coord(x, y, z)` — create a vector.
-
 `ws.ordercoord(c)` — normalize `{x,y,z}` or `{1,2,3}` to `{x=,y=,z=}`.
 
 `ws.optcoord(x, y, z)` — flexible coord constructor (raw numbers or table).
-
-`ws.cadd(c1, c2)` — vector add.
 
 `ws.relcoord(x, y, z, rpos)` — relative coordinate from position.
 
