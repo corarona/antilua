@@ -55,67 +55,51 @@ function mapart.build_inv_palette()
 	return filtered
 end
 
--- Convert decoded image data to an MTS schematic (floor/painting)
-function mapart.image_to_schem(width, height, pixel_data, opts)
+-- Convert decoded image data to an MTS schematic
+-- mode: "floor" (2D horizontal), "wall_x" (vertical facing X), "wall_z" (vertical facing Z)
+function mapart.convert_image(width, height, pixel_data, mode, opts)
 	opts = opts or {}
-	local out_w = opts.width or 128
-	local out_h = opts.height or 128
-	local use_dither = opts.dither or false
-	local use_gamma = opts.gamma or false
-	local pal = opts.palette or mapart.palette
-	local use_bilinear = opts.filter == "bilinear"
+	local out_w = opts.width or width
+	local out_h = opts.height or height
+
 	local errors = {}
-	if use_dither then
-		for i = 1, out_w * out_h * 3 do
-			errors[i] = 0
-		end
+	if opts.dither then
+		for i = 1, out_w * out_h * 3 do errors[i] = 0 end
 	end
 
-	local schem = {
-		size = { x = out_w, y = 1, z = out_h },
-		data = {}
+	local px_opts = {
+		dither = opts.dither,
+		gamma = opts.gamma,
+		palette = opts.palette,
+		filter = opts.filter,
+		errors = errors,
 	}
 
-	for z = out_h - 1, 0, -1 do
-		for x = 0, out_w - 1 do
-			local r, g, b, a = mapart.sample_px(pixel_data, width, height, x, z, out_w, out_h, use_bilinear)
+	local schem
+	if mode == "wall_x" then
+		schem = { size = { x = out_w, y = out_h, z = 1 }, data = {} }
+	elseif mode == "wall_z" then
+		schem = { size = { x = 1, y = out_h, z = out_w }, data = {} }
+	else
+		schem = { size = { x = out_w, y = 1, z = out_h }, data = {} }
+	end
 
-			if use_dither then
-				local idx = z * out_w + x
-				r = math.max(0, math.min(255, r + errors[idx * 3 + 1]))
-				g = math.max(0, math.min(255, g + errors[idx * 3 + 2]))
-				b = math.max(0, math.min(255, b + errors[idx * 3 + 3]))
+	if mode == "wall_z" then
+		for z = 0, out_w - 1 do
+			for y = out_h - 1, 0, -1 do
+				table.insert(schem.data, mapart._process_pixel(pixel_data, width, height, z, y, out_w, out_h, px_opts))
 			end
-
-			if a < 128 then
-				table.insert(schem.data, {
-					name = "air",
-					prob = 0,
-					param2 = 0,
-				})
-			else
-				local best = mapart.find_closest(r, g, b, use_gamma, pal)
-				if best then
-					local dr = (r or 0) - best.r
-					local dg = (g or 0) - best.g
-					local db = (b or 0) - best.b
-
-					if use_dither then
-						mapart.floyd_steinberg(errors, out_w, out_h, x, z, dr, dg, db)
-					end
-
-					table.insert(schem.data, {
-						name = best.name,
-						prob = 254,
-						param2 = best.param2,
-					})
-				else
-					table.insert(schem.data, {
-						name = "air",
-						prob = 0,
-						param2 = 0,
-					})
-				end
+		end
+	elseif mode == "wall_x" then
+		for y = out_h - 1, 0, -1 do
+			for x = 0, out_w - 1 do
+				table.insert(schem.data, mapart._process_pixel(pixel_data, width, height, x, y, out_w, out_h, px_opts))
+			end
+		end
+	else
+		for z = out_h - 1, 0, -1 do
+			for x = 0, out_w - 1 do
+				table.insert(schem.data, mapart._process_pixel(pixel_data, width, height, x, z, out_w, out_h, px_opts))
 			end
 		end
 	end
@@ -123,77 +107,44 @@ function mapart.image_to_schem(width, height, pixel_data, opts)
 	return schem
 end
 
+-- Convert decoded image data to a floor MTS schematic
+function mapart.image_to_schem(width, height, pixel_data, opts)
+	return mapart.convert_image(width, height, pixel_data, "floor", opts)
+end
+
 -- Convert decoded image data to a vertical wall MTS schematic
 function mapart.image_to_wall_schem(width, height, pixel_data, opts)
 	opts = opts or {}
-	local out_w = opts.width or width
-	local out_h = opts.height or height
-	local use_dither = opts.dither or false
-	local use_gamma = opts.gamma or false
-	local pal = opts.palette or mapart.palette
 	local dir = opts.direction or "x"
+	local mode = dir == "z" and "wall_z" or "wall_x"
+	return mapart.convert_image(width, height, pixel_data, mode, opts)
+end
+
+-- Shared pixel processor used by both sync and async conversion paths
+-- Returns { name, prob, param2 } for the given pixel
+function mapart._process_pixel(pixel_data, img_w, img_h, img_x, img_y, out_w, out_h, opts)
 	local use_bilinear = opts.filter == "bilinear"
-
-	local errors = {}
-	if use_dither then
-		for i = 1, out_w * out_h * 3 do
-			errors[i] = 0
-		end
+	opts.errors = opts.errors or {}
+	local errors = opts.errors
+	local r, g, b, a = mapart.sample_px(pixel_data, img_w, img_h, img_x, img_y, out_w, out_h, use_bilinear)
+	if opts.dither then
+		local idx = img_y * out_w + img_x
+		r = math.max(0, math.min(255, r + (errors[idx * 3 + 1] or 0)))
+		g = math.max(0, math.min(255, g + (errors[idx * 3 + 2] or 0)))
+		b = math.max(0, math.min(255, b + (errors[idx * 3 + 3] or 0)))
 	end
-
-	local schem
-	if dir == "x" then
-		schem = { size = { x = out_w, y = out_h, z = 1 }, data = {} }
-		for y = out_h - 1, 0, -1 do
-			for x = 0, out_w - 1 do
-				local r, g, b, a = mapart.sample_px(pixel_data, width, height, x, y, out_w, out_h, use_bilinear)
-				if use_dither then
-					local idx = y * out_w + x
-					r = math.max(0, math.min(255, r + errors[idx * 3 + 1]))
-					g = math.max(0, math.min(255, g + errors[idx * 3 + 2]))
-					b = math.max(0, math.min(255, b + errors[idx * 3 + 3]))
-				end
-				if a < 128 then
-					table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
-				else
-					local best = mapart.find_closest(r, g, b, use_gamma, pal)
-					if best then
-						local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-						if use_dither then mapart.floyd_steinberg(errors, out_w, out_h, x, y, dr, dg, db) end
-						table.insert(schem.data, { name = best.name, prob = 254, param2 = best.param2 })
-					else
-						table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
-					end
-				end
-			end
-		end
-	else
-		schem = { size = { x = 1, y = out_h, z = out_w }, data = {} }
-		for z = 0, out_w - 1 do
-			for y = out_h - 1, 0, -1 do
-				local r, g, b, a = mapart.sample_px(pixel_data, width, height, z, y, out_w, out_h, use_bilinear)
-				if use_dither then
-					local idx = y * out_w + z
-					r = math.max(0, math.min(255, r + errors[idx * 3 + 1]))
-					g = math.max(0, math.min(255, g + errors[idx * 3 + 2]))
-					b = math.max(0, math.min(255, b + errors[idx * 3 + 3]))
-				end
-				if a < 128 then
-					table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
-				else
-					local best = mapart.find_closest(r, g, b, use_gamma, pal)
-					if best then
-						local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-						if use_dither then mapart.floyd_steinberg(errors, out_w, out_h, z, y, dr, dg, db) end
-						table.insert(schem.data, { name = best.name, prob = 254, param2 = best.param2 })
-					else
-						table.insert(schem.data, { name = "air", prob = 0, param2 = 0 })
-					end
-				end
-			end
-		end
+	if a < 128 then
+		return { name = "air", prob = 0, param2 = 0 }
 	end
-	return schem
+	local best = mapart.find_closest(r, g, b, opts.gamma, opts.palette or mapart.palette)
+	if best then
+		local dr = r - best.r; local dg = g - best.g; local db = b - best.b
+		if opts.dither then
+			mapart.floyd_steinberg(errors, out_w, out_h, img_x, img_y, dr, dg, db)
+		end
+		return { name = best.name, prob = 254, param2 = best.param2 }
+	end
+	return { name = "air", prob = 0, param2 = 0 }
 end
 
 function mapart.process_conv_chunk()
@@ -206,85 +157,39 @@ function mapart.process_conv_chunk()
 		s._conv_cancel = false
 		return
 	end
+
+	local px_opts = {
+		dither = c.dither,
+		gamma = c.gamma,
+		palette = c.pal,
+		filter = c.filter,
+		errors = c.errors,
+	}
+
 	local chunk = 32
 	local done = 0
 
-	for batch = 1, chunk do
-		if c.mode == "floor" then
+	if c.mode == "wall_z" then
+		for batch = 1, chunk do
+			if c.z >= c.out_w then done = 1; break end
+			for y = c.out_h - 1, 0, -1 do
+				local entry = mapart._process_pixel(c.img.data, c.img.width, c.img.height, c.z, y, c.out_w, c.out_h, px_opts)
+				table.insert(c.schem.data, entry)
+			end
+			c.z = c.z + 1
+		end
+	else
+		for batch = 1, chunk do
 			if c.y < 0 then done = 1; break end
 			for x = 0, c.out_w - 1 do
-				local r,g,b,a = mapart.sample_px(c.img.data, c.img.width, c.img.height, x, c.y, c.out_w, c.out_h, c.filter == "bilinear")
-				if c.dither then
-					local idx = c.y * c.out_w + x
-					r = math.max(0, math.min(255, r + c.errors[idx*3+1]))
-					g = math.max(0, math.min(255, g + c.errors[idx*3+2]))
-					b = math.max(0, math.min(255, b + c.errors[idx*3+3]))
+				local img_y = c.y
+				if c.mode:sub(1,4) == "wall" then
+					-- wall_x: img_y = c.y, same as floor
 				end
-				if a < 128 then
-					table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
-				else
-					local best = mapart.find_closest(r, g, b, c.gamma, c.pal)
-					if best then
-						local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-						if c.dither then mapart.floyd_steinberg(c.errors, c.out_w, c.out_h, x, c.y, dr, dg, db) end
-						table.insert(c.schem.data, { name = best.name, prob = 254, param2 = best.param2 })
-					else
-						table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
-					end
-				end
+				local entry = mapart._process_pixel(c.img.data, c.img.width, c.img.height, x, img_y, c.out_w, c.out_h, px_opts)
+				table.insert(c.schem.data, entry)
 			end
 			c.y = c.y - 1
-		else
-			local dir = c.wall_dir
-			if dir == "x" then
-				if c.y < 0 then done = 1; break end
-				for x = 0, c.out_w - 1 do
-					local r,g,b,a = mapart.sample_px(c.img.data, c.img.width, c.img.height, x, c.y, c.out_w, c.out_h, c.filter == "bilinear")
-					if c.dither then
-						local idx = c.y * c.out_w + x
-						r = math.max(0, math.min(255, r + c.errors[idx*3+1]))
-						g = math.max(0, math.min(255, g + c.errors[idx*3+2]))
-						b = math.max(0, math.min(255, b + c.errors[idx*3+3]))
-					end
-					if a < 128 then
-						table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
-					else
-						local best = mapart.find_closest(r, g, b, c.gamma, c.pal)
-						if best then
-							local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-							if c.dither then mapart.floyd_steinberg(c.errors, c.out_w, c.out_h, x, c.y, dr, dg, db) end
-							table.insert(c.schem.data, { name = best.name, prob = 254, param2 = best.param2 })
-						else
-							table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
-						end
-					end
-				end
-				c.y = c.y - 1
-			else
-				if c.z >= c.out_w then done = 1; break end
-				for y = c.out_h - 1, 0, -1 do
-					local r,g,b,a = mapart.sample_px(c.img.data, c.img.width, c.img.height, c.z, y, c.out_w, c.out_h, c.filter == "bilinear")
-					if c.dither then
-						local idx = y * c.out_w + c.z
-						r = math.max(0, math.min(255, r + c.errors[idx*3+1]))
-						g = math.max(0, math.min(255, g + c.errors[idx*3+2]))
-						b = math.max(0, math.min(255, b + c.errors[idx*3+3]))
-					end
-					if a < 128 then
-						table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
-					else
-						local best = mapart.find_closest(r, g, b, c.gamma, c.pal)
-						if best then
-							local dr = r - best.r; local dg = g - best.g; local db = b - best.b
-							if c.dither then mapart.floyd_steinberg(c.errors, c.out_w, c.out_h, c.z, y, dr, dg, db) end
-							table.insert(c.schem.data, { name = best.name, prob = 254, param2 = best.param2 })
-						else
-							table.insert(c.schem.data, { name = "air", prob = 0, param2 = 0 })
-						end
-					end
-				end
-				c.z = c.z + 1
-			end
 		end
 	end
 
