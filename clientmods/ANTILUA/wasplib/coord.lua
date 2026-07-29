@@ -24,8 +24,7 @@ end
 
 function ws.relcoord(x, y, z, rpos)
 	local pos = rpos or core.localplayer:get_pos()
-	pos.y = math.ceil(pos.y)
-	return vector.add(pos, ws.optcoord(x, y, z))
+	return vector.add(vector.new(pos.x, math.ceil(pos.y), pos.z), ws.optcoord(x, y, z))
 end
 
 function ws.is_same_pos(pos1, pos2)
@@ -70,14 +69,14 @@ end
 function ws.getdir(yaw)
 	if not core.localplayer then return "north" end
 	local rot = yaw or core.localplayer:get_yaw() % 360
-	if ws.between(rot, 316, 360) or ws.between(rot, 0, 45) then
+	if ws.between(rot, 315, 359) or ws.between(rot, 0, 44) then
 		return "north"
-	elseif ws.between(rot, 136, 225) then
-		return "south"
-	elseif ws.between(rot, 226, 315) then
-		return "east"
-	elseif ws.between(rot, 46, 135) then
+	elseif ws.between(rot, 45, 134) then
 		return "west"
+	elseif ws.between(rot, 135, 224) then
+		return "south"
+	elseif ws.between(rot, 225, 314) then
+		return "east"
 	end
 end
 
