@@ -167,48 +167,93 @@ function ws.get_itemslot_bg_v4(x, y, w, h, margin)
 	return table.concat(parts)
 end
 
-local function find_air_ahead(pos, steps)
-	local yaw = core.localplayer and core.localplayer:get_yaw()
-	if not yaw then return end
-	yaw = yaw * math.pi / 180
-	local dx = math.sin(yaw)
-	local dz = math.cos(yaw)
-	for step = 1, steps do
-		local fp = vector.offset(pos, dx * step, 0, dz * step)
-		local fpos = vector.round(fp)
-		local hp = vector.offset(fpos, 0, 1, 0)
-		local feet = core.get_node_or_nil(fpos)
-		local head = core.get_node_or_nil(hp)
-		if not feet or not head then return end
-		if feet.name == "air" and head.name == "air" then
-			return fpos
-		end
-	end
-end
-
 ------------------------------------------------------------------------------
--- headsaver (merged) -- wall-jump: prefers air ahead, then closest pocket, then dig
+-- headsaver (merged) -- 3-phase wall pass: step through thin walls,
+-- directional air pocket search, dig at max reach, then fallback.
 ------------------------------------------------------------------------------
 ws.rg("HeadSaver", {
 	category = "Player",
 	setting = "headsaver",
-	description = "Save head position for quick return",
+	description = "Pass through walls: step through thin, dig through thick",
 	on_step = function()
 		local head = ws.dircoord(0, 1, 0)
-		local headnd = core.get_node_or_nil(head)
-		if headnd and headnd.name ~= "air" then
-			local ap = find_air_ahead(ws.dircoord(0, 0, 0), 10)
-			if ap then
-				core.localplayer:set_pos(ap)
-				return
-			end
-			ap = ws.find_closest_reachable_airpocket(ws.dircoord(0, 0, 0))
-			if ap then
-				core.localplayer:set_pos(ap)
-				return
-			end
-			ws.dig(head)
+		local head_nd = core.get_node_or_nil(head)
+		if not head_nd or head_nd.name == "air" then return end
+		if head_nd.name == "ignore" then return end
+		local ndef = core.get_node_def(head_nd.name)
+		if not ndef then return end
+		local g = ndef.groups or {}
+		if g.opaque ~= 1 then return end
+
+		local pos = core.localplayer:get_pos()
+		local vel = core.localplayer:get_velocity()
+		local dx, dy, dz
+		if vel and (vel.x * vel.x + vel.y * vel.y + vel.z * vel.z) > 0.01 then
+			local len = math.sqrt(vel.x * vel.x + vel.y * vel.y + vel.z * vel.z)
+			dx = vel.x / len
+			dy = vel.y / len
+			dz = vel.z / len
+		else
+			local yaw = core.localplayer:get_yaw() * math.pi / 180
+			dx = math.sin(yaw)
+			dy = 0
+			dz = math.cos(yaw)
 		end
+
+		-- Phase 1: step through thin walls
+		for step = 1, 10 do
+			local tp = vector.offset(pos, dx * step, dy * step, dz * step)
+			local rp = vector.round(tp)
+			local hp = vector.offset(rp, 0, 1, 0)
+			local fnd = core.get_node_or_nil(rp)
+			local hnd = core.get_node_or_nil(hp)
+			if fnd and fnd.name == "air" and hnd and hnd.name == "air" then
+				core.localplayer:set_pos(rp)
+				return
+			end
+		end
+
+		-- Phase 2: wider search in movement direction (3x3 cylinder)
+		for step = 1, 10 do
+			local tp = vector.offset(pos, dx * step, dy * step, dz * step)
+			local rp = vector.round(tp)
+			for xo = -1, 1 do
+				for zo = -1, 1 do
+					local cp = vector.offset(rp, xo, 0, zo)
+					local hp = vector.offset(cp, 0, 1, 0)
+					local cnd = core.get_node_or_nil(cp)
+					local hnd = core.get_node_or_nil(hp)
+					if cnd and cnd.name == "air" and hnd and hnd.name == "air" then
+						core.localplayer:set_pos(cp)
+						return
+					end
+				end
+			end
+		end
+
+		-- Phase 3: dig one block straight ahead at max reach, teleport there
+		local max_reach = 4
+		local tp = vector.offset(pos, dx * max_reach, dy * max_reach, dz * max_reach)
+		local rp = vector.round(tp)
+		local hp = vector.offset(rp, 0, 1, 0)
+		local dig_nd = core.get_node_or_nil(hp)
+		if dig_nd and dig_nd.name ~= "air" and dig_nd.name ~= "ignore"
+				and core.registered_nodes and core.registered_nodes[dig_nd.name]
+				and not core.registered_nodes[dig_nd.name].buildable_to then
+			ws.dig(hp)
+			core.localplayer:set_pos(rp)
+			return
+		end
+
+		-- Fallback: omnidirectional search (old Phase 2)
+		local ap = ws.find_closest_reachable_airpocket(pos)
+		if ap then
+			core.localplayer:set_pos(ap)
+			return
+		end
+
+		-- Last resort: dig current head block
+		ws.dig(head)
 	end,
 })
 
