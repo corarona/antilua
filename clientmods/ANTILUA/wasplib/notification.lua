@@ -42,6 +42,7 @@ local function queue_toast(text, ntype, opts)
 		text = text,
 		ntype = notify_toast_types[ntype] or "info",
 		duration = duration,
+		id = opts._id,
 	})
 	if not toast_timer then
 		show_next_toast()

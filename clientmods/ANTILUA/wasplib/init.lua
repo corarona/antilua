@@ -119,14 +119,6 @@ end
 core.register_globalstep(function(dtime) ws.step_globalhacks(dtime) end)
 core.settings:set_bool('continuous_forward', false)
 
-function ws.on_connect(func)
-	if not core.localplayer then
-		core.after(0, function() ws.on_connect(func) end)
-		return
-	end
-	if func then func() end
-end
-
 core.register_chatcommand('giveme', {
 	func = function(param)
 		for k, v in ipairs(nlist.get(nlist.selected)) do
