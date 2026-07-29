@@ -82,6 +82,7 @@ core.register_chatcommand("ssave", {
 			local filepath = core.get_data_path() .. "schematics/" .. name .. ".mts"
 			local ok = core.write_file(filepath, mts_data)
 			if ok then
+				core.settings:set("schembuilder_output", "file:" .. filepath)
 				ws.notify("Saved " .. count .. " nodes to " .. filepath, ws.NOTIFY_INFO)
 			else
 				ws.notify("Failed to write " .. filepath, ws.NOTIFY_ERROR)
