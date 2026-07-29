@@ -55,6 +55,9 @@ function load_build(id)
 	if data and data ~= "" then
 		local ok, nodes = pcall(core.parse_json, data)
 		if ok and type(nodes) == "table" and #nodes > 0 then
+			for _, n in ipairs(nodes) do
+				n.param2 = n.param2 or 0
+			end
 			current_build_id = id
 			place_nodes = nodes
 			return true

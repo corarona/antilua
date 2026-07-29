@@ -8,6 +8,9 @@ core.register_chatcommand("schemclear", {
 			core.localplayer:hud_remove(hud_id)
 			hud_id = nil
 		end
+		if type(schemclear_cancel_wireframe) == "function" then
+			schemclear_cancel_wireframe()
+		end
 		ws.notify("Schematic build cleared", ws.NOTIFY_INFO)
 		return true
 	end,
