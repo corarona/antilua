@@ -691,6 +691,9 @@ if sbots and sbots.register_bot then
 			local px, py, pz = pos.x, pos.y, pos.z
 			local placed = 0
 
+			-- Save undo snapshot before placement batch
+			if #place_nodes > 0 then save_undo_snapshot() end
+
 			-- Place the primary target first
 			local target_entry = self._current_entry
 			-- Dig any existing node at the target position first

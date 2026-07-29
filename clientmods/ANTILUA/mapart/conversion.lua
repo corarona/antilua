@@ -20,14 +20,8 @@ function mapart.save_and_load_mts(schem, name, use_pos)
 	return true, filepath
 end
 
--- Build a filtered palette with only nodes in the player's inventory (cached 1s)
-local _inv_cache_time = 0
-local _inv_cache_pal = nil
+-- Build a filtered palette with only nodes in the player's inventory
 function mapart.build_inv_palette()
-	local now = os.clock()
-	if now - _inv_cache_time < 1.0 and _inv_cache_pal then
-		return _inv_cache_pal
-	end
 	local inv = core.get_inventory("current_player")
 	if not inv then return nil end
 	local types = {}
@@ -50,8 +44,6 @@ function mapart.build_inv_palette()
 			table.insert(filtered, entry)
 		end
 	end
-	_inv_cache_time = now
-	_inv_cache_pal = filtered
 	return filtered
 end
 

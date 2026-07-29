@@ -35,6 +35,46 @@ ws.on_connect(function()
 	restore_job()
 end)
 
+-- Undo support
+local undo_stack = {}
+local undo_max = 20
+
+function save_undo_snapshot()
+	if #place_nodes == 0 then return end
+	table.insert(undo_stack, core.write_json(place_nodes))
+	if #undo_stack > undo_max then
+		table.remove(undo_stack, 1)
+	end
+end
+
+function restore_undo_snapshot()
+	if #undo_stack == 0 then return false end
+	local data = table.remove(undo_stack)
+	local ok, nodes = pcall(core.parse_json, data)
+	if not ok or type(nodes) ~= "table" then return false end
+	place_nodes = nodes
+	if hud_id then
+		core.localplayer:hud_remove(hud_id)
+		hud_id = nil
+	end
+	for _, n in ipairs(place_nodes) do
+		add_preview_if_needed(n, n.name)
+	end
+	core.after(0.1, update_hud)
+	return true
+end
+
+core.register_chatcommand("schemundo", {
+	description = "Undo the last placement batch",
+	func = function()
+		if restore_undo_snapshot() then
+			ws.notify("Undo: restored " .. #place_nodes .. " nodes", ws.NOTIFY_INFO)
+			return true
+		end
+		return false, "Nothing to undo"
+	end,
+})
+
 -- Exposed for other mods (e.g., mapart)
 schembuilder_api = {
 	load_mts = function(filepath, label, use_pos)

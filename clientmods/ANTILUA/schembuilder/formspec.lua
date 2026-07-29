@@ -192,6 +192,7 @@ ws.rg("PlaceLiteM", {
 		local range = tonumber(core.settings:get("placelitem.range")) or 4
 
 		local changed = false
+		if #place_nodes > 0 then save_undo_snapshot() end
 		for i = #place_nodes, 1, -1 do
 			local entry = place_nodes[i]
 			if math.abs(entry.x - pp.x) <= range

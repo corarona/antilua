@@ -1,17 +1,28 @@
 function get_preview_texture(name)
 	local def = core.get_node_def(name)
-	if def then
-		if def.tiles and def.tiles[1] and def.tiles[1] ~= "" then
-			local tex = def.tiles[1]
-			if tex:find("%^") then
-				tex = tex:match("^([^%^]+)")
-			end
-			return tex
+	if not def then return "unknown_node.png" end
+
+	local tex = def.inventory_image
+	if tex and tex ~= "" then
+		return tex
+	end
+
+	if def.tiles and def.tiles[1] and def.tiles[1] ~= "" then
+		tex = def.tiles[1]
+		-- Strip composite modifiers to get the base texture
+		local base = tex:match("^([^%[%^]+)")
+		if base and base ~= "" then
+			return base
 		end
-		if def.inventory_image and def.inventory_image ~= "" then
-			return def.inventory_image
+		-- If nothing left after stripping, use the raw modifier text
+		local mod = tex:match("%[(.-)%]")
+		if mod then
+			-- e.g. "[combine:16x16:-1,0=unknown_node.png" -> unknown_node.png
+			local file = mod:match("=([^,]+)")
+			if file then return file end
 		end
 	end
+
 	return "unknown_node.png"
 end
 
