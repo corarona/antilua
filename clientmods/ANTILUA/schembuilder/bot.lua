@@ -301,7 +301,7 @@ if sbots and sbots.register_bot then
 
 	register_strategy("column", {
 		find_target = function(nodes, pos, has_item, is_allowed)
-			local px, py, pz = pos.x, pos.y, pos.z
+			local px, pz = pos.x, pos.z
 			local by_col = {}
 			for i, entry in ipairs(nodes) do
 				if entry.name ~= "air" and has_item(entry.name) and is_allowed(entry.name) then
@@ -523,30 +523,6 @@ if sbots and sbots.register_bot then
 		get_needed_items = function() return {} end,
 		batch_filter = function() return true end,
 	})
-
-	local function pick_random_block()
-		local inv = core.get_inventory("current_player")
-		if not inv or not inv.main then return nil end
-		local pool, total = {}, 0
-		for _, stack in ipairs(inv.main) do
-			if not stack:is_empty() then
-				local name = stack:get_name()
-				if core.get_node_def(name) then
-					local count = stack:get_count()
-					pool[name] = (pool[name] or 0) + count
-					total = total + count
-				end
-			end
-		end
-		if total == 0 then return nil end
-		local r = math.random(1, total)
-		local acc = 0
-		for name, count in pairs(pool) do
-			acc = acc + count
-			if r <= acc then return name end
-		end
-		return nil
-	end
 
 	sbots.register_bot("SchemBuilderBot", {
 		description = "Bot that builds schematics",
