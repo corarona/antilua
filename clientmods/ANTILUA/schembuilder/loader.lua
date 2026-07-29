@@ -31,7 +31,6 @@ function load_schematic_nodes(value, pos)
 			end
 			count = #nodes
 			if count > 0 then
-				clear_supply_chests()
 				place_nodes = nodes
 				for _, n in ipairs(nodes) do add_preview_if_needed(n, n.name) end
 				ws.notify("Loaded " .. count .. " nodes", ws.NOTIFY_INFO)
@@ -44,7 +43,6 @@ function load_schematic_nodes(value, pos)
 	-- Try WorldEdit string format (old format)
 	local we_nodes = load_schematic(value)
 	if we_nodes then
-		clear_supply_chests()
 		place_nodes = {}
 		local ox, oy, oz = pos.x, pos.y, pos.z
 		for _, entry in ipairs(we_nodes) do

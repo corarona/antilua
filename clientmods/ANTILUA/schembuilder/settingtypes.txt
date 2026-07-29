@@ -3,6 +3,20 @@ placelitem.range (Placement range) int 4 1 20
 schembuilder_output (Schematic data) string
 schembuilder_resume_pos (Resume position) string
 schembuilder_resume_param (Resume schematic param) string
-schembuilderbot.strategy (Placement strategy) enum closest closest,layer,top_to_bottom,column,by_material
-schembuilderbot.filter_mode (Filter mode) enum all all,include,exclude
-schembuilderbot.filter_list (nlist name for filter) string schembuilder
+schembuilderbot.place_cooldown (Bot placement cooldown sec) float 0.1 0 5
+schembuilderbot.batch_size (Bot placement batch size) int 8 1 64
+schembuilderbot.place_strategy (Bot placement strategy) enum closest closest,layer,top_to_bottom,column,by_material,random,cluster
+schembuilderbot.filter_mode (Bot filter mode) enum all all,include,exclude
+schembuilderbot.filter_list (Bot nlist filter name) string schembuilder
+schematic_looter (SchematicLooter auto-loot) bool false
+schematic_looter.range (Loot scan range) int 5 1 20
+schematic_looter.max_per_scan (Max items per loot scan) int 16 1 64
+schembuilder_hollow (Hollow shape generation) bool false
+schembuilder_shape_type (Shape type to generate) enum Cube Cube,Sphere,Circle,Ellipse,Pyramid,Cylinder
+schembuilder_node_name (Node name for shape generation) string mcl_core:stone
+schembuilder_dim_x (Shape width) int 8 1 256
+schembuilder_dim_y (Shape height) int 8 1 256
+schembuilder_dim_z (Shape depth) int 8 1 256
+schembuilder_offset_x (Shape placement offset X) int 0 -128 128
+schembuilder_offset_y (Shape placement offset Y) int 1 -128 128
+schembuilder_offset_z (Shape placement offset Z) int 5 -128 128

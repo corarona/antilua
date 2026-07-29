@@ -11,6 +11,9 @@ core.register_chatcommand("schemclear", {
 		if type(schemclear_cancel_wireframe) == "function" then
 			schemclear_cancel_wireframe()
 		end
+		if type(core.clear_all_particles) == "function" then
+			core.clear_all_particles()
+		end
 		ws.notify("Schematic build cleared", ws.NOTIFY_INFO)
 		return true
 	end,

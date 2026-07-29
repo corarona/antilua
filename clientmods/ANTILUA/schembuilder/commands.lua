@@ -46,6 +46,7 @@ function do_schembuild(param, use_pos)
 	else
 		value = param
 	end
+	clear_supply_chests()
 	local count = load_schematic_nodes(value, pos)
 	if not count then
 		return false, "Failed to load schematic"
