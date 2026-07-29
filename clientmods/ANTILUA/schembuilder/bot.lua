@@ -52,6 +52,98 @@ if sbots and sbots.register_bot then
 		return nil
 	end
 
+	local function grid_cluster_nodes(nodes, cell_size)
+		local clusters = {}
+		for _, entry in ipairs(nodes) do
+			if entry.name ~= "air" and entry.name ~= "ignore" then
+				local cx = math.floor(entry.x / cell_size)
+				local cy = math.floor(entry.y / cell_size)
+				local cz = math.floor(entry.z / cell_size)
+				local key = cx .. "," .. cy .. "," .. cz
+				if not clusters[key] then
+					clusters[key] = {entries = {}}
+				end
+				table.insert(clusters[key].entries, entry)
+			end
+		end
+		for _, cl in pairs(clusters) do
+			local sx, sy, sz = 0, 0, 0
+			for _, e in ipairs(cl.entries) do
+				sx = sx + e.x; sy = sy + e.y; sz = sz + e.z
+			end
+			local n = #cl.entries
+			cl.centroid = {x = sx / n, y = sy / n, z = sz / n}
+		end
+		return clusters
+	end
+
+	local function find_best_stand_pos(cluster_entries, place_set, range, player_pos)
+		if #cluster_entries == 0 then return nil end
+		local minx, miny, minz = math.huge, math.huge, math.huge
+		local maxx, maxy, maxz = -math.huge, -math.huge, -math.huge
+		for _, e in ipairs(cluster_entries) do
+			if e.x < minx then minx = e.x end
+			if e.y < miny then miny = e.y end
+			if e.z < minz then minz = e.z end
+			if e.x > maxx then maxx = e.x end
+			if e.y > maxy then maxy = e.y end
+			if e.z > maxz then maxz = e.z end
+		end
+		minx = minx - 1; miny = miny - 2; minz = minz - 1
+		maxx = maxx + 1; maxy = maxy + 1; maxz = maxz + 1
+
+		local best_pos, best_score
+		local range_sq = range * range
+		local px, py, pz = player_pos.x, player_pos.y, player_pos.z
+
+		for sy = miny, maxy do
+			for sx = minx, maxx do
+				for sz = minz, maxz do
+					local head_key = sx .. "," .. (sy + 1) .. "," .. sz
+					if not place_set[head_key] then
+						local node
+						if core.get_node_or_nil then
+							node = core.get_node_or_nil({x = sx, y = sy + 1, z = sz})
+						end
+						local blocked = node and node.name ~= "air"
+							and node.name ~= "ignore"
+							and (not core.registered_nodes or not core.registered_nodes[node.name]
+								or not core.registered_nodes[node.name].buildable_to)
+						if not blocked then
+							local score = 0
+							for _, e in ipairs(cluster_entries) do
+								local dx = e.x - sx
+								local dy = e.y - sy
+								local dz = e.z - sz
+								if dx*dx + dy*dy + dz*dz <= range_sq then
+									score = score + 1
+								end
+							end
+							if score > 0 then
+								local dx = sx - px
+								local dy = sy - py
+								local dz = sz - pz
+								score = score + 0.5 / (1.0 + math.sqrt(dx*dx + dy*dy + dz*dz))
+								if not best_score or score > best_score then
+									best_score = score
+									best_pos = {x = sx, y = sy, z = sz}
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+		return best_pos
+	end
+
+	local function is_head_safe(player_pos, target_pos)
+		local sx = math.floor(player_pos.x + 0.5)
+		local sy = math.floor(player_pos.y)
+		local sz = math.floor(player_pos.z + 0.5)
+		return not (target_pos.x == sx and target_pos.y == sy + 1 and target_pos.z == sz)
+	end
+
 	local function has_item(name)
 		local now = os.clock()
 		if now - _item_cache_time > 0.3 then
@@ -296,6 +388,127 @@ if sbots and sbots.register_bot then
 		end,
 	})
 
+	register_strategy("cluster", {
+		find_target = function(nodes, pos, has_item, is_allowed, self)
+			if self._cluster_state then
+				local remaining = false
+				for _, e in ipairs(self._cluster_state.entries) do
+					if e.name ~= "air" and has_item(e.name) and is_allowed(e.name) then
+						remaining = true
+						break
+					end
+				end
+				if not remaining then
+					self._cluster_state = nil
+				else
+					local best_idx, best_dist_sq
+					for i, entry in ipairs(nodes) do
+						if entry.name ~= "air" and has_item(entry.name) and is_allowed(entry.name) then
+							local in_cluster = false
+							for _, ce in ipairs(self._cluster_state.entries) do
+								if ce == entry then in_cluster = true; break end
+							end
+							if in_cluster then
+								local dx = entry.x - pos.x
+								local dy = entry.y - pos.y
+								local dz = entry.z - pos.z
+								local d2 = dx*dx + dy*dy + dz*dz
+								if not best_dist_sq or d2 < best_dist_sq then
+									best_dist_sq = d2
+									best_idx = i
+								end
+							end
+						end
+					end
+					return best_idx
+				end
+			end
+
+			local range = tonumber(core.settings:get("placelitem.range")) or 4
+			local clusters = grid_cluster_nodes(nodes, range)
+			local best_key, best_dist_sq
+			for key, cl in pairs(clusters) do
+				local has_work = false
+				for _, e in ipairs(cl.entries) do
+					if e.name ~= "air" and has_item(e.name) and is_allowed(e.name) then
+						has_work = true
+						break
+					end
+				end
+				if has_work then
+					local dx = cl.centroid.x - pos.x
+					local dy = cl.centroid.y - pos.y
+					local dz = cl.centroid.z - pos.z
+					local d2 = dx*dx + dy*dy + dz*dz
+					if not best_dist_sq or d2 < best_dist_sq then
+						best_dist_sq = d2
+						best_key = key
+					end
+				end
+			end
+
+			if best_key then
+				self._cluster_state = clusters[best_key]
+				self._cluster_stand_pos = nil
+				local best_idx, best_d2
+				for i, entry in ipairs(nodes) do
+					if entry.name ~= "air" and has_item(entry.name) and is_allowed(entry.name) then
+						local in_cluster = false
+						for _, ce in ipairs(self._cluster_state.entries) do
+							if ce == entry then in_cluster = true; break end
+						end
+						if in_cluster then
+							local dx = entry.x - pos.x
+							local dy = entry.y - pos.y
+							local dz = entry.z - pos.z
+							local d2 = dx*dx + dy*dy + dz*dz
+							if not best_d2 or d2 < best_d2 then
+								best_d2 = d2
+								best_idx = i
+							end
+						end
+					end
+				end
+				return best_idx
+			end
+			return nil
+		end,
+		find_stand_pos = function(nodes, pos, self)
+			if not self._cluster_state then return nil end
+			local range = tonumber(core.settings:get("placelitem.range")) or 4
+			local place_set = {}
+			for _, entry in ipairs(nodes) do
+				if entry.name ~= "air" then
+					place_set[entry.x .. "," .. entry.y .. "," .. entry.z] = true
+				end
+			end
+			local best = find_best_stand_pos(self._cluster_state.entries, place_set, range, pos)
+			if best then
+				self._cluster_stand_pos = best
+			end
+			return best
+		end,
+		batch_filter = function(entry, state, self)
+			if not self._cluster_state then return false end
+			for _, ce in ipairs(self._cluster_state.entries) do
+				if ce == entry then return true end
+			end
+			return false
+		end,
+		get_needed_items = function(nodes, state, self)
+			if not self._cluster_state then return nil end
+			local seen = {}
+			local items = {}
+			for _, e in ipairs(self._cluster_state.entries) do
+				if e.name ~= "air" and e.name ~= "ignore" and not seen[e.name] then
+					seen[e.name] = true
+					table.insert(items, e.name)
+				end
+			end
+			return items
+		end,
+	})
+
 	register_strategy("random", {
 		find_target = function(nodes, pos, has_item, is_allowed)
 			local candidates = {}
@@ -343,7 +556,7 @@ if sbots and sbots.register_bot then
 		cheat_settings = {
 			place_cooldown = { type = "number", default = 0.1, min = 0, max = 5 },
 			batch_size = { type = "number", default = 8, min = 1, max = 64 },
-			place_strategy = { type = "enum", default = "closest", values = {"closest", "layer", "top_to_bottom", "column", "by_material", "random"} },
+			place_strategy = { type = "enum", default = "cluster", values = {"closest", "layer", "top_to_bottom", "column", "by_material", "random", "cluster"} },
 			filter_mode = { type = "string", default = "all" },
 			filter_list = { type = "string", default = "schembuilder" },
 		},
@@ -353,10 +566,10 @@ if sbots and sbots.register_bot then
 			self._current_entry = nil
 			self._strat_state = nil
 
-			local name = core.settings:get("schembuilderbot.place_strategy") or "closest"
+			local name = core.settings:get("schembuilderbot.place_strategy") or "cluster"
 			local strat = strategies[name] or strategies.closest
 
-			local idx = strat.find_target(place_nodes, pos, has_item, is_node_allowed)
+			local idx = strat.find_target(place_nodes, pos, has_item, is_node_allowed, self)
 			if idx then
 				self._current_entry = place_nodes[idx]
 				local target = place_nodes[idx]
@@ -370,7 +583,12 @@ if sbots and sbots.register_bot then
 					self._strat_state.max_batch_y = target.y + 2
 				end
 				-- Compute a safe stand position so the player's head isn't in a block
-				local safe = compute_safe_stand_pos(target, place_nodes)
+				local safe
+				if strat.find_stand_pos then
+					safe = strat.find_stand_pos(place_nodes, pos, self)
+				else
+					safe = compute_safe_stand_pos(target, place_nodes)
+				end
 				if safe then
 					return vector.new(safe.x, safe.y, safe.z)
 				end
@@ -399,6 +617,23 @@ if sbots and sbots.register_bot then
 			if self._is_supply_target then
 				return self._current_entry
 			end
+			-- Cluster strategy: prefer the computed stand position over _current_entry
+			if self._cluster_state then
+				if self._cluster_stand_pos then
+					local has_work = false
+					for _, e in ipairs(self._cluster_state.entries) do
+						if e.name ~= "air" and has_item(e.name) then
+							has_work = true
+							break
+						end
+					end
+					if has_work then
+						return self._cluster_stand_pos
+					end
+				end
+				self._cluster_state = nil
+				self._cluster_stand_pos = nil
+			end
 			if self._current_entry then
 				local found = false
 				for _, e in ipairs(place_nodes) do
@@ -422,10 +657,10 @@ if sbots and sbots.register_bot then
 				self._is_supply_target = nil
 				self._current_entry = nil
 				local items
-				local strat_name = core.settings:get("schembuilderbot.place_strategy") or "closest"
+				local strat_name = core.settings:get("schembuilderbot.place_strategy") or "cluster"
 				local strat = strategies[strat_name] or strategies.closest
 				if strat.get_needed_items then
-					items = strat.get_needed_items(place_nodes, self._strat_state)
+					items = strat.get_needed_items(place_nodes, self._strat_state, self)
 				end
 				if not items then
 					items = {}
@@ -451,7 +686,7 @@ if sbots and sbots.register_bot then
 			end
 			local batch = tonumber(core.settings:get("schembuilderbot.batch_size")) or 8
 			local range = tonumber(core.settings:get("placelitem.range")) or 4
-			local strat_name = core.settings:get("schembuilderbot.place_strategy") or "closest"
+			local strat_name = core.settings:get("schembuilderbot.place_strategy") or "cluster"
 			local strat = strategies[strat_name] or strategies.closest
 			local is_random = strat_name == "random"
 			local px, py, pz = pos.x, pos.y, pos.z
@@ -497,31 +732,50 @@ if sbots and sbots.register_bot then
 					if placed >= batch then break end
 					local entry = place_nodes[i]
 					if entry.name ~= "air" and (not max_y or entry.y <= max_y) and is_node_allowed(entry.name) then
-						if not strat.batch_filter or strat.batch_filter(entry, self._strat_state) then
+						if not strat.batch_filter or strat.batch_filter(entry, self._strat_state, self) then
 							local dx = entry.x - px
 							local dy = entry.y - py
 							local dz = entry.z - pz
 							if dx*dx + dy*dy + dz*dz <= range*range then
-								local batch_item = is_random and pick_random_block() or entry.name
-								if batch_item then
-									local epos = {x = entry.x, y = entry.y, z = entry.z}
-									local enode = core.get_node_or_nil(epos)
-									if enode and enode.name ~= "air" and enode.name ~= "ignore" then
-										if ws.dig then ws.dig(epos) end
+								-- Head safety: skip if this node is at the player's head level
+								if is_head_safe(pos, entry) then
+									local batch_item = is_random and pick_random_block() or entry.name
+									if batch_item then
+										local epos = {x = entry.x, y = entry.y, z = entry.z}
+										local enode = core.get_node_or_nil(epos)
+										if enode and enode.name ~= "air" and enode.name ~= "ignore" then
+											if ws.dig then ws.dig(epos) end
+										end
 									end
-								end
-								if batch_item and ws.place(entry, batch_item) then
-									table.remove(place_nodes, i)
-									placed = placed + 1
-								else
-									local node = core.get_node_or_nil(entry)
-									if node and (is_random and node.name ~= "air" or node.name == entry.name) then
+									if batch_item and ws.place(entry, batch_item) then
 										table.remove(place_nodes, i)
+										placed = placed + 1
+									else
+										local node = core.get_node_or_nil(entry)
+										if node and (is_random and node.name ~= "air" or node.name == entry.name) then
+											table.remove(place_nodes, i)
+										end
 									end
 								end
 							end
 						end
 					end
+				end
+			end
+
+			-- Sync cluster state: remove placed entries
+			if self._cluster_state then
+				local i = #self._cluster_state.entries
+				while i >= 1 do
+					local ce = self._cluster_state.entries[i]
+					local found = false
+					for _, e in ipairs(place_nodes) do
+						if e == ce then found = true; break end
+					end
+					if not found then
+						table.remove(self._cluster_state.entries, i)
+					end
+					i = i - 1
 				end
 			end
 
@@ -543,6 +797,21 @@ if sbots and sbots.register_bot then
 				if not found then
 					self._current_entry = nil
 					self.stage = 0
+				end
+			end
+			-- Sync cluster state if entries were removed externally
+			if self._cluster_state then
+				local i = #self._cluster_state.entries
+				while i >= 1 do
+					local ce = self._cluster_state.entries[i]
+					local found = false
+					for _, e in ipairs(place_nodes) do
+						if e == ce then found = true; break end
+					end
+					if not found then
+						table.remove(self._cluster_state.entries, i)
+					end
+					i = i - 1
 				end
 			end
 		end,
