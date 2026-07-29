@@ -96,12 +96,14 @@ local function apply_max_colors(pal)
 	return pal
 end
 
+local MAX_MAPART_PIXELS = 1024 * 1024
+
 core.register_chatcommand("mapart", {
-	params = "<path> [width] [height] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear] [--colors N]",
+	params = "<path> [width] [height] [--dither] [--gamma] [--invonly] [--grid_new] [--filter nearest|bilinear] [--colors N]",
 	description = "Convert a PNG image to an MTS schematic using map colors",
 	func = function(param)
 		if param == "" then
-			return false, "Usage: /mapart <path> [width] [height] [--dither] [--gamma] [--invonly] [--filter nearest|bilinear]"
+			return false, "Usage: /mapart <path> [width] [height] [--dither] [--gamma] [--invonly] [--grid_new] [--filter nearest|bilinear] [--colors N]"
 		end
 
 		local parts = {}
@@ -131,6 +133,8 @@ core.register_chatcommand("mapart", {
 				do_gamma = true
 			elseif parts[i] == "--invonly" then
 				do_invonly = true
+			elseif parts[i] == "--grid_new" then
+				do_grid_new = true
 			elseif parts[i] == "--colors" then
 				max_colors = tonumber(parts[i + 1]) or max_colors
 				i = i + 1
@@ -156,6 +160,10 @@ core.register_chatcommand("mapart", {
 
 		out_w = out_w or img.width
 		out_h = out_h or img.height
+
+		if out_w * out_h > MAX_MAPART_PIXELS then
+			return false, "Image too large: " .. out_w .. "x" .. out_h .. " (" .. (out_w * out_h) .. " pixels, max " .. MAX_MAPART_PIXELS .. ")"
+		end
 
 		local pal = mapart.palette
 		if do_invonly then
@@ -272,6 +280,10 @@ core.register_chatcommand("mapart_wall", {
 		out_w = out_w or img.width
 		out_h = out_h or img.height
 
+		if out_w * out_h > MAX_MAPART_PIXELS then
+			return false, "Image too large: " .. out_w .. "x" .. out_h .. " (" .. (out_w * out_h) .. " pixels, max " .. MAX_MAPART_PIXELS .. ")"
+		end
+
 		local pal = mapart.palette
 		if do_invonly then
 			pal = mapart.build_inv_palette()
@@ -329,7 +341,8 @@ core.register_chatcommand("test_encode_png", {
 			return false, "encode_png returned nil"
 		end
 
-		local outpath = "/tmp/test_encode_png_out.png"
+		local out_dir = core.settings:get("mapart_output_dir") or "/tmp/antilua_mapart"
+		local outpath = out_dir .. "/test_encode_png_out.png"
 		core.write_file(outpath, out)
 		return true, string.format("encode_png ok: %dx%d -> %d bytes (input %d bytes)",
 			img.width, img.height, #out, #data)
