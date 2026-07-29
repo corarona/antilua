@@ -513,7 +513,7 @@ if sbots and sbots.register_bot then
 		find_target = function(nodes, pos, has_item, is_allowed)
 			local candidates = {}
 			for i, entry in ipairs(nodes) do
-				if is_allowed(entry.name) then
+				if entry.name ~= "air" and has_item(entry.name) and is_allowed(entry.name) then
 					table.insert(candidates, i)
 				end
 			end
@@ -688,7 +688,6 @@ if sbots and sbots.register_bot then
 			local range = tonumber(core.settings:get("placelitem.range")) or 4
 			local strat_name = core.settings:get("schembuilderbot.place_strategy") or "cluster"
 			local strat = strategies[strat_name] or strategies.closest
-			local is_random = strat_name == "random"
 			local px, py, pz = pos.x, pos.y, pos.z
 			local placed = 0
 
@@ -702,7 +701,7 @@ if sbots and sbots.register_bot then
 					ws.dig(tpos)
 				end
 			end
-			local place_item = is_random and pick_random_block() or target_entry.name
+			local place_item = target_entry.name
 			local place_fn
 			if target_entry.param2 and target_entry.param2 ~= 0 then
 				place_fn = function(p) core.place_node(p) end
@@ -718,7 +717,7 @@ if sbots and sbots.register_bot then
 				placed = 1
 			else
 				local node = core.get_node_or_nil(target_entry)
-				if node and (is_random and node.name ~= "air" or node.name == target_entry.name) then
+				if node and node.name == target_entry.name then
 					for i = #place_nodes, 1, -1 do
 						if place_nodes[i] == target_entry then
 							table.remove(place_nodes, i)
@@ -743,7 +742,7 @@ if sbots and sbots.register_bot then
 							if dx*dx + dy*dy + dz*dz <= range*range then
 								-- Head safety: skip if this node is at the player's head level
 								if is_head_safe(pos, entry) then
-									local batch_item = is_random and pick_random_block() or entry.name
+									local batch_item = entry.name
 									local batch_place_fn
 									if entry.param2 and entry.param2 ~= 0 then
 										batch_place_fn = function(p) core.place_node(p) end
@@ -760,7 +759,7 @@ if sbots and sbots.register_bot then
 										placed = placed + 1
 									else
 										local node = core.get_node_or_nil(entry)
-										if node and (is_random and node.name ~= "air" or node.name == entry.name) then
+										if node and node.name == entry.name then
 											table.remove(place_nodes, i)
 										end
 									end
