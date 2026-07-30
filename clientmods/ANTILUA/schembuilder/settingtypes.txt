@@ -1,10 +1,15 @@
-placelitem (PlaceLiteM) bool false
-placelitem.range (Placement range) int 4 1 20
+autoschemplace (AutoSchemPlace) bool false
+autoschemplace.range (Placement range) int 4 1 20
+autoschemplace.batch_size (Batch size) int 4 1 64
+autoschemplace.place_strategy (Placement strategy) enum closest closest,layer,top_to_bottom,column,by_material,random,cluster
+autoschemplace.filter_mode (Filter mode) enum all all,include,exclude
+autoschemplace.filter_list (Filter nlist name) string schembuilder
 schembuilder_output (Schematic data) string
 schembuilder_resume_pos (Resume position) string
 schembuilder_resume_param (Resume schematic param) string
 schembuilderbot.place_cooldown (Bot placement cooldown sec) float 0.1 0 5
 schembuilderbot.batch_size (Bot placement batch size) int 8 1 64
+schembuilderbot.range (Bot placement range) int 4 1 20
 schembuilderbot.place_strategy (Bot placement strategy) enum closest closest,layer,top_to_bottom,column,by_material,random,cluster
 schembuilderbot.filter_mode (Bot filter mode) enum all all,include,exclude
 schembuilderbot.filter_list (Bot nlist filter name) string schembuilder

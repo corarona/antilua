@@ -395,7 +395,7 @@ core.register_on_formspec_input(function(formname, fields)
 		ws.notify("Generated " .. #place_nodes .. " nodes: " .. label, ws.NOTIFY_SUCCESS)
 
 		if fields.shape_genplace then
-			core.settings:set("placelitem", "true")
+			core.settings:set("autoschemplace", "true")
 		end
 
 		core.close_formspec("schembuilder:browser")

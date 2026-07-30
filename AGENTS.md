@@ -374,7 +374,7 @@ The `data` array has `size.x * size.y * size.z` entries in Z/Y/X order. Each ent
 | File | Purpose |
 |------|---------|
 | `src/script/lua_api/l_client.h/cpp` | `ModApiClient::l_read_schematic`, `l_serialize_schematic` |
-| `clientmods/ANTILUA/schembuilder/init.lua` | Schematic builder: load MTS, preview as particles, place via PlaceLiteM/SchemBuilderBot, auto-loot materials |
+| `clientmods/ANTILUA/schembuilder/init.lua` | Schematic builder: load MTS, preview as particles, place via AutoSchemPlace/SchemBuilderBot/RhythmBuildBot, auto-loot materials |
 | `clientmods/al_test/test_schembuilder.lua` | Integration tests for schembuilder features |
 
 ---

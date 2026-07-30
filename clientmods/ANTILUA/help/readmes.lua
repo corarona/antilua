@@ -620,12 +620,13 @@ Schematic preview and placement tool. Loads MTS schematics as colored particle o
 	- `/spos2` — Set region corner 2 at player position.
 	- `/ssave` — Save nodes between pos1 and pos2 to `schembuilder_output` setting.
 - **Cheats:**
-	- `PlaceLiteM` (Place category) — Place loaded schematic nodes within range around the player.
+	- `AutoSchemPlace` (Place category) — Place loaded schematic nodes within range using the strategy system.
 	- `SchemBuilderBot` (Bots category) — Walks to the nearest unplaced schematic node and places it.
+	- `RhythmBuildBot` (Bots category) — Builds schematics via rhythmtp teleportation.
 	- `SchematicLooter` (Inventory category) — Loots building materials from nearby containers.
 - **Settings:**
 	- `schembuilder_output` — stores serialized schematic data.
-	- `placelitem.range` — Placement range for PlaceLiteM.
+	- `autoschemplace.*` — AutoSchemPlace settings (range, batch size, strategy).
 	- `schembuilderbot.*` — SchemBuilderBot settings (cooldown, batch size).
 	- `schematic_looter.*` — Looter settings (range, max per scan).
 
@@ -633,7 +634,8 @@ Schematic preview and placement tool. Loads MTS schematics as colored particle o
 
 | Cheat | Category | Setting | Description |
 |-------|----------|---------|-------------|
-| PlaceLiteM | Place | `placelitem` | Place loaded nodes within range |
+| AutoSchemPlace | Place | `autoschemplace` | Auto-place nodes within range via strategy |
+| RhythmBuildBot | Bots | `schembuilderbot` | Build schematics via rhythmtp teleportation |
 | SchemBuilderBot | Bots | `schembuilderbot` | Walk-to-and-place bot |
 | SchematicLooter | Inventory | `schematic_looter` | Loot materials from nearby containers |
 ]],
