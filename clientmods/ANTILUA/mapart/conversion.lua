@@ -125,10 +125,14 @@ function mapart._process_pixel(pixel_data, img_w, img_h, img_x, img_y, out_w, ou
 		g = math.max(0, math.min(255, g + (errors[idx * 3 + 2] or 0)))
 		b = math.max(0, math.min(255, b + (errors[idx * 3 + 3] or 0)))
 	end
-	if a < 128 then
+	local threshold = 128
+	local best = mapart.find_closest(r, g, b, opts.gamma, opts.palette or mapart.palette)
+	if best and best.a then
+		threshold = best.a
+	end
+	if a < threshold then
 		return { name = "air", prob = 0, param2 = 0 }
 	end
-	local best = mapart.find_closest(r, g, b, opts.gamma, opts.palette or mapart.palette)
 	if best then
 		local dr = r - best.r; local dg = g - best.g; local db = b - best.b
 		if opts.dither then
@@ -144,6 +148,12 @@ function mapart.process_conv_chunk()
 	if not s then return end
 	local c = s._conv
 	if not c then return end
+	if not core.localplayer then
+		s._conv = nil
+		s._conv_cancel = false
+		s.status = "Cancelled (disconnected)"
+		return
+	end
 	if s._conv_cancel then
 		s._conv = nil
 		s._conv_cancel = false
@@ -198,20 +208,7 @@ function mapart.process_conv_chunk()
 			s.grid_new = c.grid_new
 			local grid_pos
 			if core.localplayer then
-				local p = core.localplayer:get_pos()
-				if c.grid_new then
-					grid_pos = {
-						x = math.floor((p.x - 63) / 128) * 128 + 64,
-						y = math.floor(p.y),
-						z = math.floor((p.z + 63) / 128) * 128 - 64,
-					}
-				else
-					grid_pos = {
-						x = math.floor(p.x / 128) * 128,
-						y = math.floor(p.y),
-						z = math.floor(p.z / 128) * 128,
-					}
-				end
+				grid_pos = mapart.compute_grid_pos(core.localplayer:get_pos(), c.grid_new)
 			end
 			local ok3, result = mapart.save_and_load_mts(c.schem, c.name, grid_pos)
 			if ok3 then

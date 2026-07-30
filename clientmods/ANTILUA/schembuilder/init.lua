@@ -1,8 +1,5 @@
 local modpath = core.get_modpath(core.get_current_modname())
 
--- Forward declarations for optional mapart integration
-handle_mapart_events = nil
-get_mapart_tab = nil
 schembuilder_api = nil
 
 schembuilder = {pos1={x=nil,y=nil,z=nil}, pos2={x=nil,y=nil,z=nil}}
@@ -24,9 +21,11 @@ dofile(modpath .. "/loader.lua")
 dofile(modpath .. "/place_common.lua")
 dofile(modpath .. "/hud.lua")
 dofile(modpath .. "/formspec.lua")
+dofile(modpath .. "/autoplace.lua")
 dofile(modpath .. "/serialize.lua")
 dofile(modpath .. "/shapes.lua")
 dofile(modpath .. "/commands.lua")
+dofile(modpath .. "/bot_common.lua")
 dofile(modpath .. "/bot.lua")
 dofile(modpath .. "/rhythmbot.lua")
 dofile(modpath .. "/looter.lua")

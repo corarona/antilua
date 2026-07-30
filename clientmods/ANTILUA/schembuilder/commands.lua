@@ -143,7 +143,7 @@ core.register_on_formspec_input(function(formname, fields)
 		return
 	end
 
-	if type(handle_mapart_events) == "function" and handle_mapart_events(fields) then
+	if schembuilder._mapart_event_fn and schembuilder._mapart_event_fn(fields) then
 		show_browser_form(3)
 		return
 	end
@@ -517,6 +517,9 @@ end
 -- Global wrapper so init_api.lua can cancel wireframe
 function schemclear_cancel_wireframe()
 	cancel_wireframe()
+	if core.draw3d and core.draw3d.clear then
+		core.draw3d:clear("schembuilder_wireframe")
+	end
 end
 
 local function draw_wireframe()
@@ -524,6 +527,19 @@ local function draw_wireframe()
 		wireframe_timer = nil
 		return
 	end
+
+	-- Use draw3d if available and setting enabled
+	if core.draw3d and core.draw3d.add_wirebox and core.settings:get_bool("schembuilder_wireframe_draw3d", false) then
+		cancel_wireframe()
+		local p1 = schembuilder.pos1
+		local p2 = schembuilder.pos2
+		local minp = vector.new(math.floor(math.min(p1.x, p2.x)), math.floor(math.min(p1.y, p2.y)), math.floor(math.min(p1.z, p2.z)))
+		local maxp = vector.new(math.floor(math.max(p1.x, p2.x)), math.floor(math.max(p1.y, p2.y)), math.floor(math.max(p1.z, p2.z)))
+		core.draw3d:add_wirebox("schembuilder_wireframe", minp, maxp, { r = 255, g = 255, b = 255 })
+		wireframe_timer = core.after(2.5, draw_wireframe)
+		return
+	end
+
 	local function lerp(a, b, t) return a + (b - a) * t end
 	local p1 = schembuilder.pos1
 	local p2 = schembuilder.pos2

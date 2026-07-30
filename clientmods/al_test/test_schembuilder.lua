@@ -302,15 +302,14 @@ function test_schembuilder(T)
 		T.assert(type(schembuilder_serialize) == "function", "schembuilder_serialize should exist")
 	end)
 
-	T.run("save_undo_snapshot and restore_undo_snapshot round-trip", function()
+	T.run("push_undo and restore_undo_snapshot round-trip", function()
 		local test_nodes = {
 			{x = 0, y = 0, z = 0, name = "mcl_core:stone", param2 = 0},
 			{x = 1, y = 0, z = 0, name = "mcl_core:dirt", param2 = 0},
 		}
 		local orig = place_nodes
-		place_nodes = test_nodes
-		save_undo_snapshot()
 		place_nodes = {}
+		push_undo(test_nodes)
 		local ok = restore_undo_snapshot()
 		T.assert(ok, "restore should succeed")
 		T.assert_eq(#place_nodes, 2, "should restore 2 nodes")

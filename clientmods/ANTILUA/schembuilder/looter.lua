@@ -3,8 +3,12 @@ ws.rg("SchematicLooter", {
 	category = "Inventory",
 	setting = "schematic_looter",
 	description = "Auto-loot materials from schematics",
-	delay = 1,
 	on_step = function(self, dtime)
+		-- Dynamic delay from setting
+		local interval = tonumber(core.settings:get("schematic_looter.delay")) or 1
+		self._looter_timer = (self._looter_timer or 0) + dtime
+		if self._looter_timer < interval then return end
+		self._looter_timer = 0
 		if #place_nodes == 0 then return end
 		local items = {}
 		local seen = {}
@@ -32,5 +36,6 @@ ws.rg("SchematicLooter", {
 	cheat_settings = {
 		range = { type = "number", default = 5, min = 1, max = 20 },
 		max_per_scan = { type = "number", default = 16, min = 1, max = 64 },
+		delay = { type = "number", default = 1, min = 0.1, max = 60 },
 	},
 })

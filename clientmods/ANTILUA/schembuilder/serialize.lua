@@ -1,10 +1,13 @@
 function sort_pos(pos1, pos2)
-	pos1 = vector.copy(pos1)
-	pos2 = vector.copy(pos2)
-	if pos1.x > pos2.x then pos2.x, pos1.x = pos1.x, pos2.x end
-	if pos1.y > pos2.y then pos2.y, pos1.y = pos1.y, pos2.y end
-	if pos1.z > pos2.z then pos2.z, pos1.z = pos1.z, pos2.z end
-	return pos1, pos2
+	return {
+		x = math.min(pos1.x, pos2.x),
+		y = math.min(pos1.y, pos2.y),
+		z = math.min(pos1.z, pos2.z),
+	}, {
+		x = math.max(pos1.x, pos2.x),
+		y = math.max(pos1.y, pos2.y),
+		z = math.max(pos1.z, pos2.z),
+	}
 end
 
 function schembuilder_serialize(pos1, pos2)

@@ -16,6 +16,8 @@ schembuilderbot.filter_list (Bot nlist filter name) string schembuilder
 schematic_looter (SchematicLooter auto-loot) bool false
 schematic_looter.range (Loot scan range) int 5 1 20
 schematic_looter.max_per_scan (Max items per loot scan) int 16 1 64
+schematic_looter.delay (Loot scan interval sec) float 1 0.1 60
+schembuilder_wireframe_draw3d (Use draw3d for wireframe) bool false
 schembuilder_hollow (Hollow shape generation) bool false
 schembuilder_shape_type (Shape type to generate) enum Cube Cube,Sphere,Circle,Ellipse,Pyramid,Cylinder
 schembuilder_node_name (Node name for shape generation) string mcl_core:stone
@@ -25,3 +27,4 @@ schembuilder_dim_z (Shape depth) int 8 1 256
 schembuilder_offset_x (Shape placement offset X) int 0 -128 128
 schembuilder_offset_y (Shape placement offset Y) int 1 -128 128
 schembuilder_offset_z (Shape placement offset Z) int 5 -128 128
+schembuilder.range (Cluster strategy grid cell size) int 4 1 20

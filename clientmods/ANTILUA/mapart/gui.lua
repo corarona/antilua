@@ -19,7 +19,8 @@ mapart.state = {
 	_conv_cancel = false,
 }
 
--- Mapart formspec tab (called from schembuilder)
+-- Mapart formspec tab (registered with schembuilder)
+local get_mapart_tab
 get_mapart_tab = function(fs, tab)
 	local s = mapart.state
 	local preview = s.preview or ""
@@ -86,7 +87,8 @@ get_mapart_tab = function(fs, tab)
 	return fs
 end
 
--- Handle mapart tab events (called from schembuilder)
+-- Handle mapart tab events (registered with schembuilder)
+local handle_mapart_events
 handle_mapart_events = function(fields)
 	local s = mapart.state
 
@@ -142,7 +144,12 @@ handle_mapart_events = function(fields)
 							end
 						end
 					end
-					local px_str = string.char(unpack(pixels))
+					local px_chunks = {}
+					for i = 1, #pixels, 1024 do
+						local chunk = table.concat({ string.char(unpack(pixels, i, math.min(i + 1023, #pixels))) })
+						px_chunks[#px_chunks + 1] = chunk
+					end
+					local px_str = table.concat(px_chunks)
 					local png_data = core.encode_png(pw, ph, px_str, -1)
 					if png_data then
 						s.preview = "[png:" .. core.encode_base64(png_data)
@@ -258,4 +265,9 @@ handle_mapart_events = function(fields)
 	end
 
 	return false
+end
+
+if schembuilder then
+	schembuilder.register_mapart_tab(get_mapart_tab)
+	schembuilder.register_mapart_handler(handle_mapart_events)
 end

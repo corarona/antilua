@@ -1,10 +1,5 @@
 local modname = core.get_current_modname()
-local modpath
-if type(core.get_modpath_real) == "function" then
-	modpath = core.get_modpath_real(modname)
-else
-	modpath = core.get_modpath(modname)
-end
+local modpath = core.get_modpath_real(modname)
 
 -- Module-scoped palette shared by all sub-files
 mapart = {}
@@ -39,22 +34,36 @@ local function load_palette()
 	for node_name, color_data in pairs(colors) do
 		if type(color_data) ~= "table" then
 		elseif type(color_data[1]) == "number" then
-			table.insert(mapart.palette, {
+			local entry = {
 				name = node_name,
 				param2 = 0,
 				r = color_data[1],
 				g = color_data[2],
 				b = color_data[3],
-			})
+			}
+			if color_data[4] then
+				entry.a = color_data[4]
+				if color_data[5] then
+					entry.param2 = color_data[5]
+				end
+			end
+			table.insert(mapart.palette, entry)
 		elseif type(color_data[1]) == "table" then
-			for param2, entry in ipairs(color_data) do
-				table.insert(mapart.palette, {
+			for param2, sub in ipairs(color_data) do
+				local entry = {
 					name = node_name,
 					param2 = param2 - 1,
-					r = entry[1],
-					g = entry[2],
-					b = entry[3],
-				})
+					r = sub[1],
+					g = sub[2],
+					b = sub[3],
+				}
+				if sub[4] then
+					entry.a = sub[4]
+					if sub[5] then
+						entry.param2 = sub[5]
+					end
+				end
+				table.insert(mapart.palette, entry)
 			end
 		end
 	end
@@ -79,6 +88,23 @@ local function load_palette()
 
 	ws.notify("mapart: loaded " .. #mapart.palette .. " palette entries", ws.NOTIFY_INFO)
 	return true
+end
+
+function mapart.compute_grid_pos(player_pos, use_new_grid)
+	if not player_pos then return nil end
+	if use_new_grid then
+		return {
+			x = math.floor((player_pos.x - 63) / 128) * 128 + 64,
+			y = math.floor(player_pos.y),
+			z = math.floor((player_pos.z + 63) / 128) * 128 - 64,
+		}
+	else
+		return {
+			x = math.floor(player_pos.x / 128) * 128,
+			y = math.floor(player_pos.y),
+			z = math.floor(player_pos.z / 128) * 128,
+		}
+	end
 end
 
 -- Load sub-modules (use get_modpath for VFS-compatible dofile paths)
@@ -189,20 +215,7 @@ core.register_chatcommand("mapart", {
 
 		local grid_pos
 		if core.localplayer then
-			local p = core.localplayer:get_pos()
-			if do_grid_new then
-				grid_pos = {
-					x = math.floor((p.x - 63) / 128) * 128 + 64,
-					y = math.floor(p.y),
-					z = math.floor((p.z + 63) / 128) * 128 - 64,
-				}
-			else
-				grid_pos = {
-					x = math.floor(p.x / 128) * 128,
-					y = math.floor(p.y),
-					z = math.floor(p.z / 128) * 128,
-				}
-			end
+			grid_pos = mapart.compute_grid_pos(core.localplayer:get_pos(), do_grid_new)
 		end
 
 		local name = filepath:match("([^/]+)%.png$") or "mapart_output"
