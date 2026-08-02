@@ -420,7 +420,7 @@ local function build_header(sb, af)
 	end
 	sb:add(
 		af.dropdown(3, 0.25, 2.5, "group_filter", filter_items, filter_sel),
-		af.searchbar(6, 0.25, 6.5, "poi_search", { default = poi_search, placeholder = "Search:", button_width = 1.2 })
+		af.searchbar(6, 0.25, 4.5, "poi_search", { default = poi_search, placeholder = "Search:", button_width = 1.2 })
 	)
 end
 
@@ -444,11 +444,13 @@ local function build_waypoint_list(sb, af, waypoints)
 	for id, name in ipairs(waypoints) do
 		if name == selected_name then sel = id end
 	end
-	sb:add("textlist[0.25,0.75;8.5,6;wp_list;" .. table.concat(tl_entries, ",") .. ";" .. sel .. "]")
+	-- Start below the header (search bar) so it doesn't overlap the list or
+	-- the screenshot.
+	sb:add("textlist[0.25,1.4;8.5,5.3;wp_list;" .. table.concat(tl_entries, ",") .. ";" .. sel .. "]")
 	if selected_name then
 		local ss = get_screenshot(selected_name)
 		if ss then
-			sb:add(af.image(9.25, 0.75, 3.5, 2.5, ss))
+			sb:add(af.image(9.25, 1.4, 2.5, 1.79, ss))
 		end
 	end
 end
@@ -496,15 +498,36 @@ local function build_actions(sb, af)
 	end
 end
 
-function poi.display_formspec()
+-- Builds only the poi content (no formspec chrome: no size/version/bgcolor).
+-- Used both for the standalone formspec and when embedded as an inventory tab.
+function poi.build_formspec_content()
 	local af = core.al_formspec
-	local sb = af.begin("size[13.5,10]")
+	local sb = af.new()
 	local wps = get_filtered_sorted_waypoints()
 	build_header(sb, af)
 	build_waypoint_list(sb, af, wps)
 	build_details_panel(sb, af, selected_name)
 	build_actions(sb, af)
+	return sb:get()
+end
+
+local function poi_show_standalone()
+	local af = core.al_formspec
+	local sb = af.begin("size[13.5,10]")
+	sb:add(poi.build_formspec_content())
 	return core.show_formspec("poi-csm", sb:get())
+end
+
+local poi_redraw = poi_show_standalone
+
+function poi.display_formspec()
+	return poi_redraw()
+end
+
+-- Redirect where poi re-renders itself. The inventory tab sets this to
+-- re-show the tab page instead of the standalone formspec.
+function poi.set_redraw(fn)
+	poi_redraw = fn or poi_show_standalone
 end
 
 --
@@ -555,9 +578,9 @@ local function show_clear_all_fs()
 		"clear_all_confirm", "cancel", { yes_label = "Hide All" }))
 end
 
-core.register_on_formspec_input(function(formname, fields)
-	if formname ~= "poi-csm" then return end
-
+-- Handles poi formspec input. Used by both the standalone formspec
+-- ("poi-csm") and the inventory tab. Returns true when it consumed the fields.
+function poi.handle_fields(fields)
 	local handlers = {
 		group_filter = function()
 			local filter_names = {"All"}
@@ -692,6 +715,11 @@ core.register_on_formspec_input(function(formname, fields)
 	end
 
 	return true
+end
+
+core.register_on_formspec_input(function(formname, fields)
+	if formname ~= "poi-csm" then return end
+	return poi.handle_fields(fields)
 end)
 
 --
@@ -801,3 +829,34 @@ core.register_cheat("AutoScreenshot", {
 	setting = "auto_screenshot",
 	description = "Auto-screenshot on death",
 })
+
+--
+-- Inventory tab (registered directly: the mod loader orders the `inventory`
+-- mod before poi because poi optionally depends on it)
+--
+
+if core.inv_tabs and core.inv_tabs.register_tab then
+	core.inv_tabs.register_tab({
+		id = "poi",
+		title = "Waypoints",
+		build = function()
+			return poi.build_formspec_content()
+		end,
+		handle = function(fields)
+			return poi.handle_fields(fields)
+		end,
+		-- The poi layout is self-contained with its own margins; don't draw
+		-- the player inventory under it and don't add the generic padding.
+		show_inventory = false,
+		pad = false,
+	})
+	-- Re-render inside the tab page when poi asks to redraw, falling back to
+	-- the standalone formspec when the tab isn't open.
+	poi.set_redraw(function()
+		if core.inv_tabs.is_open() then
+			core.inv_tabs.set_active("poi")
+		else
+			poi_show_standalone()
+		end
+	end)
+end

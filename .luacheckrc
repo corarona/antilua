@@ -138,6 +138,8 @@ stds.al_client = {
         "ws",
         -- Other mod globals
         "nlist", "sbots", "poi", "tps_client",
+        "autocraft", "invviewer", "al_formspec",
+        "schembuilder", "blockexchange", "dte",
     },
 }
 

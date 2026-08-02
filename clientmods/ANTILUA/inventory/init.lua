@@ -1,4 +1,5 @@
 local modpath = core.get_modpath(core.get_current_modname())
+dofile(modpath .. "/invtabs.lua")
 dofile(modpath .. "/autorefill.lua")
 dofile(modpath .. "/dumpfull.lua")
 dofile(modpath .. "/crafting.lua")

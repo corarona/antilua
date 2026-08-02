@@ -1,6 +1,10 @@
 -- autocraft: custom crafting GUI with autocraft toggle
 -- Open via /autocraft (chat command) or TAB → cheat menu
 
+autocraft = {}
+
+local al_formspec = core.al_formspec
+
 local RECIPES = {}
 local ACTIVE_KEY = nil
 local PAUSED = false
@@ -263,12 +267,14 @@ core.register_globalstep(function(dtime)
 	end
 end)
 
-local function show_gui()
+-- Builds only the autocraft GUI content (no formspec chrome).
+-- Used both for the standalone formspec and when embedded as an inventory tab.
+function autocraft.build_gui_content()
 	local on = is_on()
 	local sel = ACTIVE_KEY and RECIPES[ACTIVE_KEY]
 	local output = (sel and sel.output) or "-"
 
-	local sb = al_formspec.begin("size[11.75,10.425]")
+	local sb = al_formspec.new()
 	sb:add(
 		al_formspec.label(2.25, 0.375, "Autocraft"),
 		al_formspec.label(0.375, 0.375, "Recipe: " .. output),
@@ -279,11 +285,29 @@ local function show_gui()
 		"list[current_player;main;0.375,9.05;9,1;]",
 		"listring[current_player;craft]",
 		"listring[current_player;main]",
-		al_formspec.button(6.1, 3.5, 2.5, 0.8, "autocraft_toggle",
+		al_formspec.button(6.1, 3.4, 2.5, 0.8, "autocraft_toggle",
 			on and "Autocraft: ON" or "Autocraft: OFF"),
-		al_formspec.button(8.2, 3.5, 2, 0.8, "show_recipes", "Recipes")
+		al_formspec.button(6.1, 4.25, 2.5, 0.8, "show_recipes", "Recipes")
 	)
-	core.show_formspec("autocraft:gui", sb:get())
+	return sb:get()
+end
+
+local function autocraft_show_standalone()
+	local sb = al_formspec.begin("size[11.75,10.425]")
+	sb:add(autocraft.build_gui_content())
+	return core.show_formspec("autocraft:gui", sb:get())
+end
+
+local autocraft_redraw = autocraft_show_standalone
+
+-- Redirect where autocraft re-renders itself. The inventory tab sets this to
+-- re-show the tab page instead of the standalone formspec.
+function autocraft.set_redraw(fn)
+	autocraft_redraw = fn or autocraft_show_standalone
+end
+
+local function show_gui()
+	return autocraft_redraw()
 end
 
 local function show_list()
@@ -357,14 +381,22 @@ local function show_list()
 	core.show_formspec("autocraft:list", sb:get())
 end
 
+-- Handles autocraft GUI input. Used by both the standalone formspec
+-- ("autocraft:gui") and the inventory tab. Returns true when it consumed the
+-- fields.
+function autocraft.handle_gui_fields(fields)
+	if fields.autocraft_toggle then
+		core.settings:set_bool(SETTING, not is_on())
+		show_gui()
+	elseif fields.show_recipes then
+		show_list()
+	end
+	return true
+end
+
 core.register_on_formspec_input(function(formname, fields)
 	if formname == "autocraft:gui" then
-		if fields.autocraft_toggle then
-			core.settings:set_bool(SETTING, not is_on())
-			show_gui()
-		elseif fields.show_recipes then
-			show_list()
-		end
+		autocraft.handle_gui_fields(fields)
 	elseif formname == "autocraft:list" then
 		if fields.__close then
 			return
@@ -422,3 +454,32 @@ core.register_chatcommand("autocraft_clear", {
 		msg("cleared all recipes")
 	end,
 })
+
+--
+-- Inventory tab (registered directly: the mod loader orders the `inventory`
+-- mod before autocraft because autocraft optionally depends on it)
+--
+
+if core.inv_tabs and core.inv_tabs.register_tab then
+	core.inv_tabs.register_tab({
+		id = "autocraft",
+		title = "Autocraft",
+		build = function()
+			return autocraft.build_gui_content()
+		end,
+		handle = function(fields)
+			return autocraft.handle_gui_fields(fields)
+		end,
+		-- The GUI draws the craft grid and the player inventory itself.
+		show_inventory = false,
+	})
+	-- Re-render inside the tab page when autocraft asks to redraw, falling
+	-- back to the standalone formspec when the tab isn't open.
+	autocraft.set_redraw(function()
+		if core.inv_tabs.is_open() then
+			core.inv_tabs.set_active("autocraft")
+		else
+			autocraft_show_standalone()
+		end
+	end)
+end

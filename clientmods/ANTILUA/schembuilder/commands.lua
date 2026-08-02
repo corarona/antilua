@@ -124,28 +124,34 @@ function load_schematic_by_index(event_idx)
 	end
 end
 
-core.register_on_formspec_input(function(formname, fields)
-	if formname ~= "schembuilder:browser" then return end
+function schembuilder.handle_browser_fields(fields)
+	if fields.quit then return true end
 
-	if fields.quit then return end
+	-- Sub-tab buttons (right-side column, embedded) / top tabheader (standalone).
+	if schembuilder.browser_subtabs.handle(fields) ~= nil then
+		_selected_schem = nil
+		_selected_build = nil
+		show_browser_form(schembuilder.browser_subtabs.get())
+		return true
+	end
+	if fields.tabs then
+		_selected_schem = nil
+		_selected_build = nil
+		show_browser_form(tonumber(fields.tabs) - 1)
+		return true
+	end
 
 	if fields.close then
 		_selected_schem = nil
 		_selected_build = nil
 		core.close_formspec("schembuilder:browser")
-		return
+		return true
 	end
 
-	if fields.tabs then
-		_selected_schem = nil
-		_selected_build = nil
-		show_browser_form(tonumber(fields.tabs) - 1)
-		return
-	end
 
 	if schembuilder._mapart_event_fn and schembuilder._mapart_event_fn(fields) then
 		show_browser_form(3)
-		return
+		return true
 	end
 
 	-- Track textlist selections
@@ -176,7 +182,7 @@ core.register_on_formspec_input(function(formname, fields)
 			_selected_schem_name = file_list[idx]
 			if fields.schem_list:match("^DCL:") then
 				load_schematic_by_index(idx)
-				return
+				return true
 			end
 		end
 	end
@@ -202,7 +208,7 @@ core.register_on_formspec_input(function(formname, fields)
 		if user == "" or name == "" then
 			_bx_status = "Enter username and schematic name"
 			show_browser_form(2)
-			return
+			return true
 		end
 		_bx_status = "Searching..."
 		show_browser_form(2)
@@ -216,7 +222,7 @@ core.register_on_formspec_input(function(formname, fields)
 				show_browser_form(2)
 			end)
 		end
-		return
+		return true
 	end
 
 	if fields.bx_results then
@@ -251,7 +257,7 @@ core.register_on_formspec_input(function(formname, fields)
 				)
 			end
 		end
-		return
+		return true
 	end
 
 	if fields.bx_load_dl and fields.bx_downloads then
@@ -266,7 +272,7 @@ core.register_on_formspec_input(function(formname, fields)
 				end
 			end
 		end
-		return
+		return true
 	end
 
 	if fields.bx_load_dl_sel then
@@ -276,7 +282,7 @@ core.register_on_formspec_input(function(formname, fields)
 	-- Tab 0: Load schematic button
 	if fields.schem_load and _selected_schem then
 		load_schematic_by_index(_selected_schem)
-		return
+		return true
 	end
 
 	-- Tab 1: Build actions
@@ -327,14 +333,14 @@ core.register_on_formspec_input(function(formname, fields)
 			_selected_build = nil
 			show_browser_form(1)
 		end
-		return
+		return true
 	end
 
 	-- Tab 4: Persist checkbox state via setting (checkbox not included in button submissions)
 	if fields.hollow ~= nil then
 		core.settings:set_bool("schembuilder_hollow", fields.hollow == "true")
 		show_browser_form(4)
-		return
+		return true
 	end
 
 	-- Tab 4: Shape generation actions
@@ -363,18 +369,18 @@ core.register_on_formspec_input(function(formname, fields)
 		local rel_nodes, err = schembuilder.generate_shape(shape_type, dim_x, dim_y, dim_z, mat, hollow)
 		if not rel_nodes then
 			ws.notify("Shape generation error: " .. (err or "unknown"), ws.NOTIFY_ERROR)
-			return
+			return true
 		end
 
 		if #rel_nodes == 0 then
 			ws.notify("Generated shape is empty (try larger dimensions)", ws.NOTIFY_WARNING)
-			return
+			return true
 		end
 
 		local pos = core.localplayer and vector.round(core.localplayer:get_pos())
 		if not pos then
 			ws.notify("No player position", ws.NOTIFY_ERROR)
-			return
+			return true
 		end
 
 		local origin = vector.add(pos, {x = off_x, y = off_y, z = off_z})
@@ -399,8 +405,15 @@ core.register_on_formspec_input(function(formname, fields)
 		end
 
 		core.close_formspec("schembuilder:browser")
-		return
+		return true
 	end
+
+	return true
+end
+
+core.register_on_formspec_input(function(formname, fields)
+	if formname ~= "schembuilder:browser" then return end
+	return schembuilder.handle_browser_fields(fields)
 end)
 
 core.register_chatcommand("sload", {

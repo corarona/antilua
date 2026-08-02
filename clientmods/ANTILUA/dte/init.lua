@@ -10,6 +10,14 @@ local data = {  -- window size
 }
 local F = core.formspec_escape  -- shorten the function
 
+-- Sub-tab navigation (also used when embedded as an inventory tab).
+if core.al_subtabs then
+	dte.subtabs = core.al_subtabs.new({
+		id = "dte",
+		labels = { "Lua Editor", "Lua Console", "Files", "Startup", "Mods", "Server Mods" },
+	})
+end
+
 local function create_tabs(selected)
 	return "tabheader[0,0;_option_tabs_;" ..
 	"  LUA EDITOR   , LUA CONSOLE  ,	 FILES	 ,	STARTUP	  ,	 MODS   , SERVER MODS;"..selected..";;]"
@@ -260,22 +268,25 @@ local console_output = {}
 local console_history = {}
 local console_history_idx = 0
 
-local function console_form()
+local function console_form_content(w, h)
+	w = w or data.width
+	h = h or data.height
 	local output_str = ""
 	for i, v in ipairs(console_output) do
 		if i ~= 1 then output_str = output_str .. "," end
 		output_str = output_str .. F(v)
 	end
 
-	local form = ""..
-	"size["..data.width..","..data.height.."]" ..
-	"textlist[0,0;"..data.width-0.2 ..","..data.height-2.5 ..";console_out;"..output_str..";".. #console_output .."]" ..
-	"field[0,"..data.height-2.2 ..";"..data.width-4 ..",1;console_expr;Lua expression;]" ..
+	local form = "textlist[0,0;"..w-0.2 ..","..h-2.5 ..";console_out;"..output_str..";".. #console_output .."]" ..
+	"field[0,"..h-2.2 ..";"..w-4 ..",1;console_expr;Lua expression;]" ..
 	"field_close_on_enter[console_expr;true]" ..
-	"button["..data.width-3.5 ..","..data.height-2.5 ..";2,0.8;console_run;RUN]" ..
-	"button["..data.width-1.5 ..","..data.height-2.5 ..";1,0.8;console_clear;CLEAR]" ..
-	"" .. create_tabs(2)
+	"button["..w-3.5 ..","..h-2.5 ..";2,0.8;console_run;RUN]" ..
+	"button["..w-1.5 ..","..h-2.5 ..";1,0.8;console_clear;CLEAR]"
 	return form
+end
+
+local function console_form()
+	return "size["..data.width..","..data.height.."]" .. console_form_content(data.width, data.height) .. create_tabs(2)
 end
 
 local function run_console(expr)
@@ -302,7 +313,7 @@ local function run_console(expr)
 			table.insert(console_output, "#ff4444" .. result)
 		end
 	end
-	core.show_formspec("lua:console", console_form())
+	dte.show_view(1)
 end
 
 
@@ -311,7 +322,10 @@ end
 ----------
 
 
-local function startup_form()  -- the formspec for adding or removing files for startup
+local function startup_form_content(w, h)
+	w = w or data.width
+	h = h or data.height
+  -- the formspec for adding or removing files for startup
 	local startup_str = ""
 	for i, v in pairs(lua_startup) do
 		if i ~= 1 then startup_str = startup_str.."," end
@@ -323,20 +337,23 @@ local function startup_form()  -- the formspec for adding or removing files for 
 		files_str = files_str .. F(v)
 	end
 
-	local form = ""..
-	"size["..data.width..","..data.height.."]" ..
-	"label[0,0.1;Startup Items:]"..
-	"label["..data.width/2 ..",0.1;File List:]"..
-	"textlist[0,0.5;"..data.width/2-0.1 ..","..data.height-1 ..";starts;"..startup_str.."]"..
-	"textlist["..data.width/2 ..",0.5;"..data.width/2-0.1 ..","..data.height-1 ..";chooser;"..files_str.."]"..
-	"label[0," .. data.height-0.3 .. ";double click items to add or remove from startup]"..
-
-	"" .. create_tabs(4)
+	local form = "label[0,0.1;Startup Items:]"..
+	"label["..w/2 ..",0.1;File List:]"..
+	"textlist[0,0.5;"..w/2-0.1 ..","..h-1 ..";starts;"..startup_str.."]"..
+	"textlist["..w/2 ..",0.5;"..w/2-0.1 ..","..h-1 ..";chooser;"..files_str.."]"..
+	"label[0," .. h-0.3 .. ";double click items to add or remove from startup]"
 	return form
 end
 
+local function startup_form()
+	return "size["..data.width..","..data.height.."]" .. startup_form_content(data.width, data.height) .. create_tabs(4)
+end
 
-local function lua_editor()  -- the main formspec for editing
+
+local function lua_editor_content(w, h)
+	w = w or data.width
+	h = h or data.height
+  -- the main formspec for editing
 
 	local output_str = ""  --  convert the output to a string
 	for i, v in pairs(output) do
@@ -352,25 +369,26 @@ local function lua_editor()  -- the main formspec for editing
 	-- create the form
 	local editor_widget
 	if core.features.codeedit_formspec then
-		editor_widget = "codeedit[0.3,0.1;"..data.width ..","..data.height-3
+		editor_widget = "codeedit[0.3,0.1;"..w ..","..h-3
 			..";editor;Lua editor;"..code.."]"
 	else
-		editor_widget = "textarea[0.3,0.1;"..data.width ..","..data.height-3
+		editor_widget = "textarea[0.3,0.1;"..w ..","..h-3
 			..";editor;Lua editor;"..code.."]"
 	end
-	local form = ""..
-	"size["..data.width..","..data.height.."]" ..
-	"style[editor;bgcolor=#80000000]" ..
+	local form = "style[editor;bgcolor=#80000000]" ..
 	editor_widget ..
-	"button[0," .. data.height-3.5 .. ";1,0;run;RUN]"..
-	"button[1," .. data.height-3.5 .. ";1,0;clear;CLEAR]"..
-	"button[2," .. data.height-3.5 .. ";1,0;save;SAVE]"..
-	"button[3," .. data.height-3.5 .. ";1,0;check;CHECK]"..
-	"button[4.1," .. data.height-3.5 .. ";1,0;load_ext;LOAD]"..
-	"dropdown[6.3,"..data.height-3.8 ..";3;lua_select;"..lua_files_item_str..";"..idx.."]" ..
-	"textlist[0,"..data.height-3 ..";"..data.width-0.2 ..","..data.height-7 ..";output;"..output_str..";".. #output .."]"..
-	"" .. create_tabs(1)
+	"button[0," .. h-3.5 .. ";1,0;run;RUN]"..
+	"button[1," .. h-3.5 .. ";1,0;clear;CLEAR]"..
+	"button[2," .. h-3.5 .. ";1,0;save;SAVE]"..
+	"button[3," .. h-3.5 .. ";1,0;check;CHECK]"..
+	"button[4.1," .. h-3.5 .. ";1,0;load_ext;LOAD]"..
+	"dropdown[6.3,"..h-3.8 ..";3;lua_select;"..lua_files_item_str..";"..idx.."]" ..
+	"textlist[0,"..h-3 ..";"..w-0.2 ..","..h-7 ..";output;"..output_str..";".. #output .."]"
 	return form
+end
+
+local function lua_editor()
+	return "size["..data.width..","..data.height.."]" .. lua_editor_content(data.width, data.height) .. create_tabs(1)
 end
 
 
@@ -502,23 +520,28 @@ local function scan_mods()
 end
 
 -- Show the mod file editor formspec
-local function mod_editor()
+local function mod_editor_content(w, h)
+	w = w or data.width
+	h = h or data.height
 	local code = F(mod_file_content or "")
-	local form = "" ..
-		"size["..data.width..","..data.height.."]" ..
-		"style[mod_editor_edit;bgcolor=#80000000]" ..
+	local form = "style[mod_editor_edit;bgcolor=#80000000]" ..
 		"label[0,0;Editing: " .. F(shortpath(mod_file_selected)) .. "]" ..
-		"codeedit[0.3,0.5;"..data.width..","..(data.height-2)
+		"codeedit[0.3,0.5;"..w..","..(h-2)
 			..";mod_editor_edit;Mod file;"..code.."]" ..
-		"button[0,"..(data.height-1.5)..";1.5,0.8;mod_editor_save;SAVE]" ..
-		"button[1.6,"..(data.height-1.5)..";2,0.8;mod_editor_savereload;SAVE & RELOAD]" ..
-		"button[3.7,"..(data.height-1.5)..";1.5,0.8;mod_editor_back;BACK]" ..
-		"" .. create_tabs(5)
+		"button[0,"..(h-1.5)..";1.5,0.8;mod_editor_save;SAVE]" ..
+		"button[1.6,"..(h-1.5)..";2,0.8;mod_editor_savereload;SAVE & RELOAD]" ..
+		"button[3.7,"..(h-1.5)..";1.5,0.8;mod_editor_back;BACK]"
 	return form
 end
 
+local function mod_editor()
+	return "size["..data.width..","..data.height.."]" .. mod_editor_content(data.width, data.height) .. create_tabs(5)
+end
+
 -- Show the mod browser formspec
-local function mod_browser()
+local function mod_browser_content(w, h)
+	w = w or data.width
+	h = h or data.height
 	scan_mods()
 	local mod_str = ""
 	for i, mod in ipairs(mod_list) do
@@ -540,18 +563,21 @@ local function mod_browser()
 		end
 	end
 
-	local form = "" ..
-		"size["..data.width..","..data.height.."]" ..
-		"label[0,0;MODS]" ..
-		"textlist[0,0.4;"..(data.width/2-0.1)..","..(data.height-1.3)..";mod_list;"..mod_str.."]" ..
-		"textlist["..(data.width/2)..",0.4;"..(data.width/2-0.1)..","..(data.height-1.3)..";mod_files;"..file_str.."]" ..
-		"label[0,"..(data.height-0.9)..";Double-click a file to edit it]" ..
-		"" .. create_tabs(5)
+	local form = "label[0,0;MODS]" ..
+		"textlist[0,0.4;"..(w/2-0.1)..","..(h-1.3)..";mod_list;"..mod_str.."]" ..
+		"textlist["..(w/2)..",0.4;"..(w/2-0.1)..","..(h-1.3)..";mod_files;"..file_str.."]" ..
+		"label[0,"..(h-0.9)..";Double-click a file to edit it]"
 	return form
 end
 
+local function mod_browser()
+	return "size["..data.width..","..data.height.."]" .. mod_browser_content(data.width, data.height) .. create_tabs(5)
+end
+
 -- Server mod browser formspec
-local function server_mod_browser()
+local function server_mod_browser_content(w, h)
+	w = w or data.width
+	h = h or data.height
 	local mod_str = ""
 	for i, mod in ipairs(server_mod_list) do
 		if i > 1 then mod_str = mod_str .. "," end
@@ -564,30 +590,34 @@ local function server_mod_browser()
 			file_str = file_str .. F(f)
 		end
 	end
-	local form = "" ..
-		"size["..data.width..","..data.height.."]" ..
-		"label[0,0;SERVER MODS]" ..
-		"textlist[0,0.4;"..(data.width/2-0.1)..","..(data.height-1.3)..";srv_mod_list;"..mod_str.."]" ..
-		"textlist["..(data.width/2)..",0.4;"..(data.width/2-0.1)..","..(data.height-1.3)..";srv_mod_files;"..file_str.."]" ..
-		"button[0,"..(data.height-0.9)..";1.5,0.8;srv_refresh;REFRESH]" ..
-		"label[1.6,"..(data.height-0.9)..";Double-click a file to edit it]" ..
-		"" .. create_tabs(6)
+	local form = "label[0,0;SERVER MODS]" ..
+		"textlist[0,0.4;"..(w/2-0.1)..","..(h-1.3)..";srv_mod_list;"..mod_str.."]" ..
+		"textlist["..(w/2)..",0.4;"..(w/2-0.1)..","..(h-1.3)..";srv_mod_files;"..file_str.."]" ..
+		"button[0,"..(h-0.9)..";1.5,0.8;srv_refresh;REFRESH]" ..
+		"label[1.6,"..(h-0.9)..";Double-click a file to edit it]"
+	return form
+end
+
+local function server_mod_browser()
+	return "size["..data.width..","..data.height.."]" .. server_mod_browser_content(data.width, data.height) .. create_tabs(6)
+end
+
+local function server_mod_editor_content(w, h)
+	w = w or data.width
+	h = h or data.height
+	local code = F(server_mod_file_content or "")
+	local form = "style[srv_mod_editor_edit;bgcolor=#80000000]" ..
+		"label[0,0;Editing: " .. F(server_mod_selected .. "/" .. server_mod_file_selected) .. "]" ..
+		"codeedit[0.3,0.5;"..w..","..(h-2)
+			..";srv_mod_editor_edit;Mod file;"..code.."]" ..
+		"button[0,"..(h-1.5)..";1.5,0.8;srv_mod_editor_save;SAVE]" ..
+		"button[1.6,"..(h-1.5)..";2,0.8;srv_mod_editor_savereload;SAVE & RELOAD]" ..
+		"button[3.7,"..(h-1.5)..";1.5,0.8;srv_mod_editor_back;BACK]"
 	return form
 end
 
 local function server_mod_editor()
-	local code = F(server_mod_file_content or "")
-	local form = "" ..
-		"size["..data.width..","..data.height.."]" ..
-		"style[srv_mod_editor_edit;bgcolor=#80000000]" ..
-		"label[0,0;Editing: " .. F(server_mod_selected .. "/" .. server_mod_file_selected) .. "]" ..
-		"codeedit[0.3,0.5;"..data.width..","..(data.height-2)
-			..";srv_mod_editor_edit;Mod file;"..code.."]" ..
-		"button[0,"..(data.height-1.5)..";1.5,0.8;srv_mod_editor_save;SAVE]" ..
-		"button[1.6,"..(data.height-1.5)..";2,0.8;srv_mod_editor_savereload;SAVE & RELOAD]" ..
-		"button[3.7,"..(data.height-1.5)..";1.5,0.8;srv_mod_editor_back;BACK]" ..
-		"" .. create_tabs(6)
-	return form
+	return "size["..data.width..","..data.height.."]" .. server_mod_editor_content(data.width, data.height) .. create_tabs(6)
 end
 
 -- Trigger a server mod list refresh via mod channel
@@ -597,7 +627,7 @@ local function server_refresh_mod_list()
 			server_mod_list = resp.mods or {}
 			server_mod_selected = false
 			server_mod_files = {}
-			core.show_formspec("lua:server_mods", server_mod_browser())
+			dte.show_view(5)
 		end
 	end)
 end
@@ -607,32 +637,120 @@ local function server_refresh_file_list()
 	server_send({type = "list_files", mod = server_mod_selected}, function(resp)
 		if resp.type == "file_list" then
 			server_mod_files = resp.files or {}
-			core.show_formspec("lua:server_mods", server_mod_browser())
+			dte.show_view(5)
 		end
 	end)
 end
 
-local function file_viewer()  -- created with the formspec editor!
+local function file_viewer_content(w, h)
+	w = w or data.width
+	h = h or data.height
+  -- created with the formspec editor!
 	local lua_files_item_str = ""
 	for i, item in pairs(lua_files) do
 		if i ~= 1 then lua_files_item_str = lua_files_item_str.."," end
 		lua_files_item_str = lua_files_item_str .. F(item)
 	end
 
-	local form = "" ..
-	"size["..data.width..","..data.height.."]" ..
-	"textlist[0,0.2;"..data.width-0.1 ..","..data.height- 1.8 ..";lua_select;"..lua_files_item_str.."]" ..
+	local form = "textlist[0,0.2;"..w-0.1 ..","..h- 1.8 ..";lua_select;"..lua_files_item_str.."]" ..
 	"label[0,0;LUA FILES]" ..
-	"field[0.1,"..data.height- 0.2 ..";3,1;new_lua;NEW;]" ..
+	"field[0.1,"..h- 0.2 ..";3,1;new_lua;NEW;]" ..
 	"field_close_on_enter[new_lua;false]" ..
-	"button[2.6,"..data.height- 0.5 ..";0.5,1;add_lua;+]" ..
-	"label[3.2,"..data.height- 0.8 ..";Double click a file to open it]" ..
-	"button[3.1,"..data.height- 0.5 ..";1.1,1;del_lua;DELETE]" ..
-	"" .. create_tabs(3)
-
+	"button[2.6,"..h- 0.5 ..";0.5,1;add_lua;+]" ..
+	"label[3.2,"..h- 0.8 ..";Double click a file to open it]" ..
+	"button[3.1,"..h- 0.5 ..";1.1,1;del_lua;DELETE]"
 	return form
 end
 
+local function file_viewer()
+	return "size["..data.width..","..data.height.."]" .. file_viewer_content(data.width, data.height) .. create_tabs(3)
+end
+
+
+----------
+-- REDRAW / VIEW SWITCHING (shared by the standalone formspecs and the
+-- inventory tab)
+----------
+
+-- Re-show the current sub-view as its own standalone formspec.
+local function dte_show_standalone(tab)
+	tab = tab or (dte.subtabs and dte.subtabs.get() or 0)
+	local fname, form
+	if tab == 0 then
+		fname, form = "lua:editor", lua_editor()
+	elseif tab == 1 then
+		fname, form = "lua:console", console_form()
+	elseif tab == 2 then
+		fname, form = "files:viewer", file_viewer()
+	elseif tab == 3 then
+		fname, form = "lua:startup", startup_form()
+	elseif tab == 4 then
+		fname, form = "lua:mods", mod_browser()
+	elseif tab == 5 then
+		fname, form = "lua:server_mods", server_mod_browser()
+	end
+	return core.show_formspec(fname, form)
+end
+
+local dte_redraw = dte_show_standalone
+
+-- Redirect where dte re-renders itself. The inventory tab sets this to re-show
+-- the tab page instead of the standalone formspec.
+function dte.set_redraw(fn)
+	dte_redraw = fn
+end
+
+-- Switch to a sub-view and re-render.
+function dte.show_view(tab)
+	tab = tab or 0
+	if dte.subtabs then
+		dte.subtabs.set(tab)
+	end
+	return dte_redraw(tab)
+end
+
+-- Builds the content of a sub-view, reflowed to `w`x`h` (no formspec chrome,
+-- no sub-tab column). Used when embedded as an inventory tab.
+function dte.build_content(tab, w, h)
+	if tab == 0 then return lua_editor_content(w, h) end
+	if tab == 1 then return console_form_content(w, h) end
+	if tab == 2 then return file_viewer_content(w, h) end
+	if tab == 3 then return startup_form_content(w, h) end
+	if tab == 4 then return mod_browser_content(w, h) end
+	if tab == 5 then return server_mod_browser_content(w, h) end
+	return ""
+end
+
+-- Handles formspec input when embedded as an inventory tab. Sub-tab buttons
+-- switch the view; everything else is handed to the normal dte handlers by
+-- synthesizing the standalone formname for the current sub-view.
+function dte.handle_tab_fields(fields)
+	if dte.subtabs and dte.subtabs.handle(fields) ~= nil then
+		dte.show_view(dte.subtabs.get())
+		return true
+	end
+	local fname
+	local tab = dte.subtabs and dte.subtabs.get() or 0
+	if tab == 0 then
+		fname = "lua:editor"
+	elseif tab == 1 then
+		fname = "lua:console"
+	elseif tab == 2 then
+		fname = "files:viewer"
+	elseif tab == 3 then
+		fname = "lua:startup"
+	elseif tab == 4 then
+		fname = "lua:mods"
+	elseif tab == 5 then
+		fname = "lua:server_mods"
+	end
+	if fname then
+		for i = 1, #core.registered_on_formspec_input do
+			core.registered_on_formspec_input[i](fname, fields)
+		end
+	end
+	return true
+end
 
 ----------
 -- FUNCTIONALITY
@@ -651,7 +769,7 @@ core.register_on_formspec_input(function(formname, fields)
 			else
 				run(fields.editor)
 			end
-			core.show_formspec("lua:editor", lua_editor())
+			dte.show_view(0)
 
 		elseif fields.check then  --[CHECK] button
 			save_lua(fields.editor)
@@ -661,7 +779,7 @@ core.register_on_formspec_input(function(formname, fields)
 			else
 				table.insert(output, "#44ff44Syntax OK")
 			end
-			core.show_formspec("lua:editor", lua_editor())
+			dte.show_view(0)
 
 		elseif fields.save then  --[SAVE] button
 			if saved_file == false then
@@ -673,7 +791,7 @@ core.register_on_formspec_input(function(formname, fields)
 		elseif fields.clear then  --[CLEAR] button
 			output = {}
 			save_lua(fields.editor)
-			core.show_formspec("lua:editor", lua_editor())
+			dte.show_view(0)
 		elseif fields.preview then  --[PREVIEW] button - syntax colorize
 			save_lua(fields.editor)
 			local code = load_lua()
@@ -682,7 +800,7 @@ core.register_on_formspec_input(function(formname, fields)
 			for _, entry in ipairs(colorized) do
 				table.insert(output, entry.color .. entry.line)
 			end
-			core.show_formspec("lua:editor", lua_editor())
+			dte.show_view(0)
 		elseif fields.load_ext then  --[LOAD] button - load external file
 			dte._pending_load = true
 			core.show_formspec("lua:load_ext",
@@ -694,7 +812,7 @@ core.register_on_formspec_input(function(formname, fields)
 			if table.indexof(lua_files, fields.lua_select) ~= -1 then
 				saved_file = fields.lua_select
 				dte.modstorage:set_string("_lua_saved", fields.lua_select)
-				core.show_formspec("lua:editor", lua_editor())
+				dte.show_view(0)
 			end
 		end
 
@@ -709,13 +827,13 @@ core.register_on_formspec_input(function(formname, fields)
 				dte.modstorage:set_string("_lua_saved", "")
 				dte.modstorage:set_string("_lua_temp", content)
 				table.insert(output, "#00ff00Loaded: " .. fields.filepath)
-				core.show_formspec("lua:editor", lua_editor())
+				dte.show_view(0)
 			else
 				table.insert(output, "#ff0000Failed to load: " .. fields.filepath)
-				core.show_formspec("lua:editor", lua_editor())
+				dte.show_view(0)
 			end
 		elseif fields.load_cancel then
-			core.show_formspec("lua:editor", lua_editor())
+			dte.show_view(0)
 		end
 
 	-- LUA CONSOLE
@@ -726,7 +844,7 @@ core.register_on_formspec_input(function(formname, fields)
 			run_console(expr)
 		elseif fields.console_clear then
 			console_output = {}
-			core.show_formspec("lua:console", console_form())
+			dte.show_view(1)
 		end
 
 	-- STARTUP EDITOR
@@ -743,7 +861,7 @@ core.register_on_formspec_input(function(formname, fields)
 					end
 				end
 				dte.modstorage:set_string("_lua_startup", startup_str)
-				core.show_formspec("lua:startup", startup_form())
+				dte.show_view(3)
 			end
 
 		elseif fields.chooser then  -- double click a file to add it to the list
@@ -757,7 +875,7 @@ core.register_on_formspec_input(function(formname, fields)
 					end
 				end
 				dte.modstorage:set_string("_lua_startup", startup_str)
-				core.show_formspec("lua:startup", startup_form())
+				dte.show_view(3)
 			end
 		end
 	end
@@ -788,7 +906,7 @@ core.register_on_formspec_input(function(formname, fields)
 			end
 
 			dte.modstorage:set_string("_lua_files_list", files_str)
-			core.show_formspec("files:viewer", file_viewer())
+			dte.show_view(2)
 
 		elseif fields.lua_select then  -- click on a file to select it, double click to open it
 			local index = tonumber(string.sub(fields.lua_select, 5))
@@ -796,10 +914,10 @@ core.register_on_formspec_input(function(formname, fields)
 				saved_file = lua_files[index]
 
 				dte.modstorage:set_string("_lua_saved", saved_file)
-				core.show_formspec("lua:editor", lua_editor())
+				dte.show_view(0)
 			else
 				selected_file = index
-				core.show_formspec("files:viewer", file_viewer())
+				dte.show_view(2)
 			end
 
 		elseif fields.key_enter_field == "new_lua" or fields.add_lua then
@@ -822,26 +940,26 @@ core.register_on_formspec_input(function(formname, fields)
 				end
 				dte.modstorage:set_string("_lua_files_list", files_str)
 				saved_file = fields.new_lua
-				core.show_formspec("lua:editor", lua_editor())
+				dte.show_view(0)
 			end
 		end
 	end
 
 	if fields._option_tabs_ then
 		if fields._option_tabs_ == "1" then
-			core.show_formspec("lua:editor", lua_editor())
+			dte.show_view(0)
 		elseif fields._option_tabs_ == "2" then
-			core.show_formspec("lua:console", console_form())
+			dte.show_view(1)
 		elseif fields._option_tabs_ == "3" then
-			core.show_formspec("files:viewer", file_viewer())
+			dte.show_view(2)
 		elseif fields._option_tabs_ == "4" then
-			core.show_formspec("lua:startup", startup_form())
+			dte.show_view(3)
 		elseif fields._option_tabs_ == "5" then
-			core.show_formspec("lua:mods", mod_browser())
+			dte.show_view(4)
 		elseif fields._option_tabs_ == "6" then
 			if core.features.dte_server_edit and server_mod_channel then
 				server_refresh_mod_list()
-				core.show_formspec("lua:server_mods", server_mod_browser())
+				dte.show_view(5)
 			else
 				table.insert(output, "#ff8800Server mod editing not available")
 			end
@@ -855,7 +973,7 @@ core.register_on_formspec_input(function(formname, fields)
 			local ev = core.explode_textlist_event(fields.mod_list)
 			if ev.type == "DCL" then
 				mod_selected = mod_list[ev.index] and mod_list[ev.index].name
-				core.show_formspec("lua:mods", mod_browser())
+				dte.show_view(4)
 			end
 		elseif fields.mod_files then
 			local ev = core.explode_textlist_event(fields.mod_files)
@@ -880,7 +998,7 @@ core.register_on_formspec_input(function(formname, fields)
 	-- MOD EDITOR
 	if formname == "lua:mod_editor" then
 		if fields.mod_editor_back then
-			core.show_formspec("lua:mods", mod_browser())
+			dte.show_view(4)
 		elseif fields.mod_editor_save or fields.mod_editor_savereload then
 			if mod_file_selected then
 				local ok, err = pcall(core.write_file, mod_file_selected, fields.mod_editor_edit)
@@ -904,7 +1022,7 @@ core.register_on_formspec_input(function(formname, fields)
 				else
 					table.insert(output, "#ff8800reload_mod not available on this client")
 				end
-				core.show_formspec("lua:mods", mod_browser())
+				dte.show_view(4)
 			else
 				core.show_formspec("lua:mod_editor", mod_editor())
 			end
@@ -919,7 +1037,7 @@ core.register_on_formspec_input(function(formname, fields)
 				server_mod_selected = server_mod_list[ev.index] and server_mod_list[ev.index].name
 				server_mod_files = {}
 				server_refresh_file_list()
-				core.show_formspec("lua:server_mods", server_mod_browser())
+				dte.show_view(5)
 			end
 		elseif fields.srv_mod_files then
 			local ev = core.explode_textlist_event(fields.srv_mod_files)
@@ -935,14 +1053,14 @@ core.register_on_formspec_input(function(formname, fields)
 			end
 		elseif fields.srv_refresh then
 			server_refresh_mod_list()
-			core.show_formspec("lua:server_mods", server_mod_browser())
+			dte.show_view(5)
 		end
 	end
 
 	-- SERVER MOD EDITOR
 	if formname == "lua:server_mod_editor" then
 		if fields.srv_mod_editor_back then
-			core.show_formspec("lua:server_mods", server_mod_browser())
+			dte.show_view(5)
 		elseif fields.srv_mod_editor_save and not fields.srv_mod_editor_savereload then
 			local content = fields.srv_mod_editor_edit
 			server_send({type = "write_file", mod = server_mod_selected, file = server_mod_file_selected, content = content}, function(resp)
@@ -963,7 +1081,7 @@ core.register_on_formspec_input(function(formname, fields)
 				else
 					table.insert(output, "#ff0000Save & Reload failed: " .. tostring(resp.msg))
 				end
-				core.show_formspec("lua:server_mods", server_mod_browser())
+				dte.show_view(5)
 			end)
 		end
 	end
@@ -975,7 +1093,7 @@ end)
 core.register_chatcommand("dte", {  -- register the chat command
 	description = core.gettext("open a lua IDE"),
 	func = function(parameter)
-		core.show_formspec("lua:editor", lua_editor())
+		dte.show_view(0)
 	end,
 })
 
@@ -994,3 +1112,37 @@ core.register_chatcommand("dte_load", {
 		return true, "Executed: " .. param
 	end,
 })
+
+----------
+-- INVENTORY TAB
+----------
+
+if core.inv_tabs and core.inv_tabs.register_tab and dte.subtabs then
+	core.inv_tabs.register_tab({
+		id = "dte",
+		title = "Code",
+		build = function(ctx)
+			local w = (ctx and ctx.width) or data.width
+			local h = (ctx and ctx.height) or data.height
+			local lay = dte.subtabs.layout(w)
+			return dte.build_content(dte.subtabs.get(), lay.content_right, h)
+				.. dte.subtabs.render(w, h)
+		end,
+		handle = function(fields)
+			return dte.handle_tab_fields(fields)
+		end,
+		-- The editor is self-contained and lays itself out against the
+		-- right-side sub-tab column.
+		show_inventory = false,
+		pad = false,
+	})
+	-- Re-render inside the tab page when dte asks to redraw, falling back to
+	-- the standalone formspec when the tab isn't open.
+	dte.set_redraw(function()
+		if core.inv_tabs.is_open() then
+			core.inv_tabs.set_active("dte")
+		else
+			dte_show_standalone()
+		end
+	end)
+end
