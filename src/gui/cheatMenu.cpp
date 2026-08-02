@@ -27,6 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/renderingengine.h"
 #include "client/renderingengine.h"
 #include "client/inputhandler.h"
+#include "log.h"
 #include <algorithm>
 #include <cmath>
 #include <set>
@@ -1505,8 +1506,7 @@ bool CheatMenu::pollInput()
 void CheatMenu::toggleQuickPalette()
 {
 	if (m_quick_palette_active) {
-		m_quick_palette_active = false;
-		g_quick_palette_active = false;
+		closeQuickPalette();
 	} else {
 		// Clear any stale character from the ~ key that opened the palette
 		auto *device = RenderingEngine::get_raw_device();
@@ -1516,8 +1516,214 @@ void CheatMenu::toggleQuickPalette()
 		}
 		m_quick_palette_text.clear();
 		m_quick_palette_selected = 0;
+		m_quick_palette_scroll = 0;
 		m_quick_palette_active = true;
 		g_quick_palette_active = true;
+		collectQuickPaletteItems();
+	}
+}
+
+// Parse one entry table returned by a quick menu provider and append it to
+// items. Expects the entry table at the top of the stack.
+static void parseQuickPaletteEntry(lua_State *L, std::vector<QuickPaletteItem> &items)
+{
+	QuickPaletteItem item;
+	item.kind = QuickPaletteItem::Kind::LUA_ENTRY;
+
+	lua_getfield(L, -1, "label");
+	if (lua_isstring(L, -1))
+		item.label = lua_tostring(L, -1);
+	lua_pop(L, 1);
+	if (item.label.empty())
+		return;
+
+	lua_getfield(L, -1, "toggle");
+	if (lua_isstring(L, -1)) {
+		item.toggle_settings.emplace_back(lua_tostring(L, -1));
+	} else if (lua_istable(L, -1)) {
+		lua_pushnil(L);
+		while (lua_next(L, -2)) {
+			if (lua_isstring(L, -1))
+				item.toggle_settings.emplace_back(lua_tostring(L, -1));
+			lua_pop(L, 1);
+		}
+	}
+	lua_pop(L, 1);
+
+	lua_getfield(L, -1, "action");
+	if (lua_isfunction(L, -1))
+		item.action_ref = luaL_ref(L, LUA_REGISTRYINDEX); // pops the function
+	else
+		lua_pop(L, 1);
+
+	lua_getfield(L, -1, "action_id");
+	if (lua_isstring(L, -1))
+		item.action_id = lua_tostring(L, -1);
+	lua_pop(L, 1);
+
+	items.emplace_back(std::move(item));
+}
+
+void CheatMenu::collectQuickPaletteItems()
+{
+	clearQuickPaletteItems();
+
+	ClientScripting *script = m_client->getScript();
+	if (!script || !script->m_cheats_loaded)
+		return;
+
+	// Cheats first (already sorted by name/category in init_cheats)
+	for (auto &cat : script->m_cheat_categories)
+		for (auto &cheat : cat->m_cheats) {
+			auto &item = m_quick_palette_items.emplace_back();
+			item.kind = QuickPaletteItem::Kind::CHEAT;
+			item.cheat = cheat;
+			item.label = cheat->m_name;
+		}
+
+	lua_State *L = script->getLuaState();
+
+	// Lua-provided entries
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "quick_menu_providers");
+	if (lua_istable(L, -1)) {
+		lua_pushnil(L);
+		while (lua_next(L, -2)) {
+			if (lua_istable(L, -1)) {
+				lua_getfield(L, -1, "func");
+				if (lua_isfunction(L, -1)) {
+					int base = lua_gettop(L) - 1; // index of the wrapper table
+					int result = lua_pcall(L, 0, 1, 0);
+					if (result == 0 && lua_istable(L, -1)) {
+						lua_pushnil(L);
+						while (lua_next(L, -2)) {
+							if (lua_istable(L, -1))
+								parseQuickPaletteEntry(L, m_quick_palette_items);
+							lua_pop(L, 1);
+						}
+					} else if (result != 0) {
+						const char *err = lua_tostring(L, -1);
+						warningstream << "quick menu provider error: "
+								<< (err ? err : "(unknown)") << std::endl;
+					}
+					lua_settop(L, base);
+				} else {
+					lua_pop(L, 1); // non-function "func"
+				}
+			}
+			lua_pop(L, 1); // pop provider wrapper value
+		}
+	}
+	lua_pop(L, 2); // pop providers, core
+}
+
+void CheatMenu::clearQuickPaletteItems()
+{
+	ClientScripting *script = m_client->getScript();
+	if (script) {
+		lua_State *L = script->getLuaState();
+		for (auto &item : m_quick_palette_items)
+			if (item.action_ref != 0)
+				luaL_unref(L, LUA_REGISTRYINDEX, item.action_ref);
+	}
+	m_quick_palette_items.clear();
+}
+
+void CheatMenu::closeQuickPalette()
+{
+	if (!m_quick_palette_active)
+		return;
+	m_quick_palette_active = false;
+	g_quick_palette_active = false;
+	clearQuickPaletteItems();
+	// Restore the mouse cursor unless the full cheat layer stays open
+	if (!g_cheat_layer_active) {
+		if (auto *device = RenderingEngine::get_raw_device()) {
+			if (auto *cur = device->getCursorControl())
+				cur->setVisible(false);
+		}
+	}
+}
+
+const std::string &CheatMenu::quickPaletteItemLabel(const QuickPaletteItem &item)
+{
+	return item.label;
+}
+
+void CheatMenu::getFilteredPaletteItems(std::vector<QuickPaletteItem *> &out)
+{
+	out.clear();
+	for (auto &item : m_quick_palette_items)
+		if (matchesSearch(quickPaletteItemLabel(item), m_quick_palette_text))
+			out.push_back(&item);
+	// When searching, most commonly used items float to the top
+	if (!m_quick_palette_text.empty()) {
+		std::stable_sort(out.begin(), out.end(),
+				[this](const QuickPaletteItem *a, const QuickPaletteItem *b) {
+					return m_quick_menu_usage[quickPaletteItemLabel(*a)] >
+							m_quick_menu_usage[quickPaletteItemLabel(*b)];
+				});
+	}
+}
+
+void CheatMenu::bumpQuickMenuUsage(const std::string &key)
+{
+	if (key.empty())
+		return;
+	m_quick_menu_usage[key]++;
+}
+
+void CheatMenu::runQuickPaletteAction(const QuickPaletteItem &item)
+{
+	ClientScripting *script = m_client->getScript();
+	if (!script)
+		return;
+	lua_State *L = script->getLuaState();
+
+	// toggle: flip each referenced cheat setting
+	if (!item.toggle_settings.empty()) {
+		for (const auto &setting : item.toggle_settings) {
+			bool enabled = false;
+			try {
+				enabled = g_settings->getBool(setting);
+			} catch (SettingNotFoundException &) {
+			}
+			g_settings->setBool(setting, !enabled);
+			addRecentCheat(setting);
+		}
+		return;
+	}
+
+	// action_id: look up the registered action live
+	if (!item.action_id.empty()) {
+		int base = lua_gettop(L);
+		lua_getglobal(L, "core");
+		lua_getfield(L, -1, "quick_menu_actions");
+		lua_getfield(L, -1, item.action_id.c_str());
+		if (lua_istable(L, -1)) {
+			lua_getfield(L, -1, "func");
+			if (lua_isfunction(L, -1)) {
+				if (lua_pcall(L, 0, 0, 0) != 0) {
+					const char *err = lua_tostring(L, -1);
+					warningstream << "quick menu action '" << item.action_id
+							<< "' error: " << (err ? err : "(unknown)") << std::endl;
+				}
+			}
+		}
+		lua_settop(L, base);
+		return;
+	}
+
+	// inline action function
+	if (item.action_ref != 0) {
+		int top = lua_gettop(L);
+		lua_rawgeti(L, LUA_REGISTRYINDEX, item.action_ref);
+		if (lua_pcall(L, 0, 0, 0) != 0) {
+			const char *err = lua_tostring(L, -1);
+			warningstream << "quick menu action error: "
+					<< (err ? err : "(unknown)") << std::endl;
+		}
+		lua_settop(L, top);
 	}
 }
 
@@ -1527,8 +1733,6 @@ void CheatMenu::drawQuickPalette(video::IVideoDriver *driver)
 		return;
 
 	auto ss = driver->getScreenSize();
-	driver->draw2DRectangle(video::SColor(180, 0, 0, 0),
-		core::rect<s32>(0, 0, ss.Width, ss.Height));
 
 	s32 pw = 450;
 	s32 ph = 400;
@@ -1542,40 +1746,41 @@ void CheatMenu::drawQuickPalette(video::IVideoDriver *driver)
 	driver->draw2DRectangle(m_item_bg,
 		core::rect<s32>(px + 8, search_y, px + pw - 8, search_y + 34));
 	std::string display = m_quick_palette_text.empty()
-		? "Search cheats..."
+		? "Search..."
 		: "\u2315 " + m_quick_palette_text;
 	drawText(display, px + 14, search_y + (34 - m_fontsize.Y) / 2,
 		m_selected_font_color);
 
 	// Collect matching entries
-	ClientScripting *script = m_client->getScript();
-	std::vector<ScriptApiCheatsCheat *> entries;
-	if (script && script->m_cheats_loaded) {
-		for (auto &cat : script->m_cheat_categories)
-			for (auto &cheat : cat->m_cheats)
-				if (matchesSearch(cheat->m_name, m_quick_palette_text))
-					entries.push_back(cheat);
-	}
+	std::vector<QuickPaletteItem *> entries;
+	getFilteredPaletteItems(entries);
+	if (!entries.empty())
+		updatePaletteScroll((int)entries.size());
 
-	// Results list
+	// Results list (scrolled window)
 	s32 list_y = search_y + 42;
-	int idx = 0;
+	int visible = quickPaletteVisibleCount();
 	auto clip_bottom = py + ph - 10;
-	for (auto *cheat : entries) {
+	int max_idx = std::min(m_quick_palette_scroll + visible, (int)entries.size());
+	for (int idx = m_quick_palette_scroll; idx < max_idx; idx++) {
 		if (list_y + m_entry_height > clip_bottom) break;
 
+		QuickPaletteItem *item = entries[idx];
 		bool selected = (idx == m_quick_palette_selected);
 		video::SColor cbg = selected ? m_active_bg_color : m_item_bg;
 		driver->draw2DRectangle(cbg,
 			core::rect<s32>(px + 1, list_y, px + pw - 1, list_y + m_entry_height));
 
-		std::string txt = cheat->is_enabled() ? "[x] " : "[ ] ";
-		txt += cheat->m_name;
+		std::string txt;
+		if (item->kind == QuickPaletteItem::Kind::CHEAT)
+			txt = item->cheat->is_enabled() ? "[x] " : "[ ] ";
+		else
+			txt = "\u25B8 ";
+		txt += item->label;
 		drawText(txt, px + 10, list_y + (m_entry_height - m_fontsize.Y) / 2,
 			selected ? m_selected_font_color : m_font_color);
 
 		list_y += m_entry_height + m_gap;
-		idx++;
 	}
 }
 
@@ -1599,11 +1804,12 @@ void CheatMenu::pollQuickPaletteInput()
 		if (!m_quick_palette_text.empty())
 			m_quick_palette_text.clear();
 		else
-			m_quick_palette_active = false;
+			closeQuickPalette();
 	} else if (c >= 32) {
 		m_quick_palette_text += (char)c;
 	}
 	m_quick_palette_selected = 0;
+	m_quick_palette_scroll = 0;
 }
 
 void CheatMenu::paletteUp()
@@ -1612,15 +1818,13 @@ void CheatMenu::paletteUp()
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded) return;
 
-	int count = 0;
-	for (auto &cat : script->m_cheat_categories)
-		for (auto &cheat : cat->m_cheats)
-			if (matchesSearch(cheat->m_name, m_quick_palette_text))
-				count++;
-
-	if (count <= 0) return;
+	std::vector<QuickPaletteItem *> entries;
+	getFilteredPaletteItems(entries);
+	if (entries.empty()) return;
 	m_quick_palette_selected--;
-	if (m_quick_palette_selected < 0) m_quick_palette_selected = count - 1;
+	if (m_quick_palette_selected < 0)
+		m_quick_palette_selected = (int)entries.size() - 1;
+	updatePaletteScroll((int)entries.size());
 }
 
 void CheatMenu::paletteDown()
@@ -1629,15 +1833,79 @@ void CheatMenu::paletteDown()
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded) return;
 
-	int count = 0;
-	for (auto &cat : script->m_cheat_categories)
-		for (auto &cheat : cat->m_cheats)
-			if (matchesSearch(cheat->m_name, m_quick_palette_text))
-				count++;
-
-	if (count <= 0) return;
+	std::vector<QuickPaletteItem *> entries;
+	getFilteredPaletteItems(entries);
+	if (entries.empty()) return;
 	m_quick_palette_selected++;
-	if (m_quick_palette_selected >= count) m_quick_palette_selected = 0;
+	if (m_quick_palette_selected >= (int)entries.size())
+		m_quick_palette_selected = 0;
+	updatePaletteScroll((int)entries.size());
+}
+
+void CheatMenu::paletteScroll(s32 wheel)
+{
+	if (!m_quick_palette_active || wheel == 0)
+		return;
+	ClientScripting *script = m_client->getScript();
+	if (!script || !script->m_cheats_loaded)
+		return;
+
+	std::vector<QuickPaletteItem *> entries;
+	getFilteredPaletteItems(entries);
+	if (entries.empty())
+		return;
+
+	// Wheel up scrolls toward the start; wheel down toward the end.
+	// Unlike the arrow keys, scrolling stops at the list boundaries.
+	s32 steps = wheel > 0 ? wheel : -wheel;
+	if (steps > 100)
+		steps = 100;
+	int new_selected = m_quick_palette_selected;
+	for (s32 i = 0; i < steps; i++) {
+		if (wheel > 0) {
+			if (new_selected <= 0) break;
+			new_selected--;
+		} else {
+			if (new_selected >= (int)entries.size() - 1) break;
+			new_selected++;
+		}
+	}
+	m_quick_palette_selected = new_selected;
+	updatePaletteScroll((int)entries.size());
+}
+
+// Number of rows that fit in the palette's results area (geometry is fixed,
+// so this is independent of the screen size).
+int CheatMenu::quickPaletteVisibleCount() const
+{
+	const s32 ph = 400;        // palette height (matches drawQuickPalette)
+	const s32 list_top = 52;   // search_y + 42 relative to py
+	const s32 clip = ph - 10;  // clip_bottom relative to py
+	const s32 step = m_entry_height + m_gap;
+	if (step <= 0)
+		return 1;
+	s32 avail = clip - list_top - m_entry_height;
+	int count = (int)(avail / step);
+	return count > 0 ? count : 1;
+}
+
+// Clamp the scroll offset so the selected entry stays within the visible window.
+void CheatMenu::updatePaletteScroll(int total)
+{
+	if (total <= 0) {
+		m_quick_palette_scroll = 0;
+		return;
+	}
+	int visible = quickPaletteVisibleCount();
+	if (m_quick_palette_selected < m_quick_palette_scroll)
+		m_quick_palette_scroll = m_quick_palette_selected;
+	else if (m_quick_palette_selected >= m_quick_palette_scroll + visible)
+		m_quick_palette_scroll = m_quick_palette_selected - visible + 1;
+
+	if (m_quick_palette_scroll < 0)
+		m_quick_palette_scroll = 0;
+	if (m_quick_palette_scroll > total - 1)
+		m_quick_palette_scroll = total - 1;
 }
 
 void CheatMenu::paletteConfirm()
@@ -1646,18 +1914,88 @@ void CheatMenu::paletteConfirm()
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded) return;
 
-	int idx = 0;
-	for (auto &cat : script->m_cheat_categories)
-		for (auto &cheat : cat->m_cheats) {
-			if (!matchesSearch(cheat->m_name, m_quick_palette_text))
-				continue;
-			if (idx == m_quick_palette_selected) {
-				script->toggle_cheat(cheat);
-				addRecentCheat(cheat->m_setting);
-				return;
+	std::vector<QuickPaletteItem *> entries;
+	getFilteredPaletteItems(entries);
+	if (m_quick_palette_selected < 0 ||
+			m_quick_palette_selected >= (int)entries.size())
+		return;
+
+	QuickPaletteItem *item = entries[m_quick_palette_selected];
+	if (item->kind == QuickPaletteItem::Kind::CHEAT) {
+		script->toggle_cheat(item->cheat);
+		addRecentCheat(item->cheat->m_setting);
+		bumpQuickMenuUsage(item->cheat->m_setting);
+	} else {
+		runQuickPaletteAction(*item);
+		bumpQuickMenuUsage(item->label);
+	}
+	// The palette disappears after activating an item so the result (e.g. an
+	// opened formspec, screenshot or cheat toggle) is immediately visible.
+	closeQuickPalette();
+}
+
+int CheatMenu::getQuickMenuEntries(lua_State *L)
+{
+	collectQuickPaletteItems();
+
+	lua_newtable(L);
+	int idx = 1;
+	for (auto &item : m_quick_palette_items) {
+		lua_newtable(L);
+		lua_pushstring(L, item.label.c_str());
+		lua_setfield(L, -2, "label");
+		if (item.kind == QuickPaletteItem::Kind::CHEAT) {
+			lua_pushstring(L, "cheat");
+			lua_setfield(L, -2, "kind");
+			lua_pushboolean(L, item.cheat->is_enabled());
+			lua_setfield(L, -2, "enabled");
+		} else if (!item.toggle_settings.empty()) {
+			lua_pushstring(L, "toggle");
+			lua_setfield(L, -2, "kind");
+			lua_newtable(L);
+			int ti = 1;
+			for (auto &s : item.toggle_settings) {
+				lua_pushstring(L, s.c_str());
+				lua_rawseti(L, -2, ti++);
 			}
-			idx++;
+			lua_setfield(L, -2, "toggle");
+		} else {
+			lua_pushstring(L, "action");
+			lua_setfield(L, -2, "kind");
+			if (!item.action_id.empty()) {
+				lua_pushstring(L, item.action_id.c_str());
+				lua_setfield(L, -2, "action_id");
+			}
 		}
+		lua_rawseti(L, -2, idx++);
+	}
+	return 1;
+}
+
+int CheatMenu::activateQuickMenuEntry(lua_State *L)
+{
+	int idx = luaL_checkinteger(L, 1) - 1;
+	collectQuickPaletteItems();
+
+	if (idx < 0 || idx >= (int)m_quick_palette_items.size()) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+
+	QuickPaletteItem &item = m_quick_palette_items[idx];
+	if (item.kind == QuickPaletteItem::Kind::CHEAT) {
+		ClientScripting *script = m_client->getScript();
+		if (script)
+			script->toggle_cheat(item.cheat);
+		addRecentCheat(item.cheat->m_setting);
+		bumpQuickMenuUsage(item.cheat->m_setting);
+	} else {
+		runQuickPaletteAction(item);
+		bumpQuickMenuUsage(item.label);
+	}
+
+	lua_pushboolean(L, true);
+	return 1;
 }
 
 void CheatMenu::createSupermenuPanel()

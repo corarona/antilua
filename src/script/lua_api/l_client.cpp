@@ -140,6 +140,8 @@ int ModApiClient::l_reload_mod(lua_State *L)
 
 	// Re-scan mod files from disk into VFS
 	client->getModVFS()->scanModIntoMemory(modname, mod->path);
+	// Drop stale quick menu registrations owned by this mod before re-executing it
+	script->purge_quick_menu(modname);
 	// Re-execute init.lua in the existing Lua state
 	script->loadModFromMemory(modname);
 
@@ -1425,6 +1427,34 @@ int ModApiClient::l_cheat_menu_set_visible(lua_State *L)
 	return 0;
 }
 
+// get_quick_menu_entries()
+int ModApiClient::l_get_quick_menu_entries(lua_State *L)
+{
+	if (!g_cheat_menu) {
+		lua_newtable(L);
+		return 1;
+	}
+	return g_cheat_menu->getQuickMenuEntries(L);
+}
+
+// activate_quick_menu_entry(index)
+int ModApiClient::l_activate_quick_menu_entry(lua_State *L)
+{
+	if (!g_cheat_menu) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+	return g_cheat_menu->activateQuickMenuEntry(L);
+}
+
+// open_inventory()
+int ModApiClient::l_open_inventory(lua_State *L)
+{
+	if (g_game)
+		g_game->m_game_formspec.showPlayerInventory(nullptr);
+	return 0;
+}
+
 // get_data_path()
 int ModApiClient::l_get_data_path(lua_State *L)
 {
@@ -1807,6 +1837,9 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(detach);
 	API_FCT(reattach);
 	API_FCT(cheat_menu_set_visible);
+	API_FCT(get_quick_menu_entries);
+	API_FCT(activate_quick_menu_entry);
+	API_FCT(open_inventory);
 	API_FCT(get_data_path);
 	API_FCT(get_serverdata_path);
 	// Extended API

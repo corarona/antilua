@@ -594,6 +594,11 @@ end
 
 local function handle_fields(formname, fields)
 	if formname ~= state.formname then
+		-- A different form closed (e.g. the raw server inventory shown during
+		-- the bootstrap open in invtabs.open) — clear the form_open flag.
+		if fields.quit then
+			state.form_open = false
+		end
 		return
 	end
 	local int = state.integration
@@ -737,6 +742,35 @@ function invtabs.set_active(id)
 	return true
 end
 
+-- Open the inventory and switch to the given tab (or "main" for the server's
+-- own inventory formspec). Returns false for unknown tab ids.
+function invtabs.open(id)
+	if id ~= "main" and not tabs_by_id[id] then
+		return false
+	end
+	state.active = id
+	if state.form_open then
+		reshow()
+		return true
+	end
+	-- If the server's inventory formspec has been captured, show the tabbed
+	-- form directly.
+	if state.raw ~= "" and state.integration then
+		state.form_open = true
+		core.show_formspec(state.formname, build_form())
+		return true
+	end
+	-- First inventory open of the session: trigger the normal inventory open
+	-- path. The on_inventory_open hook re-shows the tabbed form as soon as the
+	-- server formspec arrives; mark the form as open so the receiving hook
+	-- re-renders it (the raw form is replaced by the tabbed one).
+	state.form_open = true
+	if core.open_inventory then
+		core.open_inventory()
+	end
+	return true
+end
+
 function invtabs.get_game()
 	return get_game()
 end
@@ -796,5 +830,27 @@ function invtabs._debug()
 end
 
 core.inv_tabs = invtabs
+
+-- Expose every inventory tab through the Quick Access Palette (~)
+if core.register_quick_menu_provider then
+	core.register_quick_menu_provider(function()
+		local out = {}
+		local function add(title, id)
+			out[#out + 1] = {
+				label = title,
+				action = function()
+					invtabs.open(id)
+				end,
+			}
+		end
+		add("Player Inventory", "main")
+		for _, t in ipairs(invtabs.get_tabs()) do
+			if t.active then
+				add(t.title, t.id)
+			end
+		end
+		return out
+	end)
+end
 
 return invtabs

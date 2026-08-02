@@ -55,6 +55,7 @@ public:
 	void init_cheats();
 	void toggle_cheat(ScriptApiCheatsCheat *cheat);
 	void show_cheat_settings(const std::string &setting);
+	void purge_quick_menu(const std::string &modname);
 	bool m_cheats_loaded = false;
 	std::vector<ScriptApiCheatsCategory *> m_cheat_categories;
 };

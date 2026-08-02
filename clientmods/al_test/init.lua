@@ -86,6 +86,7 @@ end
 -- Load test modules
 dofile(modpath .. "/test_api.lua")
 dofile(modpath .. "/test_cheats.lua")
+dofile(modpath .. "/test_quick_menu.lua")
 dofile(modpath .. "/test_clientobject.lua")
 dofile(modpath .. "/test_inventory.lua")
 dofile(modpath .. "/test_invtabs.lua")
@@ -204,6 +205,25 @@ core.register_on_mods_loaded(function()
 			end
 		end
 		core.after(1, check_and_run)
+	end
+
+	-- Quick menu tests need the cheat menu instance, which is wired into the
+	-- global g_cheat_menu on the first rendered frame (after mods load).
+	do
+		local max_polls = 60 -- 60 * 0.5s = 30s timeout
+		local function run_quick_menu_tests()
+			if core.get_quick_menu_entries and #core.get_quick_menu_entries() > 0 then
+				test_quick_menu(al_test)
+				al_test.report()
+			elseif max_polls > 0 then
+				max_polls = max_polls - 1
+				core.after(0.5, run_quick_menu_tests)
+			else
+				core.log("warning", "[AL_TEST] Quick menu tests timed out waiting for cheat menu")
+				al_test.report()
+			end
+		end
+		core.after(1, run_quick_menu_tests)
 	end
 
 	local elapsed = (core.get_us_time() - t0) / 1000000

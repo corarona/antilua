@@ -1668,6 +1668,14 @@ void Game::processKeyInput()
 	// Poll quick palette input
 	if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
 		m_cheat_menu->pollQuickPaletteInput();
+
+	// Quick palette mouse wheel scrolling (consumed here so the hotbar doesn't
+	// also cycle while the palette is open — processItemSelection runs after)
+	if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive()) {
+		s32 wheel = input->getMouseWheel();
+		if (wheel != 0)
+			m_cheat_menu->paletteScroll(wheel);
+	}
 }
 
 void Game::processItemSelection(u16 *new_playeritem)

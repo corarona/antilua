@@ -189,6 +189,13 @@ private:
 	// cheat_menu_set_visible(visible)
 	static int l_cheat_menu_set_visible(lua_State *L);
 
+	// get_quick_menu_entries() / activate_quick_menu_entry(index)
+	static int l_get_quick_menu_entries(lua_State *L);
+	static int l_activate_quick_menu_entry(lua_State *L);
+
+	// open_inventory()
+	static int l_open_inventory(lua_State *L);
+
 	// get_data_path()
 	static int l_get_data_path(lua_State *L);
 

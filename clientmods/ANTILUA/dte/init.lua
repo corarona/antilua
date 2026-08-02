@@ -419,6 +419,10 @@ local function cleanup_mod(modname)
 			end
 		end
 	end
+	-- Remove quick menu providers/actions from that mod
+	if core.quick_menu_purge_mod then
+		cleaned = cleaned + core.quick_menu_purge_mod(modname)
+	end
 	return cleaned
 end
 

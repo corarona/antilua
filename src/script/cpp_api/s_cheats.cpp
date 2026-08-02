@@ -178,3 +178,19 @@ void ScriptApiCheats::show_cheat_settings(const std::string &setting)
 	}
 	lua_pop(L, 2);
 }
+
+void ScriptApiCheats::purge_quick_menu(const std::string &modname)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "quick_menu_purge_mod");
+	if (lua_isfunction(L, -1)) {
+		lua_pushstring(L, modname.c_str());
+		if (lua_pcall(L, 1, 0, 0) != 0)
+			lua_pop(L, 1); // pop the error message
+		lua_pop(L, 1); // pop core
+	} else {
+		lua_pop(L, 2); // pop the non-function value and core
+	}
+}

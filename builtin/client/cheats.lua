@@ -462,3 +462,86 @@ core.register_on_formspec_input(function(formname, fields)
 		core.settings:write()
 	end
 end)
+
+-- Quick Access Palette (opened with ~)
+-- Providers generate entries for the palette; actions are run when an entry
+-- referencing them is activated. Registration is tracked per mod so the
+-- registrations are purged and re-created cleanly on mod reload / DTE edits.
+
+core.quick_menu_providers = {}
+core.quick_menu_actions = {}
+
+local quick_menu_origin = function()
+	return core.get_current_modname() or "??"
+end
+
+function core.register_quick_menu_provider(func)
+	if type(func) ~= "function" then
+		error("register_quick_menu_provider: expected function, got " .. type(func), 2)
+	end
+	core.quick_menu_providers[#core.quick_menu_providers + 1] = {
+		func = func,
+		mod = quick_menu_origin(),
+	}
+end
+
+function core.register_quick_menu_action(id, func)
+	if type(id) ~= "string" then
+		error("register_quick_menu_action: id must be a string", 2)
+	end
+	if type(func) ~= "function" then
+		error("register_quick_menu_action: expected function, got " .. type(func), 2)
+	end
+	core.quick_menu_actions[id] = {
+		func = func,
+		mod = quick_menu_origin(),
+	}
+end
+
+function core.unregister_quick_menu_action(id)
+	core.quick_menu_actions[id] = nil
+end
+
+function core.quick_menu_purge_mod(modname)
+	local cleaned = 0
+	for i = #core.quick_menu_providers, 1, -1 do
+		if core.quick_menu_providers[i].mod == modname then
+			table.remove(core.quick_menu_providers, i)
+			cleaned = cleaned + 1
+		end
+	end
+	for id, def in pairs(core.quick_menu_actions) do
+		if def.mod == modname then
+			core.quick_menu_actions[id] = nil
+			cleaned = cleaned + 1
+		end
+	end
+	return cleaned
+end
+
+-- Built-in quick menu entries
+core.register_quick_menu_action("quickmenu_toggle_esp", function()
+	local esp = {
+		"enable_entity_esp", "enable_entity_wallhack", "enable_entity_tracers",
+		"enable_player_esp", "enable_player_wallhack", "enable_player_tracers",
+	}
+	for _, setting in ipairs(esp) do
+		core.settings:set_bool(setting, not core.settings:get_bool(setting))
+	end
+end)
+
+core.register_quick_menu_provider(function()
+	return {
+		{ label = "Screenshot", action = function() core.make_screenshot() end },
+		{ label = "Reset Camera Roll", action = function()
+			if core.localplayer then
+				core.localplayer:set_roll(0)
+			end
+		end },
+		{ label = "Toggle Xray", toggle = "xray" },
+		{ label = "Toggle Fullbright", toggle = "fullbright" },
+		{ label = "Toggle Freecam", toggle = "freecam" },
+		{ label = "Toggle NoFall", toggle = "prevent_natural_damage" },
+		{ label = "Toggle All ESP", action_id = "quickmenu_toggle_esp" },
+	}
+end)
