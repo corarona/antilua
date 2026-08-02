@@ -74,10 +74,10 @@ void on_detached_inventory_update(Client *client,
 }
 
 std::string on_receiving_inventory_form(Client *client,
-		const std::string &formspec)
+		const std::string &formname, const std::string &formspec)
 {
 	if (client->modsLoaded())
-		return client->getScript()->on_receiving_inventory_form(formspec);
+		return client->getScript()->on_receiving_inventory_form(formname, formspec);
 	return "";
 }
 

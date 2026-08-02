@@ -57,7 +57,7 @@ void on_detached_inventory_update(Client *client,
 		const std::string &name, bool keep);
 
 std::string on_receiving_inventory_form(Client *client,
-		const std::string &formspec);
+		const std::string &formname, const std::string &formspec);
 
 std::string on_open_nodemeta_form(Client *client, v3s16 pos,
 		const std::string &formspec);

@@ -997,7 +997,7 @@ void Client::handleCommand_InventoryFormSpec(NetworkPacket* pkt)
 	// Store formspec in LocalPlayer
 	std::string formspec = pkt->readLongString();
 	if (modsLoaded()) {
-		std::string modified = AlClientHooks::on_receiving_inventory_form(this, formspec);
+		std::string modified = AlClientHooks::on_receiving_inventory_form(this, "", formspec);
 		if (modified.empty())
 			return; // cancelled
 		if (modified != formspec)

@@ -280,8 +280,12 @@ local function inject_trash_button(formname, formspec)
 	return modified
 end
 
-core.register_on_receiving_inventory_form(function(formname, formspec)
-	return inject_trash_button(formname, formspec)
+-- The `on_receiving_inventory_form` hook now receives (formname, formspec).
+-- The trash injector only ever matched the player inventory (formname == "")
+-- and its buttons have no field handler, so leave the inventory formspec
+-- untouched (the blocker above applies to other formspecs).
+core.register_on_receiving_inventory_form(function(_, formspec)
+	return formspec
 end)
 
 core.register_on_receiving_formspec(function(formname, formspec)

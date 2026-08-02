@@ -41,7 +41,7 @@ public:
 			const StringMap &fields);
 	void on_detached_inventory_update(const std::string &name,
 			bool keep);
-	std::string on_receiving_inventory_form(
+	std::string on_receiving_inventory_form(const std::string &formname,
 			const std::string &formspec);
 	std::string on_open_nodemeta_form(v3s16 pos,
 			const std::string &formspec);
