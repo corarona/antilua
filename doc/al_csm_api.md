@@ -532,6 +532,25 @@ core.inv_tabs.open(id)  -- open the inventory at the given tab (false for unknow
 core.open_inventory()   -- trigger the normal inventory open path (C++ binding)
 ```
 
+#### Clientmod one-shot actions
+
+The `quickmenu` mod registers a provider exposing one-shot actions from other
+ANTILUA mods (each entry only appears if its backing mod is loaded):
+
+- **Waypoints/teleport**: Waypoint Here, Show Nearest Waypoint, Hide Waypoints,
+  TP to Last Waypoint (client/server), Warp to Nearest Waypoint,
+  Rhythm TP Forward, Cancel Rhythm TP, Find Nearest Rail Portal
+- **Utilities**: Constraint Pos1/Pos2 Here, Reset Constraints,
+  Make Block from Wielded, Eat Food Now, Clear All Particles
+- **Schembuilder**: Open Schematic Browser, Set Schem Pos1/Pos2 Here,
+  Clear Schem Build, Undo Schem Placement, Resume Schem Build
+- **Bots**: Stop All Bots
+- **Dev/UI**: Open Lua IDE, Open Autocraft GUI
+
+These wrap the mods' existing chat commands / public functions (via
+`core.registered_chatcommands`), so no per-mod changes are needed to add a new
+palette entry.
+
 #### Reload behavior
 
 Registrations are tracked per mod. `core.reload_mod()` and DTE mod edits purge

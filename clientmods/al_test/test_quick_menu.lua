@@ -155,6 +155,37 @@ function test_quick_menu(T)
 			"open returns false for unknown id")
 	end)
 
+	T.run("quick menu exposes one-shot actions from clientmods", function()
+		local entries = core.get_quick_menu_entries()
+		local labels = {}
+		for _, e in ipairs(entries) do
+			labels[e.label] = true
+		end
+		local function present(mod_name, label)
+			if rawget(_G, mod_name) then
+				T.assert(labels[label] == true,
+					"quick entry present for " .. mod_name .. ": " .. label)
+			end
+		end
+		local function present_cmd(cmd_name, label)
+			local t = core.registered_chatcommands
+			if t and t[cmd_name] then
+				T.assert(labels[label] == true,
+					"quick entry present for /" .. cmd_name .. ": " .. label)
+			end
+		end
+		present("poi", "Waypoint Here")
+		present("poi", "Show Nearest Waypoint")
+		present("autofly", "Warp to Nearest Waypoint")
+		present("rhythmtp", "Rhythm TP Forward")
+		present("autoeat", "Eat Food Now")
+		present("ws", "Make Block from Wielded")
+		present("sbots", "Stop All Bots")
+		present("dte", "Open Lua IDE")
+		present_cmd("schembrowse", "Open Schematic Browser")
+		present_cmd("autocraft", "Open Autocraft GUI")
+	end)
+
 	T.run("unregister_quick_menu_action removes action", function()
 		core.register_quick_menu_action("qm_temp_action", function() end)
 		T.assert(core.quick_menu_actions["qm_temp_action"] ~= nil, "action registered")
