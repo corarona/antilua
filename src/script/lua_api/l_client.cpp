@@ -1455,6 +1455,23 @@ int ModApiClient::l_open_inventory(lua_State *L)
 	return 0;
 }
 
+// quick_menu_open([search])
+int ModApiClient::l_quick_menu_open(lua_State *L)
+{
+	std::string search = readParam<std::string>(L, 1, "");
+	if (g_cheat_menu)
+		g_cheat_menu->openQuickPalette(search);
+	return 0;
+}
+
+// quick_menu_close()
+int ModApiClient::l_quick_menu_close(lua_State *L)
+{
+	if (g_cheat_menu && g_cheat_menu->isQuickPaletteActive())
+		g_cheat_menu->toggleQuickPalette();
+	return 0;
+}
+
 // get_data_path()
 int ModApiClient::l_get_data_path(lua_State *L)
 {
@@ -1840,6 +1857,8 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(get_quick_menu_entries);
 	API_FCT(activate_quick_menu_entry);
 	API_FCT(open_inventory);
+	API_FCT(quick_menu_open);
+	API_FCT(quick_menu_close);
 	API_FCT(get_data_path);
 	API_FCT(get_serverdata_path);
 	// Extended API

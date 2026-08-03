@@ -514,10 +514,28 @@ exactly one activation behavior:
 | `action` | function | Inline action called when the entry is activated |
 | `action_id` | string | Id of a function registered with `core.register_quick_menu_action` |
 | `toggle` | string or table | Cheat setting name(s) to flip when activated |
+| `keywords` | string or table | Extra search terms matched by the palette search box |
+| `description` | string | Short text shown dimmed on the right of the row |
+| `is_enabled` | function | Optional; return a boolean shown as the `[x]/[ ]` state |
 
 Cheats are always listed first (alphabetical), followed by provider entries.
 When the palette search box has text, the most frequently used entries (tracked
-per session, keyed by label/setting) are sorted to the top.
+across sessions, keyed by label/setting) are sorted to the top. Search matches
+the entry label **or** any of its `keywords`.
+
+Activating an entry closes the palette. Lua-provided actions are remembered so
+a **"↻ Repeat: …"** row at the top of the palette re-runs the last one.
+
+Programmatic control:
+
+```lua
+core.quick_menu_open([search])  -- open the palette, optionally pre-filled
+core.quick_menu_close()         -- close the palette if it is open
+```
+
+Providers are called with the current search text as their only argument when
+the palette opens and on every search change, so they can tailor their entries
+to the query.
 
 #### Inventory tabs
 
@@ -541,11 +559,20 @@ ANTILUA mods (each entry only appears if its backing mod is loaded):
   TP to Last Waypoint (client/server), Warp to Nearest Waypoint,
   Rhythm TP Forward, Cancel Rhythm TP, Find Nearest Rail Portal
 - **Utilities**: Constraint Pos1/Pos2 Here, Reset Constraints,
-  Make Block from Wielded, Eat Food Now, Clear All Particles
+  Make Block from Wielded, Eat Food Now, Clear All Particles,
+  Select Best Tool for Pointed Node, Clear HUD Markers,
+  Loot Nearby Containers (List)
 - **Schembuilder**: Open Schematic Browser, Set Schem Pos1/Pos2 Here,
   Clear Schem Build, Undo Schem Placement, Resume Schem Build
 - **Bots**: Stop All Bots
 - **Dev/UI**: Open Lua IDE, Open Autocraft GUI
+- **Info/stats**: Inspect Pointed Thing, Show Session Stats, Show Block Stats,
+  Rearrange Cheat Panels, Nodelist show/hide HUD + add wielded/pointed node,
+  Analyze Mapblock Age, Clear Age Markers, Logout BlockExchange,
+  Save/Load Cheat Profile (Server)
+- **Feature toggles** (settings otherwise only reachable via formspecs):
+  Fly (Free Move), Show All Waypoints, Log Chat to File,
+  Schem Build: Hollow, Schem Build: Wireframe Box, Auto-Take Entity Inv
 
 These wrap the mods' existing chat commands / public functions (via
 `core.registered_chatcommands`), so no per-mod changes are needed to add a new

@@ -141,6 +141,7 @@ static void set_al_default_settings()
 	settings->setDefault("cheat_menu_rearrange", "false");
 	settings->setDefault("cheat_menu_toggle_mode", "false");
 	settings->setDefault("cheat_menu_favorites", "");
+	settings->setDefault("quick_menu_usage", "");
 	settings->setDefault("node_esp_nodes", "");
 	settings->setDefault("jetpack", "false");
 	settings->setDefault("autohit", "false");

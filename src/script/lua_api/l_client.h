@@ -196,6 +196,10 @@ private:
 	// open_inventory()
 	static int l_open_inventory(lua_State *L);
 
+	// quick_menu_open([search]) / quick_menu_close()
+	static int l_quick_menu_open(lua_State *L);
+	static int l_quick_menu_close(lua_State *L);
+
 	// get_data_path()
 	static int l_get_data_path(lua_State *L);
 

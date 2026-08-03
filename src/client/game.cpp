@@ -3978,6 +3978,15 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats, f32 dtime)
 		}
 	}
 
+	// Forward left-clicks to the quick palette (row activation)
+	if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive()) {
+		static bool palette_click_was_down = false;
+		bool click_down = input->isKeyDown(KeyType::DIG);
+		if (click_down && !palette_click_was_down)
+			m_cheat_menu->paletteClick(input->getMousePos());
+		palette_click_was_down = click_down;
+	}
+
 	g_cheat_menu = this->m_cheat_menu;
 	g_cheat_layer_active = this->m_cheat_layer_active;
 	if (g_cheat_layer_force_hidden)

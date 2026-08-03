@@ -48,8 +48,15 @@ struct QuickPaletteItem
 	Kind kind = Kind::LUA_ENTRY;
 	ScriptApiCheatsCheat *cheat = nullptr;
 	std::string label;
+	std::string description;
+	std::string category;
+	std::vector<std::string> keywords;
 	std::string action_id;
 	int action_ref = 0;
+	int is_enabled_ref = 0;
+	bool has_enabled_state = false;
+	bool enabled_state = false;
+	bool repeat_last = false;
 	std::vector<std::string> toggle_settings;
 };
 
@@ -84,13 +91,15 @@ public:
 
 	// Quick Access Palette
 	void toggleQuickPalette();
-	void drawQuickPalette(video::IVideoDriver *driver);
+	void openQuickPalette(const std::string &search);
+	void drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos);
 	void pollQuickPaletteInput();
 	bool isQuickPaletteActive() const { return m_quick_palette_active; }
 	void paletteUp();
 	void paletteDown();
 	void paletteConfirm();
 	void paletteScroll(s32 wheel);
+	void paletteClick(v2s32 pos);
 
 	// Lua-accessible helpers for introspection / tests
 	int getQuickMenuEntries(lua_State *L);
@@ -128,6 +137,10 @@ private:
 	std::vector<QuickPaletteItem> m_quick_palette_items;
 	std::map<std::string, int> m_quick_menu_usage;
 
+	// Last activated Lua entry (for the "repeat last" row)
+	bool m_quick_palette_last_valid = false;
+	QuickPaletteItem m_quick_palette_last;
+
 	void collectQuickPaletteItems();
 	void clearQuickPaletteItems();
 	void closeQuickPalette();
@@ -137,6 +150,12 @@ private:
 	void bumpQuickMenuUsage(const std::string &key);
 	void updatePaletteScroll(int total);
 	int quickPaletteVisibleCount() const;
+	int paletteRowAt(v2s32 pos) const;
+	void storeLastAction(const QuickPaletteItem &item);
+	void clearLastAction();
+	void runLastAction();
+	void saveQuickMenuUsage();
+	void loadQuickMenuUsage();
 
 	// Supermenu
 	int m_super_level = 0;

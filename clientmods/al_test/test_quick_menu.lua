@@ -1,6 +1,7 @@
 -- Tests for the Quick Access Palette (~) Lua API
 
 local qm_hits = 0
+local qm_repeat_hits = 0
 
 local function quick_menu_index_of(label)
 	local entries = core.get_quick_menu_entries()
@@ -157,21 +158,36 @@ function test_quick_menu(T)
 
 	T.run("quick menu exposes one-shot actions from clientmods", function()
 		local entries = core.get_quick_menu_entries()
-		local labels = {}
+		local by_label = {}
 		for _, e in ipairs(entries) do
-			labels[e.label] = true
+			by_label[e.label] = e
+		end
+		local function mod_loaded(mod_name)
+			if rawget(_G, mod_name) then
+				return true
+			end
+			return core.get_modpath_real and core.get_modpath_real(mod_name) ~= nil
 		end
 		local function present(mod_name, label)
-			if rawget(_G, mod_name) then
-				T.assert(labels[label] == true,
+			if mod_loaded(mod_name) then
+				T.assert(by_label[label] ~= nil,
 					"quick entry present for " .. mod_name .. ": " .. label)
 			end
 		end
 		local function present_cmd(cmd_name, label)
 			local t = core.registered_chatcommands
 			if t and t[cmd_name] then
-				T.assert(labels[label] == true,
+				T.assert(by_label[label] ~= nil,
 					"quick entry present for /" .. cmd_name .. ": " .. label)
+			end
+		end
+		local function present_toggle(mod_name, setting, label)
+			if mod_loaded(mod_name) then
+				local e = by_label[label]
+				T.assert(e ~= nil, "quick toggle entry present: " .. label)
+				T.assert_eq(e.kind, "toggle", "toggle entry kind: " .. label)
+				T.assert_eq(e.toggle and e.toggle[1], setting,
+					"toggle entry setting: " .. label)
 			end
 		end
 		present("poi", "Waypoint Here")
@@ -184,6 +200,20 @@ function test_quick_menu(T)
 		present("dte", "Open Lua IDE")
 		present_cmd("schembrowse", "Open Schematic Browser")
 		present_cmd("autocraft", "Open Autocraft GUI")
+		present_cmd("entityinfo", "Inspect Pointed Thing")
+		present_cmd("stats", "Show Session Stats")
+		present_cmd("blockstats", "Show Block Stats")
+		present_cmd("cheat_rearrange", "Rearrange Cheat Panels")
+		present("ws", "Select Best Tool for Pointed Node")
+		present("ws", "Clear HUD Markers")
+		do
+			local e = by_label["Fly (Free Move)"]
+			T.assert(e ~= nil, "quick toggle entry present: Fly (Free Move)")
+			T.assert_eq(e.kind, "toggle", "toggle entry kind: Fly (Free Move)")
+		end
+		present_toggle("poi", "poi_show_all_waypoints", "Show All Waypoints")
+		present_toggle("chat_logger", "chat_logging", "Log Chat to File")
+		present_toggle("devtools", "einv_taker", "Auto-Take Entity Inv")
 	end)
 
 	T.run("unregister_quick_menu_action removes action", function()
@@ -212,5 +242,66 @@ function test_quick_menu(T)
 		end
 		T.assert(labels["[QM] inline"] == nil, "purged provider entries gone")
 		T.assert(core.quick_menu_actions["qm_test_action"] == nil, "purged action gone")
+	end)
+
+	T.run("toggle entries carry keywords", function()
+		local found
+		for _, e in ipairs(core.get_quick_menu_entries()) do
+			if e.label == "Fly (Free Move)" then found = e end
+		end
+		T.assert(found ~= nil, "Fly entry present")
+		T.assert(type(found.keywords) == "table", "Fly entry has keywords table")
+		local has_fly = false
+		for _, kw in ipairs(found.keywords) do
+			if kw == "fly" then has_fly = true end
+		end
+		T.assert(has_fly, "Fly entry keyword 'fly'")
+	end)
+
+	T.run("toggle entries expose enabled state", function()
+		local orig = core.settings:get_bool("free_move")
+		core.settings:set_bool("free_move", true)
+		local entries = core.get_quick_menu_entries()
+		core.settings:set_bool("free_move", orig)
+		local found
+		for _, e in ipairs(entries) do
+			if e.label == "Fly (Free Move)" then found = e end
+		end
+		T.assert(found ~= nil, "Fly entry present")
+		T.assert_eq(found.enabled, true, "Fly toggle enabled reflects setting")
+	end)
+
+	T.run("quick_menu_open passes search text to providers", function()
+		core.register_quick_menu_provider(function(search)
+			return { { label = "[QM] ctx:" .. (search or "") } }
+		end)
+		core.quick_menu_open("banana")
+		local entries = core.get_quick_menu_entries()
+		core.quick_menu_close()
+		local found = false
+		for _, e in ipairs(entries) do
+			if e.label == "[QM] ctx:banana" then found = true end
+		end
+		T.assert(found, "provider received search text via quick_menu_open")
+	end)
+
+	T.run("repeat-last row appears after activation", function()
+		core.register_quick_menu_provider(function()
+			return { { label = "[QM] repeat-src",
+				action = function() qm_repeat_hits = qm_repeat_hits + 1 end } }
+		end)
+		local idx
+		for i, e in ipairs(core.get_quick_menu_entries()) do
+			if e.label == "[QM] repeat-src" then idx = i break end
+		end
+		T.assert(idx ~= nil, "repeat-src entry present")
+		T.assert(core.activate_quick_menu_entry(idx) == true, "activate repeat-src")
+		T.assert_eq(qm_repeat_hits, 1, "repeat-src action ran once")
+
+		local repeat_found = false
+		for _, e in ipairs(core.get_quick_menu_entries()) do
+			if e.kind == "repeat" then repeat_found = true end
+		end
+		T.assert(repeat_found, "repeat-last row appears after activation")
 	end)
 end

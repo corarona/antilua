@@ -268,7 +268,7 @@ void DrawHUD::run(PipelineContext &context)
 		g_cheat_menu->drawPinned(driver, mouse_pos);
 
 		if (g_cheat_menu->isQuickPaletteActive())
-			g_cheat_menu->drawQuickPalette(driver);
+			g_cheat_menu->drawQuickPalette(driver, mouse_pos);
 	}
 }
 

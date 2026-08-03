@@ -43,7 +43,14 @@ end
 if core.register_quick_menu_provider then
 	core.register_quick_menu_provider(function()
 		local function mod(name)
-			return rawget(_G, name)
+			local g = rawget(_G, name)
+			if g then
+				return g
+			end
+			if core.get_modpath_real and core.get_modpath_real(name) ~= nil then
+				return true
+			end
+			return nil
 		end
 		local function cmd(name)
 			local t = core.registered_chatcommands
@@ -54,8 +61,13 @@ if core.register_quick_menu_provider then
 		end
 
 		local entries = {}
-		local function add(label, action)
-			entries[#entries + 1] = { label = label, action = action }
+		local function add(label, action, fields)
+			local e = { label = label, action = action }
+			if fields then
+				if fields.keywords then e.keywords = fields.keywords end
+				if fields.description then e.description = fields.description end
+			end
+			entries[#entries + 1] = e
 		end
 
 		-- Waypoints (poi) + autopilot warp (basic_moves)
@@ -63,7 +75,8 @@ if core.register_quick_menu_provider then
 		if poi then
 			local add_here = cmd("add_waypoint_here")
 			if add_here then
-				add("Waypoint Here", function() add_here.func("") end)
+				add("Waypoint Here", function() add_here.func("") end,
+				{ keywords = { "wp", "mark", "add" } })
 			end
 			add("Show Nearest Waypoint", function()
 				poi.display_waypoint(poi.get_nearest_name())
@@ -130,19 +143,75 @@ if core.register_quick_menu_provider then
 			add("Clear All Particles", function() core.clear_all_particles() end)
 		end
 
-		-- Schembuilder operations
-		local function schem_cmd(name, label)
+		-- Schembuilder operations + generic chat-command actions
+		local function add_cmd(name, label, param)
 			local c = cmd(name)
 			if c then
-				add(label, function() c.func("") end)
+				add(label, function() c.func(param or "") end)
 			end
 		end
-		schem_cmd("schembrowse", "Open Schematic Browser")
-		schem_cmd("spos1", "Set Schem Pos1 Here")
-		schem_cmd("spos2", "Set Schem Pos2 Here")
-		schem_cmd("schemclear", "Clear Schem Build")
-		schem_cmd("schemundo", "Undo Schem Placement")
-		schem_cmd("schemresume", "Resume Schem Build")
+		add_cmd("schembrowse", "Open Schematic Browser")
+		add_cmd("spos1", "Set Schem Pos1 Here")
+		add_cmd("spos2", "Set Schem Pos2 Here")
+		add_cmd("schemclear", "Clear Schem Build")
+		add_cmd("schemundo", "Undo Schem Placement")
+		add_cmd("schemresume", "Resume Schem Build")
+
+		-- Info / stats / housekeeping commands
+		add_cmd("entityinfo", "Inspect Pointed Thing")
+		add_cmd("stats", "Show Session Stats")
+		add_cmd("blockstats", "Show Block Stats")
+		add_cmd("cheat_rearrange", "Rearrange Cheat Panels")
+		add_cmd("nlshow", "Nodelist: Show HUD")
+		add_cmd("nlhide", "Nodelist: Hide HUD")
+		add_cmd("nlawi", "Nodelist: Add Wielded")
+		add_cmd("nlapn", "Nodelist: Add Pointed Node")
+		add_cmd("mapblock_age", "Analyze Mapblock Age")
+		add_cmd("mapblock_age_clear", "Clear Age Markers")
+		add_cmd("bx_logout", "Logout BlockExchange")
+		add_cmd("profile", "Save Cheat Profile (Server)", "save")
+		add_cmd("profile", "Load Cheat Profile (Server)", "load")
+
+		-- Hidden feature toggles (settings not exposed as cheats)
+		local function add_toggle(label, setting, fields)
+			local e = { label = label, toggle = setting }
+			if fields then
+				if fields.keywords then e.keywords = fields.keywords end
+			end
+			entries[#entries + 1] = e
+		end
+		add_toggle("Fly (Free Move)", "free_move", { keywords = { "fly" } })
+		if poi then
+			add_toggle("Show All Waypoints", "poi_show_all_waypoints",
+				{ keywords = { "wp", "waypoint" } })
+		end
+		if mod("chat_logger") then
+			add_toggle("Log Chat to File", "chat_logging")
+		end
+		if mod("schembuilder") then
+			add_toggle("Schem Build: Hollow", "schembuilder_hollow")
+			add_toggle("Schem Build: Wireframe Box", "schembuilder_wireframe_draw3d")
+		end
+		if mod("devtools") then
+			add_toggle("Auto-Take Entity Inv", "einv_taker")
+		end
+
+		-- wasplib tool / loot wrappers
+		if ws then
+			add("Select Best Tool for Pointed Node", function()
+				local pt = core.get_pointed_thing()
+				if pt and pt.type == "node" and ws.select_best_tool then
+					ws.select_best_tool(pt.under)
+				end
+			end)
+			add("Clear HUD Markers", function() ws.clear_wps() end)
+		end
+		local nlist = mod("nlist")
+		if ws and nlist and nlist.get and ws.loot_list then
+			add("Loot Nearby Containers (List)", function()
+				ws.loot_list(nlist.get(nlist.selected), 5, 16)
+			end)
+		end
 
 		-- Stop every running bot (sbots)
 		local sbots = mod("sbots")
