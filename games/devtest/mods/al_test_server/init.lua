@@ -1,3 +1,9 @@
+-- AntiluaClient server-side test coordinator. Only runs when the client
+-- has explicitly enabled tests (al_test_enable = true).
+if not core.settings:get_bool("al_test_enable", false) then
+	return
+end
+
 -- AntiluaClient server-side test coordinator
 -- Listens on the "al_test" mod channel for client test messages
 

@@ -1,0 +1,1 @@
+al_test_enable (Run Antilua integration tests on load) bool false

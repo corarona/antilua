@@ -28,6 +28,12 @@ if [ ! -d "worlds/$WORLD" ]; then
 	wait 2>/dev/null || true
 fi
 
+# Enable the integration tests (disabled by default during normal play)
+CONFIG_FILE=$(mktemp)
+cat > "$CONFIG_FILE" << 'ENDCONF'
+al_test_enable = true
+ENDCONF
+
 IDLE_CHECKED=false
 IDLE_MS=0
 if command -v xprintidle &>/dev/null; then
@@ -43,11 +49,11 @@ if [ "$IDLE_CHECKED" = true ] && [ "$IDLE_MS" -gt 600000 ]; then
 		xvfb-run --auto-servernum \
 			timeout 60 \
 			"$BIN" --info --world "worlds/$WORLD" \
-			--go 2>&1 | tee "$OUTFILE" || true
+			--go --config "$CONFIG_FILE" 2>&1 | tee "$OUTFILE" || true
 	else
 		timeout 60 \
 			"$BIN" --info --world "worlds/$WORLD" \
-			--go 2>&1 | tee "$OUTFILE" || true
+			--go --config "$CONFIG_FILE" 2>&1 | tee "$OUTFILE" || true
 	fi
 
 	PASS=$(grep -c '\[AL_TEST\] PASS:' "$OUTFILE" || true)
@@ -60,7 +66,7 @@ if [ "$IDLE_CHECKED" = true ] && [ "$IDLE_MS" -gt 600000 ]; then
 		grep '\[AL_TEST\] FAIL:' "$OUTFILE" || true
 	fi
 
-	rm -f "$OUTFILE"
+	rm -f "$OUTFILE" "$CONFIG_FILE"
 	[ "$FAIL" -eq 0 ]
 	exit $?
 fi
@@ -68,7 +74,8 @@ fi
 # Interactive mode — launch in background, detached from shell
 echo "Starting Antilua (world: $WORLD)..."
 LOGFILE="antilua-debug.txt"
-nohup "$BIN" --info --worldname "$WORLD" --go --name test > "$LOGFILE" 2>&1 &
+nohup "$BIN" --info --worldname "$WORLD" --go --name test \
+	--config "$CONFIG_FILE" > "$LOGFILE" 2>&1 &
 disown
 
 # Wait for window, then move to workspace 11

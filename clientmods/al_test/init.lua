@@ -1,3 +1,9 @@
+-- Antilua integration tests. Only run when explicitly enabled (see
+-- util/ci/run_al_tests.sh); disabled during normal gameplay.
+if not core.settings:get_bool("al_test_enable", false) then
+	return
+end
+
 local modname = assert(core.get_current_modname())
 local modpath = core.get_modpath(modname)
 

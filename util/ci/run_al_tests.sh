@@ -35,17 +35,28 @@ fi
 # Run the client with the test world and capture output
 # The client exits on ESC or window close; we give it 60 seconds.
 OUTFILE=$(mktemp)
+CONFIG_FILE=$(mktemp)
+cleanup() {
+	rm -f "$OUTFILE" "$CONFIG_FILE"
+}
+trap cleanup EXIT
+
+# Enable the integration tests (disabled by default during normal play)
+cat > "$CONFIG_FILE" << 'ENDCONF'
+al_test_enable = true
+ENDCONF
+
 echo "Output: $OUTFILE"
 
 if command -v xvfb-run &>/dev/null; then
 	xvfb-run --auto-servernum \
 		timeout 60 \
 		./bin/antilua --info --world "worlds/$WORLD" \
-		--go 2>&1 | tee "$OUTFILE" || true
+		--go --config "$CONFIG_FILE" 2>&1 | tee "$OUTFILE" || true
 else
 	timeout 60 \
 		./bin/antilua --info --world "worlds/$WORLD" \
-		--go 2>&1 | tee "$OUTFILE" || true
+		--go --config "$CONFIG_FILE" 2>&1 | tee "$OUTFILE" || true
 fi
 
 echo "=== Test Results ==="
@@ -56,6 +67,12 @@ FAIL=$(grep -c '\[AL_TEST\] FAIL:' "$OUTFILE" || true)
 SKIP=$(grep -c '\[AL_TEST\] SKIP:' "$OUTFILE" || true)
 KNOWN=$(grep -c '\[AL_TEST\] PASS (unexpected):' "$OUTFILE" || true)
 
+# Fail loudly if no tests ran (e.g. al_test_enable got lost)
+if [ "$PASS" -eq 0 ] && [ "$FAIL" -eq 0 ]; then
+	echo "ERROR: No tests ran. Is al_test_enable=true still wired up?"
+	exit 1
+fi
+
 echo "Passed: $PASS  Failed: $FAIL  Skipped (not ported): $SKIP"
 echo ""
 
@@ -65,7 +82,7 @@ if [ "$FAIL" -gt 0 ]; then
 	echo ""
 fi
 
-rm -f "$OUTFILE"
+rm -f "$OUTFILE" "$CONFIG_FILE"
 
 # Exit with non-zero if any test failed
 [ "$FAIL" -eq 0 ]
