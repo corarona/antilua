@@ -18,6 +18,8 @@ set(BUILTIN_GAME_SRCS
 	game/misc_s.lua
 	game/privileges.lua
 	game/register.lua
+	game/server_mod_edit.lua
+	game/server_reload.lua
 	game/static_spawn.lua
 	game/voxelarea.lua
 	PARENT_SCOPE)
