@@ -20,7 +20,6 @@ core.register_on_mods_loaded(function()
 		if result then
 			http = result
 			http_available = true
-			core.log("action", "[blockexchange] HTTP API ready")
 		end
 	end
 	if not http_available then
