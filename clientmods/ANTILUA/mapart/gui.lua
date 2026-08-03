@@ -1,7 +1,11 @@
+-- Default image directory: <data>/images
+local default_dir = core.get_data_path() .. "/images"
+
 -- State for formspec (module-level so conversion.lua can access it)
 mapart.state = {
 	png_list = {},
-	png_dir = core.settings:get("mapart.png_dir") or (core.get_data_path() .. "images"),
+	png_dir = default_dir,
+	custom_dir = false,
 	selected = 0,
 	preview = "",
 	out_w = tonumber(core.settings:get("mapart_gui_w")) or 128,
@@ -19,15 +23,39 @@ mapart.state = {
 	_conv_cancel = false,
 }
 
+local function scan_png_dir(dir)
+	local files = core.get_dir_list(dir, false) or {}
+	local list = {}
+	for _, f in ipairs(files) do
+		if f:match("%.png$") then
+			table.insert(list, f)
+		end
+	end
+	mapart.state.png_list = list
+end
+
+scan_png_dir(mapart.state.png_dir)
+
 -- Mapart formspec tab (registered with schembuilder)
 local get_mapart_tab
 get_mapart_tab = function(fs, tab)
 	local s = mapart.state
 	local preview = s.preview or ""
 
-	fs = fs .. "field[0.3,0.3;7,0.6;mapart_dir;;" ..
-		core.formspec_escape(s.png_dir) .. "]" ..
-		"button[7.5,0.3;2.2,0.6;mapart_refresh;Refresh]"
+	if #s.png_list == 0 then
+		scan_png_dir(s.png_dir)
+	end
+
+	fs = fs .. "checkbox[0.3,0.3;mapart_custom_dir;Custom dir;" ..
+		(s.custom_dir and "true" or "false") .. "]"
+	if s.custom_dir then
+		fs = fs .. "field[3.2,0.3;5.1,0.6;mapart_dir;;" ..
+			core.formspec_escape(s.png_dir) .. "]" ..
+			"button[8.4,0.3;1.3,0.6;mapart_refresh;Refresh]"
+	else
+		fs = fs .. "label[3.2,0.3;data/images (" .. #s.png_list .. " files)]" ..
+			"button[8.4,0.3;1.3,0.6;mapart_refresh;Refresh]"
+	end
 
 	if #s.png_list > 0 then
 		local items = {}
@@ -92,16 +120,29 @@ local handle_mapart_events
 handle_mapart_events = function(fields)
 	local s = mapart.state
 
-	if fields.mapart_refresh then
-		local dir = fields.mapart_dir or s.png_dir
-		s.png_dir = dir
-		local files = core.get_dir_list(dir, false) or {}
-		s.png_list = {}
-		for _, f in ipairs(files) do
-			if f:match("%.png$") then
-				table.insert(s.png_list, f)
+	if fields.mapart_custom_dir then
+		s.custom_dir = fields.mapart_custom_dir == "true"
+		if s.custom_dir then
+			local saved = core.settings:get("mapart.png_dir")
+			if saved and saved ~= "" then
+				s.png_dir = saved
+				scan_png_dir(saved)
+				s.selected = 0
+				s.preview = ""
 			end
+		else
+			s.png_dir = default_dir
+			scan_png_dir(default_dir)
+			s.selected = 0
+			s.preview = ""
 		end
+		return true
+	end
+
+	if fields.mapart_refresh then
+		local dir = s.custom_dir and (fields.mapart_dir or s.png_dir) or default_dir
+		s.png_dir = dir
+		scan_png_dir(dir)
 		s.selected = 0
 		s.preview = ""
 		return true
@@ -161,7 +202,11 @@ handle_mapart_events = function(fields)
 	end
 
 	if fields.mapart_convert then
-		local dir = fields.mapart_dir or s.png_dir
+		local dir = s.custom_dir and (fields.mapart_dir or s.png_dir) or default_dir
+		s.png_dir = dir
+		if s.custom_dir then
+			core.settings:set("mapart.png_dir", dir)
+		end
 		local idx = s.selected
 		if not dir or idx == 0 or not s.png_list[idx] then
 			s.status = "Select a PNG file first"

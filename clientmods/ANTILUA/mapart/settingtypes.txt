@@ -1,4 +1,4 @@
-mapart.png_dir (Image directory path) string /tmp/antilua_mapart
+mapart.png_dir (Custom image directory path, empty = data/images) string
 mapart_output_dir (MTS output directory) string /tmp/antilua_mapart
 mapart_grid_new (Use new map grid alignment) bool false
 mapart_max_colors (Max palette colors, 0 = unlimited) int 0 0
