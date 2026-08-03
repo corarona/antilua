@@ -131,7 +131,7 @@ handle_mapart_events = function(fields)
 								pixels[#pixels + 1] = 0; pixels[#pixels + 1] = 0
 								pixels[#pixels + 1] = 0; pixels[#pixels + 1] = 0
 							else
-								local best = mapart.find_closest(r, g, b, false, mapart.palette)
+								local best = mapart.fast_find_closest(r, g, b, false, mapart.palette)
 								if best then
 									pixels[#pixels + 1] = best.r
 									pixels[#pixels + 1] = best.g

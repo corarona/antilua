@@ -32,6 +32,180 @@ function mapart.find_closest(r, g, b, use_gamma, pal_override)
 	return pal[best_idx]
 end
 
+-- ============================================================
+-- Fast nearest-color lookup
+--
+-- find_closest() is O(palette) per call, which makes the 200x200
+-- preview and the chunked conversion freeze the main thread.
+-- fast_find_closest() precomputes a quantized 3D lookup grid (built
+-- once per palette + gamma, a few ms) so each call only scans the
+-- local 5x5x5 neighborhood. It returns exactly the same result as
+-- find_closest(): when the neighborhood best is provably optimal
+-- (distance below the exactness bound) it returns it directly,
+-- otherwise it falls back to the exact linear scan.
+-- ============================================================
+
+local GRID_LEVELS = 32          -- cells per channel
+local GRID_CELL = 8             -- 256 / GRID_LEVELS
+local NEIGHBOR_RADIUS = 2       -- scan cells q-R .. q+R per channel
+-- Any entry outside the neighborhood differs in at least one channel
+-- by >= NEIGHBOR_RADIUS*GRID_CELL + 1 levels, so its distance is
+-- >= EXACT_BOUND. A neighborhood best below that is globally optimal.
+local EXACT_BOUND = (NEIGHBOR_RADIUS * GRID_CELL + 1) ^ 2  -- 289
+
+mapart._fast_cache = {}         -- { {pal=, gamma=, grid=}, ... }
+local FAST_CACHE_MAX = 6
+
+local function grid_index(cr, cg, cb)
+	return ((cr * GRID_LEVELS) + cg) * GRID_LEVELS + cb + 1
+end
+
+local function build_lookup_grid(pal, use_gamma)
+	local grid = {}
+	if use_gamma then
+		for _, e in ipairs(pal) do
+			local lr = srgb_to_linear(e.r) * 255
+			local lg = srgb_to_linear(e.g) * 255
+			local lb = srgb_to_linear(e.b) * 255
+			local idx = grid_index(
+				math.min(math.floor(lr / GRID_CELL), GRID_LEVELS - 1),
+				math.min(math.floor(lg / GRID_CELL), GRID_LEVELS - 1),
+				math.min(math.floor(lb / GRID_CELL), GRID_LEVELS - 1))
+			local cell = grid[idx]
+			if not cell then
+				cell = {}
+				grid[idx] = cell
+			end
+			cell[#cell + 1] = { e = e, lr = lr, lg = lg, lb = lb }
+		end
+	else
+		for _, e in ipairs(pal) do
+			local idx = grid_index(
+				math.min(math.floor(e.r / GRID_CELL), GRID_LEVELS - 1),
+				math.min(math.floor(e.g / GRID_CELL), GRID_LEVELS - 1),
+				math.min(math.floor(e.b / GRID_CELL), GRID_LEVELS - 1))
+			local cell = grid[idx]
+			if not cell then
+				cell = {}
+				grid[idx] = cell
+			end
+			cell[#cell + 1] = e
+		end
+	end
+	return grid
+end
+
+-- Fast equivalent of find_closest(r, g, b, use_gamma, pal)
+function mapart.fast_find_closest(r, g, b, use_gamma, pal)
+	pal = pal or mapart.palette
+	if #pal == 0 then return nil end
+
+	-- Find the cached grid for this (palette, gamma) pair
+	local cache = mapart._fast_cache
+	local entry
+	for i = 1, #cache do
+		local c = cache[i]
+		if c.pal == pal and c.gamma == use_gamma then
+			entry = c
+			break
+		end
+	end
+	if not entry then
+		entry = {
+			pal = pal,
+			gamma = use_gamma,
+			grid = build_lookup_grid(pal, use_gamma),
+		}
+		cache[#cache + 1] = entry
+		if #cache > FAST_CACHE_MAX then
+			table.remove(cache, 1)
+		end
+	end
+	local grid = entry.grid
+
+	local best, best_dist = nil, math.huge
+
+	if use_gamma then
+		local qr = srgb_to_linear(r) * 255
+		local qg = srgb_to_linear(g) * 255
+		local qb = srgb_to_linear(b) * 255
+		local cr = math.min(math.floor(qr / GRID_CELL), GRID_LEVELS - 1)
+		local cg = math.min(math.floor(qg / GRID_CELL), GRID_LEVELS - 1)
+		local cb = math.min(math.floor(qb / GRID_CELL), GRID_LEVELS - 1)
+		for dr = -NEIGHBOR_RADIUS, NEIGHBOR_RADIUS do
+			local nr = cr + dr
+			if nr >= 0 and nr < GRID_LEVELS then
+				for dg = -NEIGHBOR_RADIUS, NEIGHBOR_RADIUS do
+					local ng = cg + dg
+					if ng >= 0 and ng < GRID_LEVELS then
+						local base = (nr * GRID_LEVELS + ng) * GRID_LEVELS
+						for db = -NEIGHBOR_RADIUS, NEIGHBOR_RADIUS do
+							local nb = cb + db
+							if nb >= 0 and nb < GRID_LEVELS then
+								local cell = grid[base + nb + 1]
+								if cell then
+									for i = 1, #cell do
+										local w = cell[i]
+										local drr = qr - w.lr
+										local dgg = qg - w.lg
+										local dbb = qb - w.lb
+										local dist = drr*drr + dgg*dgg + dbb*dbb
+										if dist < best_dist then
+											best_dist = dist
+											best = w.e
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	else
+		local cr = math.min(math.floor(r / GRID_CELL), GRID_LEVELS - 1)
+		local cg = math.min(math.floor(g / GRID_CELL), GRID_LEVELS - 1)
+		local cb = math.min(math.floor(b / GRID_CELL), GRID_LEVELS - 1)
+		for dr = -NEIGHBOR_RADIUS, NEIGHBOR_RADIUS do
+			local nr = cr + dr
+			if nr >= 0 and nr < GRID_LEVELS then
+				for dg = -NEIGHBOR_RADIUS, NEIGHBOR_RADIUS do
+					local ng = cg + dg
+					if ng >= 0 and ng < GRID_LEVELS then
+						local base = (nr * GRID_LEVELS + ng) * GRID_LEVELS
+						for db = -NEIGHBOR_RADIUS, NEIGHBOR_RADIUS do
+							local nb = cb + db
+							if nb >= 0 and nb < GRID_LEVELS then
+								local cell = grid[base + nb + 1]
+								if cell then
+									for i = 1, #cell do
+										local e = cell[i]
+										local drr = r - e.r
+										local dgg = g - e.g
+										local dbb = b - e.b
+										local dist = drr*drr + dgg*dgg + dbb*dbb
+										if dist < best_dist then
+											best_dist = dist
+											best = e
+										end
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
+	if best and best_dist < EXACT_BOUND then
+		return best
+	end
+	-- Empty neighborhood, or best may not be globally optimal:
+	-- fall back to the exact linear scan
+	return mapart.find_closest(r, g, b, use_gamma, pal)
+end
+
 -- Floyd-Steinberg dithering
 function mapart.floyd_steinberg(errors, w, h, x, y, dr, dg, db)
 	local function add_err(ox, oy, factor)

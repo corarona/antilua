@@ -126,7 +126,7 @@ function mapart._process_pixel(pixel_data, img_w, img_h, img_x, img_y, out_w, ou
 		b = math.max(0, math.min(255, b + (errors[idx * 3 + 3] or 0)))
 	end
 	local threshold = 128
-	local best = mapart.find_closest(r, g, b, opts.gamma, opts.palette or mapart.palette)
+	local best = mapart.fast_find_closest(r, g, b, opts.gamma, opts.palette or mapart.palette)
 	if best and best.a then
 		threshold = best.a
 	end

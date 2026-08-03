@@ -64,6 +64,75 @@ function test_mapart(T)
 		T.assert_eq(best.name, "white", "light gray should match white")
 	end)
 
+	local function make_test_pal()
+		return {
+			{ name = "red", param2 = 0, r = 255, g = 0, b = 0 },
+			{ name = "green", param2 = 0, r = 0, g = 255, b = 0 },
+			{ name = "blue", param2 = 0, r = 0, g = 0, b = 255 },
+			{ name = "gray", param2 = 0, r = 128, g = 128, b = 128 },
+			{ name = "black", param2 = 0, r = 0, g = 0, b = 0 },
+			{ name = "white", param2 = 0, r = 255, g = 255, b = 255 },
+		}
+	end
+
+	local function check_fast_matches_exact(T, use_gamma, pal, colors)
+		for _, c in ipairs(colors) do
+			local exact = mapart.find_closest(c[1], c[2], c[3], use_gamma, pal)
+			local fast = mapart.fast_find_closest(c[1], c[2], c[3], use_gamma, pal)
+			if exact then
+				T.assert(fast ~= nil, "fast should find a match for "
+					.. c[1] .. "," .. c[2] .. "," .. c[3])
+				T.assert_eq(fast.name, exact.name, "fast match for "
+					.. c[1] .. "," .. c[2] .. "," .. c[3])
+			else
+				T.assert(fast == nil, "fast should also return nil for "
+					.. c[1] .. "," .. c[2] .. "," .. c[3])
+			end
+		end
+	end
+
+	T.run("mapart.fast_find_closest matches find_closest (no gamma)", function()
+		local pal = make_test_pal()
+		-- Mix of near-palette colors (grid path) and far colors (full-scan fallback)
+		local colors = {
+			{255, 0, 0}, {252, 3, 3}, {0, 255, 0}, {0, 0, 255},
+			{128, 128, 128}, {130, 128, 128}, {0, 0, 0}, {255, 255, 255},
+			{250, 10, 10}, {200, 200, 200}, {100, 50, 25},
+			{30, 200, 90}, {1, 1, 1}, {254, 254, 254}, {5, 200, 250},
+		}
+		check_fast_matches_exact(T, false, pal, colors)
+	end)
+
+	T.run("mapart.fast_find_closest matches find_closest (gamma)", function()
+		local pal = make_test_pal()
+		local colors = {
+			{255, 0, 0}, {252, 3, 3}, {0, 255, 0}, {0, 0, 255},
+			{128, 128, 128}, {130, 128, 128}, {0, 0, 0}, {255, 255, 255},
+			{250, 10, 10}, {200, 200, 200}, {100, 50, 25},
+			{30, 200, 90}, {1, 1, 1}, {254, 254, 254}, {5, 200, 250},
+		}
+		check_fast_matches_exact(T, true, pal, colors)
+	end)
+
+	T.run("mapart.fast_find_closest exact match returns same entry", function()
+		local pal = make_test_pal()
+		local fast = mapart.fast_find_closest(128, 128, 128, false, pal)
+		T.assert(fast ~= nil, "should find the gray entry")
+		T.assert_eq(fast.name, "gray", "exact gray match")
+	end)
+
+	T.run("mapart.fast_find_closest empty palette returns nil", function()
+		local fast = mapart.fast_find_closest(100, 100, 100, false, {})
+		T.assert(fast == nil, "empty palette should return nil")
+	end)
+
+	T.run("mapart.fast_find_closest single-entry palette", function()
+		local pal = { { name = "only", param2 = 0, r = 50, g = 60, b = 70 } }
+		local fast = mapart.fast_find_closest(250, 10, 250, false, pal)
+		T.assert(fast ~= nil, "should always match the single entry")
+		T.assert_eq(fast.name, "only", "single entry is always the nearest")
+	end)
+
 	T.run("mapart.floyd_steinberg distributes error", function()
 		local errors = {}
 		for i = 1, 4 * 4 * 3 do errors[i] = 0 end
