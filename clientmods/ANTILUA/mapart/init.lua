@@ -67,8 +67,6 @@ local function load_palette()
 			end
 		end
 	end
-	core.log("mapart: loaded " .. #mapart.palette .. " palette entries")
-
 	if nlist and nlist.get then
 		local exclude = nlist.get("mapart_exclude")
 		if #exclude > 0 then
