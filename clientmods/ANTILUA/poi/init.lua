@@ -14,7 +14,6 @@ local DISTANCE_NEAR = 256
 
 local formspec_list = {}
 local selected_name
-local hud_wp
 local shown_huds = {}
 local lpos
 local sort_by_distance = false
@@ -46,7 +45,6 @@ local function reset_gui_state()
 		if core.localplayer then ws.hud_remove_waypoint(title) end
 	end
 	shown_huds = {}
-	hud_wp = nil
 end
 
 ws.on_connect(function()
@@ -588,39 +586,62 @@ end
 -- Handles poi formspec input. Used by both the standalone formspec
 -- ("poi-csm") and the inventory tab. Returns true when it consumed the fields.
 function poi.handle_fields(fields)
+	-- Widget handlers run on every formspec submission (all widget values are
+	-- always present), so each only acts when its value actually changed, and
+	-- returns true when it did. This lets the dispatch loop below skip stale
+	-- widgets (e.g. group_filter, which is always present) instead of letting
+	-- them swallow later handlers like wp_group/wp_color.
 	local handlers = {
 		group_filter = function()
-			local filter_names = {"All"}
-			for _, g in ipairs(get_unique_groups()) do table.insert(filter_names, g) end
-			local idx = tonumber(fields.group_filter)
-			if idx and filter_names[idx] then
-				filter_group = (filter_names[idx] == "All") and "" or filter_names[idx]
+			-- The dropdown submits the selected item's value text (e.g. "Mine"
+			-- or "All"), not its index.
+			local group = fields.group_filter
+			if group == "All" then group = "" end
+			if group ~= filter_group then
+				filter_group = group
 				poi.display_formspec()
+				return true
 			end
+			return false
 		end,
 		poi_show_all = function()
-			core.settings:set_bool("poi_show_all_waypoints", fields.poi_show_all == "true")
-			poi.display_formspec()
+			local enabled = fields.poi_show_all == "true"
+			if enabled ~= core.settings:get_bool("poi_show_all_waypoints") then
+				core.settings:set_bool("poi_show_all_waypoints", enabled)
+				poi.display_formspec()
+				return true
+			end
+			return false
 		end,
 		wp_group = function()
 			if fields.key_enter_field == "wp_group" and fields.wp_group then
 				poi.set_group(selected_name, fields.wp_group)
 				poi.display_formspec()
+				return true
 			end
+			return false
 		end,
 		wp_color = function()
-			local idx = tonumber(fields.wp_color)
-			if idx then
-				local c = WP_COLORS[idx]
-				if c and name then
-					poi.set_color(name, c.hex)
+			-- The dropdown submits the color's value text (e.g. "Red"), not
+			-- its index.
+			local c
+			for _, col in ipairs(WP_COLORS) do
+				if col.name == fields.wp_color then c = col break end
+			end
+			if c and selected_name then
+				local cur = poi.get_color(selected_name)
+				if cur == "" then cur = "00ff00" end
+				if c.hex ~= cur then
+					poi.set_color(selected_name, c.hex)
 					for title in pairs(shown_huds) do
 						ws.hud_remove_waypoint(title)
 					end
 					shown_huds = {}
+					poi.display_formspec()
+					return true
 				end
 			end
-			poi.display_formspec()
+			return false
 		end,
 	}
 
@@ -716,8 +737,9 @@ function poi.handle_fields(fields)
 	for _, field_name in ipairs({"group_filter", "poi_show_all", "wp_color", "wp_group"}) do
 		local handler = handlers[field_name]
 		if handler and fields[field_name] ~= nil and not fields[field_name]:match("^$") then
-			handler()
-			return true
+			if handler() then
+				return true
+			end
 		end
 	end
 
