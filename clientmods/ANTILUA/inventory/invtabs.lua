@@ -43,7 +43,14 @@ local state = {
 	active = "main",
 }
 
-local get_game = ws.get_game()
+local function get_game()
+	if ws.get_game() == "mcl" then
+		return "mineclone"
+	elseif ws.get_game() == "mtg" then
+		return "minetest"
+	end
+	return "unknown"
+end
 -- ---------------------------------------------------------------------------
 -- Generalized right-side sub-tab system
 -- ---------------------------------------------------------------------------
