@@ -232,6 +232,13 @@ function poi.display_waypoint(name)
 	return true
 end
 
+function poi.select_waypoint(name)
+	local pos = poi.get_waypoint(name)
+	if not pos then return false end
+	selected_name = name
+	return poi.display_waypoint(name)
+end
+
 function poi.get_nearest_name()
 	local nearest, odst = nil, 500
 	local lp = core.localplayer:get_pos()

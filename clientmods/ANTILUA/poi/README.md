@@ -31,6 +31,14 @@ management, and supports a transport callback system for teleportation mods.
 |---------|------|---------|-------------|
 | `death_tp` | bool | false | Auto-teleport to death location |
 
+### Quick menu
+
+Every waypoint is exposed as an entry in the Quick Access Palette (`~`).
+Activating one selects it in the waypoint GUI and shows its HUD marker.
+With `Show All Waypoints` (or the `poi_show_all_waypoints` setting) enabled,
+waypoints from all servers are listed, with the `server:port:` prefix shown
+in the entry label.
+
 ## API
 
 ### Global
@@ -72,6 +80,8 @@ management, and supports a transport callback system for teleportation mods.
 `poi.display(pos, name)` — show a HUD waypoint at `pos` with label `name`.
 
 `poi.display_waypoint(name)` — look up waypoint by name, aim at it, display HUD, show info panel.
+
+`poi.select_waypoint(name)` — select the waypoint in the GUI and display it (aim + HUD marker). Returns `true` on success.
 
 `poi.get_nearest_name()` — return the name of the closest waypoint within 500m, or the quadrant name.
 

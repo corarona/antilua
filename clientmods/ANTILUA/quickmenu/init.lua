@@ -102,6 +102,24 @@ if core.register_quick_menu_provider then
 					autofly.warp(poi.get_nearest_name())
 				end)
 			end
+
+			-- Individual waypoints as palette entries. With
+			-- poi_show_all_waypoints enabled the names carry a server:port:
+			-- prefix so waypoints from every server are listed.
+			for _, name in ipairs(poi.getwps()) do
+				local n = name
+				local pos = poi.get_waypoint(n)
+				if pos then
+					local entry = {
+						label = n,
+						action = function() poi.select_waypoint(n) end,
+						keywords = { "wp", "waypoint", poi.get_group(n) or "" },
+						description = "Select and show waypoint (" .. pos.x .. ", " .. pos.y .. ", " .. pos.z .. ")",
+						is_enabled = function() return poi.last_name == n end,
+					}
+					entries[#entries + 1] = entry
+				end
+			end
 		end
 
 		-- Rhythm burst teleport (rhythmtp)

@@ -216,6 +216,56 @@ function test_quick_menu(T)
 		present_toggle("devtools", "einv_taker", "Auto-Take Entity Inv")
 	end)
 
+	T.run("waypoints appear as quick menu entries", function()
+		if not poi then
+			T.assert(true, "poi not loaded, skipping")
+			return
+		end
+		local orig_setting = core.settings:get("poi_show_all_waypoints")
+		core.settings:set("poi_show_all_waypoints", "false")
+		local test_name = "ALTestWaypoint"
+		local test_pos = {x = 100, y = 64, z = 200}
+		local orig_pos = poi.get_waypoint(test_name)
+		poi.set_waypoint(test_pos, test_name)
+
+		local idx = quick_menu_index_of(test_name)
+		T.assert(idx ~= nil, "waypoint should appear as a quick menu entry")
+		if idx then
+			local entries = core.get_quick_menu_entries()
+			T.assert_eq(entries[idx].kind, "action", "waypoint entry kind")
+			T.assert(entries[idx].description ~= nil
+				and entries[idx].description:find("100, 64, 200"),
+				"waypoint entry has position description")
+		end
+
+		-- Activation selects and shows the waypoint (needs a player to aim/display)
+		if idx and core.localplayer then
+			local ok = core.activate_quick_menu_entry(idx)
+			T.assert(ok, "activation succeeds")
+			T.assert_eq(poi.last_name, test_name, "waypoint selected and shown")
+		end
+
+		-- All-servers mode still lists it (name carries the server:port: prefix)
+		core.settings:set("poi_show_all_waypoints", "true")
+		local found_all = nil
+		for _, e in ipairs(core.get_quick_menu_entries()) do
+			if e.label and e.label:match("ALTestWaypoint$") then
+				found_all = e
+				break
+			end
+		end
+		T.assert(found_all ~= nil, "waypoint appears in show-all mode")
+
+		-- Cleanup: restore the setting and remove/restore the temp waypoint
+		core.settings:set("poi_show_all_waypoints", "false")
+		if orig_pos then
+			poi.set_waypoint(orig_pos, test_name)
+		else
+			poi.delete_waypoint(test_name)
+		end
+		core.settings:set("poi_show_all_waypoints", orig_setting or "false")
+	end)
+
 	T.run("unregister_quick_menu_action removes action", function()
 		core.register_quick_menu_action("qm_temp_action", function() end)
 		T.assert(core.quick_menu_actions["qm_temp_action"] ~= nil, "action registered")
