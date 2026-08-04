@@ -374,7 +374,9 @@ end
 -- Formspec builders
 --
 
-local function get_filtered_sorted_waypoints()
+-- Waypoints limited to the currently selected filter group (or all when the
+-- filter is "All"). Used by the list view and the "Show all" HUD button.
+local function get_group_waypoints()
 	local wps = poi.getwps()
 	if filter_group ~= "" then
 		local filtered = {}
@@ -385,6 +387,11 @@ local function get_filtered_sorted_waypoints()
 		end
 		wps = filtered
 	end
+	return wps
+end
+
+local function get_filtered_sorted_waypoints()
+	local wps = get_group_waypoints()
 	if poi_search ~= "" then
 		local filtered = {}
 		for _, name in ipairs(wps) do
@@ -427,6 +434,9 @@ local function build_header(sb, af)
 		af.dropdown(3, 0.25, 2.5, "group_filter", filter_items, filter_sel),
 		af.searchbar(6, 0.25, 4.5, "poi_search", { default = poi_search, placeholder = "Search:", button_width = 1.2 })
 	)
+	-- Below the group dropdown: display every waypoint in the selected group
+	-- (or all waypoints when the filter is "All") as HUD waypoints.
+	sb:add(af.button_exit(3, 0.8, 2.5, 0.5, "show_all", "Show all"))
 end
 
 local function build_waypoint_list(sb, af, waypoints)
@@ -685,6 +695,21 @@ function poi.handle_fields(fields)
 				ws.notify("Please select a waypoint first.", ws.NOTIFY_ERROR)
 			elseif not poi.display_waypoint(name) then
 				ws.notify("Error displaying waypoint!", ws.NOTIFY_ERROR)
+			end
+		end,
+		show_all = function()
+			local shown = 0
+			for _, wpname in ipairs(get_group_waypoints()) do
+				local pos = poi.get_waypoint(wpname)
+				if pos then
+					poi.display(pos, wpname)
+					shown = shown + 1
+				end
+			end
+			if shown > 0 then
+				ws.notify("Showing " .. shown .. " waypoint(s).", ws.NOTIFY_INFO)
+			else
+				ws.notify("No waypoints to display.", ws.NOTIFY_ERROR)
 			end
 		end,
 		delete = function()

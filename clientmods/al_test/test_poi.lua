@@ -141,5 +141,19 @@ function test_poi(T)
 			"an unrelated submit should not change the stored group")
 	end)
 
+	T.defer("Show all button shows the group's waypoints as HUDs", function()
+		reset_state()
+		ws.hud_remove_waypoint("poi_test_a")
+		ws.hud_remove_waypoint("poi_test_b")
+
+		poi.handle_fields({ group_filter = "Mine" })
+		poi.handle_fields({ show_all = "Show all" })
+
+		T.assert(ws.hud_waypoints["poi_test_a"] ~= nil,
+			"poi_test_a (group Mine) should be displayed as a HUD waypoint")
+		T.assert(ws.hud_waypoints["poi_test_b"] == nil,
+			"poi_test_b (group Other) should not be displayed")
+	end)
+
 	T.defer("poi test cleanup (post)", cleanup)
 end
