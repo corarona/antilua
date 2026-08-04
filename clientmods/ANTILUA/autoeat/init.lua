@@ -86,9 +86,29 @@ core.register_on_hud_add(on_hud_add)
 core.register_on_hud_change(on_hud_change)
 core.register_on_hud_remove(on_hud_remove)
 
+local last_damage_eat = 0
+
+local function on_damage_taken(amount)
+	if not core.settings:get_bool("autoeat") then
+		return
+	end
+	if not core.settings:get_bool("autoeat.eat_on_taking_damage", true) then
+		return
+	end
+	local now = core.get_us_time() / 1000000
+	if now - last_damage_eat < 1 then
+		return
+	end
+	last_damage_eat = now
+	autoeat.eat()
+end
+
+core.register_on_damage_taken(on_damage_taken)
+
 autoeat._on_hud_add = on_hud_add
 autoeat._on_hud_change = on_hud_change
 autoeat._on_hud_remove = on_hud_remove
+autoeat._on_damage_taken = on_damage_taken
 autoeat._reset = function()
 	hunger = 20
 	hunger_id = nil
@@ -109,5 +129,6 @@ ws.rg("AutoEat",
 		cheat_settings = {
 			always_eat = { type = "bool", default = false },
 			hunger_threshold = { type = "number", default = 15, min = 1, max = 19 },
+			eat_on_taking_damage = { type = "bool", default = true },
 		},
 })

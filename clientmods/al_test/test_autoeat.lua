@@ -67,4 +67,27 @@ function test_autoeat(T)
 	T.run("hunger_threshold setting exists", function()
 		T.assert(core.settings:get("autoeat.hunger_threshold") ~= nil, "hunger_threshold should exist")
 	end)
+
+	T.run("eat_on_taking_damage setting defaults to true", function()
+		T.assert_eq(core.settings:get("autoeat.eat_on_taking_damage"), "true",
+			"eat_on_taking_damage should default to true")
+	end)
+
+	T.run("eat_on_taking_damage toggles", function()
+		local orig = core.settings:get("autoeat.eat_on_taking_damage")
+		core.settings:set("autoeat.eat_on_taking_damage", "false")
+		T.assert_eq(core.settings:get("autoeat.eat_on_taking_damage"), "false")
+		core.settings:set("autoeat.eat_on_taking_damage", "true")
+		if orig then core.settings:set("autoeat.eat_on_taking_damage", orig) end
+	end)
+
+	T.run("damage handler no-ops when autoeat disabled", function()
+		autoeat._reset()
+		local orig = core.settings:get("autoeat")
+		core.settings:set("autoeat", "false")
+		local ok = pcall(autoeat._on_damage_taken, 5)
+		T.assert(ok, "damage handler should not error when autoeat is disabled")
+		core.settings:set("autoeat", "true")
+		if orig then core.settings:set("autoeat", orig) end
+	end)
 end
