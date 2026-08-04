@@ -19,7 +19,7 @@ schematic_looter.max_per_scan (Max items per loot scan) int 16 1 64
 schematic_looter.delay (Loot scan interval sec) float 1 0.1 60
 schembuilder_wireframe_draw3d (Use draw3d for wireframe) bool false
 schembuilder_hollow (Hollow shape generation) bool false
-schembuilder_shape_type (Shape type to generate) enum Cube Cube,Sphere,Circle,Ellipse,Pyramid,Cylinder
+schembuilder_shape_type (Shape type to generate) enum Cube Cube,Sphere,Circle,Ellipse,Pyramid,Cylinder,Dome,Cone
 schembuilder_node_name (Node name for shape generation) string mcl_core:stone
 schembuilder_dim_x (Shape width) int 8 1 256
 schembuilder_dim_y (Shape height) int 8 1 256

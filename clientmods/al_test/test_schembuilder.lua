@@ -284,6 +284,69 @@ function test_schembuilder(T)
 		T.assert(#nodes > 0, "cylinder should have nodes")
 	end)
 
+	T.run("generate_shape dome matches upper half of sphere", function()
+		local dome, err = schembuilder.generate_shape("dome", 3, 3, 3, "mcl_core:stone", false)
+		T.assert(dome ~= nil, "dome should generate: " .. tostring(err))
+		local sphere, serr = schembuilder.generate_shape("sphere", 3, 3, 3, "mcl_core:stone", false)
+		T.assert(sphere ~= nil, "sphere should generate: " .. tostring(serr))
+		local sphere_upper = 0
+		local expected = {}
+		for _, n in ipairs(sphere) do
+			if n.y >= 0 then
+				sphere_upper = sphere_upper + 1
+				expected[n.x .. "," .. n.y .. "," .. n.z] = true
+			end
+		end
+		T.assert_eq(#dome, sphere_upper, "dome node count should equal upper half of sphere")
+		for _, n in ipairs(dome) do
+			T.assert(n.y >= 0, "dome nodes should be at or above the base")
+			T.assert(expected[n.x .. "," .. n.y .. "," .. n.z] ~= nil,
+				"dome node (" .. n.x .. "," .. n.y .. "," .. n.z .. ") should be in sphere")
+		end
+		local has_apex = false
+		for _, n in ipairs(dome) do
+			if n.x == 0 and n.y == 3 and n.z == 0 then has_apex = true end
+		end
+		T.assert(has_apex, "dome should have its apex node")
+	end)
+
+	T.run("generate_shape dome hollow", function()
+		local solid = schembuilder.generate_shape("dome", 3, 3, 3, "mcl_core:stone", false)
+		local hollow, err = schembuilder.generate_shape("dome", 3, 3, 3, "mcl_core:stone", true)
+		T.assert(hollow ~= nil, "hollow dome should generate: " .. tostring(err))
+		T.assert(#hollow > 0, "hollow dome should have nodes")
+		T.assert(#hollow < #solid, "hollow dome should have fewer nodes than solid")
+	end)
+
+	T.run("generate_shape cone", function()
+		local nodes, err = schembuilder.generate_shape("cone", 3, 5, 1, "mcl_core:stone", false)
+		T.assert(nodes ~= nil, "cone should generate: " .. tostring(err))
+		T.assert_eq(#nodes, 61, "3x5 cone should have 61 nodes")
+		local has_apex = false
+		local max_y = -1
+		for _, n in ipairs(nodes) do
+			T.assert(n.y >= 0 and n.y <= 4, "cone y out of range")
+			T.assert(n.x >= -3 and n.x <= 3 and n.z >= -3 and n.z <= 3, "cone x/z out of range")
+			if n.y > max_y then max_y = n.y end
+			if n.x == 0 and n.y == 4 and n.z == 0 then has_apex = true end
+		end
+		T.assert_eq(max_y, 4, "cone should reach its apex level")
+		T.assert(has_apex, "cone should have its apex node")
+	end)
+
+	T.run("generate_shape cone hollow", function()
+		local solid = schembuilder.generate_shape("cone", 3, 5, 1, "mcl_core:stone", false)
+		local hollow, err = schembuilder.generate_shape("cone", 3, 5, 1, "mcl_core:stone", true)
+		T.assert(hollow ~= nil, "hollow cone should generate: " .. tostring(err))
+		T.assert(#hollow > 0, "hollow cone should have nodes")
+		T.assert(#hollow < #solid, "hollow cone should have fewer nodes than solid")
+		local has_apex = false
+		for _, n in ipairs(hollow) do
+			if n.x == 0 and n.y == 4 and n.z == 0 then has_apex = true end
+		end
+		T.assert(has_apex, "hollow cone should keep its apex node")
+	end)
+
 	T.run("generate_shape unknown shape", function()
 		local nodes, err = schembuilder.generate_shape("garbage", 1, 1, 1, "mcl_core:stone")
 		T.assert(nodes == nil, "unknown shape should return nil")

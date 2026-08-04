@@ -29,6 +29,11 @@ Schematic preview and placement tool. Loads MTS schematics as semi-transparent p
 - **Schematic browser:**
   - `Stop Build` button (Browse tab) / `Stop` button (Saved Builds tab) —
     stops the current build like `/schemstop`.
+  - **Create Shapes** tab — generate voxel shapes (solid or hollow) from the
+    player position: Cube, Sphere, Circle, Ellipse, Pyramid, Cylinder, Dome
+    (upper half-sphere) and Cone. Width is used as the radius for Sphere,
+    Circle, Cylinder, Dome and Cone; Height is used for Pyramid, Cylinder and
+    Cone.
 - **Cheats:**
   - `AutoSchemPlace` (Place category) — Place loaded schematic nodes within
     range using the strategy system.

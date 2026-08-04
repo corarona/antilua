@@ -138,6 +138,52 @@ function shapes.generate_cylinder(r, height, mat, hollow)
 	return nodes
 end
 
+function shapes.generate_dome(r, mat, hollow)
+	local nodes = {}
+	local r2 = r * r
+	for y = 0, r do
+		for x = -r, r do
+			for z = -r, r do
+				local d2 = x * x + y * y + z * z
+				if d2 <= r2 then
+					if not hollow then
+						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
+					elseif (x+1)*(x+1)+y*y+z*z > r2
+						or (x-1)*(x-1)+y*y+z*z > r2
+						or x*x+(y+1)*(y+1)+z*z > r2
+						or x*x+(y-1)*(y-1)+z*z > r2
+						or x*x+y*y+(z+1)*(z+1) > r2
+						or x*x+y*y+(z-1)*(z-1) > r2 then
+						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
+					end
+				end
+			end
+		end
+	end
+	return nodes
+end
+
+function shapes.generate_cone(r, height, mat, hollow)
+	local nodes = {}
+	local denom = math.max(height - 1, 1)
+	for y = 0, height - 1 do
+		local t = (height - 1 - y) / denom
+		local ry = math.floor(r * t + 0.5)
+		local ry2 = ry * ry
+		for x = -r, r do
+			for z = -r, r do
+				local ring = x * x + z * z
+				if ring <= ry2 then
+					if not hollow or ry <= 0 or ring >= (ry - 1) * (ry - 1) then
+						nodes[#nodes + 1] = {x = x, y = y, z = z, name = mat, param2 = 0}
+					end
+				end
+			end
+		end
+	end
+	return nodes
+end
+
 schembuilder.generate_shape = function(shape_type, dim_x, dim_y, dim_z, mat, hollow)
 	local generators = {
 		cube = shapes.generate_cube,
@@ -147,6 +193,8 @@ schembuilder.generate_shape = function(shape_type, dim_x, dim_y, dim_z, mat, hol
 		ellipsoid = shapes.generate_ellipsoid,
 		pyramid = shapes.generate_pyramid,
 		cylinder = shapes.generate_cylinder,
+		dome = shapes.generate_dome,
+		cone = shapes.generate_cone,
 	}
 	local gen = generators[shape_type]
 	if not gen then return nil, "Unknown shape: " .. tostring(shape_type) end
@@ -158,6 +206,8 @@ schembuilder.generate_shape = function(shape_type, dim_x, dim_y, dim_z, mat, hol
 		ellipse = function() return gen(dim_x, dim_y, dim_z, mat, hollow) end,
 		pyramid = function() return gen(dim_x, dim_y, mat, hollow) end,
 		cylinder = function() return gen(dim_x, dim_y, mat, hollow) end,
+		dome = function() return gen(dim_x, mat, hollow) end,
+		cone = function() return gen(dim_x, dim_y, mat, hollow) end,
 	}
 	local fn = func_map[shape_type]
 	if not fn then return nil, "No parameter mapping for shape: " .. tostring(shape_type) end

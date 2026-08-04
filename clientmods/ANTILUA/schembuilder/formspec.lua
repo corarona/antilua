@@ -151,7 +151,7 @@ function schembuilder.build_browser_content(tab, cw)
 		local function sv(name, default)
 			return core.settings:get(name) or default
 		end
-		local shape_names = {"Cube","Sphere","Circle","Ellipse","Pyramid","Cylinder"}
+		local shape_names = {"Cube","Sphere","Circle","Ellipse","Pyramid","Cylinder","Dome","Cone"}
 		local shape_idx = 1
 		local saved_shape = sv("schembuilder_shape_type", "Cube")
 		for i, n in ipairs(shape_names) do
