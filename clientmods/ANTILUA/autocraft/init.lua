@@ -118,7 +118,7 @@ end
 
 local function fill_grid(recipe)
 	local inv = core.get_inventory("current_player")
-	if not inv then
+	if not inv or not inv.craft then
 		return false
 	end
 
@@ -148,7 +148,7 @@ end
 
 local function capture_recipe()
 	local inv = core.get_inventory("current_player")
-	if not inv then
+	if not inv or not inv.craft then
 		return nil
 	end
 	local preview = inv.craftpreview and inv.craftpreview[1]
@@ -178,7 +178,7 @@ local function step()
 		return
 	end
 	local inv = core.get_inventory("current_player")
-	if not inv then
+	if not inv or not inv.craft then
 		return
 	end
 	local result = inv.craftresult and inv.craftresult[1]
@@ -245,7 +245,8 @@ core.register_globalstep(function(dtime)
 	detect_timer = 0
 
 	local inv = core.get_inventory("current_player")
-	if not inv then
+	if not inv or not inv.craft then
+		LAST_GRID = {}
 		return
 	end
 	local changed = false
