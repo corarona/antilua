@@ -38,7 +38,9 @@ local function speed_bar(value)
 end
 
 local HORIZON_SCALE = 2.5
-local compass_labels = {"N", "NE", "E", "SE", "S", "SW", "W", "NW"}
+-- Yaw is 0 at +Z and increases counterclockwise (yaw 90 = -X/west,
+-- yaw 270 = +X/east), so labels advance counterclockwise: N, NW, W, SW...
+local compass_labels = {"N", "NW", "W", "SW", "S", "SE", "E", "NE"}
 
 local function compass_string(yaw)
 	local idx = math.floor((yaw + 22.5) / 45) % 8
