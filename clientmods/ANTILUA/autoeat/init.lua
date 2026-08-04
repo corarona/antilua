@@ -7,6 +7,12 @@ local hunger = 20
 local hunger_id = nil
 local hunger_scale = 20
 
+local function is_poison_food(stackname, def)
+	return stackname:lower():find("poison", 1, true) ~= nil
+		or (def.description or ""):lower():find("poison", 1, true) ~= nil
+		or (def.short_description or ""):lower():find("poison", 1, true) ~= nil
+end
+
 function autoeat.eat()
 	local food_index
 	local food_count = 0
@@ -14,7 +20,7 @@ function autoeat.eat()
 		local stackname = stack:get_name()
 		if stackname ~= "" then
 			local def = core.get_item_def(stackname)
-			if def and def.groups.food then
+			if def and def.groups.food and not is_poison_food(stackname, def) then
 				food_count = food_count + 1
 				if food_index then
 					break
@@ -109,6 +115,7 @@ autoeat._on_hud_add = on_hud_add
 autoeat._on_hud_change = on_hud_change
 autoeat._on_hud_remove = on_hud_remove
 autoeat._on_damage_taken = on_damage_taken
+autoeat._is_poison_food = is_poison_food
 autoeat._reset = function()
 	hunger = 20
 	hunger_id = nil

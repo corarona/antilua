@@ -90,4 +90,38 @@ function test_autoeat(T)
 		core.settings:set("autoeat", "true")
 		if orig then core.settings:set("autoeat", orig) end
 	end)
+
+	T.run("poison detection: name", function()
+		T.assert(autoeat._is_poison_food("mcl_farming:potato_poison", { groups = { food = 1 } }),
+			"poison in item name should be detected")
+	end)
+
+	T.run("poison detection: description", function()
+		T.assert(autoeat._is_poison_food("mcl_farming:poisonous_potato",
+			{ groups = { food = 1 }, description = "Poisonous Potato" }),
+			"poison in description should be detected")
+	end)
+
+	T.run("poison detection: short_description", function()
+		T.assert(autoeat._is_poison_food("some_mod:weird_food",
+			{ groups = { food = 1 }, short_description = "Poisonous snack" }),
+			"poison in short_description should be detected")
+	end)
+
+	T.run("poison detection: case insensitive", function()
+		T.assert(autoeat._is_poison_food("some_mod:PoisonApple",
+			{ groups = { food = 1 } }),
+			"capitalized poison should be detected")
+	end)
+
+	T.run("poison detection: clean food passes", function()
+		T.assert(not autoeat._is_poison_food("mcl_core:apple",
+			{ groups = { food = 1 }, description = "Apple" }),
+			"clean food should not be flagged")
+	end)
+
+	T.run("poison detection: nil description is safe", function()
+		T.assert(not autoeat._is_poison_food("mcl_core:apple", { groups = { food = 1 } }),
+			"missing description should not error")
+	end)
 end
