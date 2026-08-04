@@ -124,4 +124,9 @@ function test_autoeat(T)
 		T.assert(not autoeat._is_poison_food("mcl_core:apple", { groups = { food = 1 } }),
 			"missing description should not error")
 	end)
+
+	T.run("eat() runs without error", function()
+		local ok = pcall(autoeat.eat)
+		T.assert(ok, "eat() should not error")
+	end)
 end

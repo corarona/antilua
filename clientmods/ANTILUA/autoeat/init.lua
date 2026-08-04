@@ -32,7 +32,11 @@ function autoeat.eat()
 	if food_index then
 		local player = core.localplayer
 		local old_index = player:get_wield_index()
-		player:set_wield_index(food_index)
+		local wield_index = food_index
+		if wield_index > player:get_hotbar_size() then
+			wield_index = ws.to_hotbar(food_index)
+		end
+		player:set_wield_index(wield_index)
 		if ws.get_game() == "mcl" then
 			core.place_node(core.localplayer:get_pos())
 		else
