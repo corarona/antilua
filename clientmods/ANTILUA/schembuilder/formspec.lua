@@ -68,7 +68,8 @@ function schembuilder.build_browser_content(tab, cw)
 		else
 			fs = fs .. "label[0,0.6;Available schematics:  ([U] = user)]" ..
 				"textlist[0,1;" .. cw .. ",7;schem_list;" .. table.concat(schems, ",") .. ";0]" ..
-				"button[0,8.5;4,0.8;schem_load;Load]"
+				"button[0,8.5;4,0.8;schem_load;Load]" ..
+				"button[0,9.4;4,0.6;schem_stop;Stop Build]"
 			-- Show info for selected schematic
 			if _selected_schem_name and schem_cache[_selected_schem_name] then
 				local info = schem_cache[_selected_schem_name]
@@ -85,13 +86,14 @@ function schembuilder.build_browser_content(tab, cw)
 			for _, entry in ipairs(idx) do
 				table.insert(entries, core.formspec_escape(entry.name .. " (" .. entry.remaining .. "/" .. entry.count .. ")"))
 			end
-			local bw = (cw - 0.3) / 4
+			local bw = (cw - 0.5) / 5
 			fs = fs .. "label[0,0.6;Saved builds for " .. core.formspec_escape(sid) .. ":]" ..
 				"textlist[0,1;" .. cw .. ",5;build_list;" .. table.concat(entries, ",") .. ";0]" ..
 				"button[0,6.5;" .. bw .. ",0.8;build_load;Load]" ..
 				"button[" .. (bw + 0.1) .. ",6.5;" .. bw .. ",0.8;build_restart;Restart]" ..
 				"button[" .. (2 * (bw + 0.1)) .. ",6.5;" .. bw .. ",0.8;build_delete;Delete]" ..
-				"button[" .. (3 * (bw + 0.1)) .. ",6.5;" .. bw .. ",0.8;build_clear_particles;Clear Particles]"
+				"button[" .. (3 * (bw + 0.1)) .. ",6.5;" .. bw .. ",0.8;build_clear_particles;Particles]" ..
+				"button[" .. (4 * (bw + 0.1)) .. ",6.5;" .. bw .. ",0.8;build_stop;Stop]"
 		end
 	elseif tab == 2 then
 		-- Tab 2: BlockExchange

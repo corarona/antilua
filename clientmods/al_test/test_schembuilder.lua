@@ -316,4 +316,63 @@ function test_schembuilder(T)
 		T.assert_eq(place_nodes[1].name, "mcl_core:stone", "first node should be stone")
 		place_nodes = orig or {}
 	end)
+
+	T.run("/schemstop chat command registered", function()
+		T.assert(type(core.registered_chatcommands["schemstop"]) == "table", "/schemstop should be registered")
+	end)
+
+	T.run("schembuilder.stop_build exists", function()
+		T.assert(type(schembuilder.stop_build) == "function", "schembuilder.stop_build should exist")
+	end)
+
+	T.run("stop_build clears place_nodes and disables build cheats", function()
+		local orig = place_nodes
+		local saved_settings = {}
+		local build_settings = { "autoschemplace", "schembuilderbot", "rhythmbuildbot", "schematic_looter" }
+		for _, s in ipairs(build_settings) do
+			saved_settings[s] = core.settings:get(s)
+			core.settings:set_bool(s, true)
+		end
+		place_nodes = { {x = 0, y = 0, z = 0, name = "mcl_core:stone", param2 = 0} }
+		schembuilder.stop_build()
+		T.assert_eq(#place_nodes, 0, "place_nodes should be empty after stop_build")
+		for _, s in ipairs(build_settings) do
+			T.assert(core.settings:get_bool(s) == false, s .. " should be disabled after stop_build")
+		end
+		for _, s in ipairs(build_settings) do
+			if saved_settings[s] == nil then
+				core.settings:set(s, "false")
+			else
+				core.settings:set(s, saved_settings[s])
+			end
+		end
+		place_nodes = orig or {}
+	end)
+
+	T.run("browser stop button handler stops the build", function()
+		local orig = place_nodes
+		place_nodes = { {x = 0, y = 0, z = 0, name = "mcl_core:stone", param2 = 0} }
+		schembuilder.handle_browser_fields({ schem_stop = true })
+		T.assert_eq(#place_nodes, 0, "schem_stop should clear place_nodes")
+		place_nodes = { {x = 0, y = 0, z = 0, name = "mcl_core:stone", param2 = 0} }
+		schembuilder.handle_browser_fields({ build_stop = true })
+		T.assert_eq(#place_nodes, 0, "build_stop should clear place_nodes")
+		place_nodes = orig or {}
+	end)
+
+	T.run("quick menu has stop schematic build entry", function()
+		local orig = place_nodes
+		place_nodes = { {x = 0, y = 0, z = 0, name = "mcl_core:stone", param2 = 0} }
+		local found = false
+		for _, p in ipairs(core.quick_menu_providers) do
+			local entries = p.func and p.func() or {}
+			for _, e in ipairs(entries) do
+				if e.label == "Stop Schematic Build" then
+					found = true
+				end
+			end
+		end
+		T.assert(found, "Stop Schematic Build entry should be in the quick menu")
+		place_nodes = orig or {}
+	end)
 end

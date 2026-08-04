@@ -21,6 +21,18 @@ end
 hud_id = nil
 local place_nodes_initial = 0
 
+-- Remove the build HUD without touching the saved job (update_hud would
+-- call clear_job() when place_nodes is empty, deleting the saved build).
+function schembuilder_clear_hud()
+	place_nodes_initial = 0
+	if hud_id then
+		if core.localplayer then
+			core.localplayer:hud_remove(hud_id)
+		end
+		hud_id = nil
+	end
+end
+
 function update_hud()
 	if not core.localplayer then return end
 	if #place_nodes == 0 then

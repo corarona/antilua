@@ -20,6 +20,15 @@ Schematic preview and placement tool. Loads MTS schematics as semi-transparent p
   - `/spos1` — Set region corner 1 at player position.
   - `/spos2` — Set region corner 2 at player position.
   - `/ssave` — Save nodes between pos1 and pos2 to `schembuilder_output` setting.
+  - `/schemstop` — Stop the current build: clears the preview and turns off
+    AutoSchemPlace, SchemBuilderBot, RhythmBuildBot and SchematicLooter. The
+    saved build is kept in the Saved Builds tab.
+- **Quick menu:**
+  - `Stop Schematic Build` (in the `~` quick access palette, shown while a
+    build is active) — same as `/schemstop`.
+- **Schematic browser:**
+  - `Stop Build` button (Browse tab) / `Stop` button (Saved Builds tab) —
+    stops the current build like `/schemstop`.
 - **Cheats:**
   - `AutoSchemPlace` (Place category) — Place loaded schematic nodes within
     range using the strategy system.

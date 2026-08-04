@@ -54,6 +54,31 @@ function do_schembuild(param, use_pos)
 	return true, nil, param
 end
 
+-- Stop the current build: clear preview/placement state and disable every
+-- build cheat/bot. Unlike schemclear, the saved build is kept in Saved Builds.
+function schembuilder.stop_build()
+	place_nodes = {}
+	clear_supply_chests()
+	if type(schembuilder_clear_hud) == "function" then
+		schembuilder_clear_hud()
+	elseif hud_id then
+		if core.localplayer then
+			core.localplayer:hud_remove(hud_id)
+		end
+		hud_id = nil
+	end
+	if type(schemclear_cancel_wireframe) == "function" then
+		schemclear_cancel_wireframe()
+	end
+	if type(core.clear_all_particles) == "function" then
+		core.clear_all_particles()
+	end
+	for _, setting in ipairs({ "autoschemplace", "schembuilderbot", "rhythmbuildbot", "schematic_looter" }) do
+		core.settings:set_bool(setting, false)
+	end
+	ws.notify("Build stopped (saved build kept in Saved Builds)", ws.NOTIFY_INFO)
+end
+
 local _selected_schem = nil
 local _selected_build = nil
 
@@ -282,6 +307,12 @@ function schembuilder.handle_browser_fields(fields)
 	-- Tab 0: Load schematic button
 	if fields.schem_load and _selected_schem then
 		load_schematic_by_index(_selected_schem)
+		return true
+	end
+
+	if fields.schem_stop or fields.build_stop then
+		schembuilder.stop_build()
+		core.close_formspec("schembuilder:browser")
 		return true
 	end
 
@@ -604,3 +635,26 @@ core.register_chatcommand("spos2", {
 		draw_wireframe()
 	end,
 })
+
+core.register_chatcommand("schemstop", {
+	description = "Stop the current schematic build and disable build cheats (saved build kept in Saved Builds)",
+	func = function(param)
+		schembuilder.stop_build()
+		return true
+	end,
+})
+
+-- Quick Access Palette (~) entry: stop the current build with one keypress.
+if core.register_quick_menu_provider then
+	core.register_quick_menu_provider(function()
+		if #place_nodes == 0 then return {} end
+		return {
+			{
+				label = "Stop Schematic Build",
+				action = function() schembuilder.stop_build() end,
+				keywords = { "schem", "build", "stop", "clear" },
+				description = "Stop the current schematic build and disable build cheats (saved build kept)",
+			},
+		}
+	end)
+end
