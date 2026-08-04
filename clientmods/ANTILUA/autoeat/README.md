@@ -18,7 +18,7 @@ All exported on the global `autoeat` table.
 
 - `autoeat.lock` (bool) — Lock flag; when `true` the globalstep skips eating. Set by the autodupe integration.
 - `autoeat.eat()` — Finds the first food item in the main inventory, wields it, and activates it. If only one food type is present and `autodupe` exists, delegates to `autodupe.needed()` instead.
-- `autoeat.get_hunger()` → number — Returns the player's current hunger level by reading the hunger HUD element (or 20 as fallback).
+- `autoeat.get_hunger()` → number — Returns the player's current hunger level, tracked by intercepting server HUDADD/HUDCHANGE packets for the hunger bar (or 20 as fallback).
 
 ## Cheats
 
