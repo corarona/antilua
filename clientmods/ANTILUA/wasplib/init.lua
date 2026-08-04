@@ -7,6 +7,24 @@ ws.hotbar_slot = 8
 
 local nextact = {}
 local ghwason = {}
+local state = {}
+
+local games = {
+	["mcl_core:stone"] = "mcl",
+	["default:stone"] = "mtg",
+	["nc_core:sonte"] = "nc",
+	["default"] = "unknown",
+
+}
+
+function ws.get_game()
+	for nd, game in pairs(games) do
+		if core.get_item_def(nd) then
+			return game
+		end
+	end
+	return "unknown"
+end
 
 dofile(core.get_modpath("wasplib") .. "/settings.lua")
 dofile(core.get_modpath("wasplib") .. "/coord.lua")

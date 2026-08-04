@@ -1,9 +1,6 @@
 autoeat = {}
-autoeat.lock = false
 
-local autodupe = rawget(_G, "autodupe")
 local hud_id = nil
-local etime = 0
 
 function autoeat.eat()
 	local food_index
@@ -22,17 +19,15 @@ function autoeat.eat()
 		end
 	end
 	if food_index then
-		if food_count == 1 and autodupe then
-			autodupe.needed(food_index)
-			autoeat.lock = true
+		local player = core.localplayer
+		local old_index = player:get_wield_index()
+		player:set_wield_index(food_index)
+		if ws.get_game() == "mcl" then
+			core.place_node(core.localplayer:get_pos())
 		else
-			local player = core.localplayer
-			local old_index = player:get_wield_index()
-			player:set_wield_index(food_index)
 			core.interact("activate", {type = "nothing"})
-			player:set_wield_index(old_index)
-			autoeat.lock = false
 		end
+		player:set_wield_index(old_index)
 	end
 end
 
@@ -43,15 +38,6 @@ function autoeat.get_hunger()
 	end
 	return 20
 end
-
-core.register_globalstep(function(dtime)
-	if not core.localplayer then return end
-	etime = etime + dtime
-	if autoeat.lock or core.settings:get_bool("autoeat") and etime >= ws.get_number("autoeat", "cooldown", 0.5) and autoeat.get_hunger() < ws.get_number("autoeat", "hunger", 9) then
-		etime = 0
-		autoeat.eat()
-	end
-end)
 
 local function find_hud()
 	local player = core.localplayer
@@ -69,5 +55,20 @@ end
 
 core.after(3, find_hud)
 
-core.register_cheat("AutoEat", { category = "Player", setting = "autoeat",
-	description = "Auto-eat food when hungry" })
+ws.rg("AutoEat",
+	{
+		category = "Player",
+		setting = "autoeat",
+		description = "Auto-eat food when hungry",
+		on_step = function()
+			local hunger = autoeat.get_hunger()
+			core.log("hunger: "..tostring(hunger))
+			if hunger < 20 and (core.settings:get_bool("autoeat.always_eat", false) or autoeat.get_hunger() < tonumber(core.settings:get("autoeat.hunger_threshold")) ) then
+				autoeat.eat()
+			end
+		end,
+		cheat_settings = {
+			always_eat = { type = "bool", default = false },
+			hunger_treshold = { type = "number", default = 15, min = 1, max = 19 },
+		},
+})

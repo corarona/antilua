@@ -43,20 +43,7 @@ local state = {
 	active = "main",
 }
 
-local function get_game()
-	if state.game then
-		return state.game
-	end
-	if core.get_item_def("mcl_core:stone") then
-		state.game = "mineclone"
-	elseif core.get_item_def("default:stone") then
-		state.game = "minetest"
-	else
-		state.game = "unknown"
-	end
-	return state.game
-end
-
+local get_game = ws.get_game()
 -- ---------------------------------------------------------------------------
 -- Generalized right-side sub-tab system
 -- ---------------------------------------------------------------------------
