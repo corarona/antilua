@@ -642,7 +642,10 @@ local function main_button_handler(tabview, fields, name, tabdata)
 		-- submission (including Join/Login presses), so acting unconditionally
 		-- would swallow those. Returning true on a change triggers ui.update()
 		-- so te_name/te_pwd sync to the newly picked account before any Join.
-		if fi and fi ~= tonumber(tabdata.selected_account_index) then
+		-- The dropdown default is `selected_account_index or 1`, so an empty
+		-- (nil) selection must compare against 1 or every submission would look
+		-- like a change and swallow the tab's buttons and server list.
+		if fi and fi ~= (tonumber(tabdata.selected_account_index) or 1) then
 			tabdata.selected_account_index = fi
 			local filtered = tabdata._filtered_map
 			local ai = filtered and filtered[fi]
