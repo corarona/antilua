@@ -41,6 +41,13 @@ local function reset_gui_state()
 	filter_group = ""
 	sort_by_distance = false
 	lpos = nil
+	-- Clear navigation state so a reconnected session doesn't target a POI
+	-- from a previous server.
+	poi.last_name = nil
+	poi.last_pos = nil
+	poi.target = nil
+	poi.eta = nil
+	poi.etatime = nil
 	for title in pairs(shown_huds) do
 		if core.localplayer then ws.hud_remove_waypoint(title) end
 	end
@@ -105,6 +112,13 @@ local function group_key(name)
 	return stprefix .. tostring(name) .. "_group"
 end
 
+local function ss_key(name)
+	if show_all_enabled() and name:find(":") then
+		return "POI-" .. tostring(name) .. "_ss"
+	end
+	return stprefix .. tostring(name) .. "_ss"
+end
+
 function poi.get_color(name)
 	return storage:get_string(color_key(name))
 end
@@ -124,16 +138,29 @@ end
 function poi.getwps()
 	local prefix = show_all_enabled() and "POI-" or stprefix
 	local wp = {}
-	for name, _ in pairs(storage:to_table().fields) do
-		if name:sub(1, #prefix) == prefix then
-			local short = name:sub(#prefix + 1)
-			if not short:match("_ss$") and not short:match("_color$") and not short:match("_group$") then
-				table.insert(wp, short)
-			end
+	local fields = storage:to_table().fields
+	for key in pairs(fields) do
+		if key:sub(1, #prefix) == prefix then
+			wp[key] = true
 		end
 	end
-	table.sort(wp)
-	return wp
+	-- Drop metadata keys (_ss/_color/_group) only when the waypoint they
+	-- belong to actually exists, so waypoints whose names legitimately end
+	-- in one of those suffixes stay visible.
+	for key in pairs(wp) do
+		local short = key:sub(#prefix + 1)
+		local base, suffix = short:match("^(.*)_([a-z]+)$")
+		if base and (suffix == "ss" or suffix == "color" or suffix == "group")
+				and wp[prefix .. base] then
+			wp[key] = nil
+		end
+	end
+	local out = {}
+	for key in pairs(wp) do
+		table.insert(out, key:sub(#prefix + 1))
+	end
+	table.sort(out)
+	return out
 end
 
 function poi.set_waypoint(pos, name)
@@ -142,7 +169,7 @@ function poi.set_waypoint(pos, name)
 	storage:set_string(full_key(name), pos)
 	local ss = core.make_screenshot()
 	if ss and ss ~= "" then
-		storage:set_string(stprefix .. tostring(name) .. "_ss", ss)
+		storage:set_string(ss_key(name), ss)
 	end
 	return true
 end
@@ -155,7 +182,7 @@ function poi.delete_waypoint(name)
 	storage:set_string(full_key(name), "")
 	storage:set_string(color_key(name), "")
 	storage:set_string(group_key(name), "")
-	storage:set_string(stprefix .. tostring(name) .. "_ss", "")
+	storage:set_string(ss_key(name), "")
 end
 
 function poi.rename_waypoint(oldname, newname)
@@ -225,18 +252,22 @@ function poi.color_int(name)
 	return tonumber(hex, 16) or 0x00ff00
 end
 
-function poi.set_hud_wp(pos, title)
-	pos = ws.string_to_pos(pos)
-	if not pos then return end
-	title = title or ws.pos_to_string(pos)
-	poi.last_name = title
-	poi.last_pos = pos
+local function show_wp_hud(pos, title)
 	-- Colored by the waypoint's group (falling back to its own color), shown
 	-- as a small dot followed by the name.
 	local color = poi.group_color(poi.get_group(title)) or poi.color_int(title)
 	local display = WP_DOT .. title
 	ws.hud_waypoint(display, pos, color, "m")
 	shown_huds[display] = true
+end
+
+function poi.set_hud_wp(pos, title)
+	pos = ws.string_to_pos(pos)
+	if not pos then return end
+	title = title or ws.pos_to_string(pos)
+	poi.last_name = title
+	poi.last_pos = pos
+	show_wp_hud(pos, title)
 	return true
 end
 
@@ -265,6 +296,7 @@ function poi.select_waypoint(name)
 end
 
 function poi.get_nearest_name()
+	if not core.localplayer then return nil end
 	local nearest, odst = nil, 500
 	local lp = core.localplayer:get_pos()
 	for _, name in ipairs(poi.getwps()) do
@@ -281,6 +313,7 @@ function poi.get_nearest_name()
 end
 
 function poi.get_quad()
+	if not core.localplayer then return nil end
 	local lp = core.localplayer:get_pos()
 	local quad = lp.z < 0 and "South" or "North"
 	return lp.x < 0 and quad .. "-west" or quad .. "-east"
@@ -318,9 +351,9 @@ ws.on_death(function()
 	if not core.localplayer then return end
 	local my_death = death_counter
 	death_counter = death_counter + 1
+	local pos = core.localplayer:get_pos()
+	poi.death_pos = vector.new(pos)
 	if core.settings:get_bool("auto_death_waypoint", true) then
-		local pos = core.localplayer:get_pos()
-		poi.death_pos = vector.new(pos)
 		poi.last_pos = pos
 		local name = "Death - " .. os.date("%Y-%m-%d %H:%M")
 		poi.last_name = name
@@ -335,6 +368,7 @@ ws.on_death(function()
 		local dpos = poi.death_pos and vector.new(poi.death_pos)
 		core.after(0.5, function()
 			if death_counter ~= my_death + 1 then return end
+			if not dpos or not core.localplayer then return end
 			core.localplayer:set_pos(dpos)
 			core.after(0.1, function()
 				if death_counter ~= my_death + 1 then return end
@@ -374,8 +408,7 @@ local function wp_distance(name)
 end
 
 local function get_screenshot(name)
-	local prefix = show_all_enabled() and name:find(":") and "POI-" or stprefix
-	local ss = storage:get_string(prefix .. tostring(name) .. "_ss")
+	local ss = storage:get_string(ss_key(name))
 	return (ss ~= "") and ss or nil
 end
 
@@ -467,6 +500,15 @@ local function build_header(sb, af)
 end
 
 local function build_waypoint_list(sb, af, waypoints)
+	-- If the selected waypoint was filtered out, drop it so the details panel
+	-- and the textlist highlight agree on the same (re)selected entry.
+	if selected_name then
+		local in_list = false
+		for _, n in ipairs(waypoints) do
+			if n == selected_name then in_list = true break end
+		end
+		if not in_list then selected_name = nil end
+	end
 	local tl_entries = {}
 	for id, name in ipairs(waypoints) do
 		formspec_list[id] = name
@@ -656,6 +698,11 @@ function poi.handle_fields(fields)
 		wp_group = function()
 			if fields.key_enter_field == "wp_group" and fields.wp_group then
 				poi.set_group(selected_name, fields.wp_group)
+				-- Refresh the HUD dot so it picks up the new group color.
+				if selected_name and shown_huds[WP_DOT .. selected_name] then
+					local pos = poi.get_waypoint(selected_name)
+					if pos then show_wp_hud(pos, selected_name) end
+				end
 				poi.display_formspec()
 				return true
 			end
@@ -673,10 +720,12 @@ function poi.handle_fields(fields)
 				if cur == "" then cur = "00ff00" end
 				if c.hex ~= cur then
 					poi.set_color(selected_name, c.hex)
-					for title in pairs(shown_huds) do
-						ws.hud_remove_waypoint(title)
+					-- Refresh the HUD dot so it picks up the new color
+					-- without disturbing the rest of the display.
+					if shown_huds[WP_DOT .. selected_name] then
+						local pos = poi.get_waypoint(selected_name)
+						if pos then show_wp_hud(pos, selected_name) end
 					end
-					shown_huds = {}
 					poi.display_formspec()
 					return true
 				end
@@ -689,9 +738,11 @@ function poi.handle_fields(fields)
 	if fields.wp_list then
 		local event = core.explode_textlist_event(fields.wp_list)
 		if event.index then name = formspec_list[event.index] end
-	else
-		name = selected_name
 	end
+	-- A submitted textlist that was never clicked reports index 0 (INV
+	-- event); fall back to the auto-selected entry so buttons like the
+	-- transports work without having to click the list first.
+	if not name then name = selected_name end
 
 	if fields.wp_list and name and name ~= selected_name then
 		selected_name = name
@@ -701,7 +752,9 @@ function poi.handle_fields(fields)
 
 	for _, v in ipairs(poi.registered_transports) do
 		if fields[v.name] then
-			if v.func(poi.get_waypoint(name), name) then
+			if not name then
+				ws.notify("Please select a waypoint first.", ws.NOTIFY_ERROR)
+			elseif v.func(poi.get_waypoint(name), name) then
 				ws.notify("Error with " .. v.name, ws.NOTIFY_ERROR)
 			end
 			return true
@@ -829,6 +882,9 @@ core.register_chatcommand("add_waypoint", {
 		if #name < 1 then
 			return false, "Waypoint name cannot be empty."
 		end
+		if not core.string_to_pos(pos_str) then
+			return false, "Invalid position: " .. pos_str
+		end
 		return poi.set_waypoint(pos_str, name), "Waypoint added."
 	end,
 })
@@ -871,8 +927,18 @@ ws.register_chatcommand_alias("clear_waypoint", "cwp", "cls")
 core.register_chatcommand("wpdisplay", {
 	params = "<pos> <name>",
 	description = "Display a waypoint at the given position.",
-	func = function(pos, name)
-		poi.display(pos, name)
+	func = function(param)
+		local pos_str, name = param, nil
+		local s, e = param:find(" ")
+		if s then
+			pos_str = param:sub(1, s - 1)
+			name = param:sub(e + 1)
+			if name == "" then name = nil end
+		end
+		if not core.string_to_pos(pos_str) then
+			return false, "Invalid position: " .. pos_str
+		end
+		poi.display(pos_str, name)
 	end,
 })
 ws.register_chatcommand_alias("wpdisplay", "wpd")
