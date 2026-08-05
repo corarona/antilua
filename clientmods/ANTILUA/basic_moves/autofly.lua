@@ -29,7 +29,7 @@ local function read_settings(self)
 		speed = tonumber(core.settings:get(self.setting .. ".speed")) or 1.0,
 		alt_hold = core.settings:get_bool(self.setting .. ".altitude_hold"),
 		alt = tonumber(core.settings:get(self.setting .. ".altitude")) or 10,
-		avoid = core.settings:get_bool(self.setting .. ".avoid_obstacles") ~= false,
+		avoid = core.settings:get(self.setting .. ".avoid_obstacles") ~= "false",
 	}
 end
 
@@ -74,7 +74,7 @@ end
 local function obstacle_avoidance(lp)
 	local ahead = ws.dircoord(1, 0, 0)
 	local nd = core.get_node_or_nil(ahead)
-	if not (nd and nd.name ~= "air") then return end
+	if not (nd and nd.name ~= "air" and nd.name ~= "ignore") then return end
 	local up = ws.dircoord(1, 1, 0)
 	if core.get_node_or_nil(up) and core.get_node_or_nil(up).name == "air" then
 		core.localplayer:set_pos(up)
@@ -91,7 +91,7 @@ local function obstacle_avoidance(lp)
 	end
 end
 
-local function execute_movement(self, s, dst, target, lp)
+local function execute_movement(self, s, dst, lp)
 	if dst <= s.landing then
 		core.localplayer:set_pitch(0)
 		core.settings:set_bool("continuous_forward", false)
@@ -101,7 +101,7 @@ local function execute_movement(self, s, dst, target, lp)
 	end
 	if not core.settings:get_bool("continuous_forward") then return end
 	if s.mode == "3d_velocity" then
-		local dir = vector.direction(lp, target)
+		local dir = vector.direction(lp, autofly.tpos)
 		core.localplayer:set_velocity(vector.multiply(dir,
 			core.localplayer:get_movement_speed().walk / 10 * s.speed))
 	else
@@ -113,10 +113,22 @@ ws.rg("Autopilot", {
 	category = "Movement",
 	setting = "autopilot",
 	description = "Automatic flight with obstacle avoidance",
-	on_step = function(self)
+	on_step = function(self, dtime)
 		local s = read_settings(self)
 		local target = resolve_target(s.mode)
-		if not target then return end
+		if not target then
+			-- Don't hover forever in follow mode when the target is gone.
+			if s.mode == "follow" then
+				self._no_target = (self._no_target or 0) + (dtime or 0)
+				if self._no_target > 15 then
+					autofly.follow_name = nil
+					core.settings:set_bool(self.setting, false)
+					ws.notify("Follow target lost", ws.NOTIFY_WARNING)
+				end
+			end
+			return
+		end
+		self._no_target = nil
 
 		local lp = ws.dircoord(0, 0, 0)
 		autofly.tpos = compute_tpos(s.mode, target, lp)
@@ -135,22 +147,26 @@ ws.rg("Autopilot", {
 
 		-- Altitude hold (not for hover or 3d_velocity)
 		if s.alt_hold and s.mode ~= "3d_velocity" and s.mode ~= "hover" then
-			local gy = find_ground_y(lp, s.alt)
+			local gy = find_ground_y(lp, 200)
 			if gy then altitude_adjust(lp, gy + s.alt, 1, 1) end
 		end
 
-		execute_movement(self, s, dst, target, lp)
+		execute_movement(self, s, dst, lp)
 	end,
 	on_start = function(self)
 		autofly.arrived = nil
+		self._no_target = nil
 		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
 		if mode ~= "follow" and (not poi.last_pos or not poi.last_name) then
 			return false, "Select a poi first."
 		end
 		local speed = tonumber(core.settings:get(self.setting .. ".speed")) or 1.0
 		local lp = ws.dircoord(0, 0, 0)
-		autofly.tpos = table.copy(poi.last_pos)
+		if poi.last_pos then
+			autofly.tpos = table.copy(poi.last_pos)
+		end
 
+		self._phys_prev = core.localplayer:get_physics_override()
 		core.localplayer:set_physics_override({ speed = speed })
 
 		if mode == "2d_aim" then
@@ -181,7 +197,10 @@ ws.rg("Autopilot", {
 	end,
 	on_stop = function(self)
 		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
-		core.localplayer:set_physics_override({ speed = 1, gravity = 1 })
+		if self._phys_prev then
+			core.localplayer:set_physics_override(self._phys_prev)
+			self._phys_prev = nil
+		end
 		if mode == "2d_aim" then
 			poi.display(autofly.atpos, poi.last_name)
 			ws.aim(autofly.atpos)
@@ -210,11 +229,10 @@ end)
 
 function autofly.warp(name)
 	local pos = poi.get_waypoint(name)
-	if pos then
-		if ws.get_dimension(pos) == "void" then return false end
-		core.localplayer:set_pos(pos)
-		return true
-	end
+	if not pos then return false end
+	if ws.get_dimension(pos) == "void" then return false end
+	core.localplayer:set_pos(pos)
+	return true
 end
 
 local function go_to(pos, name)

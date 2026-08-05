@@ -4,10 +4,12 @@ dofile(modpath .. "/autofly.lua")
 dofile(modpath .. "/flight_hud.lua")
 
 poi.register_transport("CTP", function(pos, _)
+	if not pos then return true end
 	core.localplayer:set_pos(pos)
 end)
 
 poi.register_transport("STP", function(pos, _)
+	if not pos then return true end
 	core.send_chat_message("/teleport " .. pos.x .. "," .. pos.y .. "," .. pos.z)
 end)
 
@@ -30,6 +32,8 @@ ws.rg("AxisSnap", {
 	setting = "axissnap",
 	description = "Snap movement to cardinal axes",
 	on_step = function()
+		-- Autopilot aims the camera itself; don't fight it.
+		if core.settings:get_bool("autopilot") then return end
 		local yaw = core.localplayer:get_yaw()
 		local snapped = math.floor((yaw + 45) / 90) % 4 * 90
 		core.localplayer:set_yaw(snapped)

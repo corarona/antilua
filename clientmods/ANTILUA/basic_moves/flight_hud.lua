@@ -65,24 +65,30 @@ local hud_defs = {
 	{key = "speed_bar",type = "text", pos = {x=1,y=1}, align = {x=1,y=1},     offset={x=-200,y=-38},  color=0xFFAAAAAA,             text=""},
 }
 
-ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
+local flight_hud_def
+
+local function create_hud(self)
+	self._hud_ids = {}
+	for _, def in ipairs(hud_defs) do
+		local args = {
+			type = def.type,
+			position = def.pos,
+			alignment = def.align,
+			offset = def.offset,
+			text = def.text,
+		}
+		if def.scale then args.scale = def.scale end
+		if def.color then args.number = def.color end
+		self._hud_ids[def.key] = core.localplayer:hud_add(args)
+	end
+	self._last_roll_tex = nil
+end
+
+flight_hud_def = {
+	category = "Render", setting = "flight_hud",
 	description = "Show flight status HUD",
 	on_start = function(self)
-		if not core.localplayer then return true end
-		self._hud_ids = {}
-		for _, def in ipairs(hud_defs) do
-			local args = {
-				type = def.type,
-				position = def.pos,
-				alignment = def.align,
-				offset = def.offset,
-				text = def.text,
-			}
-			if def.scale then args.scale = def.scale end
-			if def.color then args.number = def.color end
-			self._hud_ids[def.key] = core.localplayer:hud_add(args)
-		end
-		self._last_roll_tex = nil
+		create_hud(self)
 	end,
 	on_step = function(self, dtime)
 		local lp = core.localplayer
@@ -146,10 +152,19 @@ ws.rg("FlightHUD", { category = "Render", setting = "flight_hud",
 		set(hid.speed_bar, "number", speed > 3 and 0xFFFF6666 or 0xFFAAAAAA)
 	end,
 	on_stop = function(self)
-		if not core.localplayer then return end
 		for _, id in pairs(self._hud_ids) do
 			if id then core.localplayer:hud_remove(id) end
 		end
 		self._hud_ids = {}
 	end,
-})
+}
+
+ws.rg("FlightHUD", flight_hud_def)
+
+-- HUD element ids are invalidated on reconnect; recreate them so the HUD
+-- comes back without needing to re-toggle the cheat.
+ws.on_connect(function()
+	if core.localplayer and core.settings:get_bool("flight_hud") then
+		create_hud(flight_hud_def)
+	end
+end)
