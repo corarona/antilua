@@ -325,7 +325,7 @@ end
 local function startup_form_content(w, h)
 	w = w or data.width
 	h = h or data.height
-  -- the formspec for adding or removing files for startup
+	-- the formspec for adding or removing files for startup
 	local startup_str = ""
 	for i, v in pairs(lua_startup) do
 		if i ~= 1 then startup_str = startup_str.."," end
@@ -353,7 +353,7 @@ end
 local function lua_editor_content(w, h)
 	w = w or data.width
 	h = h or data.height
-  -- the main formspec for editing
+	-- the main formspec for editing
 
 	local output_str = ""  --  convert the output to a string
 	for i, v in pairs(output) do
@@ -649,7 +649,7 @@ end
 local function file_viewer_content(w, h)
 	w = w or data.width
 	h = h or data.height
-  -- created with the formspec editor!
+	-- created with the formspec editor!
 	local lua_files_item_str = ""
 	for i, item in pairs(lua_files) do
 		if i ~= 1 then lua_files_item_str = lua_files_item_str.."," end
