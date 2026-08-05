@@ -20,6 +20,37 @@ local SFINV_FS = table.concat({
 
 local GENERIC_FS = "formspec_version[3]size[8,9.1]list[current_player;main;0,5.2;8,1;]"
 
+-- Mineclonia creative inventory (mcl_inventory creative tabs).
+local MC_CREATIVE_FS = table.concat({
+	"formspec_version[6]",
+	"size[13,11.43]",
+	"no_prepend[]",
+	"listcolors[#9990;#FFF7;#FFF0;#000;#FFF]",
+	"bgcolor[#00000000;true]",
+	"background9[0,1.34;13,8.75;mcl_base_textures_background9.png;;7]",
+	"container[0,1.34]",
+	"image[0.525,7.525;0,0;mcl_formspec_itemslot.png]",
+	"list[current_player;main;0.375,7.375;9,1;]",
+	"list[detached:trash;main;11.625,7.375;1,1;]",
+	"image[0.525,1.025;0,0;mcl_formspec_itemslot.png]",
+	"scroll_container[0.375,0.875;11.575,6;scroll;vertical;1.25]",
+	"list[detached:creative_al_test;main;0,0;9,50;]",
+	"scroll_container_end[]",
+	"scrollbaroptions[min=0;max=45;smallstep=1;largestep=1;arrows=hide]",
+	"scrollbar[11.75,0.825;0.75,6.1;vertical;scroll;0]",
+	"label[0.375,0.375;Building Blocks]",
+	"style[blocks;border=false;bgimg=;bgimg_pressed=]",
+	"style[blocks_outer;border=false;bgimg=crafting_creative_active.png;bgimg_pressed=crafting_creative_active.png]",
+	"button[0.2,-1.34;1.5,1.44;blocks_outer;]",
+	"item_image_button[0.44,-1.1;1,1;mcl_core:brick_block;blocks;]",
+	"tooltip[blocks;Building Blocks]",
+	"button[11.3,8.64;1.5,1.44;inv_outer;]",
+	"item_image_button[11.54,8.89;1,1;mcl_chests:chest;inv;]",
+	"tooltip[inv;Survival Inventory]",
+	"container_end[]",
+	"p1",
+})
+
 function test_invtabs(T)
 	T.run("core.inv_tabs framework exists", function()
 		T.assert(core.inv_tabs ~= nil, "core.inv_tabs should exist")
@@ -141,6 +172,65 @@ function test_invtabs(T)
 		local out = core.inv_tabs._build(creative, "main", "generic")
 		T.assert(out:find("al_tab_main", 1, true) ~= nil, "generic bar should be injected")
 		T.assert(out:find("size[13,11.43]", 1, true) ~= nil, "original size should be preserved")
+	end)
+
+	-- mineclone* creative inventory (left-side tab column + shifted content)
+	T.run("creative main wrap is auto-detected and adds the side column", function()
+		local out = core.inv_tabs._build(MC_CREATIVE_FS, "main")
+		T.assert(out:find("size[14.3,11.43]", 1, true) ~= nil,
+			"creative form should grow to fit the side column")
+		T.assert(out:find("size[13,11.43]", 1, true) == nil, "original size should be replaced")
+		T.assert(out:find("background9[0,1.34;14.3,8.75;", 1, true) ~= nil,
+			"themed panel should stretch to the grown width")
+		T.assert(out:find("al_tab_main", 1, true) ~= nil, "side column should include the Main tab")
+		T.assert(out:find("al_tab_al_test_tab", 1, true) ~= nil, "side column should include our tab")
+		T.assert(out:find("button[0.2,1.6;1.2,0.9;al_tab_main;", 1, true) ~= nil,
+			"Main button should sit at the top of the left column")
+		T.assert(out:find("p1", 1, true) ~= nil, "trailing pagenum marker should be preserved")
+	end)
+
+	T.run("creative wrap shifts native content right", function()
+		local out = core.inv_tabs._build(MC_CREATIVE_FS, "main", "mineclonia_creative")
+		T.assert(out:find("list[current_player;main;1.675,7.375;9,1;]", 1, true) ~= nil,
+			"hotbar list should shift right")
+		T.assert(out:find("list[detached:trash;main;12.925,7.375;1,1;]", 1, true) ~= nil,
+			"trash slot should shift right")
+		T.assert(out:find("scroll_container[1.675,0.875;11.575,6;", 1, true) ~= nil,
+			"scroll_container should shift right")
+		T.assert(out:find("list[detached:creative_al_test;main;0,0;9,50;]", 1, true) ~= nil,
+			"list inside scroll_container should keep relative coords")
+		T.assert(out:find("scrollbar[13.05,0.825;0.75,6.1;", 1, true) ~= nil,
+			"scrollbar should shift right")
+		T.assert(out:find("button[1.5,-1.34;1.5,1.44;blocks_outer;]", 1, true) ~= nil,
+			"native top tab should shift right")
+		T.assert(out:find("item_image_button[1.74,-1.1;1,1;mcl_core:brick_block;blocks;]", 1, true) ~= nil,
+			"native tab icon should shift right")
+		T.assert(out:find("button[12.6,8.64;1.5,1.44;inv_outer;]", 1, true) ~= nil,
+			"native inv tab should shift right")
+		T.assert(out:find("style[blocks;border=false;bgimg=;bgimg_pressed=]", 1, true) ~= nil,
+			"style elements should be preserved")
+		T.assert(out:find("tooltip[blocks;Building Blocks]", 1, true) ~= nil,
+			"tooltip elements should be preserved")
+		T.assert(out:find("container[0,1.34]", 1, true) ~= nil, "native container should be preserved")
+	end)
+
+	T.run("creative page builds a full formspec with the side column", function()
+		local out = core.inv_tabs._build(MC_CREATIVE_FS, "al_test_tab", "mineclonia_creative")
+		T.assert(out:find("size[14.3,11.43]", 1, true) ~= nil, "page should use the grown creative size")
+		T.assert(out:find("al_tab_al_test_tab", 1, true) ~= nil, "page should include the active tab button")
+		T.assert(out:find("al_tab_main", 1, true) ~= nil, "page should include a Main button")
+		T.assert(out:find("hello", 1, true) ~= nil, "page should include the tab build content")
+	end)
+
+	T.run("creative resolve routes our tabs", function()
+		core.inv_tabs.set_active("al_test_tab")
+		core.inv_tabs._handle({ al_tab_main = "" }, "mineclonia_creative")
+		T.assert_eq(core.inv_tabs.get_active(), "main", "al_tab_main should return to the native form")
+		core.inv_tabs._handle({ al_tab_poi = "" }, "mineclonia_creative")
+		T.assert_eq(core.inv_tabs.get_active(), "poi", "al_tab_poi should activate the poi tab")
+		core.inv_tabs._handle({ al_tab_al_test_tab = "" }, "mineclonia_creative")
+		T.assert_eq(core.inv_tabs.get_active(), "al_test_tab", "al_tab_al_test_tab should activate our tab")
+		core.inv_tabs.set_active("main")
 	end)
 
 	-- sfinv integration (minetest_game tabheader)

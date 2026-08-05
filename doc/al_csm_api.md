@@ -550,6 +550,12 @@ core.inv_tabs.open(id)  -- open the inventory at the given tab (false for unknow
 core.open_inventory()   -- trigger the normal inventory open path (C++ binding)
 ```
 
+The tabs are integrated with the host game's own tab system where present:
+mineclone* survival tabs are extended at the top of the form, while the
+mineclone* creative inventory (`size[13,11.43]`) renders the Antilua tabs as a
+vertical text-button column on the left side (the native content is shifted
+right to make room).
+
 #### Clientmod one-shot actions
 
 The `quickmenu` mod registers a provider exposing one-shot actions from other

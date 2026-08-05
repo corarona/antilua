@@ -4,6 +4,8 @@
 -- The server's own inventory formspec stays the default "main" tab.
 -- Integrates with native tab systems when present:
 --   * mineclone*: mcl_inventory survival tab row (crafting_creative_* images)
+--   * mineclone* creative: mcl_inventory creative tabs (size[13,11.43]); the
+--     native content is shifted right to make room for a left-side tab column
 --   * minetest_game: sfinv tabheader (sfinv_nav_tabs)
 --   * anything else: a generic tab bar rendered above the form
 --
@@ -366,6 +368,163 @@ function mineclonia.resolve(fields)
 end
 
 -- ---------------------------------------------------------------------------
+-- mineclone* creative inventory (mcl_inventory creative tabs)
+-- ---------------------------------------------------------------------------
+-- The creative inventory (size[13,11.43]) has native tab rows at the top and
+-- the bottom and no free space on the left, so the Antilua tabs are rendered
+-- as a vertical column of text buttons on the left side and the native
+-- content is shifted right to make room for them.
+
+-- How far the native content moves right (in formspec units).
+local CREATIVE_SHIFT = 1.3
+local CREATIVE_WIDTH = 13 + CREATIVE_SHIFT
+local CREATIVE_HEIGHT = 11.43
+
+-- Element types whose params contain an X/Y position to shift, mapped to the
+-- semicolon-separated param slot holding that position. `list` puts it after
+-- the inventory location and list name (slot 3); everything else uses slot 1.
+local creative_shift_types = {
+	image = 1, list = 3, label = 1, field = 1, button = 1,
+	image_button = 1, item_image_button = 1, scrollbar = 1,
+	model = 1, scroll_container = 1,
+}
+
+-- Shifts the X of the `idx`-th comma-pair segment of an element's params by
+-- `delta`. Returns the rebuilt params string, or nil if it has no numeric X.
+local function shift_params_x(params, idx, delta)
+	local p = split_unescaped(params, ";")
+	local xy = split_unescaped(p[idx], ",")
+	local x = tonumber(xy[1])
+	if not x then
+		return nil
+	end
+	xy[1] = tostring(x + delta)
+	p[idx] = table.concat(xy, ",")
+	return table.concat(p, ";")
+end
+
+-- Re-emits the mineclonia creative formspec with every coordinate-bearing
+-- element shifted right by `delta` and the form/background stretched so the
+-- shifted right-edge elements (scrollbar, nix/inv tabs) stay on-screen.
+-- Coordinates inside a scroll_container are relative to its origin and are
+-- left untouched. The raw string is spliced so unparsed trailing content
+-- (mcl's `p<pagenum>` marker) is preserved.
+local function shift_creative_fs(fs, delta)
+	local els = fs_elements(fs)
+	if #els == 0 then
+		return fs
+	end
+	local parts = { fs:sub(1, els[1].start - 1) }
+	local in_scroll = false
+	for _, el in ipairs(els) do
+		local name = el.name
+		local new_params
+		if name == "scroll_container_end" then
+			in_scroll = false
+		elseif name == "scroll_container" then
+			in_scroll = true
+			new_params = shift_params_x(el.params, 1, delta)
+		elseif not in_scroll and name == "size" then
+			new_params = shift_params_x(el.params, 1, delta)
+		elseif not in_scroll and name == "background9" then
+			-- Keep the themed panel anchored to the left edge and stretch it
+			-- to the grown form width; the side column sits on the panel.
+			new_params = shift_params_x(el.params, 2, delta)
+		elseif not in_scroll and creative_shift_types[name] then
+			new_params = shift_params_x(el.params, creative_shift_types[name], delta)
+		end
+		if new_params then
+			parts[#parts + 1] = name .. "[" .. new_params .. "]"
+		else
+			parts[#parts + 1] = fs:sub(el.start, el.finish)
+		end
+	end
+	parts[#parts + 1] = fs:sub((els[#els].finish or #fs) + 1)
+	return table.concat(parts)
+end
+
+-- Side column geometry (absolute coordinates, outside the native container).
+local CREATIVE_COL_X = 0.2
+local CREATIVE_COL_W = 1.2
+local CREATIVE_COL_H = 0.9
+local CREATIVE_COL_START_Y = 1.6
+local CREATIVE_COL_SPACING = 1.0
+
+local function side_tab_button(id, title, y, active)
+	local style = "style[" .. id .. ";font_size=*0.7"
+	if active then
+		style = style .. ";bgcolor=#00000055;bgcolor_hovered=#00000077;bgcolor_pressed=#00000088"
+	end
+	style = style .. "]"
+	return style .. "button[" .. CREATIVE_COL_X .. "," .. y .. ";"
+		.. CREATIVE_COL_W .. "," .. CREATIVE_COL_H .. ";" .. id .. ";" .. F(title) .. "]"
+end
+
+local function side_tab_column(ctx, main_active)
+	local parts = {}
+	local i = 0
+	local function add(id, title, active)
+		i = i + 1
+		local y = CREATIVE_COL_START_Y + (i - 1) * CREATIVE_COL_SPACING
+		parts[#parts + 1] = side_tab_button(id, title, y, active)
+	end
+	add("al_tab_main", "Main", main_active)
+	for _, def in ipairs(ctx.tabs) do
+		if def.active() then
+			add("al_tab_" .. def.id, def.title, ctx.active == def.id)
+		end
+	end
+	return table.concat(parts)
+end
+
+local mineclonia_creative = {}
+
+function mineclonia_creative.detect(fs)
+	return fs:find("size[13,11.43]", 1, true) ~= nil
+end
+
+function mineclonia_creative.wrap(fs, ctx)
+	return shift_creative_fs(fs, CREATIVE_SHIFT) .. side_tab_column(ctx, state.active == "main")
+end
+
+function mineclonia_creative.page(fs, ctx)
+	local def = ctx.def
+	local inv = ""
+	if def.show_inventory then
+		inv = table.concat({
+			"list[current_player;main;1.875,6.44;9,3;9]",
+			"list[current_player;main;1.875,9.39;9,1;]",
+			"listring[current_player;main]",
+		})
+	end
+	ctx.width = CREATIVE_WIDTH
+	ctx.height = CREATIVE_HEIGHT
+	return table.concat({
+		"formspec_version[6]",
+		"size[" .. CREATIVE_WIDTH .. "," .. CREATIVE_HEIGHT .. "]",
+		"background9[0,1.34;" .. CREATIVE_WIDTH .. ",8.75;mcl_base_textures_background9.png;;7]",
+		"no_prepend[]",
+		"container[1.5,1.34]",
+		pad_content(def, def.build(ctx)),
+		"container_end[]",
+		inv,
+		side_tab_column(ctx, false),
+	})
+end
+
+function mineclonia_creative.resolve(fields)
+	if fields["al_tab_main"] ~= nil then
+		return "main"
+	end
+	for _, def in ipairs(tabs) do
+		if fields["al_tab_" .. def.id] ~= nil then
+			return def.id
+		end
+	end
+	return nil
+end
+
+-- ---------------------------------------------------------------------------
 -- minetest_game integration (sfinv tabheader)
 -- ---------------------------------------------------------------------------
 
@@ -538,16 +697,19 @@ end
 
 local function select_integration(fs)
 	-- Sniff the native tab system from the formspec itself; this is robust
-	-- to a stale game cache across reconnects. The mineclone* creative
-	-- inventory (size[13,...]) never matches the survival detection below,
-	-- so a real mineclone survival formspec always lands on `mineclonia`.
+	-- to a stale game cache across reconnects. The mineclone* survival
+	-- inventory (size[11.75,10.9]) and creative inventory (size[13,11.43])
+	-- are both detected by their exact form size.
 	if mineclonia.detect(fs) then
 		return mineclonia
+	end
+	if mineclonia_creative.detect(fs) then
+		return mineclonia_creative
 	end
 	if sfinv.detect(fs) then
 		return sfinv
 	end
-	-- Mineclone* but not the survival inventory (e.g. creative mode):
+	-- Mineclone* but not the survival/creative inventories:
 	-- pass through and let the native form handle everything.
 	if get_game() == "mineclone" then
 		return nil
@@ -776,8 +938,8 @@ end
 -- Test/debug hook: build the wrapped formspec for an arbitrary raw server
 -- formspec without opening the inventory. Returns the wrapped string.
 -- Does not mutate the framework's runtime state.
--- `forced` optionally pins the integration: "mineclonia", "sfinv",
--- "generic", or nil/"auto" to auto-detect from the formspec and game.
+-- `forced` optionally pins the integration: "mineclonia", "mineclonia_creative",
+-- "sfinv", "generic", or nil/"auto" to auto-detect from the formspec and game.
 function invtabs._build(formspec, active, forced)
 	local saved = {
 		raw = state.raw,
@@ -787,6 +949,8 @@ function invtabs._build(formspec, active, forced)
 	state.raw = formspec
 	if forced == "mineclonia" then
 		state.integration = mineclonia
+	elseif forced == "mineclonia_creative" then
+		state.integration = mineclonia_creative
 	elseif forced == "sfinv" then
 		state.integration = sfinv
 	elseif forced == "generic" then
@@ -803,14 +967,25 @@ function invtabs._build(formspec, active, forced)
 end
 
 -- Test/debug hook: simulate formspec input to the inventory tab form.
-function invtabs._handle(fields)
+-- `integration_name` optionally pins the integration for the call (mirrors
+-- `_build`'s `forced` argument), e.g. "mineclonia_creative".
+function invtabs._handle(fields, integration_name)
+	local saved = state.integration
+	if integration_name then
+		if integration_name == "mineclonia" then state.integration = mineclonia
+		elseif integration_name == "mineclonia_creative" then state.integration = mineclonia_creative
+		elseif integration_name == "sfinv" then state.integration = sfinv
+		elseif integration_name == "generic" then state.integration = generic end
+	end
 	handle_fields(state.formname, fields)
+	state.integration = saved
 end
 
 -- Test/debug hook: expose internal state for diagnostics.
 function invtabs._debug()
 	local int_name = "nil"
 	if state.integration == mineclonia then int_name = "mineclonia"
+	elseif state.integration == mineclonia_creative then int_name = "mineclonia_creative"
 	elseif state.integration == sfinv then int_name = "sfinv"
 	elseif state.integration == generic then int_name = "generic" end
 	return {
