@@ -129,6 +129,25 @@ flight_hud_def = {
 			if poi.eta > 0 then
 				ttext = ttext .. "\nETA: " .. poi.eta .. " min"
 			end
+
+			-- Bearing of the target relative to the nose, and vertical
+			-- distance above/below the player. Yaw increases counterclockwise
+			-- (yaw 90 = west), so a positive offset means the target is left.
+			local tpos = lp:get_pos()
+			local tyaw = ws.yaw_to(poi.target)
+			if tyaw then
+				local off = (tyaw - lp:get_yaw()) % 360
+				if off > 180 then off = off - 360 end
+				local arrow
+				if off > 15 then arrow = "⟵"
+				elseif off < -15 then arrow = "⟶"
+				else arrow = "↑" end
+				ttext = ttext .. "\n" .. arrow .. " " .. math.floor(math.abs(off)) .. "°"
+			end
+			local dy = poi.target.y - tpos.y
+			if math.abs(dy) >= 1 then
+				ttext = ttext .. "  " .. (dy > 0 and "▲" or "▼") .. " " .. math.abs(math.floor(dy)) .. "m"
+			end
 			set(hid.target, "text", ttext)
 		else
 			set(hid.target, "text", "")
@@ -147,7 +166,12 @@ flight_hud_def = {
 
 		local vel = lp:get_velocity()
 		local speed = vel and vector.length(vel) or 0
-		set(hid.speed, "text", string.format("%.1f n/s", speed))
+		local speed_text = string.format("%.1f n/s", speed)
+		if vel and math.abs(vel.y) > 0.1 then
+			local arrow = vel.y > 0 and "▲" or "▼"
+			speed_text = speed_text .. " " .. arrow .. string.format("%.1f", math.abs(vel.y))
+		end
+		set(hid.speed, "text", speed_text)
 		set(hid.speed_bar, "text", speed_bar(clamp(speed / 5, 0, 1)))
 		set(hid.speed_bar, "number", speed > 3 and 0xFFFF6666 or 0xFFAAAAAA)
 	end,

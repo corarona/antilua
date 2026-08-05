@@ -18,6 +18,7 @@ local DISTANCE_NEAR = 256
 local formspec_list = {}
 local selected_name
 local shown_huds = {}
+local shown_markers = {}
 local lpos
 local sort_by_distance = false
 local filter_group = ""
@@ -55,6 +56,12 @@ local function reset_gui_state()
 		if core.localplayer then ws.hud_remove_waypoint(title) end
 	end
 	shown_huds = {}
+	for display in pairs(shown_markers) do
+		if core.ui.minimap and core.ui.minimap.remove_marker then
+			core.ui.minimap:remove_marker(shown_markers[display])
+		end
+	end
+	shown_markers = {}
 end
 
 ws.on_connect(function()
@@ -267,6 +274,31 @@ local function show_wp_hud(pos, title)
 	local display = WP_DOT .. title
 	ws.hud_waypoint(display, pos, color, "m")
 	shown_huds[display] = true
+	-- Mirror displayed waypoints onto the minimap so they stay visible while
+	-- looking at the map (group color, or the waypoint's own color).
+	if core.ui.minimap and core.ui.minimap.add_marker then
+		if shown_markers[display] then
+			core.ui.minimap:remove_marker(shown_markers[display])
+			shown_markers[display] = nil
+		end
+		shown_markers[display] = core.ui.minimap:add_marker({
+			pos = pos,
+			color = string.format("#%06x", color),
+		})
+	end
+end
+
+local function remove_wp_hud(title)
+	if shown_huds[title] then
+		ws.hud_remove_waypoint(title)
+		shown_huds[title] = nil
+	end
+	if shown_markers[title] then
+		if core.ui.minimap and core.ui.minimap.remove_marker then
+			core.ui.minimap:remove_marker(shown_markers[title])
+		end
+		shown_markers[title] = nil
+	end
 end
 
 function poi.set_hud_wp(pos, title)
@@ -284,6 +316,12 @@ function poi.display(pos, name)
 	pos = ws.string_to_pos(pos)
 	poi.set_hud_wp(pos, name)
 	return true
+end
+
+-- Return the minimap marker id currently shown for a displayed waypoint, or
+-- nil when the waypoint isn't displayed (or the minimap is unavailable).
+function poi.get_displayed_marker(title)
+	return shown_markers[WP_DOT .. title]
 end
 
 function poi.display_waypoint(name)
@@ -407,9 +445,20 @@ ws.rg("DeathTP", { category = "Player", setting = "death_tp",
 -- Formspec
 --
 
+-- Default waypoint name for a position: the node below + timestamp, e.g.
+-- "stone_2026-08-05_14-30". Shared by the chat command and the "Add Here"
+-- formspec button.
+local function default_wp_name(pos)
+	local ts = os.date("%Y-%m-%d_%H-%M")
+	local node = core.get_node_or_nil(vector.offset(pos, 0, -1, 0))
+	local hint = (node and node.name:match(":(.+)$")) or "waypoint"
+	return hint .. "_" .. ts
+end
+
 local function wp_distance(name)
 	local pos = poi.get_waypoint(name)
 	if not pos then return math.huge end
+	if not core.localplayer then return math.huge end
 	local lp = core.localplayer:get_pos()
 	if not lp then return math.huge end
 	return vector.distance(lp, pos)
@@ -521,11 +570,11 @@ local function build_waypoint_list(sb, af, waypoints)
 	for id, name in ipairs(waypoints) do
 		formspec_list[id] = name
 		local entry = name
-		if sort_by_distance then
-			local d = wp_distance(name)
-			if d ~= math.huge then
-				entry = entry .. " (" .. math.floor(d) .. "m)"
-			end
+		-- Always show the distance so the list is useful without toggling the
+		-- A-Z/Dist sort; the sort still reorders the entries by distance.
+		local d = wp_distance(name)
+		if d ~= math.huge then
+			entry = entry .. " (" .. math.floor(d) .. "m)"
 		end
 		-- Colored by the waypoint's group (falling back to its own color) via
 		-- the textlist #rrggbb item prefix.
@@ -578,6 +627,7 @@ local function build_actions(sb, af)
 	sb:add(
 		af.button(0.5, 7.5, 1, 0.5, "sort_toggle", sort_label),
 		af.button_exit(1.7, 7.5, 1, 0.5, "display", "Show"),
+		af.button(3.2, 7.5, 1.4, 0.5, "add_here", "Add Here"),
 		af.button(9, 7.5, 1.3, 0.5, "rename", "Rename"),
 		af.button(10.5, 7.5, 1.3, 0.5, "delete", "Delete"),
 		af.button(11.8, 7.5, 1.5, 0.5, "clear_all", "Clear All")
@@ -655,6 +705,19 @@ local function show_rename_fs(name)
 		af.field(0.3, 1.3, 6, 1, "new_name", "New name", name),
 		af.button(0, 2, 3, 1, "cancel", "Cancel"),
 		af.button(3, 2, 3, 1, "rename_confirm", "Rename")
+	)
+	return core.show_formspec("poi-csm", sb:get())
+end
+
+local function show_add_here_fs()
+	local af = core.al_formspec
+	local pos = core.localplayer and core.localplayer:get_pos()
+	local sb = af.begin("size[6,3]")
+	sb:add(
+		af.label(0.35, 0.2, "Add waypoint at current position"),
+		af.field(0.3, 1.3, 6, 1, "new_wp_name", "Name", pos and default_wp_name(pos) or ""),
+		af.button(0, 2, 3, 1, "cancel", "Cancel"),
+		af.button(3, 2, 3, 1, "add_here_confirm", "Add")
 	)
 	return core.show_formspec("poi-csm", sb:get())
 end
@@ -815,6 +878,22 @@ function poi.handle_fields(fields)
 			poi.display_formspec()
 		end,
 		rename = function() show_rename_fs(name) end,
+		add_here = function() show_add_here_fs() end,
+		add_here_confirm = function()
+			local wname = fields.new_wp_name or ""
+			if #wname < 1 then
+				ws.notify("Waypoint name cannot be empty.", ws.NOTIFY_ERROR)
+			elseif not core.localplayer then
+				ws.notify("No player position available.", ws.NOTIFY_ERROR)
+			elseif poi.set_waypoint(core.localplayer:get_pos(), wname) then
+				selected_name = wname
+				poi.select_waypoint(wname)
+				ws.notify("Waypoint added.", ws.NOTIFY_SUCCESS)
+			else
+				ws.notify("Error adding waypoint!", ws.NOTIFY_ERROR)
+			end
+			poi.display_formspec()
+		end,
 		rename_confirm = function()
 			if not (fields.new_name and #fields.new_name > 0) then
 				ws.notify("New name required", ws.NOTIFY_ERROR)
@@ -834,7 +913,7 @@ function poi.handle_fields(fields)
 		clear_all = function() show_clear_all_fs() end,
 		clear_all_confirm = function()
 			for title in pairs(shown_huds) do
-				ws.hud_remove_waypoint(title)
+				remove_wp_hud(title)
 			end
 			shown_huds = {}
 			poi.last_name = nil
@@ -907,10 +986,7 @@ core.register_chatcommand("add_waypoint_here", {
 		if tostring(param) ~= "" then
 			name = param
 		else
-			local ts = os.date("%Y-%m-%d_%H-%M")
-			local node = core.get_node_or_nil(vector.offset(pos, 0, -1, 0))
-			local hint = (node and node.name:match(":(.+)$")) or "waypoint"
-			name = hint .. "_" .. ts
+			name = default_wp_name(pos)
 		end
 		return poi.set_waypoint(pos, name), "Waypoint added."
 	end,
@@ -922,7 +998,7 @@ core.register_chatcommand("clear_waypoint", {
 	func = function()
 		if shown_huds and next(shown_huds) then
 			for title in pairs(shown_huds) do
-				ws.hud_remove_waypoint(title)
+				remove_wp_hud(title)
 			end
 			shown_huds = {}
 			return true, "Waypoints hidden."

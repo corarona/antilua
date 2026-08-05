@@ -17,6 +17,9 @@ Autopilot settings (`autopilot.<key>` in the cheat settings panel):
 - `autoengage` (bool, default true) — Automatically start autopilot when
   `continuous_forward` is enabled while a POI is selected. Set to false so
   other mods toggling forward movement never start a flight.
+- `avoid_obstacles` (bool, default true) — Probe ahead along the actual
+  flight path (not the quantized cardinal heading) and climb, descend, or
+  sidestep around solid nodes.
 
 **Autopilot modes** (configured in the cheat settings panel):
 
@@ -34,6 +37,11 @@ Autopilot settings (`autopilot.<key>` in the cheat settings panel):
 - `CTP` — Teleports player directly to the POI position.
 - `STP` — Sends a `/teleport` chat command to the server.
 - `Autopilot` — Starts autopilot toward the POI.
+
+**FlightHUD target line**: when a POI is selected, the target HUD shows the
+target's bearing relative to your nose (`⟵`/`⟶`/`↑` + degrees) and vertical
+distance (`▲`/`▼` + meters). The speed readout additionally shows the
+climb/descent rate. Autopilot notifies on arrival.
 
 ## API
 

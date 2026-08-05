@@ -101,6 +101,16 @@ if core.register_quick_menu_provider then
 				add("Warp to Nearest Waypoint", function()
 					autofly.warp(poi.get_nearest_name())
 				end)
+				add("Autopilot to Nearest Waypoint", function()
+					local name = poi.get_nearest_name()
+					local pos = poi.get_waypoint(name)
+					for _, t in ipairs(poi.registered_transports) do
+						if t.name == "Autopilot" then
+							t.func(pos, name)
+							break
+						end
+					end
+				end, { keywords = { "fly", "autopilot", "goto" } })
 			end
 
 			-- Individual waypoints as palette entries. With

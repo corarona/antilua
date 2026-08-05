@@ -199,5 +199,41 @@ function test_poi(T)
 		ws.hud_remove_waypoint(WP_DOT .. "poi_test_a")
 	end)
 
+	T.defer("waypoint list always shows the distance", function()
+		reset_state()
+		mk_wp("poi_test_dist", 2000)
+		local fs = poi.build_formspec_content()
+		T.assert(fs:match("poi_test_dist %(%d+m%)") ~= nil,
+			"list entry should include the distance even without Dist sort")
+	end)
+
+	T.defer("Add Here stores a waypoint at the current position", function()
+		reset_state()
+		local pos = core.localplayer:get_pos()
+		poi.handle_fields({ add_here = "Add Here" })
+		poi.handle_fields({ new_wp_name = "poi_test_here", add_here_confirm = "Add" })
+		local stored = poi.get_waypoint("poi_test_here")
+		T.assert(stored ~= nil, "Add Here should store a waypoint")
+		T.assert(vector.distance(stored, vector.round(pos)) <= 1,
+			"stored position should be the current position")
+		poi.delete_waypoint("poi_test_here")
+	end)
+
+	T.defer("displayed waypoints mirror as minimap markers", function()
+		if not core.ui.minimap or not core.ui.minimap.add_marker then return end
+		reset_state()
+		ws.hud_remove_waypoint(WP_DOT .. "poi_test_a")
+		mk_wp("poi_test_mm", 700)
+		poi.display(poi.get_waypoint("poi_test_mm"), "poi_test_mm")
+		local id = poi.get_displayed_marker("poi_test_mm")
+		T.assert(type(id) == "number", "displayed waypoint should get a minimap marker id")
+
+		core.registered_chatcommands.clear_waypoint.func("")
+		T.assert(poi.get_displayed_marker("poi_test_mm") == nil,
+			"clear_waypoint should remove the minimap marker")
+		T.assert(core.ui.minimap:remove_marker(id) == false,
+			"marker should already be removed after clearing")
+	end)
+
 	T.defer("poi test cleanup (post)", cleanup)
 end

@@ -35,4 +35,18 @@ function test_basic_moves(T)
 		T.assert(core.settings:get_bool("poi_screenshots", false) == false,
 			"'poi_screenshots' should default to false")
 	end)
+
+	T.defer("ws.yaw_to returns absolute heading to a target", function()
+		local pos = core.localplayer:get_pos()
+		T.assert_eq(ws.yaw_to(vector.add(pos, { x = 0, y = 0, z = 100 })), 0,
+			"target north (+Z) is yaw 0")
+		T.assert_eq(ws.yaw_to(vector.add(pos, { x = 100, y = 0, z = 0 })), 270,
+			"target east (+X) is yaw 270")
+		T.assert_eq(ws.yaw_to(vector.add(pos, { x = -100, y = 0, z = 0 })), 90,
+			"target west (-X) is yaw 90")
+		T.assert_eq(ws.yaw_to(vector.add(pos, { x = 0, y = 0, z = -100 })), 180,
+			"target south (-Z) is yaw 180")
+		T.assert_eq(ws.yaw_to(vector.add(pos, { x = 0, y = 100, z = 0 })), nil,
+			"straight up/below has no horizontal bearing")
+	end)
 end

@@ -22,6 +22,31 @@ local function find_closest_player()
 	return closest_pos, closest_name
 end
 
+-- The follow target is a 500-radius object scan, which is expensive on busy
+-- servers. Rescan at most once per second and reuse the cached result between
+-- scans so autopilot doesn't re-scan every step (0.2s).
+local follow_scan_time = 0
+local follow_cache_pos, follow_cache_name
+
+local function resolve_follow_target()
+	local now = (core.get_us_time() or 0) / 1000000
+	if now - follow_scan_time >= 1.0 then
+		follow_scan_time = now
+		follow_cache_pos, follow_cache_name = find_closest_player()
+	end
+	return follow_cache_pos, follow_cache_name
+end
+
+local function resolve_target(mode)
+	if mode == "follow" then
+		local pos, name = resolve_follow_target()
+		autofly.follow_name = name
+		return pos
+	end
+	autofly.follow_name = nil
+	return poi.last_pos
+end
+
 local function read_settings(self)
 	return {
 		mode = core.settings:get(self.setting .. ".mode") or "3d_aim",
@@ -31,16 +56,6 @@ local function read_settings(self)
 		alt = tonumber(core.settings:get(self.setting .. ".altitude")) or 10,
 		avoid = core.settings:get(self.setting .. ".avoid_obstacles") ~= "false",
 	}
-end
-
-local function resolve_target(mode)
-	if mode == "follow" then
-		local pos, name = find_closest_player()
-		autofly.follow_name = name
-		return pos
-	end
-	autofly.follow_name = nil
-	return poi.last_pos
 end
 
 local function compute_tpos(mode, target, lp)
@@ -86,24 +101,36 @@ local function is_solid(pos)
 	return nd.name ~= "air" and nd.name ~= "ignore"
 end
 
+-- Obstacles are probed along the actual flight path (the horizontal vector
+-- from the player to the target) rather than ws.dircoord, which buckets yaw
+-- into N/S/E/W and can point up to 45° away from the true heading on
+-- diagonals. `fwd` is a unit vector in that direction, `side` perpendicular.
 local function obstacle_avoidance(lp)
-	local ahead = ws.dircoord(1, 0, 0)
+	local target = autofly.tpos or autofly.atpos or poi.last_pos
+	if not target then return end
+	local d = vector.direction(lp, target)
+	if d.x == 0 and d.z == 0 then return end
+	local len = math.sqrt(d.x * d.x + d.z * d.z)
+	local fwd = { x = d.x / len, z = d.z / len }
+	local side = { x = -fwd.z, z = fwd.x }
+
+	local ahead = vector.add(lp, { x = fwd.x, y = 0, z = fwd.z })
 	if not is_solid(ahead) then return end
-	local up = ws.dircoord(1, 1, 0)
+	local up = vector.add(ahead, { x = 0, y = 1, z = 0 })
 	if not is_solid(up) then
 		core.localplayer:set_pos(up)
 		return
 	end
 	-- Descend into dips: straight ahead is blocked but below-forward is open
 	-- (e.g. flying at a plateau edge), so drop instead of hitting the wall.
-	local down = ws.dircoord(1, -1, 0)
+	local down = vector.add(ahead, { x = 0, y = -1, z = 0 })
 	if not is_solid(down) then
 		core.localplayer:set_pos(down)
 		return
 	end
-	for _, side in ipairs({-1, 1}) do
-		local aside = ws.dircoord(0, 0, side)
-		local beyond = ws.dircoord(1, 0, side)
+	for _, s in ipairs({1, -1}) do
+		local aside = vector.add(lp, { x = side.x * s, y = 0, z = side.z * s })
+		local beyond = vector.add(ahead, { x = side.x * s, y = 0, z = side.z * s })
 		if not is_solid(aside) and not is_solid(beyond) then
 			core.localplayer:set_pos(beyond)
 			return
@@ -119,6 +146,7 @@ local function execute_movement(self, s, dst, lp)
 		core.settings:set_bool("continuous_forward", false)
 		core.settings:set_bool(self.setting, false)
 		autofly.arrived = true
+		ws.notify("Arrived at " .. (poi.last_name or ws.pos_to_string(autofly.tpos)), ws.NOTIFY_SUCCESS)
 		return
 	end
 	if not core.settings:get_bool("continuous_forward") then return end
@@ -178,6 +206,8 @@ ws.rg("Autopilot", {
 	on_start = function(self)
 		autofly.arrived = nil
 		self._no_target = nil
+		follow_scan_time = 0
+		follow_cache_pos, follow_cache_name = nil, nil
 		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
 		self._mode = mode
 		if mode ~= "follow" and (not poi.last_pos or not poi.last_name) then
@@ -233,6 +263,8 @@ ws.rg("Autopilot", {
 			ws.aim(autofly.atpos)
 		end
 		autofly.atpos = nil
+		follow_scan_time = 0
+		follow_cache_pos, follow_cache_name = nil, nil
 	end,
 	daughters = {"continuous_forward", "pitch_move", "flight_hud", "freelook"},
 	cheat_settings = {

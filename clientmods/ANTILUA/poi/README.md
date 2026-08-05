@@ -40,6 +40,16 @@ With `Show All Waypoints` (or the `poi_show_all_waypoints` setting) enabled,
 waypoints from all servers are listed, with the `server:port:` prefix shown
 in the entry label.
 
+### Displayed waypoints
+
+- Every displayed waypoint appears both as a world-space HUD marker and as a
+  dot on the minimap (in the waypoint's group color), when the minimap is
+  enabled.
+- The waypoint list always shows the distance to each waypoint; the A-Z/Dist
+  button still controls the sort order.
+- The "Add Here" button in the GUI adds a waypoint at your current position,
+  with a suggested name from the node you're standing on.
+
 ## API
 
 ### Global

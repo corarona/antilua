@@ -63,6 +63,21 @@ function ws.get_dimension(pos)
 	end
 end
 
+-- Absolute yaw (degrees) pointing from the local player toward a target
+-- position, using the same convention as ws.aim: yaw 0 = +Z (north), yaw 90
+-- = -X (west), increasing counterclockwise. Returns nil when the target is
+-- directly overhead/below (no horizontal component).
+function ws.yaw_to(pos)
+	if not core.localplayer or not pos then return nil end
+	local ppos = core.localplayer:get_pos()
+	if not ppos then return nil end
+	local dir = vector.direction(ppos, pos)
+	if dir.x == 0 and dir.z == 0 then return nil end
+	local yaw = math.atan2(-dir.x, dir.z)
+	if yaw < 0 then yaw = yaw + math.pi * 2 end
+	return ws.round2(math.deg(yaw), 2)
+end
+
 function ws.in_cube(tpos, wpos1, wpos2)
 	local minp = vector.new(math.min(wpos1.x, wpos2.x), math.min(wpos1.y, wpos2.y), math.min(wpos1.z, wpos2.z))
 	local maxp = vector.new(math.max(wpos1.x, wpos2.x), math.max(wpos1.y, wpos2.y), math.max(wpos1.z, wpos2.z))

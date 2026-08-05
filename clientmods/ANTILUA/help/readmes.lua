@@ -135,6 +135,7 @@ Provides a multi-mode autopilot that navigates toward a selected POI or follows 
 Autopilot settings (`autopilot.<key>` in the cheat settings panel):
 
 - `autoengage` (bool, default true) — Automatically start autopilot when `continuous_forward` is enabled while a POI is selected. Set to false so other mods toggling forward movement never start a flight.
+- `avoid_obstacles` (bool, default true) — Probe ahead along the actual flight path (not the quantized cardinal heading) and climb, descend, or sidestep around solid nodes.
 
 **Autopilot modes** (configured in the cheat settings panel):
 
@@ -152,6 +153,11 @@ Autopilot settings (`autopilot.<key>` in the cheat settings panel):
 - `CTP` — Teleports player directly to the POI position.
 - `STP` — Sends a `/teleport` chat command to the server.
 - `Autopilot` — Starts autopilot toward the POI.
+
+**FlightHUD target line**: when a POI is selected, the target HUD shows the
+target's bearing relative to your nose (`⟵`/`⟶`/`↑` + degrees) and vertical
+distance (`▲`/`▼` + meters). The speed readout additionally shows the
+climb/descent rate. Autopilot notifies on arrival.
 
 ## API
 
@@ -860,6 +866,15 @@ Activating one selects it in the waypoint GUI and shows its HUD marker.
 With `Show All Waypoints` (or the `poi_show_all_waypoints` setting) enabled,
 waypoints from all servers are listed, with the `server:port:` prefix shown
 in the entry label.
+
+### Displayed waypoints
+
+- Displayed waypoints appear both as world-space HUD markers and as dots on
+  the minimap (in the waypoint's group color), when the minimap is enabled.
+- The waypoint list always shows the distance to each waypoint; the A-Z/Dist
+  button still controls the sort order.
+- The "Add Here" button adds a waypoint at your current position, with a
+  suggested name from the node you're standing on.
 
 ### Cheats
 
