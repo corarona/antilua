@@ -52,12 +52,20 @@ local function compute_tpos(mode, target, lp)
 	return target
 end
 
+-- First solid node below the player (water counts, so hover works over
+-- oceans). A single downward raycast replaces the old per-node scan.
 local function find_ground_y(lp, max_y)
-	for dy = 2, max_y do
-		local check = {x = lp.x, y = lp.y - dy, z = lp.z}
-		local nd = core.get_node_or_nil(check)
-		if nd and nd.name ~= "air" then
-			return check.y
+	local ray = core.raycast(
+		{x = lp.x, y = lp.y - 1, z = lp.z},
+		{x = lp.x, y = lp.y - max_y, z = lp.z},
+		false, true
+	)
+	for point in ray do
+		if point.type == "node" then
+			local nd = core.get_node_or_nil(point.under)
+			if nd and nd.name ~= "air" and nd.name ~= "ignore" then
+				return point.under.y
+			end
 		end
 	end
 end
@@ -71,20 +79,32 @@ local function altitude_adjust(lp, target_y, threshold, step)
 	end
 end
 
+-- Passable == air or ignore (unloaded/map edge). Solid nodes block flight.
+local function is_solid(pos)
+	local nd = core.get_node_or_nil(pos)
+	if not nd then return false end
+	return nd.name ~= "air" and nd.name ~= "ignore"
+end
+
 local function obstacle_avoidance(lp)
 	local ahead = ws.dircoord(1, 0, 0)
-	local nd = core.get_node_or_nil(ahead)
-	if not (nd and nd.name ~= "air" and nd.name ~= "ignore") then return end
+	if not is_solid(ahead) then return end
 	local up = ws.dircoord(1, 1, 0)
-	if core.get_node_or_nil(up) and core.get_node_or_nil(up).name == "air" then
+	if not is_solid(up) then
 		core.localplayer:set_pos(up)
+		return
+	end
+	-- Descend into dips: straight ahead is blocked but below-forward is open
+	-- (e.g. flying at a plateau edge), so drop instead of hitting the wall.
+	local down = ws.dircoord(1, -1, 0)
+	if not is_solid(down) then
+		core.localplayer:set_pos(down)
 		return
 	end
 	for _, side in ipairs({-1, 1}) do
 		local aside = ws.dircoord(0, 0, side)
 		local beyond = ws.dircoord(1, 0, side)
-		if core.get_node_or_nil(aside) and core.get_node_or_nil(aside).name == "air"
-				and core.get_node_or_nil(beyond) and core.get_node_or_nil(beyond).name == "air" then
+		if not is_solid(aside) and not is_solid(beyond) then
 			core.localplayer:set_pos(beyond)
 			return
 		end
@@ -92,7 +112,9 @@ local function obstacle_avoidance(lp)
 end
 
 local function execute_movement(self, s, dst, lp)
-	if dst <= s.landing then
+	-- Follow mode tracks a moving player: it should keep approaching, not
+	-- switch off the moment we get close. Arrival only applies to POI modes.
+	if dst <= s.landing and s.mode ~= "follow" then
 		core.localplayer:set_pitch(0)
 		core.settings:set_bool("continuous_forward", false)
 		core.settings:set_bool(self.setting, false)
@@ -157,6 +179,7 @@ ws.rg("Autopilot", {
 		autofly.arrived = nil
 		self._no_target = nil
 		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
+		self._mode = mode
 		if mode ~= "follow" and (not poi.last_pos or not poi.last_name) then
 			return false, "Select a poi first."
 		end
@@ -169,6 +192,7 @@ ws.rg("Autopilot", {
 		self._phys_prev = core.localplayer:get_physics_override()
 		core.localplayer:set_physics_override({ speed = speed })
 
+		autofly.atpos = nil
 		if mode == "2d_aim" then
 			autofly.atpos = table.copy(poi.last_pos)
 			autofly.tpos = vector.new(poi.last_pos.x, lp.y, poi.last_pos.z)
@@ -196,15 +220,19 @@ ws.rg("Autopilot", {
 		end
 	end,
 	on_stop = function(self)
-		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
+		-- Clean up using the mode that was active during the run, not the
+		-- setting, which may have been changed mid-flight.
+		local mode = self._mode or core.settings:get(self.setting .. ".mode") or "3d_aim"
+		self._mode = nil
 		if self._phys_prev then
 			core.localplayer:set_physics_override(self._phys_prev)
 			self._phys_prev = nil
 		end
-		if mode == "2d_aim" then
+		if mode == "2d_aim" and autofly.atpos then
 			poi.display(autofly.atpos, poi.last_name)
 			ws.aim(autofly.atpos)
 		end
+		autofly.atpos = nil
 	end,
 	daughters = {"continuous_forward", "pitch_move", "flight_hud", "freelook"},
 	cheat_settings = {
@@ -214,18 +242,25 @@ ws.rg("Autopilot", {
 		altitude_hold = { type = "bool", default = false },
 		altitude = { type = "number", default = 10, min = 1, max = 100 },
 		avoid_obstacles = { type = "bool", default = true },
+		autoengage = { type = "bool", default = true },
 	},
 })
 
+-- Auto-engage autopilot when the user presses forward while a POI is
+-- selected. Gated behind autopilot.autoengage so other mods toggling
+-- continuous_forward don't silently start an autopilot run.
 local cf_was_on = false
-core.register_globalstep(function()
-	if not poi.last_pos or autofly.arrived then return end
+local function maybe_autoengage()
 	local cf_on = core.settings:get_bool("continuous_forward")
-	if cf_on and not cf_was_on and not core.settings:get_bool("autopilot") then
+	if cf_on and not cf_was_on and not core.settings:get_bool("autopilot")
+			and not autofly.arrived and poi.last_pos
+			and core.settings:get_bool("autopilot.autoengage") then
 		core.settings:set_bool("autopilot", true)
 	end
 	cf_was_on = cf_on
-end)
+end
+core.register_globalstep(maybe_autoengage)
+core.register_on_disconnect(function() cf_was_on = false end)
 
 function autofly.warp(name)
 	local pos = poi.get_waypoint(name)

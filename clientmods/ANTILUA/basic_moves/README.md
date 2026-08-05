@@ -3,9 +3,7 @@
 Flight automation, axis snapping, auto-forward-sprint, and POI-based transport methods.
 Provides a multi-mode autopilot that navigates toward a selected POI or follows a player.
 
-## Player usage
-
-**Cheats:**
+## Cheats
 
 | Cheat | Setting | Description |
 |-------|---------|-------------|
@@ -13,6 +11,12 @@ Provides a multi-mode autopilot that navigates toward a selected POI or follows 
 | AutoFsprint | autoforwardsprint | Holds `special1` key while `continuous_forward` is active |
 | AxisSnap | axissnap | Snaps player yaw to nearest 90° cardinal direction |
 | FlightHUD | flight_hud | HUD overlay with horizon, compass, target info, altitude/speed bars |
+
+Autopilot settings (`autopilot.<key>` in the cheat settings panel):
+
+- `autoengage` (bool, default true) — Automatically start autopilot when
+  `continuous_forward` is enabled while a POI is selected. Set to false so
+  other mods toggling forward movement never start a flight.
 
 **Autopilot modes** (configured in the cheat settings panel):
 
