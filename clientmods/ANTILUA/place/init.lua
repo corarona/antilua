@@ -151,6 +151,66 @@ ws.rg("PlaceOn", { category = "Place", setting = "placeon", description = "Place
 	},
 })
 
+ws.rg("AutoTower", { category = "Place", setting = "autotower",
+	description = "Build towers: stack hotbar blocks onto exposed matching blocks",
+	on_step = function(self, dtime)
+		local range = tonumber(core.settings:get(self.setting .. ".range")) or 5
+		local npt = tonumber(core.settings:get(self.setting .. ".npt")) or 25
+		local down = core.settings:get_bool(self.setting .. ".down", false)
+		local random = core.settings:get_bool(self.setting .. ".random", false)
+		local inv = core.get_inventory("current_player")
+		if not inv then return end
+		-- Collect node types present in the hotbar (slots 1-9), weighted by stack count
+		local wanted = {}   -- name -> total count
+		for i = 1, 9 do
+			local stack = inv.main[i]
+			if stack and not stack:is_empty() then
+				local name = stack:get_name()
+				local def = core.get_item_def(name)
+				if def and def.type == "node" then
+					wanted[name] = (wanted[name] or 0) + stack:get_count()
+				end
+			end
+		end
+		local names, weights, total = {}, {}, 0
+		for name, count in pairs(wanted) do
+			names[#names + 1] = name
+			total = total + count
+			weights[#weights + 1] = total
+		end
+		if #names == 0 then return end
+		local pick_weighted = function()
+			local r = math.random(total)
+			for i, w in ipairs(weights) do
+				if r <= w then return names[i] end
+			end
+			return names[#names]
+		end
+		local lp = ws.dircoord(0, 0, 0)
+		local found = core.find_nodes_near(lp, range, names, true)
+		local dy = down and -1 or 1
+		local placed = 0
+		for i, p in ipairs(found) do
+			if placed >= npt then break end
+			local tgt = vector.add(p, {x = 0, y = dy, z = 0})
+			-- Never place into the space the player occupies
+			if not (tgt.x == lp.x and tgt.z == lp.z and (tgt.y == lp.y or tgt.y == lp.y + 1)) then
+				local nd = core.get_node_or_nil(p)
+				if nd and wanted[nd.name] and ws.can_place_at(tgt) then
+					local name = random and pick_weighted() or nd.name
+					if ws.place(tgt, {name}) then placed = placed + 1 end
+				end
+			end
+		end
+	end,
+	cheat_settings = {
+		down = { type = "bool", default = false },
+		random = { type = "bool", default = false },
+		range = { type = "number", default = 5, min = 1, max = 20 },
+		npt = { type = "number", default = 25, min = 1, max = 500 },
+	},
+})
+
 
 
 
