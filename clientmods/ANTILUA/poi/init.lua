@@ -195,6 +195,30 @@ end
 -- Public API: display
 --
 
+-- Colors auto-assigned to waypoint groups. Stable per group name so the same
+-- group always gets the same color; the "Death" group stays red.
+local GROUP_COLORS = {
+	0x00ff00, 0x00ffff, 0xff00ff, 0xffff00, 0xff8800,
+	0x00ccff, 0xff66aa, 0x88ff00, 0xffcc00, 0xcc66ff, 0x66ffcc,
+}
+
+local function hash_string(s)
+	local h = 5381
+	for i = 1, #s do
+		h = (h * 33 + s:byte(i)) % 0x7fffffff
+	end
+	return h
+end
+
+-- Deterministic color for a waypoint group, or nil when ungrouped.
+function poi.group_color(group)
+	if not group or group == "" then return nil end
+	if group == "Death" then return 0xff0000 end
+	return GROUP_COLORS[(hash_string(group) % #GROUP_COLORS) + 1]
+end
+
+local WP_DOT = "● "
+
 function poi.color_int(name)
 	local hex = poi.get_color(name)
 	if hex == "" then hex = "00ff00" end
@@ -207,9 +231,12 @@ function poi.set_hud_wp(pos, title)
 	title = title or ws.pos_to_string(pos)
 	poi.last_name = title
 	poi.last_pos = pos
-	local color = poi.color_int(title)
-	ws.hud_waypoint(title, pos, color, "m")
-	shown_huds[title] = true
+	-- Colored by the waypoint's group (falling back to its own color), shown
+	-- as a small dot followed by the name.
+	local color = poi.group_color(poi.get_group(title)) or poi.color_int(title)
+	local display = WP_DOT .. title
+	ws.hud_waypoint(display, pos, color, "m")
+	shown_huds[display] = true
 	return true
 end
 
@@ -450,7 +477,10 @@ local function build_waypoint_list(sb, af, waypoints)
 				entry = entry .. " (" .. math.floor(d) .. "m)"
 			end
 		end
-		table.insert(tl_entries, "##" .. af.escape(entry))
+		-- Colored by the waypoint's group (falling back to its own color) via
+		-- the textlist #rrggbb item prefix.
+		local color = poi.group_color(poi.get_group(name)) or poi.color_int(name)
+		table.insert(tl_entries, "#" .. string.format("%06x", color) .. af.escape(entry))
 	end
 	local sel = 1
 	if not selected_name and #waypoints > 0 then

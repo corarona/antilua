@@ -9,14 +9,28 @@ function test_poi(T)
 		T.assert(type(poi) == "table", "poi should be loaded")
 		for _, fn in ipairs({
 			"set_waypoint", "delete_waypoint", "get_group", "set_group",
-			"get_color", "handle_fields", "build_formspec_content",
+			"get_color", "group_color", "handle_fields", "build_formspec_content",
 		}) do
 			T.assert(type(poi[fn]) == "function", "poi." .. fn .. " should exist")
 		end
 	end)
 
+	T.run("poi.group_color is deterministic per group", function()
+		T.assert(poi.group_color("Mine") == poi.group_color("Mine"),
+			"same group should always map to the same color")
+		T.assert(poi.group_color("Other") == poi.group_color("Other"),
+			"other group should be stable too")
+		T.assert(poi.group_color("Death") == 0xff0000,
+			"Death group should stay red")
+		T.assert(poi.group_color("") == nil, "empty group should have no color")
+		T.assert(poi.group_color(nil) == nil, "nil group should have no color")
+	end)
+
 	local saved_show_all = core.settings:get_bool("poi_show_all_waypoints")
 	core.settings:set_bool("poi_show_all_waypoints", false)
+
+	-- poi prefixes displayed waypoint HUDs with this dot (matches poi's WP_DOT).
+	local WP_DOT = "● "
 
 	local test_wps = {}
 
@@ -28,6 +42,11 @@ function test_poi(T)
 		end
 		for _, name in ipairs(test_wps) do
 			poi.delete_waypoint(name)
+		end
+		for key in pairs(ws.hud_waypoints) do
+			if key:find(WP_DOT .. "poi_test") then
+				ws.hud_remove_waypoint(key)
+			end
 		end
 		test_wps = {}
 		core.settings:set_bool("poi_show_all_waypoints", saved_show_all)
@@ -57,9 +76,11 @@ function test_poi(T)
 		local parts = {}
 		for p in m:gmatch("[^;]+") do parts[#parts + 1] = p end
 		local i = 0
-		for item in parts[1]:gmatch("##([^,]+)") do
+		for item in parts[1]:gmatch("[^,]+") do
 			i = i + 1
-			local bare = item:gsub("%s%(%d+m%)%s*$", "")
+			-- Strip the #rrggbb textlist color prefix and the distance suffix.
+			local bare = item:gsub("^#[0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F]", "")
+			bare = bare:gsub("%s%(%d+m%)%s*$", "")
 			if bare == name then return i end
 		end
 		return nil
@@ -124,6 +145,13 @@ function test_poi(T)
 		T.assert(waypoint_index(all_fs, "poi_test_a") ~= nil, "unfiltered list should include poi_test_a")
 		T.assert(waypoint_index(all_fs, "poi_test_b") ~= nil, "unfiltered list should include poi_test_b")
 
+		local mine_hex = string.format("#%06x", poi.group_color("Mine"))
+		local other_hex = string.format("#%06x", poi.group_color("Other"))
+		T.assert(all_fs:find(mine_hex .. "poi_test_a", 1, true) ~= nil,
+			"poi_test_a should be colored with the Mine group color")
+		T.assert(all_fs:find(other_hex .. "poi_test_b", 1, true) ~= nil,
+			"poi_test_b should be colored with the Other group color")
+
 		poi.handle_fields({ group_filter = "Mine" })
 
 		local mine_fs = poi.build_formspec_content()
@@ -143,16 +171,32 @@ function test_poi(T)
 
 	T.defer("Show all button shows the group's waypoints as HUDs", function()
 		reset_state()
-		ws.hud_remove_waypoint("poi_test_a")
-		ws.hud_remove_waypoint("poi_test_b")
+		ws.hud_remove_waypoint(WP_DOT .. "poi_test_a")
+		ws.hud_remove_waypoint(WP_DOT .. "poi_test_b")
 
 		poi.handle_fields({ group_filter = "Mine" })
 		poi.handle_fields({ show_all = "Show all" })
 
-		T.assert(ws.hud_waypoints["poi_test_a"] ~= nil,
+		T.assert(ws.hud_waypoints[WP_DOT .. "poi_test_a"] ~= nil,
 			"poi_test_a (group Mine) should be displayed as a HUD waypoint")
-		T.assert(ws.hud_waypoints["poi_test_b"] == nil,
+		T.assert(ws.hud_waypoints[WP_DOT .. "poi_test_b"] == nil,
 			"poi_test_b (group Other) should not be displayed")
+	end)
+
+	T.defer("displayed waypoints use dot-prefixed names colored by group", function()
+		reset_state()
+		ws.hud_remove_waypoint(WP_DOT .. "poi_test_a")
+		poi.set_hud_wp(poi.get_waypoint("poi_test_a"), "poi_test_a")
+
+		T.assert(ws.hud_waypoints[WP_DOT .. "poi_test_a"] ~= nil,
+			"displayed waypoint should be registered under its dot-prefixed name")
+
+		ws.hud_remove_waypoint(WP_DOT .. "poi_test_a")
+		poi.set_group("poi_test_a", "")
+		poi.set_hud_wp(poi.get_waypoint("poi_test_a"), "poi_test_a")
+		T.assert(ws.hud_waypoints[WP_DOT .. "poi_test_a"] ~= nil,
+			"ungrouped waypoint should also be dot-prefixed")
+		ws.hud_remove_waypoint(WP_DOT .. "poi_test_a")
 	end)
 
 	T.defer("poi test cleanup (post)", cleanup)
