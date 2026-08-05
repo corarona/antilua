@@ -289,15 +289,18 @@ local function show_wp_hud(pos, title)
 end
 
 local function remove_wp_hud(title)
-	if shown_huds[title] then
-		ws.hud_remove_waypoint(title)
-		shown_huds[title] = nil
+	-- show_wp_hud stores everything under the "● " prefixed display key, so
+	-- accept both a bare title and an already-prefixed one.
+	local display = title:find(WP_DOT, 1, true) and title or (WP_DOT .. title)
+	if shown_huds[display] then
+		ws.hud_remove_waypoint(display)
+		shown_huds[display] = nil
 	end
-	if shown_markers[title] then
+	if shown_markers[display] then
 		if core.ui.minimap and core.ui.minimap.remove_marker then
-			core.ui.minimap:remove_marker(shown_markers[title])
+			core.ui.minimap:remove_marker(shown_markers[display])
 		end
-		shown_markers[title] = nil
+		shown_markers[display] = nil
 	end
 end
 

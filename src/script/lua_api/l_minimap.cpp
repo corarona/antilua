@@ -154,7 +154,12 @@ int LuaMinimap::l_add_marker(lua_State *L)
 	lua_getfield(L, 2, "pos");
 	v3f posf = check_v3f(L, -1);
 	lua_pop(L, 1);
-	v3s16 pos = floatToInt(posf, BS);
+	// Positions are in node coordinates (see read_v3s16), not BS units.
+	// Use s32 so waypoints beyond int16 range keep their direction.
+	v3s32 pos = v3s32(
+		(s32)std::floor(posf.X + 0.5f),
+		(s32)std::floor(posf.Y + 0.5f),
+		(s32)std::floor(posf.Z + 0.5f));
 
 	video::SColor color(255, 255, 0, 0);
 	lua_getfield(L, 2, "color");

@@ -713,7 +713,7 @@ void Minimap::removeMarker(MinimapMarker **m)
 	m_markers.erase(it);
 }
 
-u32 Minimap::addLuaMarker(v3s16 world_pos, video::SColor color)
+u32 Minimap::addLuaMarker(v3s32 world_pos, video::SColor color)
 {
 	u32 id = m_next_lua_marker_id++;
 	m_lua_markers.push_back({id, world_pos, color});
@@ -763,19 +763,51 @@ void Minimap::updateActiveMarkers()
 	}
 
 	for (auto &marker : m_lua_markers) {
-		v3s16 pos = marker.world_pos - pos_offset;
-		if (pos.X < 0 || pos.X > (s16)data->mode.map_size ||
-				pos.Y < 0 || pos.Y > (s16)data->mode.scan_height ||
-				pos.Z < 0 || pos.Z > (s16)data->mode.map_size)
+		// Lua markers are navigation targets (e.g. waypoints), so they must
+		// stay visible even when far away: markers outside the scanned area
+		// are clamped onto the rim instead of being culled. Height is
+		// deliberately ignored so a waypoint above/below the player shows.
+		f32 map_size = (f32)data->mode.map_size;
+		if (map_size <= 0.f)
 			continue;
-		pos.X = ((float)pos.X / data->mode.map_size) * MINIMAP_MAX_SX;
-		pos.Z = ((float)pos.Z / data->mode.map_size) * MINIMAP_MAX_SY;
-		const video::SColor &mask_col = minimap_mask->getPixel(pos.X, pos.Z);
-		if (!mask_col.getAlpha())
-			continue;
+		f32 half = map_size * 0.5f;
+		f32 rel_x = (f32)(marker.world_pos.X - data->pos.X);
+		f32 rel_z = (f32)(marker.world_pos.Z - data->pos.Z);
+
+		// Rim slightly inset so the dot isn't clipped by the minimap rect.
+		f32 rim = half * 0.985f;
+		bool clamped = false;
+		if (data->minimap_shape_round) {
+			f32 len = std::sqrt(rel_x * rel_x + rel_z * rel_z);
+			if (len > rim) {
+				rel_x = rel_x / len * rim;
+				rel_z = rel_z / len * rim;
+				clamped = true;
+			}
+		} else {
+			f32 max_abs = std::max(std::fabs(rel_x), std::fabs(rel_z));
+			if (max_abs > rim) {
+				f32 s = rim / max_abs;
+				rel_x *= s;
+				rel_z *= s;
+				clamped = true;
+			}
+		}
+
+		s32 px = (s32)((rel_x / map_size + 0.5f) * MINIMAP_MAX_SX);
+		s32 pz = (s32)((rel_z / map_size + 0.5f) * MINIMAP_MAX_SY);
+		px = std::max(0, std::min(px, (s32)MINIMAP_MAX_SX - 1));
+		pz = std::max(0, std::min(pz, (s32)MINIMAP_MAX_SY - 1));
+
+		// Only in-map markers honor the mask; clamped rim markers always show.
+		if (!clamped) {
+			const video::SColor &mask_col = minimap_mask->getPixel(px, pz);
+			if (!mask_col.getAlpha())
+				continue;
+		}
 		m_active_lua_markers.emplace_back(marker.color, v2f(
-			((float)pos.X / (float)MINIMAP_MAX_SX) - 0.5f,
-			(1.0f - (float)pos.Z / (float)MINIMAP_MAX_SY) - 0.5f));
+			((float)px / (float)MINIMAP_MAX_SX) - 0.5f,
+			(1.0f - (float)pz / (float)MINIMAP_MAX_SY) - 0.5f));
 	}
 }
 

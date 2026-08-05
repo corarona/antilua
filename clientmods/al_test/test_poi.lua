@@ -235,5 +235,23 @@ function test_poi(T)
 			"marker should already be removed after clearing")
 	end)
 
+	T.defer("far waypoints still mirror as minimap markers", function()
+		if not core.ui.minimap or not core.ui.minimap.add_marker then return end
+		reset_state()
+		-- Waypoint far outside the minimap's scan area: its dot is edge-clamped
+		-- to the rim, so it must still be registered and removable.
+		mk_wp("poi_test_far", 50000)
+		poi.display(poi.get_waypoint("poi_test_far"), "poi_test_far")
+		local id = poi.get_displayed_marker("poi_test_far")
+		T.assert(type(id) == "number",
+			"a waypoint outside the minimap range should still get a marker id")
+
+		core.registered_chatcommands.clear_waypoint.func("")
+		T.assert(poi.get_displayed_marker("poi_test_far") == nil,
+			"clear_waypoint should remove the far waypoint marker")
+		T.assert(core.ui.minimap:remove_marker(id) == false,
+			"far marker should already be removed after clearing")
+	end)
+
 	T.defer("poi test cleanup (post)", cleanup)
 end

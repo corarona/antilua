@@ -60,7 +60,7 @@ struct MinimapMarker {
 
 struct MinimapLuaMarker {
 	u32 id;
-	v3s16 world_pos;
+	v3s32 world_pos;
 	video::SColor color;
 };
 
@@ -162,7 +162,7 @@ public:
 	MinimapMarker* addMarker(scene::ISceneNode *parent_node);
 	void removeMarker(MinimapMarker **marker);
 
-	u32 addLuaMarker(v3s16 world_pos, video::SColor color);
+	u32 addLuaMarker(v3s32 world_pos, video::SColor color);
 	bool removeLuaMarker(u32 id);
 	void clearLuaMarkers();
 
