@@ -5,6 +5,9 @@ local stprefix = "POI-singleplayer:"
 if core.settings:get("poi_show_all_waypoints") == nil then
 	core.settings:set("poi_show_all_waypoints", "false")
 end
+if core.settings:get("poi_screenshots") == nil then
+	core.settings:set("poi_screenshots", "false")
+end
 
 local function show_all_enabled()
 	return core.settings:get_bool("poi_show_all_waypoints")
@@ -167,9 +170,14 @@ function poi.set_waypoint(pos, name)
 	pos = ws.pos_to_string(pos)
 	if not pos then return end
 	storage:set_string(full_key(name), pos)
-	local ss = core.make_screenshot()
-	if ss and ss ~= "" then
-		storage:set_string(ss_key(name), ss)
+	-- Capturing a screenshot writes a PNG to disk on every add; make it
+	-- opt-in so /add_waypoint_here, death auto-waypoints and other mods
+	-- that add waypoints in bulk don't pay that cost.
+	if core.settings:get_bool("poi_screenshots") then
+		local ss = core.make_screenshot()
+		if ss and ss ~= "" then
+			storage:set_string(ss_key(name), ss)
+		end
 	end
 	return true
 end
@@ -355,7 +363,7 @@ ws.on_death(function()
 	poi.death_pos = vector.new(pos)
 	if core.settings:get_bool("auto_death_waypoint", true) then
 		poi.last_pos = pos
-		local name = "Death - " .. os.date("%Y-%m-%d %H:%M")
+		local name = "Death - " .. os.date("%Y-%m-%d %H:%M:%S")
 		poi.last_name = name
 		poi.set_waypoint(pos, name)
 		poi.display(pos, name)

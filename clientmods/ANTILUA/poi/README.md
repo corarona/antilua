@@ -30,6 +30,7 @@ management, and supports a transport callback system for teleportation mods.
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `death_tp` | bool | false | Auto-teleport to death location |
+| `poi_screenshots` | bool | false | Capture a screenshot and store it with each new waypoint |
 
 ### Quick menu
 
