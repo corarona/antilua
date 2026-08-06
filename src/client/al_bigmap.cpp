@@ -40,6 +40,8 @@ static std::string blockFileName(const v3s16 &pos)
 			+ "_" + std::to_string(pos.Z) + ".bin";
 }
 
+AlBigMap *AlBigMap::s_active = nullptr;
+
 // Floor division that is safe for s32 values beyond the s16 range used by
 // getContainerPos().
 static s32 floorDiv(s32 a, s32 b)
@@ -72,6 +74,19 @@ AlBigMap::~AlBigMap()
 		if (driver)
 			driver->removeTexture(m_view_texture);
 	}
+	if (s_active == this)
+		s_active = nullptr;
+}
+
+AlBigMap *AlBigMap::getActive()
+{
+	return s_active;
+}
+
+void AlBigMap::closeActive()
+{
+	if (s_active)
+		s_active->close();
 }
 
 std::string AlBigMap::resolveSaveDir() const
@@ -244,6 +259,7 @@ int AlBigMap::step(float dtime)
 void AlBigMap::open()
 {
 	m_open = true;
+	s_active = this;
 	m_user_panned = false;
 	if (!m_follow_player)
 		m_follow_player = true;
@@ -260,6 +276,8 @@ void AlBigMap::open()
 void AlBigMap::close()
 {
 	m_open = false;
+	if (s_active == this)
+		s_active = nullptr;
 	auto *device = RenderingEngine::get_raw_device();
 	if (device) {
 		if (auto *cur = device->getCursorControl())
@@ -651,7 +669,7 @@ video::SColor AlBigMap::pixelColor(const AlBigMapBlock &block, size_t idx) const
 		tilecolor.setGreen(tilecolor.getGreen() * minimap_color.getGreen() / 255);
 		tilecolor.setBlue(tilecolor.getBlue() * minimap_color.getBlue() / 255);
 	}
-	tilecolor.setAlpha(240);
+	tilecolor.setAlpha(255);
 	return tilecolor;
 }
 
@@ -685,14 +703,16 @@ void AlBigMap::draw(video::IVideoDriver *driver, v2u32 target_size)
 		m_view_size = target_size;
 		m_view_dirty = true;
 	}
-	if (m_blocks.empty()) {
-		if (m_view_texture)
-			driver->removeTexture(m_view_texture);
-		m_view_texture = nullptr;
-		return;
-	}
 
-	if (m_view_dirty || (m_follow_player && m_center != m_last_view_center)) {
+	// Re-rasterize when the view is dirty (new/cleared blocks, pan, zoom) or
+	// when following the player across map data. With no saved blocks the
+	// scrim is uniform, so only rasterize on an actual invalidation.
+	bool need_raster = m_view_dirty;
+	if (!m_blocks.empty() && m_follow_player
+			&& m_center != m_last_view_center)
+		need_raster = true;
+
+	if (need_raster) {
 		if (m_follow_player) {
 			updateFollowCenter();
 			m_view_dirty = true;
@@ -756,7 +776,7 @@ void AlBigMap::draw(video::IVideoDriver *driver, v2u32 target_size)
 
 		video::IImage *internal = driver->createImage(video::ECF_A8R8G8B8,
 				core::dimension2du(nw, nh));
-		internal->fill(video::SColor(255, 16, 16, 16));
+		internal->fill(video::SColor(90, 0, 0, 0));
 		for (s32 j = 0; j < nh; j++)
 		for (s32 i = 0; i < nw; i++) {
 			size_t si = j * nw + i;

@@ -10,6 +10,7 @@
 #include "gui/mainmenumanager.h"
 #include "gui/touchcontrols.h"
 #include "gui/cheatMenu.h"
+#include "client/al_bigmap.h"
 #include "hud_element.h"
 #include "log_internal.h"
 #include "client/renderingengine.h"
@@ -294,6 +295,19 @@ bool MyEventReceiver::OnEvent(const SEvent &event)
 
 	// Remember whether each key is down or up
 	if (event.EventType == EET_KEY_INPUT_EVENT) {
+		KeyPress keyCode(event.KeyInput);
+
+		// ESC closes the big map instead of opening the pause menu. Runs only
+		// when no menu/cheat layer is active (the menu branch above already
+		// handled those), and consumes the event so cancelPressed() sees
+		// nothing.
+		if (keyCode == EscapeKey && event.KeyInput.PressedDown
+				&& AlBigMap::getActive() && !g_cheat_layer_active
+				&& !g_quick_palette_active) {
+			AlBigMap::closeActive();
+			return true;
+		}
+
 		// Capture character input when cheat layer or quick palette is active
 		if ((g_cheat_layer_active || g_quick_palette_active) && event.KeyInput.PressedDown) {
 			// Skip capture for toggle/action keys that have character codes
@@ -321,7 +335,6 @@ bool MyEventReceiver::OnEvent(const SEvent &event)
 			}
 		}
 
-		KeyPress keyCode(event.KeyInput);
 		if (setKeyDown(keyCode, event.KeyInput.PressedDown))
 			return true;
 	} else if (g_touchcontrols && event.EventType == EET_TOUCH_INPUT_EVENT) {

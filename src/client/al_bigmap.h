@@ -78,6 +78,11 @@ public:
 	void close();
 	void toggle() { if (m_open) close(); else open(); }
 
+	// The currently-open big map instance (if any). Used by the input handler
+	// to close the map when ESC is pressed.
+	static AlBigMap *getActive();
+	static void closeActive();
+
 	v2s32 getCenterNode() const { return m_center; }
 	void setCenterNode(v2s32 c);
 	void pan(v2s32 delta_nodes);
@@ -113,6 +118,8 @@ public:
 	Client *getClient() const { return m_client; }
 
 private:
+	static AlBigMap *s_active;
+
 	std::string resolveSaveDir() const;
 	void writeBlockToDisk(const AlBigMapBlock &block) const;
 	bool readBlockFromDisk(const std::string &path, AlBigMapBlock &block) const;
