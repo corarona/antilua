@@ -102,6 +102,21 @@ function core.override_item(name, redefinition)
 	core.register_item_raw(itemdef)
 end
 
+-- Scene-only screenshot: core.make_screenshot(options, callback)
+--
+-- With no arguments, keeps the stock synchronous behaviour (captures the
+-- current frame, returns the file name). With an options table, queues an
+-- async scene-only capture: the next rendered frame is drawn without HUD,
+-- chat, formspecs, debug or cheat overlays, saved to disk, and `callback`
+-- is invoked with the full path to the saved file ("" on failure).
+local native_make_screenshot = core.make_screenshot
+function core.make_screenshot(options, callback)
+	if options == nil then
+		return native_make_screenshot()
+	end
+	return core._al_screenshot_scene_only(options, callback)
+end
+
 -- codeedit[] formspec widget availability
 if not core.features then
 	core.features = {}

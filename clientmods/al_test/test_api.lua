@@ -103,6 +103,59 @@ function test_api_registration_no_player(T)
 		T.assert(type(core.make_screenshot) == "function")
 	end)
 
+	T.run("core.make_screenshot no-arg returns basename", function()
+		local name = core.make_screenshot()
+		T.assert(type(name) == "string" and name ~= "",
+			"zero-arg make_screenshot should return a basename, got: " .. tostring(name))
+		T.assert(not name:find("[/\\]"),
+			"returned name should be a bare filename, got: " .. tostring(name))
+	end)
+
+	-- Scene-only screenshot is async: the capture happens on the next
+	-- rendered frame, so the callback fires some frames later.
+	do
+		local fired = false
+		local result_path = nil
+		local done = false
+		local attempts = 20 -- 20 * 0.5s = 10s timeout
+
+		T.run("core.make_screenshot scene_only queues async", function()
+			core.make_screenshot({ scene_only = true }, function(path)
+				fired = true
+				result_path = path
+			end)
+			T.assert(not fired,
+				"scene_only screenshot should be async (callback not yet fired)")
+		end)
+
+		local function poll()
+			if done then return end
+			if fired then
+				done = true
+				T.run("core.make_screenshot scene_only delivers file", function()
+					T.assert(type(result_path) == "string" and result_path ~= "",
+						"callback should receive a non-empty filename")
+					local ok, data = pcall(core.read_file, result_path)
+					T.assert(ok and data, "screenshot file should be readable: "
+						.. tostring(result_path))
+					if ok and data then
+						T.assert_eq(string.sub(data, 1, 8), "\137PNG\r\n\26\n",
+							"screenshot should be a PNG file")
+					end
+				end)
+			elseif attempts > 0 then
+				attempts = attempts - 1
+				core.after(0.5, poll)
+			else
+				done = true
+				T.run("core.make_screenshot scene_only delivers file", function()
+					T.assert(false, "screenshot callback never fired (timeout)")
+				end)
+			end
+		end
+		core.after(0.5, poll)
+	end
+
 	-- Chat commands (from builtin/client/chatcommands.lua)
 	T.run("chatcommands .players registered", function()
 		T.assert(core.registered_chatcommands.players ~= nil)

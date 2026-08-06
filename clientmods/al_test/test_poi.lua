@@ -254,4 +254,41 @@ function test_poi(T)
 	end)
 
 	T.defer("poi test cleanup (post)", cleanup)
+
+	-- Scene-only waypoint screenshots are async (the capture happens on the
+	-- next rendered frame) and stored as a bare PNG basename. Registered after
+	-- the shared cleanup so the poll can't race it.
+	T.defer("waypoint screenshots stored as PNG basename", function()
+		reset_state()
+		local saved_ss = core.settings:get_bool("poi_screenshots")
+		core.settings:set_bool("poi_screenshots", true)
+
+		local name = "poi_test_shot"
+		poi.set_waypoint({ x = 123, y = 5, z = -456 }, name)
+		test_wps[#test_wps + 1] = name
+
+		local ss_storage = core.get_mod_storage("poi")
+		local key = "POI-singleplayer:" .. name .. "_ss"
+
+		local attempts = 20 -- 20 * 0.5s = 10s timeout
+		local function poll()
+			local ss = ss_storage:get_string(key)
+			if ss ~= "" then
+				T.assert(not ss:find("[/\\]"),
+					"stored screenshot should be a bare filename, got: " .. ss)
+				T.assert(ss:match("%.png$"),
+					"stored screenshot basename should end in .png, got: " .. ss)
+				core.settings:set_bool("poi_screenshots", saved_ss)
+				poi.delete_waypoint(name)
+			elseif attempts > 0 then
+				attempts = attempts - 1
+				core.after(0.5, poll)
+			else
+				core.settings:set_bool("poi_screenshots", saved_ss)
+				poi.delete_waypoint(name)
+				T.assert(false, "waypoint screenshot _ss key never set (timeout)")
+			end
+		end
+		core.after(0.5, poll)
+	end)
 end

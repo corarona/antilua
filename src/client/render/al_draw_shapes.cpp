@@ -187,7 +187,7 @@ static void drawWireCircle(video::IVideoDriver *driver, v3f center, f32 radius,
 
 void DrawLuaShapes::run(PipelineContext &context)
 {
-	if (s_commands.empty())
+	if (s_commands.empty() || context.scene_only)
 		return;
 
 	video::IVideoDriver *driver = context.device->getVideoDriver();

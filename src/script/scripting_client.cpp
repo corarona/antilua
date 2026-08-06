@@ -144,6 +144,7 @@ void ClientScripting::InitializeModApi(lua_State *L, int top)
 	ClientSoundHandle::Register(L);
 	AlApiClientMap::Initialize(L, top);
 	init_raw_packet_api();
+	init_screenshot_api();
 }
 
 void ClientScripting::on_client_ready(LocalPlayer *localplayer)

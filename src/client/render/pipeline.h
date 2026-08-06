@@ -40,6 +40,9 @@ struct PipelineContext
 	bool show_hud {true};
 	bool draw_wield_tool {true};
 	bool draw_crosshair {true};
+	// Render only the 3D scene, skipping all 2D overlays (used for clean
+	// screenshots); see AlSceneCapture.
+	bool scene_only {false};
 };
 
 /**

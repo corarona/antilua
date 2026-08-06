@@ -16,6 +16,7 @@
 #include "client/shadows/dynamicshadowsrender.h"
 #include "util/numeric.h"
 #include "client/render/al_draw_shapes.h"
+#include "client/render/al_screenshot.h"
 #include <ICameraSceneNode.h>
 #include <IGUIEnvironment.h>
 #include "map.h"
@@ -34,7 +35,7 @@ void Draw3D::run(PipelineContext &context)
 
 	context.device->getSceneManager()->drawAll();
 	context.device->getVideoDriver()->setTransform(video::ETS_WORLD, core::IdentityMatrix);
-	if (!context.show_hud)
+	if (!context.show_hud || context.scene_only)
 		return;
 	context.hud->drawBlockBounds();
 	context.hud->drawSelectionMesh();
@@ -43,6 +44,9 @@ void Draw3D::run(PipelineContext &context)
 void DrawTracersAndESP::run(PipelineContext &context)
 {
 	video::IVideoDriver *driver = context.device->getVideoDriver();
+
+	if (context.scene_only)
+		return;
 
 	// Set up material: draw through walls, thicker lines
 	video::SMaterial mat;
@@ -492,6 +496,8 @@ void populatePlainPipeline(RenderPipeline *pipeline, Client *client)
 	step3D = addUpscaling(pipeline, step3D, downscale_factor, client);
 
 	step3D->setRenderTarget(pipeline->createOwned<ScreenTarget>());
+
+	pipeline->addStep<AlSceneCapture>();
 
 	pipeline->addStep<DrawHUD>();
 }

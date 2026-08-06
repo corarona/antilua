@@ -4,6 +4,7 @@
 #include "al_callbacks.h"
 #include "../s_internal.h"
 #include "client/client.h"
+#include "client/render/al_screenshot.h"
 #include "common/c_converter.h"
 #include "common/c_content.h"
 #include "client/localplayer.h"
@@ -958,4 +959,45 @@ bool AlScriptApi::send_raw_packet(u16 command, const std::string &payload)
 	pkt.putRawString(payload.data(), payload.size());
 	client->Send(&pkt);
 	return true;
+}
+
+// core._al_screenshot_scene_only(options, callback)
+// options: { scene_only = bool, path = string }
+// callback: function(filename) — fired after the next rendered frame
+static int l_screenshot_scene_only(lua_State *L)
+{
+	bool scene_only = true;
+	std::string path;
+
+	if (lua_istable(L, 1)) {
+		lua_getfield(L, 1, "scene_only");
+		if (!lua_isnil(L, -1))
+			scene_only = lua_toboolean(L, -1);
+		lua_pop(L, 1);
+
+		lua_getfield(L, 1, "path");
+		if (lua_isstring(L, -1))
+			path = lua_tostring(L, -1);
+		lua_pop(L, 1);
+	}
+
+	int callback_ref = LUA_NOREF;
+	if (lua_isfunction(L, 2)) {
+		callback_ref = luaL_ref(L, LUA_REGISTRYINDEX);
+	} else if (!lua_isnoneornil(L, 2)) {
+		return luaL_error(L, "second argument must be a function or nil");
+	}
+
+	AlScreenshot::request(scene_only, path, callback_ref);
+	return 0;
+}
+
+void AlScriptApi::init_screenshot_api()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_pushcfunction(L, l_screenshot_scene_only);
+	lua_setfield(L, -2, "_al_screenshot_scene_only");
+	lua_pop(L, 1);
 }

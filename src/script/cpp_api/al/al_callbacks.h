@@ -116,6 +116,7 @@ public:
 
 protected:
 	void init_raw_packet_api();
+	void init_screenshot_api();
 
 private:
 	Client *m_client = nullptr;

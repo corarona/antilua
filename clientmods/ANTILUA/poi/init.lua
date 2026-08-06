@@ -181,10 +181,13 @@ function poi.set_waypoint(pos, name)
 	-- opt-in so /add_waypoint_here, death auto-waypoints and other mods
 	-- that add waypoints in bulk don't pay that cost.
 	if core.settings:get_bool("poi_screenshots") then
-		local ss = core.make_screenshot()
-		if ss and ss ~= "" then
-			storage:set_string(ss_key(name), ss)
-		end
+		-- Scene-only capture (no HUD/chat/debug overlays). Async: the
+		-- callback fires once the next frame has been rendered.
+		core.make_screenshot({ scene_only = true }, function(ss)
+			if ss and ss ~= "" then
+				storage:set_string(ss_key(name), ss:match("[^/\\]+$") or ss)
+			end
+		end)
 	end
 	return true
 end
