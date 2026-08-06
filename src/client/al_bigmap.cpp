@@ -922,7 +922,7 @@ void AlBigMap::drawWaypointMarkers(video::IVideoDriver *driver,
 		return;
 
 	// Half-size of the marker dot (screen pixels).
-	const f32 marker_size2 = 0.02f * std::min(W, H);
+	const f32 marker_size2 = 0.005f * std::min(W, H);
 
 	gui::IGUIFont *font = g_fontengine ? g_fontengine->getFont() : nullptr;
 
