@@ -122,6 +122,26 @@ function test_bigmap_pixels(T)
 		T.assert(p2 ~= nil and p2.node == node_name,
 			"pixel should survive save()/load() roundtrip")
 	end)
+
+	-- render_section needs the save dir resolved (after connect), so defer it.
+	T.defer("big map render_section writes a PNG", function()
+		T.assert(type(core.al_bigmap.render_section) == "function",
+			"render_section should be a function")
+		local name = core.al_bigmap:render_section({
+			pos = { x = 1200, z = 3400 },
+			size = { x = 128, z = 128 },
+		})
+		T.assert(type(name) == "string" and name:match("%.png$"),
+			"render_section should return a .png texture name, got "
+				.. tostring(name))
+		if type(name) == "string" then
+			local dir = core.al_bigmap:get_save_dir() .. "/images"
+			local data = core.read_file(dir .. "/" .. name)
+			T.assert(data ~= nil and #data > 0,
+				"rendered section PNG should exist and be non-empty")
+		end
+		core.al_bigmap:clear_images()
+	end)
 end
 
 function test_bigmap_clear(T)

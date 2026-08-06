@@ -11,6 +11,7 @@
 #include "client/renderingengine.h"
 #include "client/texturesource.h"
 #include "client/fontengine.h"
+#include "client/texturepaths.h"
 #include "nodedef.h"
 #include "mapnode.h"
 #include "constants.h"
@@ -151,6 +152,11 @@ std::string AlBigMap::getBlocksDir() const
 	return m_save_dir.empty() ? "" : m_save_dir + DIR_DELIM "blocks";
 }
 
+std::string AlBigMap::getImagesDir() const
+{
+	return m_save_dir.empty() ? "" : m_save_dir + DIR_DELIM "images";
+}
+
 void AlBigMap::onConnect()
 {
 	m_save_dir = resolveSaveDir();
@@ -161,6 +167,14 @@ void AlBigMap::onConnect()
 	m_user_panned = false;
 	m_key_was_down = false;
 	invalidateView();
+
+	// Make the rendered-section image directory resolvable as a texture, so
+	// formspec image elements can reference section PNGs by filename (same
+	// mechanism as the per-server poi screenshot directory).
+	if (!m_save_dir.empty()) {
+		registerTextureSearchDir(getImagesDir());
+		fs::CreateAllDirs(getImagesDir());
+	}
 
 	// Loading needs the nodedef (for content-id remap), which is received
 	// during content transfer. If it's not ready yet, step() retries.
@@ -971,5 +985,119 @@ void AlBigMap::drawWaypointMarkers(video::IVideoDriver *driver,
 					iz + (s32)dim.Height / 2);
 			font->draw(text, label_rect, col);
 		}
+	}
+}
+
+std::string AlBigMap::renderSectionToImage(v3s32 center, v3s32 size)
+{
+	if (size.X <= 0 || size.Z <= 0 || m_save_dir.empty())
+		return "";
+
+	s32 node_min_x = center.X - size.X / 2;
+	s32 node_min_z = center.Z - size.Z / 2;
+	s32 node_max_x = node_min_x + size.X - 1;
+	s32 node_max_z = node_min_z + size.Z - 1;
+
+	// Resolution: one pixel per node, capped so huge sections stay bounded.
+	const s32 MAX_OUT = 2048;
+	s32 out_w = size.X;
+	s32 out_h = size.Z;
+	if (out_w > MAX_OUT || out_h > MAX_OUT) {
+		float s = std::min((f32)MAX_OUT / out_w, (f32)MAX_OUT / out_h);
+		out_w = std::max(1, (s32)(out_w * s));
+		out_h = std::max(1, (s32)(out_h * s));
+	}
+
+	s32 bx_min = floorDiv(node_min_x, MAP_BLOCKSIZE);
+	s32 bx_max = floorDiv(node_max_x, MAP_BLOCKSIZE);
+	s32 bz_min = floorDiv(node_min_z, MAP_BLOCKSIZE);
+	s32 bz_max = floorDiv(node_max_z, MAP_BLOCKSIZE);
+
+	// Per-column winner (topmost non-air pixel), in node resolution.
+	std::vector<s32> best((size_t)size.X * size.Z, -32768);
+	std::vector<video::SColor> colors((size_t)size.X * size.Z);
+
+	for (const auto &kv : m_blocks) {
+		const v3s16 &bp = kv.first;
+		if (bp.X < bx_min || bp.X > bx_max || bp.Z < bz_min || bp.Z > bz_max)
+			continue;
+		const AlBigMapBlock &block = *kv.second;
+		const std::vector<video::SColor> &tile = getTile(block);
+		s32 nx0 = bp.X * MAP_BLOCKSIZE;
+		s32 nz0 = bp.Z * MAP_BLOCKSIZE;
+		for (u8 z = 0; z < MAP_BLOCKSIZE; z++)
+		for (u8 x = 0; x < MAP_BLOCKSIZE; x++) {
+			size_t idx = z * MAP_BLOCKSIZE + x;
+			if (block.pixels[idx].param0 == CONTENT_AIR)
+				continue;
+			s32 node_x = nx0 + x;
+			s32 node_z = nz0 + z;
+			s32 bxi = node_x - node_min_x;
+			// North-up: larger node_z renders toward the top.
+			s32 bzi = node_max_z - node_z;
+			if (bxi < 0 || bzi < 0 || bxi >= size.X || bzi >= size.Z)
+				continue;
+			s32 h_abs = bp.Y * MAP_BLOCKSIZE + block.pixels[idx].height;
+			size_t si = bzi * size.X + bxi;
+			if (h_abs > best[si]) {
+				best[si] = h_abs;
+				colors[si] = tile[idx];
+			}
+		}
+	}
+
+	auto *driver = RenderingEngine::get_video_driver();
+	if (!driver)
+		return "";
+
+	video::IImage *node_image = driver->createImage(video::ECF_A8R8G8B8,
+			core::dimension2du(size.X, size.Z));
+	if (!node_image)
+		return "";
+	node_image->fill(video::SColor(90, 0, 0, 0));
+	for (s32 j = 0; j < size.Z; j++)
+	for (s32 i = 0; i < size.X; i++) {
+		size_t si = j * size.X + i;
+		if (best[si] > -32768)
+			node_image->setPixel(i, j, colors[si]);
+	}
+
+	video::IImage *out_image = node_image;
+	if (out_w != size.X || out_h != size.Z) {
+		out_image = driver->createImage(video::ECF_A8R8G8B8,
+				core::dimension2du(out_w, out_h));
+		if (!out_image) {
+			node_image->drop();
+			return "";
+		}
+		node_image->copyToScaling(out_image);
+		node_image->drop();
+	}
+
+	fs::CreateAllDirs(getImagesDir());
+	std::string base = "albigmap_" + std::to_string(m_image_seq++) + ".png";
+	std::string path = getImagesDir() + DIR_DELIM + base;
+
+	bool ok = driver->writeImageToFile(out_image, path.c_str(), 100);
+	out_image->drop();
+	if (!ok) {
+		errorstream << "AlBigMap: failed to write section image " << path
+				<< std::endl;
+		return "";
+	}
+	return base;
+}
+
+void AlBigMap::clearImages()
+{
+	std::string dir = getImagesDir();
+	if (dir.empty() || !fs::PathExists(dir))
+		return;
+	for (const auto &entry : fs::GetDirListing(dir)) {
+		if (entry.dir)
+			continue;
+		if (entry.name.rfind("albigmap_", 0) != 0)
+			continue;
+		fs::DeleteSingleFileOrEmptyDirectory(dir + DIR_DELIM + entry.name, false);
 	}
 }

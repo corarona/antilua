@@ -296,4 +296,28 @@ function test_poi(T)
 		end
 		core.after(0.5, poll)
 	end)
+
+	-- The POI formspec shows a big-map section under the selected waypoint's
+	-- screenshot. Skips when the Antilua big map is unavailable.
+	T.defer("poi formspec shows a big-map section", function()
+		if not (core.al_bigmap and core.al_bigmap.render_section) then
+			core.log("info", "[AL_TEST] skipping poi big-map section: "
+				.. "core.al_bigmap unavailable")
+			return
+		end
+		reset_state()
+		local name = "poi_test_map"
+		poi.set_waypoint({ x = 3000, y = 5, z = -4000 }, name)
+		test_wps[#test_wps + 1] = name
+		select_wp(name)
+
+		local fs = poi.build_formspec_content()
+		local map_tex = fs:match("image%[9.25,3.35;2.5,2.5;(albigmap_%d+%.png)%]")
+		T.assert(map_tex ~= nil,
+			"formspec should include a big-map section image for the selected waypoint")
+
+		-- Clean up the rendered PNG (and the waypoint).
+		core.al_bigmap:clear_images()
+		poi.delete_waypoint(name)
+	end)
 end

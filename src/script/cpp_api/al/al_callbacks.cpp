@@ -1343,6 +1343,87 @@ static int l_bigmap_get_block(lua_State *L)
 	return 1;
 }
 
+// core.al_bigmap.render_section({pos={x,z}, size={x,z}}) -> texture name
+// Also accepts min/max box instead of pos+size. Renders a section of the
+// saved map to a PNG in the big map's images dir and returns a texture name
+// usable in a formspec image element, or nil on failure.
+static int l_bigmap_render_section(lua_State *L)
+{
+	bigMapSkipSelf(L);
+	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	luaL_checktype(L, 1, LUA_TTABLE);
+
+	v3s32 center(0, 0, 0);
+	v3s32 size(0, 0, 0);
+	bool have_center = false;
+
+	// min/max box (optional)
+	lua_getfield(L, 1, "min");
+	if (lua_istable(L, -1)) {
+		center.X = getintfield_default(L, -1, "x", 0);
+		center.Z = getintfield_default(L, -1, "z", 0);
+		have_center = true;
+	}
+	lua_pop(L, 1);
+	lua_getfield(L, 1, "max");
+	if (lua_istable(L, -1)) {
+		s32 maxx = getintfield_default(L, -1, "x", center.X);
+		s32 maxz = getintfield_default(L, -1, "z", center.Z);
+		if (have_center) {
+			size.X = maxx - center.X + 1;
+			size.Z = maxz - center.Z + 1;
+			center.X = center.X + size.X / 2;
+			center.Z = center.Z + size.Z / 2;
+		}
+	}
+	lua_pop(L, 1);
+
+	// pos (center) + size (optional override)
+	lua_getfield(L, 1, "pos");
+	if (lua_istable(L, -1)) {
+		center.X = getintfield_default(L, -1, "x", center.X);
+		center.Z = getintfield_default(L, -1, "z", center.Z);
+		have_center = true;
+	}
+	lua_pop(L, 1);
+	lua_getfield(L, 1, "size");
+	if (lua_istable(L, -1)) {
+		size.X = getintfield_default(L, -1, "x", 0);
+		size.Z = getintfield_default(L, -1, "z", 0);
+	}
+	lua_pop(L, 1);
+
+	// Default center to the player position.
+	if (!have_center) {
+		LocalPlayer *player = ModApiBase::getClient(L)->getEnv().getLocalPlayer();
+		if (!player)
+			return 0;
+		v3f p = player->getPosition() / BS;
+		center.X = (s32)std::floor(p.X);
+		center.Z = (s32)std::floor(p.Z);
+	}
+	if (size.X <= 0 || size.Z <= 0)
+		return 0;
+
+	std::string name = bm->renderSectionToImage(center, size);
+	if (name.empty())
+		return 0;
+	lua_pushstring(L, name.c_str());
+	return 1;
+}
+
+static int l_bigmap_clear_images(lua_State *L)
+{
+	bigMapSkipSelf(L);
+	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	bm->clearImages();
+	return 0;
+}
+
 void AlScriptApi::init_bigmap_api()
 {
 	SCRIPTAPI_PRECHECKHEADER
@@ -1372,6 +1453,8 @@ void AlScriptApi::init_bigmap_api()
 	lua_pushcfunction(L, l_bigmap_get_pixel);    lua_setfield(L, -2, "get_pixel");
 	lua_pushcfunction(L, l_bigmap_set_pixel);    lua_setfield(L, -2, "set_pixel");
 	lua_pushcfunction(L, l_bigmap_get_block);    lua_setfield(L, -2, "get_block");
+	lua_pushcfunction(L, l_bigmap_render_section); lua_setfield(L, -2, "render_section");
+	lua_pushcfunction(L, l_bigmap_clear_images);   lua_setfield(L, -2, "clear_images");
 	lua_setfield(L, -2, "al_bigmap");
 	lua_pop(L, 1);
 }

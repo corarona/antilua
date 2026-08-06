@@ -102,9 +102,20 @@ public:
 
 	std::string getSaveDir() const;
 	std::string getBlocksDir() const;
+	// Directory where rendered map sections are saved as PNGs (registered as
+	// a texture search dir so formspec image elements can reference them).
+	std::string getImagesDir() const;
 	size_t getBlockCount() const;
 	bool hasBlock(v3s16 block_pos) const;
 	void getCoverage(v3s16 *min_pos, v3s16 *max_pos) const;
+
+	// Renders the saved map region around `center` (node coords, x/z) with
+	// the given `size` (in nodes) to a PNG in the images dir and returns the
+	// texture name for use in formspec image elements, or "" on failure.
+	std::string renderSectionToImage(v3s32 center, v3s32 size);
+
+	// Deletes all rendered section PNGs in the images dir.
+	void clearImages();
 
 	// Data access for the Lua API (node coordinates, x/z).
 	bool getPixel(v2s32 node_pos, std::string *name, u8 *param2,
@@ -174,6 +185,8 @@ private:
 	v2s32 m_last_mouse = v2s32(0, 0);
 	bool m_key_was_down = false;
 	bool m_cursor_was_visible = true;
+	// Sequence number for unique rendered-section filenames.
+	u32 m_image_seq = 0;
 	// Dirty-block write budget used in step().
 	static const size_t MAX_WRITES_PER_STEP = 128;
 };

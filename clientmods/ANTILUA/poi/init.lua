@@ -8,6 +8,9 @@ end
 if core.settings:get("poi_screenshots") == nil then
 	core.settings:set("poi_screenshots", "false")
 end
+if core.settings:get("poi_map_section_size") == nil then
+	core.settings:set("poi_map_section_size", "512")
+end
 
 local function show_all_enabled()
 	return core.settings:get_bool("poi_show_all_waypoints")
@@ -19,6 +22,8 @@ local formspec_list = {}
 local selected_name
 local shown_huds = {}
 local shown_markers = {}
+-- Rendered big-map section texture names, keyed by waypoint name.
+local map_img_cache = {}
 local lpos
 local sort_by_distance = false
 local filter_group = ""
@@ -62,6 +67,8 @@ local function reset_gui_state()
 		end
 	end
 	shown_markers = {}
+	-- Big-map section images are per-server; re-render on reconnect.
+	map_img_cache = {}
 end
 
 ws.on_connect(function()
@@ -485,6 +492,22 @@ local function get_screenshot(name)
 	return (ss ~= "") and ss or nil
 end
 
+-- Render (and cache) a big-map section centered on the waypoint, returning a
+-- texture name for a formspec image element. Requires the Antilua big map.
+local function get_selected_map_image(name)
+	if map_img_cache[name] then return map_img_cache[name] end
+	if not (core.al_bigmap and core.al_bigmap.render_section) then return nil end
+	local pos = poi.get_waypoint(name)
+	if not pos then return nil end
+	local size = tonumber(core.settings:get("poi_map_section_size")) or 512
+	local tex = core.al_bigmap:render_section({
+		pos = { x = pos.x, z = pos.z },
+		size = { x = size, z = size },
+	})
+	if tex then map_img_cache[name] = tex end
+	return tex
+end
+
 local function get_unique_groups()
 	local prefix = show_all_enabled() and "POI-" or stprefix
 	local groups = {}
@@ -611,6 +634,11 @@ local function build_waypoint_list(sb, af, waypoints)
 		local ss = get_screenshot(selected_name)
 		if ss then
 			sb:add(af.image(9.25, 1.4, 2.5, 1.79, ss))
+		end
+		-- Big-map section centered on the waypoint, right under the screenshot.
+		local map_name = get_selected_map_image(selected_name)
+		if map_name then
+			sb:add(af.image(9.25, 3.35, 2.5, 2.5, map_name))
 		end
 	end
 end

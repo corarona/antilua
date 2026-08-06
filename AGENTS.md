@@ -586,6 +586,7 @@ math as entity markers (`object_marker_red.png`).
 local id = core.ui.minimap:add_marker({
     pos = { x = 0, y = 10, z = 0 },
     color = "#FF0000",      -- optional: CSS color string (default red)
+    label = "home",         -- optional: name shown next to the dot on the big map
 })
 
 -- Remove by id
@@ -594,6 +595,10 @@ local ok = core.ui.minimap:remove_marker(id)
 -- Remove all
 core.ui.minimap:clear_markers()
 ```
+
+Markers are shown on the minimap as dots; any marker with a `label` is also
+drawn (dot + name) on the Antilua big map, rim-clamped to the screen edge
+when outside the current view.
 
 ### Key files
 
@@ -622,8 +627,12 @@ writes/step), and flushed on disconnect. Cap via `minimap_save_max_blocks`
 (farthest pruned).
 
 **Open/close:** `keymap_big_map` (default `M`), cheat menu "BigMap" entry, or
-Lua. Pan: drag with dig button (mouse shown while open). Zoom: mouse wheel.
-`set_follow_player` keeps the map centered on the player; panning disables it.
+Lua. ESC also closes it (without opening the pause menu). Pan: drag with dig
+button (mouse shown while open). Zoom: mouse wheel. `set_follow_player` keeps
+the map centered on the player; panning disables it. The unexplored void is a
+translucent scrim so the world stays dimly visible; the player position is
+drawn as a rotating arrow (minimap `player_marker.png`) and minimap Lua
+markers (e.g. POI waypoints) are shown as colored dots with their label.
 
 **Lua API (`core.al_bigmap`)** — dot or colon syntax both work:
 - View: `open() close() toggle() is_open()`, `set_center/get_center`,
@@ -632,6 +641,12 @@ Lua. Pan: drag with dig button (mouse shown while open). Zoom: mouse wheel.
   `get_block_count()`, `get_save_dir()`, `get_coverage()`
 - Data: `has_block(x,z)`, `get_pixel(x,z)` → `{node,param2,height,air_count}`,
   `set_pixel(x,z,{node,height,air_count,param2})`, `get_block(x,z)` → 16×16
+- Render: `render_section({pos={x,z}, size={x,z}})` (or `min`/`max`) renders
+  a section of the saved map to a PNG and returns a texture name usable in a
+  formspec `image` element (`nil` on failure). Saved to
+  `<savedir>/images/` (registered as a texture search dir on connect).
+  `clear_images()` deletes all rendered section PNGs (they otherwise
+  accumulate).
 - Callbacks: `core.register_on_bigmap_open/close(fn)` (fired on key-toggle)
 - `/bigmap` chat command toggles the overlay.
 

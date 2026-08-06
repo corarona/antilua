@@ -1,0 +1,10 @@
+# poi — persistent waypoint (POI) system
+
+poi_show_all_waypoints (Show waypoints from all servers) bool false
+poi_screenshots (Capture screenshot with each new waypoint) bool false
+poi_map_section_size (Waypoint map section size) int 512 64 2048
+auto_death_waypoint (Auto waypoint on death) bool true
+auto_death_waypoint_max (Max death waypoints to keep) int 10 1 100
+death_tp (Teleport to death location) bool false
+poi_shownames (Show names on POIs) bool false
+auto_screenshot (Auto screenshot on death) bool false
