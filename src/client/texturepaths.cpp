@@ -9,17 +9,36 @@
 #include "settings.h"
 #include "filesys.h"
 #include "porting.h"
+#include <algorithm>
+#include <mutex>
 #include <vector>
 
 // A cache from texture name to texture path
 static MutexedMap<std::string, std::string> g_texturename_to_path_cache;
 // Cached result of getTextureDirs()
 static MutexedVariable<std::vector<std::string>> g_texturedirs_cache;
+// Additional directories registered at runtime (see registerTextureSearchDir);
+// read from other threads (mesh update), so guarded by a mutex.
+static std::mutex g_extra_texture_dirs_mutex;
+static std::vector<std::string> g_extra_texture_dirs;
 
 void clearTextureNameCache()
 {
 	g_texturename_to_path_cache.clear();
 	g_texturedirs_cache.set({});
+}
+
+void registerTextureSearchDir(const std::string &dir)
+{
+	{
+		std::lock_guard<std::mutex> lock(g_extra_texture_dirs_mutex);
+		if (std::find(g_extra_texture_dirs.begin(), g_extra_texture_dirs.end(),
+				dir) != g_extra_texture_dirs.end())
+			return;
+		g_extra_texture_dirs.push_back(dir);
+	}
+	// Recompute the search path so the new directory is considered.
+	clearTextureNameCache();
 }
 
 // Find out the full path of an image by trying different filename extensions.
@@ -104,6 +123,17 @@ std::vector<std::string> getTextureDirs()
 		if (fs::IsDir(clientmods_dir)) {
 			auto clientmod_textures = fs::GetRecursiveDirs(clientmods_dir);
 			ret.insert(ret.end(), clientmod_textures.begin(), clientmod_textures.end());
+		}
+		// Per-server poi screenshot thumbnails (registered on connect), checked
+		// before the generic screenshots directory so the copied copies win.
+		std::vector<std::string> extra_texture_dirs;
+		{
+			std::lock_guard<std::mutex> lock(g_extra_texture_dirs_mutex);
+			extra_texture_dirs = g_extra_texture_dirs;
+		}
+		for (const auto &dir : extra_texture_dirs) {
+			if (fs::IsDir(dir))
+				ret.push_back(dir);
 		}
 		// Also search the screenshots directory for waypoint thumbnails
 		std::string screenshot_dir = g_settings->get("screenshot_path");

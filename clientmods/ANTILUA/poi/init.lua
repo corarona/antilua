@@ -185,7 +185,16 @@ function poi.set_waypoint(pos, name)
 		-- callback fires once the next frame has been rendered.
 		core.make_screenshot({ scene_only = true }, function(ss)
 			if ss and ss ~= "" then
-				storage:set_string(ss_key(name), ss:match("[^/\\]+$") or ss)
+				local base = ss:match("[^/\\]+$") or ss
+				-- Keep a per-server copy (data/server/<server>/poi) that the
+				-- waypoint thumbnail is loaded from.
+				local ok, data = pcall(core.read_file, ss)
+				if ok and data then
+					local dir = core.get_serverdata_path() .. "/poi"
+					core.mkdir(dir)
+					core.write_file(dir .. "/" .. base, data)
+				end
+				storage:set_string(ss_key(name), base)
 			end
 		end)
 	end

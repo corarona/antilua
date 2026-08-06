@@ -278,6 +278,11 @@ function test_poi(T)
 					"stored screenshot should be a bare filename, got: " .. ss)
 				T.assert(ss:match("%.png$"),
 					"stored screenshot basename should end in .png, got: " .. ss)
+				-- The thumbnail must also be copied to the per-server poi dir.
+				local copy_path = core.get_serverdata_path() .. "/poi/" .. ss
+				local ok, data = pcall(core.read_file, copy_path)
+				T.assert(ok and data and data:sub(1, 8) == "\137PNG\r\n\26\n",
+					"waypoint screenshot should be copied to " .. copy_path)
 				core.settings:set_bool("poi_screenshots", saved_ss)
 				poi.delete_waypoint(name)
 			elseif attempts > 0 then

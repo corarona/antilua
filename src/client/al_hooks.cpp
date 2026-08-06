@@ -6,6 +6,9 @@
 #include "client/localplayer.h"
 #include "script/scripting_client.h"
 #include "script/cpp_api/al/al_callbacks.h"
+#include "texturepaths.h"
+#include "porting.h"
+#include "filesys.h"
 #include "particles.h"
 #include "sound_spec.h"
 #include "hud.h"
@@ -258,6 +261,19 @@ float on_time_of_day(Client *client, u16 time, float speed)
 
 void on_connect(Client *client)
 {
+	// Register the per-server poi screenshot directory as a texture search
+	// dir so waypoint thumbnails stored there can be displayed.
+	std::string addr = client->getAddressName();
+	std::string server_id;
+	if (addr.empty() || client->isSingleplayer())
+		server_id = "singleplayer";
+	else
+		server_id = addr + "_" + std::to_string(client->getServerAddress().getPort());
+	std::string poi_dir = porting::path_user + DIR_DELIM "data"
+			+ DIR_DELIM "server" + DIR_DELIM + server_id + DIR_DELIM "poi";
+	fs::CreateAllDirs(poi_dir);
+	registerTextureSearchDir(poi_dir);
+
 	if (client->modsLoaded())
 		client->getScript()->on_connect();
 }

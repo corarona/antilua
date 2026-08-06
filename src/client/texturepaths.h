@@ -27,3 +27,8 @@ std::string getTexturePath(const std::string &filename, bool *is_base_pack = nul
 
 // Returns all dictionaries found from the "texture_path" setting.
 std::vector<std::string> getTextureDirs();
+
+// Register an additional directory to search for textures (e.g. the
+// per-server poi screenshot directory). Recomputes the cached search path
+// so newly registered directories are picked up.
+void registerTextureSearchDir(const std::string &dir);
