@@ -878,12 +878,13 @@ void AlBigMap::drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size)
 
 	// World matrix: translate to the player's NDC position, rotate the arrow
 	// to point in the facing direction, scale to the marker size. The arrow
-	// texture points +x, so for a north-up map (+z up, forward = -sin(yaw),
-	// +cos(yaw)) the rotation is 90deg + yaw. Order matters: the quad must be
-	// ROTATED in local space first, then scaled (tr*scl*rot), otherwise the
-	// anisotropic NDC->pixel mapping shears the marker on non-square screens.
+	// renders pointing up when unrotated, so rotating it by the player's yaw
+	// (degrees) makes it point at the world direction faced (north = +z up,
+	// east = +x right). Order matters: the quad must be ROTATED in local
+	// space first, then scaled (tr*scl*rot), otherwise the anisotropic
+	// NDC->pixel mapping shears the marker on non-square screens.
 	core::matrix4 rot;
-	rot.setRotationDegrees(core::vector3df(0, 0, 90.0f + player->getYaw()));
+	rot.setRotationDegrees(core::vector3df(0, 0, player->getYaw()));
 	core::matrix4 scl;
 	scl.setScale(core::vector3df(marker_size / W, marker_size / H, 1));
 	core::matrix4 tr;
