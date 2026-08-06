@@ -849,7 +849,7 @@ void AlBigMap::drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size)
 		return;
 
 	// Marker size (screen pixels).
-	const f32 marker_size = 0.08f * std::min(W, H);
+	const f32 marker_size = 0.24f * std::min(W, H);
 
 	// Screen position of the player using the same node->screen mapping as
 	// the rasterize step.
