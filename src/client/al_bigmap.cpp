@@ -793,7 +793,8 @@ void AlBigMap::draw(video::IVideoDriver *driver, v2u32 target_size)
 				s32 node_x = nx0 + x;
 				s32 node_z = nz0 + z;
 				s32 bxi = node_x - node_min_x;
-				s32 bzi = node_z - node_min_z;
+				// Flip Z so +z (north) is at the top, matching the minimap.
+				s32 bzi = node_max_z - node_z;
 				if (bxi < 0 || bzi < 0 || bxi >= nw || bzi >= nh)
 					continue;
 				s32 h_abs = bp.Y * MAP_BLOCKSIZE + block.pixels[idx].height;
@@ -852,9 +853,9 @@ void AlBigMap::drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size)
 	const f32 marker_size = 0.24f * std::min(W, H);
 
 	// Screen position of the player using the same node->screen mapping as
-	// the rasterize step.
+	// the rasterize step (+z north is up on screen).
 	f32 sx = ((f32)px - (f32)m_center.X) * m_zoom + W / 2.0f;
-	f32 sz = ((f32)pz - (f32)m_center.Y) * m_zoom + H / 2.0f;
+	f32 sz = ((f32)m_center.Y - (f32)pz) * m_zoom + H / 2.0f;
 
 	// Skip when the marker is fully off-screen.
 	if (sx < -marker_size || sx > W + marker_size
@@ -875,18 +876,20 @@ void AlBigMap::drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size)
 	driver->setTransform(video::ETS_PROJECTION, core::matrix4());
 	driver->setTransform(video::ETS_VIEW, core::matrix4());
 
-	// World matrix: translate to the player's NDC position, rotate by yaw
-	// (degrees, matching the minimap's square-mode marker), scale to the
-	// marker size. Built as T*R*S via matrix multiplication since
-	// setScale()/setRotationDegrees() each overwrite the upper 3x3.
+	// World matrix: translate to the player's NDC position, rotate the arrow
+	// to point in the facing direction, scale to the marker size. The arrow
+	// texture points +x, so for a north-up map (+z up, forward = -sin(yaw),
+	// +cos(yaw)) the rotation is 90deg + yaw. Order matters: the quad must be
+	// ROTATED in local space first, then scaled (tr*scl*rot), otherwise the
+	// anisotropic NDC->pixel mapping shears the marker on non-square screens.
 	core::matrix4 rot;
-	rot.setRotationDegrees(core::vector3df(0, 0, player->getYaw()));
+	rot.setRotationDegrees(core::vector3df(0, 0, 90.0f + player->getYaw()));
 	core::matrix4 scl;
 	scl.setScale(core::vector3df(marker_size / W, marker_size / H, 1));
 	core::matrix4 tr;
 	tr.setTranslation(core::vector3df(
 			sx * 2.0f / W - 1.0f, 1.0f - sz * 2.0f / H, 0));
-	core::matrix4 matrix = tr * rot * scl;
+	core::matrix4 matrix = tr * scl * rot;
 
 	auto &material = m_marker_buffer->getMaterial();
 	material.TextureLayers[0].Texture = m_player_marker_texture;
