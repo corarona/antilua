@@ -67,6 +67,20 @@ local hud_defs = {
 
 local flight_hud_def
 
+local function minimap_sync(self, show)
+	if not core.ui.minimap then return end
+	local mm = core.ui.minimap
+	if show then
+		if self._saved_minimap_mode == nil then
+			self._saved_minimap_mode = (mm.get_mode and mm:get_mode()) or 0
+		end
+		if mm.show then mm:show() end
+	elseif self._saved_minimap_mode ~= nil then
+		if mm.set_mode then mm:set_mode(self._saved_minimap_mode) end
+		self._saved_minimap_mode = nil
+	end
+end
+
 local function create_hud(self)
 	self._hud_ids = {}
 	for _, def in ipairs(hud_defs) do
@@ -81,6 +95,7 @@ local function create_hud(self)
 		if def.color then args.number = def.color end
 		self._hud_ids[def.key] = core.localplayer:hud_add(args)
 	end
+	minimap_sync(self, true)
 	self._last_roll_tex = nil
 end
 
@@ -180,6 +195,7 @@ flight_hud_def = {
 			if id then core.localplayer:hud_remove(id) end
 		end
 		self._hud_ids = {}
+		minimap_sync(self, false)
 	end,
 }
 
