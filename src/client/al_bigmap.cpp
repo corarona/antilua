@@ -10,6 +10,7 @@
 #include "client/node_visuals.h"
 #include "client/renderingengine.h"
 #include "client/texturesource.h"
+#include "client/fontengine.h"
 #include "nodedef.h"
 #include "mapnode.h"
 #include "constants.h"
@@ -19,11 +20,13 @@
 #include "porting.h"
 #include "settings.h"
 #include "log.h"
+#include "util/string.h"
 
 #include <IImage.h>
 #include <ITexture.h>
 #include <IVideoDriver.h>
 #include <IrrlichtDevice.h>
+#include <IGUIFont.h>
 #include <algorithm>
 #include <cmath>
 #include <fstream>
@@ -831,6 +834,7 @@ void AlBigMap::draw(video::IVideoDriver *driver, v2u32 target_size)
 	driver->draw2DImage(m_view_texture, dst, src, nullptr, nullptr, true);
 
 	drawPlayerMarker(driver, target_size);
+	drawWaypointMarkers(driver, target_size);
 }
 
 void AlBigMap::drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size)
@@ -903,4 +907,69 @@ void AlBigMap::drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size)
 	driver->setViewPort(oldViewPort);
 	driver->setTransform(video::ETS_PROJECTION, oldProjMat);
 	driver->setTransform(video::ETS_VIEW, oldViewMat);
+}
+
+void AlBigMap::drawWaypointMarkers(video::IVideoDriver *driver,
+		v2u32 target_size)
+{
+	Minimap *minimap = m_client->getMinimap();
+	if (!minimap)
+		return;
+
+	const f32 W = (f32)target_size.X;
+	const f32 H = (f32)target_size.Y;
+	if (W <= 0 || H <= 0)
+		return;
+
+	// Half-size of the marker dot (screen pixels).
+	const f32 marker_size2 = 0.02f * std::min(W, H);
+
+	gui::IGUIFont *font = g_fontengine ? g_fontengine->getFont() : nullptr;
+
+	for (const MinimapLuaMarker &marker : minimap->getLuaMarkers()) {
+		// Project to screen using the same north-up mapping as the rasterize
+		// step; height is ignored, like on the minimap.
+		f32 sx = ((f32)marker.world_pos.X - (f32)m_center.X) * m_zoom + W / 2.0f;
+		f32 sz = ((f32)m_center.Y - (f32)marker.world_pos.Z) * m_zoom + H / 2.0f;
+
+		// Rim-clamp far waypoints to the inset screen edge so they stay
+		// visible as navigation targets (mirrors the minimap's rim behavior).
+		f32 half_w = W / 2.0f - marker_size2;
+		f32 half_h = H / 2.0f - marker_size2;
+		if (half_w > 0 && half_h > 0) {
+			f32 dx = sx - W / 2.0f;
+			f32 dz = sz - H / 2.0f;
+			f32 max_abs = std::max(std::fabs(dx) / half_w,
+					std::fabs(dz) / half_h);
+			if (max_abs > 1.0f) {
+				dx /= max_abs;
+				dz /= max_abs;
+				sx = W / 2.0f + dx * half_w;
+				sz = H / 2.0f + dz * half_h;
+			}
+		}
+
+		s32 ix = (s32)sx;
+		s32 iz = (s32)sz;
+		video::SColor col = marker.color;
+		col.setAlpha(255);
+
+		// Waypoint dot.
+		core::rect<s32> dot_rect(ix - (s32)marker_size2,
+				iz - (s32)marker_size2,
+				ix + (s32)marker_size2,
+				iz + (s32)marker_size2);
+		driver->draw2DRectangle(col, dot_rect, nullptr);
+
+		// Waypoint name next to the dot.
+		if (font && !marker.label.empty()) {
+			core::stringw text = utf8_to_wide(marker.label);
+			core::dimension2du dim = font->getDimension(text.c_str());
+			core::rect<s32> label_rect(ix + (s32)marker_size2 + 4,
+					iz - (s32)dim.Height / 2,
+					ix + (s32)marker_size2 + 4 + (s32)dim.Width,
+					iz + (s32)dim.Height / 2);
+			font->draw(text, label_rect, col);
+		}
+	}
 }

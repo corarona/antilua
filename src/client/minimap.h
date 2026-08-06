@@ -62,6 +62,8 @@ struct MinimapLuaMarker {
 	u32 id;
 	v3s32 world_pos;
 	video::SColor color;
+	// Optional display name (e.g. a waypoint name) shown by the big map.
+	std::string label;
 };
 
 struct MinimapPixel {
@@ -162,9 +164,16 @@ public:
 	MinimapMarker* addMarker(scene::ISceneNode *parent_node);
 	void removeMarker(MinimapMarker **marker);
 
-	u32 addLuaMarker(v3s32 world_pos, video::SColor color);
+	u32 addLuaMarker(v3s32 world_pos, video::SColor color,
+			const std::string &label = "");
 	bool removeLuaMarker(u32 id);
 	void clearLuaMarkers();
+
+	// Lua markers currently shown on the minimap (read by the big map).
+	const std::vector<MinimapLuaMarker> &getLuaMarkers() const
+	{
+		return m_lua_markers;
+	}
 
 	void updateActiveMarkers();
 	void drawMinimap(core::rect<s32> rect);

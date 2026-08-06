@@ -167,7 +167,13 @@ int LuaMinimap::l_add_marker(lua_State *L)
 		read_color(L, -1, &color);
 	lua_pop(L, 1);
 
-	u32 id = m->addLuaMarker(pos, color);
+	std::string label;
+	lua_getfield(L, 2, "label");
+	if (lua_isstring(L, -1))
+		label = lua_tostring(L, -1);
+	lua_pop(L, 1);
+
+	u32 id = m->addLuaMarker(pos, color, label);
 	lua_pushinteger(L, (lua_Integer)id);
 	return 1;
 }

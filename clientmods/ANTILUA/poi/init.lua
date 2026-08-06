@@ -296,6 +296,7 @@ local function show_wp_hud(pos, title)
 		shown_markers[display] = core.ui.minimap:add_marker({
 			pos = pos,
 			color = string.format("#%06x", color),
+			label = title,
 		})
 	end
 end

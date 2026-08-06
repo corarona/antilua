@@ -133,6 +133,8 @@ private:
 	void updateFollowCenter();
 	// Draws the player position arrow (mirrors the minimap player marker).
 	void drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size);
+	// Draws minimap Lua markers (e.g. POI waypoints) on the map, with names.
+	void drawWaypointMarkers(video::IVideoDriver *driver, v2u32 target_size);
 
 	Client *m_client;
 	std::string m_save_dir;

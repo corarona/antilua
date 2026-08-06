@@ -713,10 +713,11 @@ void Minimap::removeMarker(MinimapMarker **m)
 	m_markers.erase(it);
 }
 
-u32 Minimap::addLuaMarker(v3s32 world_pos, video::SColor color)
+u32 Minimap::addLuaMarker(v3s32 world_pos, video::SColor color,
+		const std::string &label)
 {
 	u32 id = m_next_lua_marker_id++;
-	m_lua_markers.push_back({id, world_pos, color});
+	m_lua_markers.push_back({id, world_pos, color, label});
 	return id;
 }
 
