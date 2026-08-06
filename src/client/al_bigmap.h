@@ -7,6 +7,8 @@
 #include "irr_v2d.h"
 #include "irr_v3d.h"
 #include "SColor.h"
+#include "CMeshBuffer.h"
+#include "irr_ptr.h"
 
 #include <map>
 #include <set>
@@ -129,6 +131,8 @@ private:
 	const std::vector<video::SColor> &getTile(const AlBigMapBlock &block);
 	void invalidateView();
 	void updateFollowCenter();
+	// Draws the player position arrow (mirrors the minimap player marker).
+	void drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size);
 
 	Client *m_client;
 	std::string m_save_dir;
@@ -158,6 +162,10 @@ private:
 	v2u32 m_view_size = v2u32(0, 0);
 	v2s32 m_last_view_center = v2s32(0, 0);
 	bool m_view_dirty = true;
+
+	// Player position marker (rotated quad, like the minimap's player arrow).
+	irr_ptr<scene::SMeshBuffer> m_marker_buffer;
+	video::ITexture *m_player_marker_texture = nullptr;
 
 	// Input bookkeeping.
 	bool m_left_down = false;

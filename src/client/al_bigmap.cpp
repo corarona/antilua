@@ -9,6 +9,7 @@
 #include "client/localplayer.h"
 #include "client/node_visuals.h"
 #include "client/renderingengine.h"
+#include "client/texturesource.h"
 #include "nodedef.h"
 #include "mapnode.h"
 #include "constants.h"
@@ -59,10 +60,39 @@ static v3s16 nodeToBlock(s32 x, s32 z)
 			floorDiv(z, MAP_BLOCKSIZE));
 }
 
+// Unit quad (-1..1) used for the player position arrow. Geometry and UVs
+// mirror the minimap's marker quad so the arrow renders with the same
+// orientation as on the minimap.
+static irr_ptr<scene::SMeshBuffer> createMarkerMeshBuffer()
+{
+	auto buf = make_irr<scene::SMeshBuffer>();
+	auto &vertices = buf->Vertices->Data;
+	auto &indices = buf->Indices->Data;
+	vertices.resize(4);
+	indices.resize(6);
+	static const video::SColor c(255, 255, 255, 255);
+
+	vertices[0] = video::S3DVertex(-1, -1, 0, 0, 0, 1, c, 0, 1);
+	vertices[1] = video::S3DVertex(-1,  1, 0, 0, 0, 1, c, 0, 0);
+	vertices[2] = video::S3DVertex( 1,  1, 0, 0, 0, 1, c, 1, 0);
+	vertices[3] = video::S3DVertex( 1, -1, 0, 0, 0, 1, c, 1, 1);
+
+	indices[0] = 0;
+	indices[1] = 1;
+	indices[2] = 2;
+	indices[3] = 2;
+	indices[4] = 3;
+	indices[5] = 0;
+
+	buf->setHardwareMappingHint(scene::EHM_STATIC);
+	return buf;
+}
+
 AlBigMap::AlBigMap(Client *client) :
 	m_client(client)
 {
 	m_save_enabled = g_settings->getBool("enable_minimap_saving");
+	m_marker_buffer = createMarkerMeshBuffer();
 }
 
 AlBigMap::~AlBigMap()
@@ -74,6 +104,7 @@ AlBigMap::~AlBigMap()
 		if (driver)
 			driver->removeTexture(m_view_texture);
 	}
+	m_marker_buffer.reset();
 	if (s_active == this)
 		s_active = nullptr;
 }
@@ -797,4 +828,75 @@ void AlBigMap::draw(video::IVideoDriver *driver, v2u32 target_size)
 	core::rect<s32> src(0, 0, m_view_size.X, m_view_size.Y);
 	core::rect<s32> dst(0, 0, target_size.X, target_size.Y);
 	driver->draw2DImage(m_view_texture, dst, src, nullptr, nullptr, true);
+
+	drawPlayerMarker(driver, target_size);
+}
+
+void AlBigMap::drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size)
+{
+	LocalPlayer *player = m_client->getEnv().getLocalPlayer();
+	if (!player || !m_marker_buffer)
+		return;
+
+	// Player node position (same flooring as updateFollowCenter).
+	v3f pos = player->getPosition() / BS;
+	s32 px = (s32)std::floor(pos.X);
+	s32 pz = (s32)std::floor(pos.Z);
+
+	const f32 W = (f32)target_size.X;
+	const f32 H = (f32)target_size.Y;
+	if (W <= 0 || H <= 0)
+		return;
+
+	// Marker size (screen pixels).
+	const f32 marker_size = 0.08f * std::min(W, H);
+
+	// Screen position of the player using the same node->screen mapping as
+	// the rasterize step.
+	f32 sx = ((f32)px - (f32)m_center.X) * m_zoom + W / 2.0f;
+	f32 sz = ((f32)pz - (f32)m_center.Y) * m_zoom + H / 2.0f;
+
+	// Skip when the marker is fully off-screen.
+	if (sx < -marker_size || sx > W + marker_size
+			|| sz < -marker_size || sz > H + marker_size)
+		return;
+
+	if (!m_player_marker_texture)
+		m_player_marker_texture =
+				m_client->getTextureSource()->getTexture("player_marker.png");
+	if (!m_player_marker_texture)
+		return;
+
+	core::rect<s32> oldViewPort = driver->getViewPort();
+	core::matrix4 oldProjMat = driver->getTransform(video::ETS_PROJECTION);
+	core::matrix4 oldViewMat = driver->getTransform(video::ETS_VIEW);
+
+	driver->setViewPort(core::rect<s32>(0, 0, target_size.X, target_size.Y));
+	driver->setTransform(video::ETS_PROJECTION, core::matrix4());
+	driver->setTransform(video::ETS_VIEW, core::matrix4());
+
+	// World matrix: translate to the player's NDC position, rotate by yaw
+	// (degrees, matching the minimap's square-mode marker), scale to the
+	// marker size. Built as T*R*S via matrix multiplication since
+	// setScale()/setRotationDegrees() each overwrite the upper 3x3.
+	core::matrix4 rot;
+	rot.setRotationDegrees(core::vector3df(0, 0, player->getYaw()));
+	core::matrix4 scl;
+	scl.setScale(core::vector3df(marker_size / W, marker_size / H, 1));
+	core::matrix4 tr;
+	tr.setTranslation(core::vector3df(
+			sx * 2.0f / W - 1.0f, 1.0f - sz * 2.0f / H, 0));
+	core::matrix4 matrix = tr * rot * scl;
+
+	auto &material = m_marker_buffer->getMaterial();
+	material.TextureLayers[0].Texture = m_player_marker_texture;
+	material.MaterialType = video::EMT_TRANSPARENT_ALPHA_CHANNEL;
+
+	driver->setTransform(video::ETS_WORLD, matrix);
+	driver->setMaterial(material);
+	driver->drawMeshBuffer(m_marker_buffer.get());
+
+	driver->setViewPort(oldViewPort);
+	driver->setTransform(video::ETS_PROJECTION, oldProjMat);
+	driver->setTransform(video::ETS_VIEW, oldViewMat);
 }
