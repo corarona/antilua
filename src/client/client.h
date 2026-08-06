@@ -43,6 +43,7 @@ class ModChannelMgr;
 class MtEventManager;
 class NetworkPacket;
 class NodeDefManager;
+class AlBigMap;
 class ParticleManager;
 class RenderingEngine;
 class ToastManager;
@@ -370,6 +371,7 @@ public:
 	}
 
 	Minimap* getMinimap() { return m_minimap.get(); }
+	AlBigMap* getAlBigMap() { return m_al_bigmap.get(); }
 	void setCamera(Camera* camera) { m_camera = camera; }
 
 	Camera* getCamera () { return m_camera; }
@@ -435,6 +437,13 @@ public:
 	{
 		return m_address_name;
 	}
+
+	// World path, only set for singleplayer worlds (used by Antilua's
+	// per-server minimap storage).
+	void setWorldPath(const std::string &path) { m_world_path = path; }
+	std::string getWorldPath() const override { return m_world_path; }
+
+	bool isNodedefReceived() const { return m_nodedef_received; }
 
 	inline u64 getCSMRestrictionFlags() const
 	{
@@ -525,6 +534,8 @@ private:
 	ELoginRegister m_allow_login_or_register = ELoginRegister::Any;
 	Camera *m_camera = nullptr;
 	std::unique_ptr<Minimap> m_minimap;
+	std::unique_ptr<AlBigMap> m_al_bigmap;
+	std::string m_world_path;
 
 	// Server serialization version
 	u8 m_server_ser_ver;

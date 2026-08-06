@@ -34,6 +34,7 @@
 #include "mapnode.h"
 #include "mapsector.h"
 #include "minimap.h"
+#include "al_bigmap.h"
 #include "node_visuals.h"
 #include "profiler.h"
 #include "shader.h"
@@ -175,6 +176,7 @@ Client::Client(
 
 	if (g_settings->getBool("enable_minimap")) {
 		m_minimap = std::make_unique<Minimap>(this);
+		m_al_bigmap = std::make_unique<AlBigMap>(this);
 	}
 
 	m_cache_save_interval = g_settings->getU16("server_map_save_interval");
@@ -434,6 +436,7 @@ Client::~Client()
 	guiScalingCacheClear();
 
 	m_minimap.reset();
+	m_al_bigmap.reset();
 	m_media_downloader.reset();
 
 	// Write the changes and delete
@@ -728,8 +731,13 @@ void Client::step(float dtime)
 				for (ofs.Y = 0; ofs.Y < m_mesh_grid.cell_size; ofs.Y++)
 				for (ofs.X = 0; ofs.X < m_mesh_grid.cell_size; ofs.X++) {
 					size_t i = m_mesh_grid.getOffsetIndex(ofs);
-					if (i < minimap_mapblocks.size() && minimap_mapblocks[i])
-						m_minimap->addBlock(r.p + ofs, minimap_mapblocks[i]);
+					if (i < minimap_mapblocks.size() && minimap_mapblocks[i]) {
+						v3s16 block_pos = r.p + ofs;
+						m_minimap->addBlock(block_pos, minimap_mapblocks[i]);
+						if (m_al_bigmap)
+							m_al_bigmap->onBlockAdded(block_pos,
+									minimap_mapblocks[i]);
+					}
 				}
 			}
 

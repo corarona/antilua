@@ -603,6 +603,56 @@ core.ui.minimap:clear_markers()
 | `src/client/minimap.cpp` | Marker projection in `updateActiveMarkers()`, colored dot draw in `drawMinimap()` |
 | `src/script/lua_api/l_minimap.h/cpp` | Lua bindings for `add_marker`, `remove_marker`, `clear_markers` |
 
+## Big Map (Per-Server Minimap Persistence)
+
+The server never sends minimap map data (only `TOCLIENT_MINIMAP_MODES`
+definitions); all minimap blocks are derived client-side from the ordinary
+block stream. The big map captures those client-derived `MinimapMapblock`s as
+they arrive, persists them per server, and provides a fullscreen pan/zoom
+overlay composed from every saved block.
+
+**Storage** — one self-contained file per 16×16 block (raw `MapNode` params +
+`height` + `air_count`, plus a per-block content-id→name map so blocks remap
+correctly to a later session's nodedef; no `nodedef.bin` needed):
+- remote: `~/.antilua/data/server/<addr>_<port>/minimap/blocks/`
+- singleplayer: `<world_path>/minimap/blocks/` (travels with the world)
+
+Blocks stream in live, are batched to disk in `AlBigMap::step()` (≤128
+writes/step), and flushed on disconnect. Cap via `minimap_save_max_blocks`
+(farthest pruned).
+
+**Open/close:** `keymap_big_map` (default `M`), cheat menu "BigMap" entry, or
+Lua. Pan: drag with dig button (mouse shown while open). Zoom: mouse wheel.
+`set_follow_player` keeps the map centered on the player; panning disables it.
+
+**Lua API (`core.al_bigmap`)** — dot or colon syntax both work:
+- View: `open() close() toggle() is_open()`, `set_center/get_center`,
+  `pan(dx,dz)`, `set_zoom/get_zoom`, `set_follow_player/get_follow_player`
+- Persistence: `set_save_enabled/get_save_enabled`, `save() load() clear()`,
+  `get_block_count()`, `get_save_dir()`, `get_coverage()`
+- Data: `has_block(x,z)`, `get_pixel(x,z)` → `{node,param2,height,air_count}`,
+  `set_pixel(x,z,{node,height,air_count,param2})`, `get_block(x,z)` → 16×16
+- Callbacks: `core.register_on_bigmap_open/close(fn)` (fired on key-toggle)
+- `/bigmap` chat command toggles the overlay.
+
+Requires `enable_minimap=true` (default) since that gates minimap block
+generation.
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/client/al_bigmap.h/cpp` | `AlBigMap`: capture, per-server persistence, nodedef remap, tiles, rasterize, input |
+| `src/client/render/al_bigmap_overlay.h/cpp` | Fullscreen overlay render step (added in `plain.cpp`/`anaglyph.cpp`) |
+| `src/client/al_hooks.h/cpp` | `on_minimap_block`, bigmap wiring in `on_connect`/`on_disconnect`/`on_pre_step` |
+| `src/script/cpp_api/al/al_callbacks.h/cpp` | `init_bigmap_api()` → `core.al_bigmap`, `on_bigmap_open/close` |
+| `src/client/client.h/cpp` | `m_al_bigmap` member, block-capture hook at `client.cpp` block delivery |
+| `src/client/game.cpp` | `client->setWorldPath(server->getWorldPath())` for singleplayer storage |
+| `src/client/keys.h` + `inputhandler.cpp` | `KeyType::BIG_MAP` ← `keymap_big_map` |
+| `builtin/settingtypes_al.txt` | `enable_minimap_saving`, `minimap_save_max_blocks`, `keymap_big_map` |
+| `builtin/client/register_al.lua` + `cheats.lua` + `chatcommands_al.lua` | callbacks, cheat entry, `/bigmap` |
+| `clientmods/al_test/test_bigmap.lua` | Integration tests |
+
 ## Sky API
 
 Client-side access to the sky parameters via `core.sky`.

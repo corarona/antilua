@@ -6,6 +6,7 @@
 #include "anaglyph.h"
 #include "client/camera.h"
 #include "client/render/al_screenshot.h"
+#include "client/render/al_bigmap_overlay.h"
 #include "stereo.h"
 #include "plain.h"
 #include <IrrlichtDevice.h>
@@ -78,4 +79,5 @@ void populateAnaglyphPipeline(RenderPipeline *pipeline, Client *client)
 	pipeline->addStep<MapPostFxStep>();
 	pipeline->addStep<AlSceneCapture>();
 	pipeline->addStep<DrawHUD>();
+	pipeline->addStep<AlBigMapOverlay>();
 }

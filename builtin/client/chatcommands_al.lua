@@ -136,3 +136,15 @@ core.register_chatcommand("cheat_rearrange", {
 		return true, "Rearranging cheat panels..."
 	end,
 })
+
+core.register_chatcommand("bigmap", {
+	description = "Toggle the client-side big map (saved minimap data for this server)",
+	func = function()
+		if core.al_bigmap then
+			core.al_bigmap:toggle()
+			return true, core.al_bigmap:is_open()
+					and "Big map opened" or "Big map closed"
+		end
+		return false, "Big map is unavailable (enable_minimap is off)"
+	end,
+})

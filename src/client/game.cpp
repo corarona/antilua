@@ -1082,6 +1082,7 @@ bool Game::connectToServer(const GameStartData &start_data,
 	client->migrateModStorage();
 	client->m_simple_singleplayer_mode = simple_singleplayer_mode;
 	client->m_internal_server = !!server;
+	client->setWorldPath(server ? server->getWorldPath() : "");
 
 	/*
 		Wait for server to accept connection

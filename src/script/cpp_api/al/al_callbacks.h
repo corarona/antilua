@@ -114,9 +114,14 @@ public:
 			const std::string &payload);
 	bool send_raw_packet(u16 command, const std::string &payload);
 
+	// Big map (per-server minimap persistence) notifications
+	void on_bigmap_open();
+	void on_bigmap_close();
+
 protected:
 	void init_raw_packet_api();
 	void init_screenshot_api();
+	void init_bigmap_api();
 
 private:
 	Client *m_client = nullptr;

@@ -296,6 +296,9 @@ core.register_cheat({ name = "NodeESP", category = "Render", setting = "enable_n
 	description = "Highlight nodes through walls" })
 core.register_cheat({ name = "NodeTracers", category = "Render", setting = "enable_node_tracers",
 	description = "Draw tracer lines to selected nodes" })
+core.register_cheat({ name = "BigMap", category = "Render",
+	func = function() core.al_bigmap:toggle() end,
+	description = "Open the client-side big map" })
 
 -- Player cheats
 core.register_cheat({ name = "FastDig", category = "Player", setting = "fastdig",

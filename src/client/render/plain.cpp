@@ -17,6 +17,7 @@
 #include "util/numeric.h"
 #include "client/render/al_draw_shapes.h"
 #include "client/render/al_screenshot.h"
+#include "client/render/al_bigmap_overlay.h"
 #include <ICameraSceneNode.h>
 #include <IGUIEnvironment.h>
 #include "map.h"
@@ -500,6 +501,8 @@ void populatePlainPipeline(RenderPipeline *pipeline, Client *client)
 	pipeline->addStep<AlSceneCapture>();
 
 	pipeline->addStep<DrawHUD>();
+
+	pipeline->addStep<AlBigMapOverlay>();
 }
 
 video::ECOLOR_FORMAT selectColorFormat(video::IVideoDriver *driver)

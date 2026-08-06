@@ -35,6 +35,7 @@ set(client_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/render/plain.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/al_draw_shapes.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/al_screenshot.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/render/al_bigmap_overlay.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/sidebyside.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/stereo.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/render/secondstage.cpp
@@ -49,6 +50,7 @@ set(client_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/clientobject.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/clouds.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/al_hooks.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/al_bigmap.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/pathfind.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/task_markers.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/al_theme.cpp

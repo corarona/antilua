@@ -17,6 +17,7 @@ struct SoundSpec;
 struct ParticleParameters;
 struct ParticleSpawnerParameters;
 struct Lighting;
+struct MinimapMapblock;
 enum class SoundLocation : u8;
 enum HudElementStat : u8;
 
@@ -115,6 +116,9 @@ void on_lighting(Client *client, const Lighting &lighting);
 
 void on_pre_step(Client *client, float dtime);
 void on_post_step(Client *client, float dtime);
+
+// Minimap block capture for the big map (main thread).
+void on_minimap_block(Client *client, v3s16 pos, const MinimapMapblock *data);
 
 RawPacketHookResult on_raw_packet_received(Client *client, u16 command,
 		const std::string &payload);

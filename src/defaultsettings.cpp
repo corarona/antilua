@@ -293,6 +293,7 @@ void set_default_settings()
 	settings->setDefault("keymap_cmd", "SYSTEM_SCANCODE_56"); // /
 	settings->setDefault("keymap_cmd_local", "SYSTEM_SCANCODE_55"); // .
 	settings->setDefault("keymap_minimap", "SYSTEM_SCANCODE_25|GAMEPAD_BUTTON_4"); // KEY_KEY_V|Gamepad Back
+	settings->setDefault("keymap_big_map", "SYSTEM_SCANCODE_50"); // KEY_KEY_M
 	settings->setDefault("keymap_console", "SYSTEM_SCANCODE_67"); // KEY_F10
 
 	// see <https://github.com/luanti-org/luanti/issues/12792>
@@ -461,6 +462,8 @@ void set_default_settings()
 	settings->setDefault("enable_minimap", "true");
 	settings->setDefault("minimap_shape_round", "true");
 	settings->setDefault("minimap_double_scan_height", "true");
+	settings->setDefault("enable_minimap_saving", "true");
+	settings->setDefault("minimap_save_max_blocks", "100000");
 
 	// Effects
 	settings->setDefault("enable_post_processing", "true");

@@ -3,7 +3,9 @@
 
 #include "al_callbacks.h"
 #include "../s_internal.h"
+#include "lua_api/l_base.h"
 #include "client/client.h"
+#include "client/al_bigmap.h"
 #include "client/render/al_screenshot.h"
 #include "common/c_converter.h"
 #include "common/c_content.h"
@@ -13,6 +15,9 @@
 #include "particles.h"
 #include "sound_spec.h"
 #include "lighting.h"
+#include "nodedef.h"
+#include "constants.h"
+#include "util/numeric.h"
 
 // ---------------------------------------------------------------------------
 // Phase 1a: Wire dead callbacks
@@ -1000,4 +1005,401 @@ void AlScriptApi::init_screenshot_api()
 	lua_pushcfunction(L, l_screenshot_scene_only);
 	lua_setfield(L, -2, "_al_screenshot_scene_only");
 	lua_pop(L, 1);
+}
+
+// ---------------------------------------------------------------------------
+// Big map (per-server minimap persistence)
+// ---------------------------------------------------------------------------
+
+static AlBigMap *getBigMap(lua_State *L)
+{
+	return ModApiBase::getClient(L)->getAlBigMap();
+}
+
+static v3s16 bigMapNodeToBlock(s32 x, s32 z)
+{
+	return v3s16(getContainerPos(x, MAP_BLOCKSIZE), 0,
+			getContainerPos(z, MAP_BLOCKSIZE));
+}
+
+static void bigMapSkipSelf(lua_State *L)
+{
+	// Allow both core.al_bigmap:fn(...) and core.al_bigmap.fn(...) syntax.
+	if (lua_istable(L, 1))
+		lua_remove(L, 1);
+}
+
+
+static std::string bigMapReadStringField(lua_State *L, int index,
+		const char *field)
+{
+	std::string value;
+	lua_getfield(L, index, field);
+	if (lua_isstring(L, -1))
+		value = lua_tostring(L, -1);
+	lua_pop(L, 1);
+	return value;
+}
+
+static u16 bigMapReadIntField(lua_State *L, int index, const char *field,
+		u16 def)
+{
+	u16 value = def;
+	lua_getfield(L, index, field);
+	if (lua_isnumber(L, -1))
+		value = (u16)lua_tointeger(L, -1);
+	lua_pop(L, 1);
+	return value;
+}
+
+static int l_bigmap_toggle(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->toggle();
+	return 0;
+}
+
+static int l_bigmap_open(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->open();
+	return 0;
+}
+
+static int l_bigmap_close(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->close();
+	return 0;
+}
+
+static int l_bigmap_is_open(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	lua_pushboolean(L, bm && bm->isOpen());
+	return 1;
+}
+
+static int l_bigmap_set_center(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->setCenterNode(v2s32(luaL_checkinteger(L, 1),
+				luaL_checkinteger(L, 2)));
+	return 0;
+}
+
+static int l_bigmap_get_center(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	v2s32 c = bm->getCenterNode();
+	lua_newtable(L);
+	lua_pushinteger(L, c.X);
+	lua_setfield(L, -2, "x");
+	lua_pushinteger(L, c.Y);
+	lua_setfield(L, -2, "z");
+	return 1;
+}
+
+static int l_bigmap_pan(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->pan(v2s32(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2)));
+	return 0;
+}
+
+static int l_bigmap_set_zoom(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->setZoom(luaL_checknumber(L, 1));
+	return 0;
+}
+
+static int l_bigmap_get_zoom(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	lua_pushnumber(L, bm->getZoom());
+	return 1;
+}
+
+static int l_bigmap_set_follow_player(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->setFollowPlayer(lua_toboolean(L, 1));
+	return 0;
+}
+
+static int l_bigmap_get_follow_player(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	lua_pushboolean(L, bm->getFollowPlayer());
+	return 1;
+}
+
+static int l_bigmap_set_save_enabled(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->setSaveEnabled(lua_toboolean(L, 1));
+	return 0;
+}
+
+static int l_bigmap_get_save_enabled(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	lua_pushboolean(L, bm->getSaveEnabled());
+	return 1;
+}
+
+static int l_bigmap_save(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->save();
+	return 0;
+}
+
+static int l_bigmap_load(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->load();
+	return 0;
+}
+
+static int l_bigmap_clear(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	if (AlBigMap *bm = getBigMap(L))
+		bm->clear();
+	return 0;
+}
+
+static int l_bigmap_get_block_count(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	lua_pushinteger(L, bm->getBlockCount());
+	return 1;
+}
+
+static int l_bigmap_get_save_dir(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	lua_pushstring(L, bm->getSaveDir().c_str());
+	return 1;
+}
+
+static int l_bigmap_get_coverage(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	v3s16 minp, maxp;
+	bm->getCoverage(&minp, &maxp);
+	lua_newtable(L);
+	lua_newtable(L);
+	lua_pushinteger(L, minp.X * MAP_BLOCKSIZE);
+	lua_setfield(L, -2, "x");
+	lua_pushinteger(L, minp.Z * MAP_BLOCKSIZE);
+	lua_setfield(L, -2, "z");
+	lua_setfield(L, -2, "min");
+	lua_newtable(L);
+	lua_pushinteger(L, (maxp.X + 1) * MAP_BLOCKSIZE - 1);
+	lua_setfield(L, -2, "x");
+	lua_pushinteger(L, (maxp.Z + 1) * MAP_BLOCKSIZE - 1);
+	lua_setfield(L, -2, "z");
+	lua_setfield(L, -2, "max");
+	lua_pushinteger(L, bm->getBlockCount());
+	lua_setfield(L, -2, "count");
+	return 1;
+}
+
+static int l_bigmap_has_block(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	v3s16 bp = bigMapNodeToBlock(luaL_checkinteger(L, 1),
+			luaL_checkinteger(L, 2));
+	lua_pushboolean(L, bm->hasBlock(bp));
+	return 1;
+}
+
+static int l_bigmap_get_pixel(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	std::string name;
+	u8 param2 = 0;
+	u16 height = 0;
+	u16 air = 0;
+	if (!bm->getPixel(v2s32(luaL_checkinteger(L, 1), luaL_checkinteger(L, 2)),
+			&name, &param2, &height, &air))
+		return 0;
+	lua_newtable(L);
+	lua_pushstring(L, name.c_str());
+	lua_setfield(L, -2, "node");
+	lua_pushinteger(L, param2);
+	lua_setfield(L, -2, "param2");
+	lua_pushinteger(L, height);
+	lua_setfield(L, -2, "height");
+	lua_pushinteger(L, air);
+	lua_setfield(L, -2, "air_count");
+	return 1;
+}
+
+static int l_bigmap_set_pixel(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	s32 x = luaL_checkinteger(L, 1);
+	s32 z = luaL_checkinteger(L, 2);
+	luaL_checktype(L, 3, LUA_TTABLE);
+	std::string name = bigMapReadStringField(L, 3, "node");
+	u16 height = bigMapReadIntField(L, 3, "height", 0);
+	u16 air = bigMapReadIntField(L, 3, "air_count", 0);
+	u8 param2 = (u8)bigMapReadIntField(L, 3, "param2", 0);
+	lua_pushboolean(L, bm->setPixel(v2s32(x, z), name, height, air, param2));
+	return 1;
+}
+
+static int l_bigmap_get_block(lua_State *L)
+{
+
+	bigMapSkipSelf(L);	AlBigMap *bm = getBigMap(L);
+	if (!bm)
+		return 0;
+	v3s16 bp = bigMapNodeToBlock(luaL_checkinteger(L, 1),
+			luaL_checkinteger(L, 2));
+	AlBigMapBlock *block = nullptr;
+	if (!bm->getBlock(bp, &block))
+		return 0;
+
+	const NodeDefManager *ndef = ModApiBase::getClient(L)->getNodeDefManager();
+	lua_newtable(L);
+	lua_newtable(L);
+	lua_pushinteger(L, bp.X * MAP_BLOCKSIZE);
+	lua_setfield(L, -2, "x");
+	lua_pushinteger(L, bp.Y * MAP_BLOCKSIZE);
+	lua_setfield(L, -2, "y");
+	lua_pushinteger(L, bp.Z * MAP_BLOCKSIZE);
+	lua_setfield(L, -2, "z");
+	lua_setfield(L, -2, "pos");
+	lua_newtable(L);
+	for (u8 zz = 0; zz < MAP_BLOCKSIZE; zz++) {
+		lua_newtable(L);
+		for (u8 xx = 0; xx < MAP_BLOCKSIZE; xx++) {
+			const AlBigMapPixel &p = block->pixels[zz * MAP_BLOCKSIZE + xx];
+			lua_newtable(L);
+			if (ndef) {
+				const std::string &nm = ndef->get(p.param0).name;
+				lua_pushstring(L, nm.c_str());
+			} else {
+				lua_pushnil(L);
+			}
+			lua_setfield(L, -2, "node");
+			lua_pushinteger(L, p.param2);
+			lua_setfield(L, -2, "param2");
+			lua_pushinteger(L, p.height);
+			lua_setfield(L, -2, "height");
+			lua_pushinteger(L, p.air_count);
+			lua_setfield(L, -2, "air_count");
+			lua_rawseti(L, -2, xx + 1);
+		}
+		lua_rawseti(L, -2, zz + 1);
+	}
+	lua_setfield(L, -2, "data");
+	return 1;
+}
+
+void AlScriptApi::init_bigmap_api()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_newtable(L);
+	lua_pushcfunction(L, l_bigmap_toggle);        lua_setfield(L, -2, "toggle");
+	lua_pushcfunction(L, l_bigmap_open);          lua_setfield(L, -2, "open");
+	lua_pushcfunction(L, l_bigmap_close);         lua_setfield(L, -2, "close");
+	lua_pushcfunction(L, l_bigmap_is_open);       lua_setfield(L, -2, "is_open");
+	lua_pushcfunction(L, l_bigmap_set_center);    lua_setfield(L, -2, "set_center");
+	lua_pushcfunction(L, l_bigmap_get_center);    lua_setfield(L, -2, "get_center");
+	lua_pushcfunction(L, l_bigmap_pan);           lua_setfield(L, -2, "pan");
+	lua_pushcfunction(L, l_bigmap_set_zoom);      lua_setfield(L, -2, "set_zoom");
+	lua_pushcfunction(L, l_bigmap_get_zoom);      lua_setfield(L, -2, "get_zoom");
+	lua_pushcfunction(L, l_bigmap_set_follow_player); lua_setfield(L, -2, "set_follow_player");
+	lua_pushcfunction(L, l_bigmap_get_follow_player); lua_setfield(L, -2, "get_follow_player");
+	lua_pushcfunction(L, l_bigmap_set_save_enabled);  lua_setfield(L, -2, "set_save_enabled");
+	lua_pushcfunction(L, l_bigmap_get_save_enabled);  lua_setfield(L, -2, "get_save_enabled");
+	lua_pushcfunction(L, l_bigmap_save);         lua_setfield(L, -2, "save");
+	lua_pushcfunction(L, l_bigmap_load);         lua_setfield(L, -2, "load");
+	lua_pushcfunction(L, l_bigmap_clear);        lua_setfield(L, -2, "clear");
+	lua_pushcfunction(L, l_bigmap_get_block_count); lua_setfield(L, -2, "get_block_count");
+	lua_pushcfunction(L, l_bigmap_get_save_dir); lua_setfield(L, -2, "get_save_dir");
+	lua_pushcfunction(L, l_bigmap_get_coverage); lua_setfield(L, -2, "get_coverage");
+	lua_pushcfunction(L, l_bigmap_has_block);    lua_setfield(L, -2, "has_block");
+	lua_pushcfunction(L, l_bigmap_get_pixel);    lua_setfield(L, -2, "get_pixel");
+	lua_pushcfunction(L, l_bigmap_set_pixel);    lua_setfield(L, -2, "set_pixel");
+	lua_pushcfunction(L, l_bigmap_get_block);    lua_setfield(L, -2, "get_block");
+	lua_setfield(L, -2, "al_bigmap");
+	lua_pop(L, 1);
+}
+
+void AlScriptApi::on_bigmap_open()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_bigmap_open");
+	try {
+		runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+	lua_pop(L, 2);
+}
+
+void AlScriptApi::on_bigmap_close()
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_bigmap_close");
+	try {
+		runCallbacks(0, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+	lua_pop(L, 2);
 }

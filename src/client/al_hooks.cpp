@@ -3,6 +3,7 @@
 
 #include "al_hooks.h"
 #include "client.h"
+#include "al_bigmap.h"
 #include "client/localplayer.h"
 #include "script/scripting_client.h"
 #include "script/cpp_api/al/al_callbacks.h"
@@ -274,12 +275,18 @@ void on_connect(Client *client)
 	fs::CreateAllDirs(poi_dir);
 	registerTextureSearchDir(poi_dir);
 
+	if (AlBigMap *bigmap = client->getAlBigMap())
+		bigmap->onConnect();
+
 	if (client->modsLoaded())
 		client->getScript()->on_connect();
 }
 
 void on_disconnect(Client *client)
 {
+	if (AlBigMap *bigmap = client->getAlBigMap())
+		bigmap->onDisconnect();
+
 	if (client->modsLoaded())
 		client->getScript()->on_disconnect();
 }
@@ -316,8 +323,26 @@ void on_lighting(Client *client, const Lighting &lighting)
 
 void on_pre_step(Client *client, float dtime)
 {
+	// Big map per-frame update: input + throttled disk writes.
+	if (AlBigMap *bigmap = client->getAlBigMap()) {
+		int result = bigmap->step(dtime);
+		if (client->modsLoaded()) {
+			if (result == 1)
+				client->getScript()->on_bigmap_open();
+			else if (result == 2)
+				client->getScript()->on_bigmap_close();
+		}
+	}
+
 	if (client->modsLoaded())
 		client->getScript()->on_pre_step(dtime);
+}
+
+// Block capture for the big map (main thread, from Client::ReceiveAll).
+void on_minimap_block(Client *client, v3s16 pos, const MinimapMapblock *data)
+{
+	if (AlBigMap *bigmap = client->getAlBigMap())
+		bigmap->onBlockAdded(pos, data);
 }
 
 void on_post_step(Client *client, float dtime)

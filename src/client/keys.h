@@ -113,6 +113,7 @@ public:
 		SELECT_RIGHT,
 		SELECT_CONFIRM,
 		QUICK_SELECT_MENU,
+		BIG_MAP,
 
 		// Fake keycode for array size and internal checks
 		INTERNAL_ENUM_COUNT

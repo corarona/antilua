@@ -76,6 +76,10 @@ core.registered_on_post_step, core.register_on_post_step = make_al_registration(
 core.registered_on_receiving_raw_packet, core.register_on_receiving_raw_packet = make_al_registration()
 core.registered_on_sending_raw_packet, core.register_on_sending_raw_packet = make_al_registration()
 
+-- Big map (per-server minimap persistence)
+core.registered_on_bigmap_open, core.register_on_bigmap_open = make_al_registration()
+core.registered_on_bigmap_close, core.register_on_bigmap_close = make_al_registration()
+
 -- Antilua data tables
 core.registered_nodes = {}
 core.registered_items = {}
