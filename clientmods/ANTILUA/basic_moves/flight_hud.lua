@@ -82,6 +82,12 @@ local function minimap_sync(self, show)
 end
 
 local function create_hud(self)
+	-- Idempotent: the ws.on_connect handler and the globalstep on_start can
+	-- both run at connect with flight_hud already enabled, which would create
+	-- a duplicate HUD whose ids are never tracked/removed. Clean up first.
+	for _, id in pairs(self._hud_ids or {}) do
+		if id then core.localplayer:hud_remove(id) end
+	end
 	self._hud_ids = {}
 	for _, def in ipairs(hud_defs) do
 		local args = {
