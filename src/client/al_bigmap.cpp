@@ -12,6 +12,8 @@
 #include "client/texturesource.h"
 #include "client/fontengine.h"
 #include "client/texturepaths.h"
+#include "database/database-sqlite3.h"
+#include "database/database.h"
 #include "nodedef.h"
 #include "mapnode.h"
 #include "constants.h"
@@ -33,6 +35,7 @@
 #include <cstdio>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
 
 // File format magic: "ALB1"
 static const u32 AL_BIGMAP_MAGIC = 0x414C4231u;
@@ -40,11 +43,145 @@ static const u8 AL_BIGMAP_VERSION = 1;
 static const s32 MAX_INTERNAL_VIEW_SIZE = 2048;
 static const size_t AL_BIGMAP_MAX_BLOCKS_DEFAULT = 100000;
 
-static std::string blockFileName(const v3s16 &pos)
+// --- SQLite backend ------------------------------------------------------
+// The per-server minimap persistence lives in a single `bigmap.sqlite` with
+// one row per 16x16 block (position key + self-contained BLOB). This mirrors
+// the map database's layout, so the Database_SQLite3 helpers apply directly.
+
+#define AL_SQLRES(s, r, m) sqlite3_vrfy(s, m, r);
+#define AL_SQLOK(s, m) AL_SQLRES(s, SQLITE_OK, m)
+#define AL_PREPARE(name, query) \
+	AL_SQLOK(sqlite3_prepare_v2(m_database, query, -1, &m_stmt_##name, NULL), \
+		std::string("Failed to prepare query \"").append(query).append("\""))
+#define AL_FINALIZE(name) \
+	sqlite3_finalize(m_stmt_##name); \
+	m_stmt_##name = nullptr;
+
+class BigMapDatabaseSQLite3 : private Database_SQLite3, public MapDatabase
 {
-	return std::to_string(pos.X) + "_" + std::to_string(pos.Y)
-			+ "_" + std::to_string(pos.Z) + ".bin";
-}
+public:
+	BigMapDatabaseSQLite3(const std::string &savedir) :
+		Database_SQLite3(savedir, "bigmap") {}
+	~BigMapDatabaseSQLite3() override
+	{
+		AL_FINALIZE(read)
+		AL_FINALIZE(write)
+		AL_FINALIZE(list)
+		AL_FINALIZE(list_all)
+		AL_FINALIZE(delete)
+	}
+
+	bool saveBlock(const v3s16 &pos, std::string_view data) override
+	{
+		verifyDatabase();
+		int col = bindPos(m_stmt_write, pos);
+		blob_to_sqlite(m_stmt_write, col, data);
+		AL_SQLRES(sqlite3_step(m_stmt_write), SQLITE_DONE, "Failed to save block")
+		sqlite3_reset(m_stmt_write);
+		return true;
+	}
+
+	void loadBlock(const v3s16 &pos, std::string *block) override
+	{
+		verifyDatabase();
+		bindPos(m_stmt_read, pos);
+		if (sqlite3_step(m_stmt_read) != SQLITE_ROW) {
+			block->clear();
+			sqlite3_reset(m_stmt_read);
+			return;
+		}
+		auto data = sqlite_to_blob(m_stmt_read, 0);
+		block->assign(data);
+		sqlite3_reset(m_stmt_read);
+	}
+
+	bool deleteBlock(const v3s16 &pos) override
+	{
+		verifyDatabase();
+		bindPos(m_stmt_delete, pos);
+		bool good = sqlite3_step(m_stmt_delete) == SQLITE_DONE;
+		sqlite3_reset(m_stmt_delete);
+		return good;
+	}
+
+	void listAllLoadableBlocks(std::vector<v3s16> &dst) override
+	{
+		verifyDatabase();
+		while (sqlite3_step(m_stmt_list) == SQLITE_ROW) {
+			dst.emplace_back(sqlite_to_int(m_stmt_list, 0),
+					sqlite_to_int(m_stmt_list, 1),
+					sqlite_to_int(m_stmt_list, 2));
+		}
+		sqlite3_reset(m_stmt_list);
+	}
+
+	// One sequential scan instead of a per-row SELECT (much faster when
+	// loading a large map).
+	void loadAllBlocks(
+			std::vector<std::pair<v3s16, std::string>> &dst)
+	{
+		verifyDatabase();
+		while (sqlite3_step(m_stmt_list_all) == SQLITE_ROW) {
+			v3s16 pos(sqlite_to_int(m_stmt_list_all, 0),
+					sqlite_to_int(m_stmt_list_all, 1),
+					sqlite_to_int(m_stmt_list_all, 2));
+			auto data = sqlite_to_blob(m_stmt_list_all, 3);
+			dst.emplace_back(pos, std::string(data));
+		}
+		sqlite3_reset(m_stmt_list_all);
+	}
+
+	void beginSave() override { Database_SQLite3::beginSave(); }
+	void endSave() override { Database_SQLite3::endSave(); }
+	void verifyDatabase() override { Database_SQLite3::verifyDatabase(); }
+	bool initialized() const override { return Database_SQLite3::initialized(); }
+
+protected:
+	void createDatabase() override
+	{
+		assert(m_database);
+		const char *schema =
+			"CREATE TABLE IF NOT EXISTS `blocks` (\n"
+				"`x` INTEGER,"
+				"`y` INTEGER,"
+				"`z` INTEGER,"
+				"`data` BLOB NOT NULL,"
+				"PRIMARY KEY (`x`, `z`, `y`)"
+			");\n";
+		AL_SQLOK(sqlite3_exec(m_database, schema, NULL, NULL, NULL),
+			"Failed to create database table");
+	}
+
+	void initStatements() override
+	{
+		assert(checkTable("blocks"));
+		AL_PREPARE(read, "SELECT `data` FROM `blocks` WHERE `x` = ? AND `y` = ? AND `z` = ? LIMIT 1");
+		AL_PREPARE(write, "REPLACE INTO `blocks` (`x`, `y`, `z`, `data`) VALUES (?, ?, ?, ?)");
+		AL_PREPARE(delete, "DELETE FROM `blocks` WHERE `x` = ? AND `y` = ? AND `z` = ?");
+		AL_PREPARE(list, "SELECT `x`, `y`, `z` FROM `blocks`");
+		AL_PREPARE(list_all, "SELECT `x`, `y`, `z`, `data` FROM `blocks`");
+	}
+
+private:
+	int bindPos(sqlite3_stmt *stmt, v3s16 pos, int index = 1)
+	{
+		int_to_sqlite(stmt, index, pos.X);
+		int_to_sqlite(stmt, index + 1, pos.Y);
+		int_to_sqlite(stmt, index + 2, pos.Z);
+		return index + 3;
+	}
+
+	sqlite3_stmt *m_stmt_read = nullptr;
+	sqlite3_stmt *m_stmt_write = nullptr;
+	sqlite3_stmt *m_stmt_list = nullptr;
+	sqlite3_stmt *m_stmt_list_all = nullptr;
+	sqlite3_stmt *m_stmt_delete = nullptr;
+};
+
+#undef AL_SQLRES
+#undef AL_SQLOK
+#undef AL_PREPARE
+#undef AL_FINALIZE
 
 static v2u32 renderTargetSize()
 {
@@ -200,6 +337,11 @@ void AlBigMap::onDisconnect()
 	m_dirty.clear();
 	m_save_dir.clear();
 	m_save_dir_resolved = false;
+	// Reset the load marker so reconnecting to the same server in this
+	// session reloads the persisted blocks (previously they were skipped,
+	// leaving the map empty until a full restart).
+	m_last_load_dir.clear();
+	m_db.reset();
 	invalidateView();
 }
 
@@ -251,16 +393,24 @@ int AlBigMap::step(float dtime)
 			&& m_client->isNodedefReceived())
 		load();
 
-	if (m_save_enabled) {
-		// Flush a bounded number of dirty blocks per step to spread IO cost.
-		size_t n = 0;
-		while (!m_dirty.empty() && n < MAX_WRITES_PER_STEP) {
-			v3s16 pos = *m_dirty.begin();
-			m_dirty.erase(m_dirty.begin());
-			auto it = m_blocks.find(pos);
-			if (it != m_blocks.end())
-				writeBlockToDisk(*it->second);
-			n++;
+	if (m_save_enabled && !m_dirty.empty()) {
+		if (!m_db)
+			openDb();
+		if (m_db) {
+			// Flush a bounded number of dirty blocks per step to spread IO
+			// cost, batched in a single transaction.
+			m_db->beginSave();
+			size_t n = 0;
+			while (!m_dirty.empty() && n < MAX_WRITES_PER_STEP) {
+				v3s16 pos = *m_dirty.begin();
+				m_dirty.erase(m_dirty.begin());
+				auto it = m_blocks.find(pos);
+				if (it != m_blocks.end()) {
+					m_db->saveBlock(pos, serializeBlock(*it->second));
+					n++;
+				}
+			}
+			m_db->endSave();
 		}
 	}
 
@@ -552,14 +702,8 @@ bool AlBigMap::setPixel(v2s32 node_pos, const std::string &name,
 	return true;
 }
 
-void AlBigMap::writeBlockToDisk(const AlBigMapBlock &block) const
+std::string AlBigMap::serializeBlock(const AlBigMapBlock &block) const
 {
-	if (m_save_dir.empty())
-		return;
-	std::string dir = m_save_dir + DIR_DELIM "blocks";
-	if (!fs::PathExists(dir))
-		fs::CreateAllDirs(dir);
-
 	std::ostringstream os(std::ios::binary);
 	writeU32(os, AL_BIGMAP_MAGIC);
 	writeU8(os, AL_BIGMAP_VERSION);
@@ -578,60 +722,108 @@ void AlBigMap::writeBlockToDisk(const AlBigMapBlock &block) const
 		writeU16(os, p.height);
 		writeU16(os, p.air_count);
 	}
-
-	std::string path = dir + DIR_DELIM + blockFileName(block.pos);
-	if (!fs::safeWriteToFile(path, os.str()))
-		errorstream << "AlBigMap: failed to write block " << path << std::endl;
+	return os.str();
 }
 
-bool AlBigMap::readBlockFromDisk(const std::string &path, AlBigMapBlock &block) const
+bool AlBigMap::deserializeBlock(const std::string &data,
+		AlBigMapBlock &block) const
 {
-	std::ifstream is(path, std::ios::binary);
-	if (!is.good())
-		return false;
+	// Fast cursor over the serialized bytes (avoids istringstream overhead,
+	// which dominates when loading hundreds of thousands of blocks).
+	const char *p = data.data();
+	const char *end = p + data.size();
+	auto need = [&](size_t n) {
+		if ((size_t)(end - p) < n)
+			throw SerializationError("AlBigMap block truncated");
+	};
+	auto rd_u8 = [&]() {
+		need(1);
+		return (u8)*p++;
+	};
+	auto rd_u16 = [&]() {
+		need(2);
+		u16 v = ((u8)p[0] << 8) | (u8)p[1];
+		p += 2;
+		return v;
+	};
+	auto rd_u32 = [&]() {
+		need(4);
+		u32 v = ((u8)p[0] << 24) | ((u8)p[1] << 16)
+				| ((u8)p[2] << 8) | (u8)p[3];
+		p += 4;
+		return v;
+	};
+	auto rd_s16 = [&]() { return (s16)rd_u16(); };
 	try {
-		if (readU32(is) != AL_BIGMAP_MAGIC)
+		if (rd_u32() != AL_BIGMAP_MAGIC || rd_u8() != AL_BIGMAP_VERSION)
 			return false;
-		if (readU8(is) != AL_BIGMAP_VERSION)
-			return false;
-		block.pos.X = readS16(is);
-		block.pos.Y = readS16(is);
-		block.pos.Z = readS16(is);
-		u16 n = readU16(is);
+		block.pos.X = rd_s16();
+		block.pos.Y = rd_s16();
+		block.pos.Z = rd_s16();
+		u16 n = rd_u16();
 		block.name_map.clear();
 		for (u16 i = 0; i < n; i++) {
-			u16 id = readU16(is);
-			std::string name = deSerializeString16(is);
+			u16 id = rd_u16();
+			u16 len = rd_u16();
+			need(len);
+			std::string name(p, len);
+			p += len;
 			block.name_map[id] = name;
 		}
 		block.pixels.resize(MAP_BLOCKSIZE * MAP_BLOCKSIZE);
 		for (size_t i = 0; i < block.pixels.size(); i++) {
-			AlBigMapPixel &p = block.pixels[i];
-			p.param0 = readU16(is);
-			p.param1 = readU8(is);
-			p.param2 = readU8(is);
-			p.height = readU16(is);
-			p.air_count = readU16(is);
+			AlBigMapPixel &px = block.pixels[i];
+			px.param0 = rd_u16();
+			px.param1 = rd_u8();
+			px.param2 = rd_u8();
+			px.height = rd_u16();
+			px.air_count = rd_u16();
 		}
 		return true;
 	} catch (SerializationError &e) {
-		errorstream << "AlBigMap: failed to read " << path << ": " << e.what()
+		errorstream << "AlBigMap: failed to parse block data: " << e.what()
 				<< std::endl;
 		return false;
 	}
 }
 
-void AlBigMap::load()
+void AlBigMap::openDb()
 {
+	if (m_db)
+		return;
 	if (m_save_dir.empty())
 		return;
-	m_last_load_dir = m_save_dir;
-	std::string dir = m_save_dir + DIR_DELIM "blocks";
-	if (!fs::PathExists(dir))
+	m_db = std::make_unique<BigMapDatabaseSQLite3>(m_save_dir);
+	m_db->verifyDatabase();
+}
+
+void AlBigMap::migrateOldBlocks()
+{
+	std::string dir = getBlocksDir();
+	if (dir.empty() || !fs::PathExists(dir))
 		return;
 
-	const NodeDefManager *ndef = m_client->getNodeDefManager();
-	std::vector<AlBigMapBlock> loaded;
+	// Only bother when there are per-file blocks to convert.
+	bool any = false;
+	for (const auto &entry : fs::GetDirListing(dir)) {
+		if (entry.dir)
+			continue;
+		if (entry.name.size() < 5
+				|| entry.name.compare(entry.name.size() - 4, 4, ".bin") != 0)
+			continue;
+		any = true;
+		break;
+	}
+	if (!any)
+		return;
+
+	actionstream << "AlBigMap: migrating old per-block files to sqlite..."
+			<< std::endl;
+	openDb();
+	if (!m_db)
+		return;
+
+	m_db->beginSave();
 	for (const auto &entry : fs::GetDirListing(dir)) {
 		if (entry.dir)
 			continue;
@@ -639,11 +831,54 @@ void AlBigMap::load()
 		if (fname.size() < 5
 				|| fname.compare(fname.size() - 4, 4, ".bin") != 0)
 			continue;
-		AlBigMapBlock block;
 		std::string path = dir;
 		path += DIR_DELIM;
 		path += fname;
-		if (readBlockFromDisk(path, block))
+		std::ifstream is(path, std::ios::binary);
+		if (!is.good())
+			continue;
+		std::string data((std::istreambuf_iterator<char>(is)),
+				std::istreambuf_iterator<char>());
+		AlBigMapBlock block;
+		if (deserializeBlock(data, block))
+			m_db->saveBlock(block.pos, data);
+	}
+	m_db->endSave();
+	actionstream << "AlBigMap: migrated old block files, removing them"
+			<< std::endl;
+	fs::RecursiveDelete(dir);
+}
+
+void AlBigMap::load()
+{
+	if (m_save_dir.empty())
+		return;
+	m_last_load_dir = m_save_dir;
+
+	// Nothing to load if neither the sqlite database nor the old per-file
+	// format exists.
+	if (!fs::PathExists(m_save_dir + DIR_DELIM "bigmap.sqlite")
+			&& !fs::PathExists(getBlocksDir()))
+		return;
+
+	openDb();
+	if (!m_db || !m_db->initialized())
+		return;
+
+	// Import and remove any leftover per-file-format blocks.
+	migrateOldBlocks();
+
+	const NodeDefManager *ndef = m_client->getNodeDefManager();
+	std::vector<std::pair<v3s16, std::string>> rows;
+	m_db->loadAllBlocks(rows);
+	if (rows.empty())
+		return;
+
+	std::vector<AlBigMapBlock> loaded;
+	loaded.reserve(rows.size());
+	for (auto &row : rows) {
+		AlBigMapBlock block;
+		if (deserializeBlock(row.second, block))
 			loaded.push_back(std::move(block));
 	}
 
@@ -654,20 +889,33 @@ void AlBigMap::load()
 	if (cap == 0)
 		cap = AL_BIGMAP_MAX_BLOCKS_DEFAULT;
 
+	// Saved content ids are server-consistent, so a single cache maps them to
+	// the current session's ids instead of re-resolving the node name for
+	// every pixel (which is the hot path when loading many blocks).
+	std::unordered_map<u16, content_t> id_cache;
+	// Mirror cache for the rebuilt name maps (id -> current node name).
+	std::unordered_map<content_t, std::string> name_cache;
+
 	for (auto &block : loaded) {
 		// Remap saved content ids to the current session's nodedef.
 		for (AlBigMapPixel &p : block.pixels) {
 			u16 id = p.param0;
 			if (id == CONTENT_AIR || id == CONTENT_IGNORE || id == CONTENT_UNKNOWN)
 				continue;
-			auto it = block.name_map.find(id);
-			if (it == block.name_map.end()) {
-				p.param0 = CONTENT_UNKNOWN;
-				continue;
+			auto cit = id_cache.find(id);
+			if (cit == id_cache.end()) {
+				auto it = block.name_map.find(id);
+				content_t new_id = CONTENT_UNKNOWN;
+				if (it != block.name_map.end()) {
+					content_t resolved = ndef->getId(it->second);
+					if (resolved != CONTENT_IGNORE && resolved != CONTENT_UNKNOWN)
+						new_id = resolved;
+				}
+				id_cache[id] = new_id;
+				p.param0 = new_id;
+			} else {
+				p.param0 = cit->second;
 			}
-			content_t new_id = ndef->getId(it->second);
-			p.param0 = (new_id == CONTENT_IGNORE || new_id == CONTENT_UNKNOWN)
-					? CONTENT_UNKNOWN : new_id;
 		}
 		// Refresh the name map to the current ids (for future saves).
 		block.name_map.clear();
@@ -675,25 +923,42 @@ void AlBigMap::load()
 			if (p.param0 == CONTENT_AIR || p.param0 == CONTENT_IGNORE
 					|| p.param0 == CONTENT_UNKNOWN)
 				continue;
-			if (block.name_map.find(p.param0) == block.name_map.end())
-				block.name_map[p.param0] = ndef->get(p.param0).name;
+			if (block.name_map.find(p.param0) == block.name_map.end()) {
+				auto nit = name_cache.find(p.param0);
+				if (nit == name_cache.end()) {
+					std::string n = ndef->get(p.param0).name;
+					nit = name_cache.emplace(p.param0, std::move(n)).first;
+				}
+				block.name_map[p.param0] = nit->second;
+			}
 		}
 		if (m_blocks.find(block.pos) == m_blocks.end())
 			m_blocks[block.pos] = std::make_unique<AlBigMapBlock>(std::move(block));
 	}
 
-	// Enforce the block cap: drop the farthest blocks first.
+	// Enforce the block cap: drop the blocks farthest from the player first,
+	// so the explored area around the current position survives.
 	if (m_blocks.size() > cap) {
 		size_t excess = m_blocks.size() - cap;
+		s64 pxl = 0;
+		s64 pzl = 0;
+		const LocalPlayer *player = m_client->getEnv().getLocalPlayer();
+		if (player) {
+			v3f pp = player->getPosition() / BS;
+			pxl = (s64)std::floor(pp.X);
+			pzl = (s64)std::floor(pp.Z);
+		}
 		std::vector<v3s16> farthest;
 		farthest.reserve(excess + 1);
 		for (const auto &kv : m_blocks)
 			farthest.push_back(kv.first);
 		std::partial_sort(farthest.begin(), farthest.begin() + excess,
-				farthest.end(), [](const v3s16 &a, const v3s16 &b) {
-			s64 da = (s64)a.X * a.X + (s64)a.Z * a.Z;
-			s64 db = (s64)b.X * b.X + (s64)b.Z * b.Z;
-			return da > db;
+				farthest.end(), [pxl, pzl](const v3s16 &a, const v3s16 &b) {
+			s64 ax = (s64)a.X * MAP_BLOCKSIZE + MAP_BLOCKSIZE / 2 - pxl;
+			s64 az = (s64)a.Z * MAP_BLOCKSIZE + MAP_BLOCKSIZE / 2 - pzl;
+			s64 bx = (s64)b.X * MAP_BLOCKSIZE + MAP_BLOCKSIZE / 2 - pxl;
+			s64 bz = (s64)b.Z * MAP_BLOCKSIZE + MAP_BLOCKSIZE / 2 - pzl;
+			return ax * ax + az * az > bx * bx + bz * bz;
 		});
 		for (size_t i = 0; i < excess; i++) {
 			m_blocks.erase(farthest[i]);
@@ -709,13 +974,19 @@ void AlBigMap::load()
 
 void AlBigMap::save()
 {
-	if (m_save_dir.empty())
+	if (m_save_dir.empty() || m_dirty.empty())
 		return;
+	if (!m_db)
+		openDb();
+	if (!m_db)
+		return;
+	m_db->beginSave();
 	for (v3s16 pos : m_dirty) {
 		auto it = m_blocks.find(pos);
 		if (it != m_blocks.end())
-			writeBlockToDisk(*it->second);
+			m_db->saveBlock(pos, serializeBlock(*it->second));
 	}
+	m_db->endSave();
 	m_dirty.clear();
 }
 
@@ -727,18 +998,14 @@ void AlBigMap::clear()
 	invalidateView();
 	if (m_save_dir.empty())
 		return;
+	// Close and delete the database, plus any leftover per-file blocks.
+	m_db.reset();
+	std::string db_path = m_save_dir + DIR_DELIM "bigmap.sqlite";
+	if (fs::PathExists(db_path))
+		fs::DeleteSingleFileOrEmptyDirectory(db_path, false);
 	std::string dir = m_save_dir + DIR_DELIM "blocks";
-	if (!fs::PathExists(dir))
-		return;
-	for (const auto &entry : fs::GetDirListing(dir)) {
-		if (entry.dir)
-			continue;
-		if (entry.name.size() < 5
-				|| entry.name.compare(entry.name.size() - 4, 4, ".bin") != 0)
-			continue;
-		fs::DeleteSingleFileOrEmptyDirectory(
-				dir + DIR_DELIM + entry.name, false);
-	}
+	if (fs::PathExists(dir))
+		fs::RecursiveDelete(dir);
 }
 
 video::SColor AlBigMap::pixelColor(const AlBigMapBlock &block, size_t idx) const

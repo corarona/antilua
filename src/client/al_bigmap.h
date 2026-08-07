@@ -20,6 +20,7 @@
 class Client;
 struct MinimapMapblock;
 class NodeDefManager;
+class BigMapDatabaseSQLite3;
 
 namespace video {
 	class IImage;
@@ -52,11 +53,13 @@ struct AlBigMapBlock {
  * composed from every saved block.
  *
  * Storage layout:
- *   remote:      ~/.antilua/data/server/<addr>_<port>/minimap/blocks/
- *   singleplayer: <world_path>/minimap/blocks/
+ *   remote:       ~/.antilua/data/server/<addr>_<port>/minimap/bigmap.sqlite
+ *   singleplayer: <world_path>/minimap/bigmap.sqlite
  *
- * One file per block (self-contained, carries its own name<->id mapping), so
- * no nodedef table needs to be stored or re-serialized.
+ * Blocks are stored as rows in a single SQLite database (position key + one
+ * self-contained BLOB per 16x16 block carrying its own name<->id mapping), so
+ * no nodedef table needs to be stored. The previous per-file format is
+ * migrated into the database on first load.
  */
 class AlBigMap
 {
@@ -135,8 +138,16 @@ private:
 	static AlBigMap *s_active;
 
 	std::string resolveSaveDir() const;
-	void writeBlockToDisk(const AlBigMapBlock &block) const;
-	bool readBlockFromDisk(const std::string &path, AlBigMapBlock &block) const;
+	// Serialize a block to its self-contained byte representation (same bytes
+	// the old per-block files used, minus any filesystem wrapper).
+	std::string serializeBlock(const AlBigMapBlock &block) const;
+	// Parse a block from its serialized byte representation.
+	bool deserializeBlock(const std::string &data, AlBigMapBlock &block) const;
+	// Open (creating if needed) the SQLite database in m_save_dir.
+	void openDb();
+	// Import any leftover per-file-format blocks into the database and remove
+	// them. Runs as part of load().
+	void migrateOldBlocks();
 
 	video::SColor pixelColor(const AlBigMapBlock &block, size_t idx) const;
 	// Ensure the 16x16 color tile for a block is cached (current nodedef).
@@ -157,6 +168,8 @@ private:
 	Client *m_client;
 	std::string m_save_dir;
 	std::string m_last_load_dir;
+	// SQLite backend for persisted blocks (lazily opened).
+	std::unique_ptr<BigMapDatabaseSQLite3> m_db;
 	bool m_save_enabled = true;
 	bool m_save_dir_resolved = false;
 

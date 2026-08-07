@@ -619,15 +619,19 @@ block stream. The big map captures those client-derived `MinimapMapblock`s as
 they arrive, persists them per server, and provides a fullscreen pan/zoom
 overlay composed from every saved block.
 
-**Storage** — one self-contained file per 16×16 block (raw `MapNode` params +
-`height` + `air_count`, plus a per-block content-id→name map so blocks remap
-correctly to a later session's nodedef; no `nodedef.bin` needed):
-- remote: `~/.antilua/data/server/<addr>_<port>/minimap/blocks/`
-- singleplayer: `<world_path>/minimap/blocks/` (travels with the world)
+**Storage** — one SQLite database per server/world (`bigmap.sqlite`), with
+one row per 16×16 block: a position key + a self-contained BLOB (raw `MapNode`
+params + `height` + `air_count`, plus a per-block content-id→name map so
+blocks remap correctly to a later session's nodedef; no `nodedef.bin` needed):
+- remote: `~/.antilua/data/server/<addr>_<port>/minimap/bigmap.sqlite`
+- singleplayer: `<world_path>/minimap/bigmap.sqlite` (travels with the world)
+
+The previous per-file format (`minimap/blocks/*.bin`) is migrated into the
+database on first load and the files removed.
 
 Blocks stream in live, are batched to disk in `AlBigMap::step()` (≤128
-writes/step), and flushed on disconnect. Cap via `minimap_save_max_blocks`
-(farthest pruned).
+writes/step in one transaction), and flushed on disconnect. Cap via
+`minimap_save_max_blocks` (blocks farthest from the player are pruned).
 
 **Open/close:** `keymap_big_map` (default `M`), cheat menu "BigMap" entry, or
 Lua. ESC also closes it (without opening the pause menu). Pan: drag with dig
