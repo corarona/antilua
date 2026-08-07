@@ -1,0 +1,6 @@
+explorebot (ExploreBot active) bool false
+explorebot.step (Spiral cell spacing) int 16 8 128
+explorebot.max_radius (Exploration radius) int 300 32 5000
+explorebot.hover_height (Height above ground) int 20 2 200
+explorebot.speed (Flight speed) float 2.0 0.1 10
+explorebot.capture_timeout (Wait for map data) int 5 1 30

@@ -55,6 +55,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 | **farmtool** | Reap, Till, Sow, FarmRepair. FarmBot via sbots. |
 | **fishbot** | Automatic fishing bot with state machine (MineClone/ItemAdef only). |
 | **autominer** | Automated mining bot. Teleports to target nodes, digs, avoids lava. |
+| **explorebot** | Spiral-out terrain explorer. Flies outward from the start point hovering above the ground, filling in bigmap blanks via live minimap capture. |
 
 ### Developer / World tools
 
