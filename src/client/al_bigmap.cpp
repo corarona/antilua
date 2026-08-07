@@ -337,7 +337,9 @@ int AlBigMap::step(float dtime)
 				m_follow_player = false;
 				m_user_panned = true;
 				m_center.X -= (s32)std::round((f32)delta.X / m_zoom);
-				m_center.Y -= (s32)std::round((f32)delta.Y / m_zoom);
+				// Vertical axis is inverted so dragging down pulls the map
+				// content down (grab behavior), matching the horizontal axis.
+				m_center.Y += (s32)std::round((f32)delta.Y / m_zoom);
 				invalidateView();
 			}
 		}

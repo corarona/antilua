@@ -7,6 +7,7 @@
 #include <cmath>
 #include <csignal>
 #include "client/al_hooks.h"
+#include "client/al_bigmap.h"
 #include "client/camera_roll.h"
 #include "client/gameui.h"
 #include "client/inputhandler.h"
@@ -1691,7 +1692,7 @@ void Game::processItemSelection(u16 *new_playeritem)
 
 	/* Item selection using mouse wheel
 	 */
-	s32 wheel = input->getMouseWheel();
+	s32 wheel = AlBigMap::getActive() ? 0 : input->getMouseWheel();
 	if (!m_enable_hotbar_mouse_wheel)
 		wheel = 0;
 	if (m_invert_hotbar_mouse_wheel)
@@ -2165,7 +2166,7 @@ void Game::updateCameraDirection(CameraOrientation *cam, float dtime)
 	Since we have our own code to synthesize mouse events from touch events,
 	this results in duplicated input. To avoid that, we don't enable relative
 	mouse mode if we're in touchscreen mode. */
-	bool layer = m_cheat_layer_active;
+	bool layer = m_cheat_layer_active || (AlBigMap::getActive() != nullptr);
 	if (cur_control)
 		cur_control->setRelativeMode(!g_touchcontrols && !isMenuActive() && !layer);
 
@@ -2304,8 +2305,8 @@ void Game::updatePlayerControl(const CameraOrientation &cam)
 		getTogglableKeyState(KeyType::AUX1,  m_cache_toggle_aux1_key, player->control.aux1),
 		getTogglableKeyState(KeyType::SNEAK, allow_sneak_toggle,      player->control.sneak),
 		isKeyDown(KeyType::ZOOM),
-		isKeyDown(KeyType::DIG) && !m_cheat_layer_active,
-		isKeyDown(KeyType::PLACE) && !m_cheat_layer_active,
+		isKeyDown(KeyType::DIG) && !m_cheat_layer_active && !AlBigMap::getActive(),
+		isKeyDown(KeyType::PLACE) && !m_cheat_layer_active && !AlBigMap::getActive(),
 		cam.camera_pitch,
 		cam.camera_yaw
 	);
@@ -2975,8 +2976,9 @@ void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 	if (pointed != runData.pointed_old)
 		infostream << "Pointing at " << pointed.dump() << std::endl;
 
-	// Suppress dig/place when cheat menu is active — clicks go to menu panels
-	if (m_cheat_layer_active) {
+	// Suppress dig/place when cheat menu or big map is active — clicks go to
+	// menu panels / the map's pan & re-follow button instead.
+	if (m_cheat_layer_active || AlBigMap::getActive()) {
 		if (runData.digging) {
 			runData.digging = false;
 			client->interact(INTERACT_STOP_DIGGING, runData.pointed_old);
