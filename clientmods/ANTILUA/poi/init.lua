@@ -83,6 +83,11 @@ end)
 
 core.register_on_disconnect(function()
 	reset_gui_state()
+	-- Rendered big-map section PNGs are transient per-session artifacts; drop
+	-- them so they don't accumulate on disk between sessions.
+	if core.al_bigmap and core.al_bigmap.clear_images then
+		core.al_bigmap:clear_images()
+	end
 end)
 
 --
@@ -392,8 +397,8 @@ end
 -- Transport system
 --
 
-function poi.register_transport(name, func)
-	table.insert(poi.registered_transports, { name = name, func = func })
+function poi.register_transport(name, func, label)
+	table.insert(poi.registered_transports, { name = name, func = func, label = label })
 end
 
 --
@@ -639,6 +644,11 @@ local function build_waypoint_list(sb, af, waypoints)
 		local map_name = get_selected_map_image(selected_name)
 		if map_name then
 			sb:add(af.image(9.25, 3.35, 2.5, 2.5, map_name))
+			-- Jump straight to the fullscreen big map, centered on the
+			-- waypoint, so the saved terrain around it is explorable.
+			if core.al_bigmap and core.al_bigmap.open then
+				sb:add(af.button(9.25, 5.95, 2.5, 0.5, "view_map", "View on Map"))
+			end
 		end
 	end
 end
@@ -678,9 +688,11 @@ local function build_actions(sb, af)
 	)
 	local sp, y = 0.5, 8.25
 	for _, v in ipairs(poi.registered_transports) do
-		sb:add(af.button_exit(sp, y, 1, 0.5, v.name, v.name))
-		sp = sp + 1
-		if sp > 10 then
+		-- Buttons use the transport id as the field name but display the
+		-- friendly label when one was registered.
+		sb:add(af.button_exit(sp, y, 1.6, 0.5, v.name, v.label or v.name))
+		sp = sp + 1.7
+		if sp + 1.6 > 12.5 then
 			y = y + 0.75
 			sp = 0.5
 		end
@@ -952,6 +964,23 @@ function poi.handle_fields(fields)
 			poi.delete_waypoint(name)
 			selected_name = nil
 			poi.display_formspec()
+		end,
+		view_map = function()
+			if not (core.al_bigmap and core.al_bigmap.open) then
+				ws.notify("Big map unavailable (enable_minimap is off).", ws.NOTIFY_ERROR)
+				return
+			end
+			if not name then
+				ws.notify("Please select a waypoint first.", ws.NOTIFY_ERROR)
+				return
+			end
+			local pos = poi.get_waypoint(name)
+			if not pos then return end
+			-- Open the big map centered on the waypoint (not following the
+			-- player), so the saved terrain around it is what's shown.
+			core.al_bigmap:set_center(pos.x, pos.z)
+			core.al_bigmap:set_follow_player(false)
+			core.al_bigmap:open()
 		end,
 		cancel = function() poi.display_formspec() end,
 		clear_all = function() show_clear_all_fs() end,

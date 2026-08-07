@@ -13,13 +13,24 @@ function test_basic_moves(T)
 
 	T.run("basic_moves registers poi transports", function()
 		T.assert(type(poi) == "table", "poi should be loaded")
-		local names = {}
+		local by_name = {}
 		for _, v in ipairs(poi.registered_transports) do
-			names[v.name] = true
+			by_name[v.name] = v
 		end
 		for _, name in ipairs({"CTP", "STP", "Autopilot"}) do
-			T.assert(names[name], "transport '" .. name .. "' should be registered")
+			T.assert(by_name[name], "transport '" .. name .. "' should be registered")
 		end
+	end)
+
+	T.run("CTP/STP transports carry friendly display labels", function()
+		local labels = {}
+		for _, v in ipairs(poi.registered_transports) do
+			labels[v.name] = v.label
+		end
+		T.assert_eq(labels.CTP, "Teleport (Client)",
+			"CTP should display as 'Teleport (Client)'")
+		T.assert_eq(labels.STP, "Teleport (Server)",
+			"STP should display as 'Teleport (Server)'")
 	end)
 
 	T.run("autofly.warp rejects void-dimension waypoints", function()

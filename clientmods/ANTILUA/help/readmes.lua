@@ -137,21 +137,22 @@ Autopilot settings (`autopilot.<key>` in the cheat settings panel):
 - `autoengage` (bool, default true) — Automatically start autopilot when `continuous_forward` is enabled while a POI is selected. Set to false so other mods toggling forward movement never start a flight.
 - `avoid_obstacles` (bool, default true) — Probe ahead along the actual flight path (not the quantized cardinal heading) and climb, descend, or sidestep around solid nodes.
 
-**Autopilot modes** (configured in the cheat settings panel):
+**Autopilot modes** (configured in the cheat settings panel; the parenthetical
+is the label shown in the dropdown):
 
-| Mode | Description |
-|------|-------------|
-| `3d_aim` | Direct line toward POI |
-| `2d_aim` | Horizontal aim at POI Y-level, vertical movement manual |
-| `3d_velocity` | Zero-gravity velocity toward POI |
-| `nether` | Nether-ratio target (X/8, Z/8) for portal travel |
-| `follow` | Follow the nearest player instead of a POI |
-| `hover` | Maintain altitude above terrain while moving toward POI |
+| Mode | Label | Description |
+|------|-------|-------------|
+| `3d_aim` | Direct line | Direct line toward POI |
+| `2d_aim` | Horizontal aim | Horizontal aim at POI Y-level, vertical movement manual |
+| `3d_velocity` | Zero-gravity | Zero-gravity velocity toward POI |
+| `nether` | Nether portal | Nether-ratio target (X/8, Z/8) for portal travel |
+| `follow` | Follow player | Follow the nearest player instead of a POI |
+| `hover` | Hover | Maintain altitude above terrain while moving toward POI |
 
 **POI transport methods** (appear in the POI context menu):
 
-- `CTP` — Teleports player directly to the POI position.
-- `STP` — Sends a `/teleport` chat command to the server.
+- `CTP` ("Teleport (Client)") — Teleports player directly to the POI position.
+- `STP` ("Teleport (Server)") — Sends a `/teleport` chat command to the server.
 - `Autopilot` — Starts autopilot toward the POI.
 
 **FlightHUD target line**: when a POI is selected, the target HUD shows the
@@ -875,6 +876,10 @@ in the entry label.
   button still controls the sort order.
 - The "Add Here" button adds a waypoint at your current position, with a
   suggested name from the node you're standing on.
+- The waypoint GUI shows a big-map section centered on the selected waypoint
+  right under its screenshot, with a **View on Map** button that opens the
+  fullscreen big map centered on the waypoint. Rendered section images are
+  transient and are cleared on disconnect.
 
 ### Cheats
 
@@ -937,7 +942,7 @@ in the entry label.
 
 `poi.get_nearest_name()` — return the name of the closest waypoint within 500m, or the quadrant name.
 
-`poi.register_transport(name, func)` — register a transport method for the formspec GUI. `func(pos, name)` is called when the button is pressed; return truthy to signal an error.
+`poi.register_transport(name, func, [label])` — register a transport method for the formspec GUI. `func(pos, name)` is called when the button is pressed; return truthy to signal an error. `label` is an optional friendly button text (defaults to `name`).
 
 `poi.display_formspec()` — open the waypoint management formspec with textlist, display/rename/delete buttons, and registered transport buttons.
 ]],

@@ -6,6 +6,7 @@
 #include "irrlichttypes.h"
 #include "irr_v2d.h"
 #include "irr_v3d.h"
+#include "rect.h"
 #include "SColor.h"
 #include "CMeshBuffer.h"
 #include "irr_ptr.h"
@@ -146,6 +147,12 @@ private:
 	void drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size);
 	// Draws minimap Lua markers (e.g. POI waypoints) on the map, with names.
 	void drawWaypointMarkers(video::IVideoDriver *driver, v2u32 target_size);
+	// Draws the status readout, first-open hints and the re-follow button.
+	void drawStatusOverlay(video::IVideoDriver *driver, v2u32 target_size);
+
+	// On-screen "re-follow player" button rect (screen pixels, anchored to
+	// the top-right corner of `target_size`).
+	static core::rect<s32> followButtonRect(v2u32 target_size);
 
 	Client *m_client;
 	std::string m_save_dir;
@@ -183,8 +190,15 @@ private:
 	// Input bookkeeping.
 	bool m_left_down = false;
 	v2s32 m_last_mouse = v2s32(0, 0);
+	// Press-tracking for the re-follow button: a press inside the button rect
+	// suppresses panning for its whole duration, and the toggle fires when the
+	// release also stays inside the rect (m_click_candidate).
+	bool m_click_candidate = false;
+	bool m_press_in_button = false;
 	bool m_key_was_down = false;
 	bool m_cursor_was_visible = true;
+	// Seconds the map has been open (drives the first-open hints overlay).
+	float m_open_time = 0.0f;
 	// Sequence number for unique rendered-section filenames.
 	u32 m_image_seq = 0;
 	// Dirty-block write budget used in step().

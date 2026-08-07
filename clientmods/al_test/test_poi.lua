@@ -315,6 +315,8 @@ function test_poi(T)
 		local map_tex = fs:match("image%[9.25,3.35;2.5,2.5;(albigmap_%d+%.png)%]")
 		T.assert(map_tex ~= nil,
 			"formspec should include a big-map section image for the selected waypoint")
+		T.assert(fs:find("view_map", 1, true) ~= nil,
+			"formspec should include a 'View on Map' button for the selected waypoint")
 
 		-- Clean up the rendered PNG (and the waypoint).
 		core.al_bigmap:clear_images()

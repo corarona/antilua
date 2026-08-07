@@ -384,6 +384,7 @@ function core.show_cheat_settings_form(setting, use_auto)
 			y = y + 1.1
 		elseif (spec.type == "string" and spec.options) or (spec.type == "enum" and spec.values) then
 			local items = spec.options or spec.values
+			local display = spec.labels or items
 			local current = core.settings:get(full) or tostring(spec.default)
 			local selected = 1
 			for i, opt in ipairs(items) do
@@ -391,7 +392,7 @@ function core.show_cheat_settings_form(setting, use_auto)
 			end
 			fs = fs .. "label[0.3," .. y .. ";" .. core.formspec_escape(key) .. "]"
 			fs = fs .. "dropdown[0.3," .. (y + 0.35) .. ";4.4,0.7;" .. full .. ";"
-				.. table.concat(items, ",") .. ";" .. selected .. "]"
+				.. table.concat(display, ",") .. ";" .. selected .. "]"
 			y = y + 1.5
 		else
 			fs = fs .. "field[0.3," .. y .. ";4.4,0.8;" .. full .. ";"
@@ -449,7 +450,19 @@ core.register_on_formspec_input(function(formname, fields)
 				if spec.type == "bool" then
 					core.settings:set_bool(full, value == "true")
 				else
-					core.settings:set(full, value)
+					-- Dropdowns submit the displayed item text; map a friendly
+					-- label back to the stored value when labels are provided.
+					local store = value
+					local source = spec.values or spec.options
+					if spec.labels and source then
+						for i, v in ipairs(source) do
+							if (spec.labels[i] or tostring(v)) == value then
+								store = tostring(v)
+								break
+							end
+						end
+					end
+					core.settings:set(full, store)
 				end
 				changed = true
 			end

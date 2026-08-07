@@ -211,7 +211,7 @@ ws.rg("Autopilot", {
 		local mode = core.settings:get(self.setting .. ".mode") or "3d_aim"
 		self._mode = mode
 		if mode ~= "follow" and (not poi.last_pos or not poi.last_name) then
-			return false, "Select a poi first."
+			return false, "Select a poi first (.waypoints or the ~ palette)."
 		end
 		local speed = tonumber(core.settings:get(self.setting .. ".speed")) or 1.0
 		local lp = ws.dircoord(0, 0, 0)
@@ -268,7 +268,10 @@ ws.rg("Autopilot", {
 	end,
 	daughters = {"continuous_forward", "pitch_move", "flight_hud", "freelook"},
 	cheat_settings = {
-		mode = { type = "enum", default = "3d_aim", values = {"3d_aim", "2d_aim", "3d_velocity", "nether", "follow", "hover"} },
+		mode = { type = "enum", default = "3d_aim",
+			values = {"3d_aim", "2d_aim", "3d_velocity", "nether", "follow", "hover"},
+			labels = {"Direct line", "Horizontal aim", "Zero-gravity",
+				"Nether portal", "Follow player", "Hover"} },
 		landing_distance = { type = "number", default = 15, min = 1, max = 100 },
 		speed = { type = "number", default = 1.0, min = 0.1, max = 10 },
 		altitude_hold = { type = "bool", default = false },

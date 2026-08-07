@@ -73,6 +73,11 @@ if core.register_quick_menu_provider then
 		-- Waypoints (poi) + autopilot warp (basic_moves)
 		local poi = mod("poi")
 		if poi then
+			local wp_gui = cmd("waypoints")
+			if wp_gui then
+				add("Open Waypoint Manager", function() wp_gui.func("") end,
+					{ keywords = { "wp", "waypoint", "poi" } })
+			end
 			local add_here = cmd("add_waypoint_here")
 			if add_here then
 				add("Waypoint Here", function() add_here.func("") end,
@@ -130,6 +135,12 @@ if core.register_quick_menu_provider then
 					entries[#entries + 1] = entry
 				end
 			end
+		end
+
+		-- Fullscreen saved-terrain map (Antilua big map)
+		if core.al_bigmap and core.al_bigmap.toggle then
+			add("Open Big Map", function() core.al_bigmap:toggle() end,
+				{ keywords = { "map", "minimap", "world", "terrain" } })
 		end
 
 		-- Rhythm burst teleport (rhythmtp)

@@ -632,7 +632,10 @@ writes/step), and flushed on disconnect. Cap via `minimap_save_max_blocks`
 **Open/close:** `keymap_big_map` (default `M`), cheat menu "BigMap" entry, or
 Lua. ESC also closes it (without opening the pause menu). Pan: drag with dig
 button (mouse shown while open). Zoom: mouse wheel. `set_follow_player` keeps
-the map centered on the player; panning disables it. The unexplored void is a
+the map centered on the player; panning disables it. An on-screen **Follow**
+button (top-right) re-centers on the player / toggles follow after panning.
+The overlay draws a status readout (center coords, zoom, block count) and
+first-open control hints (dismissed on interaction). The unexplored void is a
 translucent scrim so the world stays dimly visible; the player position is
 drawn as a rotating arrow (minimap `player_marker.png`) and minimap Lua
 markers (e.g. POI waypoints) are shown as colored dots with their label.

@@ -6,12 +6,12 @@ dofile(modpath .. "/flight_hud.lua")
 poi.register_transport("CTP", function(pos, _)
 	if not pos then return true end
 	core.localplayer:set_pos(pos)
-end)
+end, "Teleport (Client)")
 
 poi.register_transport("STP", function(pos, _)
 	if not pos then return true end
 	core.send_chat_message("/teleport " .. pos.x .. "," .. pos.y .. "," .. pos.z)
-end)
+end, "Teleport (Server)")
 
 ws.rg("AutoFsprint", {
 	category = "Movement",

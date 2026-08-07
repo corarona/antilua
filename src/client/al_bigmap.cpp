@@ -30,6 +30,7 @@
 #include <IGUIFont.h>
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <sstream>
 
@@ -43,6 +44,14 @@ static std::string blockFileName(const v3s16 &pos)
 {
 	return std::to_string(pos.X) + "_" + std::to_string(pos.Y)
 			+ "_" + std::to_string(pos.Z) + ".bin";
+}
+
+static v2u32 renderTargetSize()
+{
+	auto *driver = RenderingEngine::get_video_driver();
+	if (!driver)
+		return v2u32(0, 0);
+	return driver->getCurrentRenderTargetSize();
 }
 
 AlBigMap *AlBigMap::s_active = nullptr;
@@ -232,8 +241,9 @@ void AlBigMap::onBlockAdded(v3s16 pos, const MinimapMapblock *data)
 
 int AlBigMap::step(float dtime)
 {
-	(void)dtime;
 	int result = 0;
+	if (m_open)
+		m_open_time += dtime;
 
 	// Deferred load: waits for the nodedef (content transfer) to finish.
 	if (m_save_dir_resolved && !m_save_dir.empty()
@@ -281,6 +291,8 @@ int AlBigMap::step(float dtime)
 
 	s32 wheel = receiver->getMouseWheel();
 	if (wheel != 0) {
+		if (m_open_time < 6.0f)
+			m_open_time = 6.0f; // dismiss the first-open hints on interaction
 		m_zoom = std::clamp(m_zoom * (wheel > 0 ? 1.25f : 0.8f), 0.1f, 16.0f);
 		invalidateView();
 	}
@@ -288,9 +300,40 @@ int AlBigMap::step(float dtime)
 	if (cur) {
 		v2s32 mp = cur->getPosition();
 		bool dragging = receiver->IsKeyDown(KeyType::DIG);
-		if (dragging && m_last_mouse != v2s32(0, 0)) {
+
+		// Re-follow button handling. A press that starts inside the button
+		// rect pans nothing (the button owns that drag); the toggle fires if
+		// the release also stays inside the rect.
+		if (dragging && !m_left_down) {
+			m_left_down = true;
+			m_press_in_button = followButtonRect(renderTargetSize()).isPointInside(mp);
+			m_click_candidate = m_press_in_button;
+		} else if (!dragging && m_left_down) {
+			m_left_down = false;
+			if (m_click_candidate) {
+				m_click_candidate = false;
+				if (followButtonRect(renderTargetSize()).isPointInside(mp)) {
+					setFollowPlayer(!m_follow_player);
+					if (m_follow_player) {
+						updateFollowCenter();
+						m_user_panned = false;
+					}
+					invalidateView();
+				}
+			}
+			m_press_in_button = false;
+		} else if (dragging && m_click_candidate) {
+			// Drag: cancel the toggle if the cursor leaves the button.
+			if (!followButtonRect(renderTargetSize()).isPointInside(mp))
+				m_click_candidate = false;
+		}
+
+		// Panning is suppressed while the press is owned by the button.
+		if (dragging && !m_press_in_button && m_last_mouse != v2s32(0, 0)) {
 			v2s32 delta = mp - m_last_mouse;
 			if (delta != v2s32(0, 0)) {
+				if (m_open_time < 6.0f)
+					m_open_time = 6.0f; // dismiss the first-open hints on interaction
 				m_follow_player = false;
 				m_user_panned = true;
 				m_center.X -= (s32)std::round((f32)delta.X / m_zoom);
@@ -307,6 +350,7 @@ int AlBigMap::step(float dtime)
 void AlBigMap::open()
 {
 	m_open = true;
+	m_open_time = 0.0f;
 	s_active = this;
 	m_user_panned = false;
 	if (!m_follow_player)
@@ -326,6 +370,9 @@ void AlBigMap::close()
 	m_open = false;
 	if (s_active == this)
 		s_active = nullptr;
+	m_left_down = false;
+	m_click_candidate = false;
+	m_press_in_button = false;
 	auto *device = RenderingEngine::get_raw_device();
 	if (device) {
 		if (auto *cur = device->getCursorControl())
@@ -849,6 +896,7 @@ void AlBigMap::draw(video::IVideoDriver *driver, v2u32 target_size)
 
 	drawPlayerMarker(driver, target_size);
 	drawWaypointMarkers(driver, target_size);
+	drawStatusOverlay(driver, target_size);
 }
 
 void AlBigMap::drawPlayerMarker(video::IVideoDriver *driver, v2u32 target_size)
@@ -1099,5 +1147,94 @@ void AlBigMap::clearImages()
 		if (entry.name.rfind("albigmap_", 0) != 0)
 			continue;
 		fs::DeleteSingleFileOrEmptyDirectory(dir + DIR_DELIM + entry.name, false);
+	}
+}
+
+core::rect<s32> AlBigMap::followButtonRect(v2u32 target_size)
+{
+	const s32 W = (s32)target_size.X;
+	const s32 w = 150;
+	const s32 h = 30;
+	const s32 pad = 14;
+	return core::rect<s32>(W - pad - w, pad, W - pad, pad + h);
+}
+
+void AlBigMap::drawStatusOverlay(video::IVideoDriver *driver, v2u32 target_size)
+{
+	const s32 W = (s32)target_size.X;
+	const s32 H = (s32)target_size.Y;
+	if (W <= 0 || H <= 0)
+		return;
+	gui::IGUIFont *font = g_fontengine ? g_fontengine->getFont() : nullptr;
+	if (!font)
+		return;
+
+	const video::SColor text_col(255, 230, 230, 230);
+	const video::SColor bg(150, 10, 10, 10);
+
+	// Status readout (top-left): center coords, zoom, saved block count.
+	char line[96];
+	snprintf(line, sizeof(line), "X %d   Z %d", m_center.X, m_center.Y);
+	core::stringw l0 = utf8_to_wide(line);
+	snprintf(line, sizeof(line), "Zoom: %.1fx", m_zoom);
+	core::stringw l1 = utf8_to_wide(line);
+	snprintf(line, sizeof(line), "Blocks: %llu",
+			(unsigned long long)m_blocks.size());
+	core::stringw l2 = utf8_to_wide(line);
+	core::stringw lines[3] = { l0, l1, l2 };
+
+	s32 box_w = 12;
+	s32 total_h = 12;
+	for (int i = 0; i < 3; i++) {
+		core::dimension2du d = font->getDimension(lines[i].c_str());
+		box_w = std::max(box_w, (s32)d.Width);
+		total_h += (s32)d.Height + 3;
+	}
+	box_w += 28;
+	core::rect<s32> box(12, 12, 12 + box_w, 12 + total_h);
+	driver->draw2DRectangle(bg, box, nullptr);
+	s32 ly = 20;
+	for (int i = 0; i < 3; i++) {
+		core::dimension2du d = font->getDimension(lines[i].c_str());
+		core::rect<s32> r(20, ly, 20 + (s32)d.Width, ly + (s32)d.Height);
+		font->draw(lines[i], r, text_col);
+		ly += (s32)d.Height + 3;
+	}
+
+	// Re-follow button (top-right).
+	core::rect<s32> btn = followButtonRect(target_size);
+	video::SColor btn_border = m_follow_player
+			? video::SColor(255, 80, 255, 120)
+			: video::SColor(220, 180, 180, 180);
+	video::SColor btn_bg = m_follow_player
+			? video::SColor(190, 0, 90, 40)
+			: video::SColor(170, 40, 40, 40);
+	driver->draw2DRectangle(btn_border, btn, nullptr);
+	driver->draw2DRectangle(btn_bg,
+			core::rect<s32>(btn.UpperLeftCorner.X + 2, btn.UpperLeftCorner.Y + 2,
+					btn.LowerRightCorner.X - 2, btn.LowerRightCorner.Y - 2),
+			nullptr);
+	core::stringw btext = utf8_to_wide(m_follow_player ? "FOLLOW: on" : "FOLLOW: off");
+	core::dimension2du bdim = font->getDimension(btext.c_str());
+	core::rect<s32> br(btn.UpperLeftCorner.X + (btn.getWidth() - (s32)bdim.Width) / 2,
+			btn.UpperLeftCorner.Y + (btn.getHeight() - (s32)bdim.Height) / 2,
+			btn.UpperLeftCorner.X + (btn.getWidth() + (s32)bdim.Width) / 2,
+			btn.UpperLeftCorner.Y + (btn.getHeight() + (s32)bdim.Height) / 2);
+	font->draw(btext, br, btn_border);
+
+	// First-open control hints (bottom-center), dismissed on interaction.
+	if (m_open_time < 6.0f) {
+		char hbuf[160];
+		snprintf(hbuf, sizeof(hbuf),
+				"Drag: pan   Scroll: zoom   Click FOLLOW: recenter   M/ESC: close");
+		core::stringw htext = utf8_to_wide(hbuf);
+		core::dimension2du hdim = font->getDimension(htext.c_str());
+		s32 hw = (s32)hdim.Width + 28;
+		s32 hh = (s32)hdim.Height + 12;
+		core::rect<s32> hb(W / 2 - hw / 2, H - 52, W / 2 + hw / 2, H - 52 + hh);
+		driver->draw2DRectangle(bg, hb, nullptr);
+		core::rect<s32> hr(W / 2 - (s32)hdim.Width / 2, H - 46,
+				W / 2 + (s32)hdim.Width / 2, H - 46 + (s32)hdim.Height);
+		font->draw(htext, hr, text_col);
 	}
 }
