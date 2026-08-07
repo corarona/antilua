@@ -1,0 +1,7 @@
+# mapviewer — big-map formspec viewer
+
+mapviewer_default_size (Default view size) int 512 64 2048
+mapviewer_min_size (Minimum view size) int 32 8 128
+mapviewer_max_size (Maximum view size) int 256 256 8192
+mapviewer_pan_step (Pan step as a fraction of the view) float 0.35 0.1 1.0
+mapviewer_zoom_factor (Zoom factor per press) float 0.8 0.4 0.99
