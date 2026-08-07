@@ -228,6 +228,9 @@ private:
 	// set_node_esp_list({names}) — set node names for Node ESP
 	static int l_set_node_esp_list(lua_State *L);
 
+	// get_node_esp_positions() — positions of nodes matching the Node ESP list
+	static int l_get_node_esp_positions(lua_State *L);
+
 	// get_all_objects() — return all active objects (no radius filter)
 	static int l_get_all_objects(lua_State *L);
 

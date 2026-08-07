@@ -9,10 +9,10 @@ end
 
 -- old non-method sound functions
 
--- Sync nlist to C++ for Node ESP
+-- Sync nlist to C++ for Node ESP and Node Tracers
 local last_node_esp_list = ""
 core.register_globalstep(function()
-	if not core.settings:get_bool("enable_node_esp") then
+	if not (core.settings:get_bool("enable_node_esp") or core.settings:get_bool("enable_node_tracers")) then
 		last_node_esp_list = ""
 		return
 	end

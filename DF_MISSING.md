@@ -28,10 +28,12 @@ notes why the port is non-trivial.
 
 ## Entity/Player ESP & Tracers (`src/client/render/plain.cpp`)
 
-**✅ Ported** — `DrawTracersAndESP` pipeline step.
+**✅ Ported** — `DrawTracersAndESP` pipeline step (ESP boxes + wallhack);
+tracer lines are Lua-rendered via `core.draw3d`
+(`clientmods/ANTILUA/wasplib/tracers.lua`).
 
-Entity/player ESP boxes and tracer lines are drawn in a dedicated pipeline step
-(`DrawTracersAndESP` in `plain.cpp`) that runs after `Draw3D`.
+Entity/player ESP boxes and wallhack rendering live in a dedicated pipeline
+step (`DrawTracersAndESP` in `plain.cpp`) that runs after `Draw3D`.
 
 **Coordinate space notes:**
 - `camera->getPosition()` returns world space — NOT suitable as `draw3DLine`
@@ -39,9 +41,9 @@ Entity/player ESP boxes and tracer lines are drawn in a dedicated pipeline step
   appearing as a fixed point.
 - `camera->getPosition() - offset_f` maps to (0,0,0) in view space, which is
   behind or at the near plane — the line is clipped.
-- Use `getCameraNode()->getAbsolutePosition()` for the actual root/scene-relative
-  camera position, with a small forward offset (`look_dir * 0.2 * BS`) to keep
-  the origin past the near plane.
+- The Lua tracer origin (`core.camera:get_pos() + look_dir * 0.2`) corresponds
+  to the old C++ `getCameraNode()->getAbsolutePosition()` plus a small forward
+  offset (`look_dir * 0.2 * BS`) to keep the origin past the near plane.
 
 ---
 

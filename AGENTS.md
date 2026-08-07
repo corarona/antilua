@@ -217,10 +217,13 @@ Adds an `enable_shaders` toggle (`Settings → Enable shaders`) that falls back 
   (`ScriptApiClient`, `ScriptApiCheats`, `ScriptApiSecurity`, etc.)
 - `g_game` (global `Game*`) is accessible from scripting via `setGame()` on
   `ScriptApiBase`
-- Entity/Player ESP and Tracers live in `DrawTracersAndESP` pipeline step
-  (`src/client/render/plain.cpp`). Uses `getCameraNode()->getAbsolutePosition()`
-  for the tracer origin (NOT `camera->getPosition()`, which is world space).
-  A small forward offset (`look_dir * 0.2 * BS`) avoids near-plane clipping.
+- Entity/Player ESP hitboxes and wallhack live in the `DrawTracersAndESP`
+  pipeline step (`src/client/render/plain.cpp`). Tracer lines (entity/player/
+  node) are Lua-rendered via `core.draw3d` from
+  `clientmods/ANTILUA/wasplib/tracers.lua` (moved out of C++). The Lua tracer
+  origin is `core.camera:get_pos() + look_dir * 0.2`; a small forward offset
+  (`look_dir * 0.2 * BS` in the old C++ code) avoids near-plane clipping. The
+  node scan stays in C++ and is exposed to Lua via `core.get_node_esp_positions()`.
 - The cheat menu uses a **panel system** (`src/gui/cheatMenu.cpp`). Pressing
   TAB opens a dark overlay layer with mouse cursor. Panels are movable,
   pinnable, and keyboard-focusable. Each panel renders as a 2D rectangle with

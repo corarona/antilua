@@ -1614,6 +1614,46 @@ int ModApiClient::l_set_node_esp_list(lua_State *L)
 	return 0;
 }
 
+// get_node_esp_positions() -> table of {x,y,z} node positions matching the ESP list
+int ModApiClient::l_get_node_esp_positions(lua_State *L)
+{
+	Client *client = getClient(L);
+	const auto &node_list = client->getNodeEspList();
+	lua_newtable(L);
+	if (node_list.empty())
+		return 1;
+
+	ClientMap &map = client->getEnv().getClientMap();
+	const NodeDefManager *ndef = client->getNodeDefManager();
+
+	v3s16 cam_pos = floatToInt(
+		client->getEnv().getLocalPlayer()->getPosition(), BS);
+	v3s16 blocks_min, blocks_max;
+	map.getBlocksInViewRange(cam_pos, &blocks_min, &blocks_max);
+
+	int idx = 1;
+	for (s16 bz = blocks_min.Z; bz <= blocks_max.Z; bz++)
+	for (s16 by = blocks_min.Y; by <= blocks_max.Y; by++)
+	for (s16 bx = blocks_min.X; bx <= blocks_max.X; bx++) {
+		MapBlock *block = map.getBlockNoCreateNoEx(v3s16(bx, by, bz));
+		if (!block)
+			continue;
+		v3s16 base = block->getPosRelative();
+		for (s16 nz = 0; nz < MAP_BLOCKSIZE; nz++)
+		for (s16 ny = 0; ny < MAP_BLOCKSIZE; ny++)
+		for (s16 nx = 0; nx < MAP_BLOCKSIZE; nx++) {
+			v3s16 p = base + v3s16(nx, ny, nz);
+			MapNode n = map.getNode(p);
+			const std::string &node_name = ndef->get(n).name;
+			if (node_list.find(node_name) == node_list.end())
+				continue;
+			push_v3s16(L, p);
+			lua_rawseti(L, -2, idx++);
+		}
+	}
+	return 1;
+}
+
 // get_all_objects()
 int ModApiClient::l_get_all_objects(lua_State *L)
 {
@@ -1885,6 +1925,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(find_path);
 	API_FCT(load_media);
 	API_FCT(set_node_esp_list);
+	API_FCT(get_node_esp_positions);
 	API_FCT(reload_mod);
 }
 

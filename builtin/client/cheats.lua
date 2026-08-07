@@ -284,18 +284,12 @@ core.register_cheat({ name = "EntityHitboxes", category = "Render", setting = "e
 	description = "Highlight entity hitboxes" })
 core.register_cheat({ name = "EntityWallhack", category = "Render", setting = "enable_entity_wallhack",
 	description = "See entities through walls" })
-core.register_cheat({ name = "EntityTracers", category = "Render", setting = "enable_entity_tracers",
-	description = "Draw tracer lines to entities" })
 core.register_cheat({ name = "PlayerHitboxes", category = "Render", setting = "enable_player_esp",
 	description = "Highlight player hitboxes" })
 core.register_cheat({ name = "PlayerWallhack", category = "Render", setting = "enable_player_wallhack",
 	description = "See players through walls" })
-core.register_cheat({ name = "PlayerTracers", category = "Render", setting = "enable_player_tracers",
-	description = "Draw tracer lines to players" })
 core.register_cheat({ name = "NodeESP", category = "Render", setting = "enable_node_esp",
 	description = "Highlight nodes through walls" })
-core.register_cheat({ name = "NodeTracers", category = "Render", setting = "enable_node_tracers",
-	description = "Draw tracer lines to selected nodes" })
 core.register_cheat({ name = "BigMap", category = "Render",
 	func = function() core.al_bigmap:toggle() end,
 	description = "Open the client-side big map" })

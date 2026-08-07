@@ -118,6 +118,7 @@ end
 ws.rg = ws.register_globalhacktemplate
 
 dofile(core.get_modpath("wasplib") .. "/integrations.lua")
+dofile(core.get_modpath("wasplib") .. "/tracers.lua")
 
 
 function ws.step_globalhacks(dtime)
