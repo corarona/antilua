@@ -186,12 +186,6 @@ node_esp_alpha (Node ESP alpha) int 80
 #    Node ESP tracer line color (RGB 0-255).
 node_tracers_color (Node tracer color) string (255,255,0)
 
-#    Colored wireframe boxes marking task/waypoint nodes.
-enable_task_nodes (Task nodes) bool true
-
-#    Colored lines showing task/path tracers.
-enable_task_tracers (Task tracers) bool true
-
 #    ---- Interact ----
 
 #    Dig faster than normal.

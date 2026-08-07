@@ -60,8 +60,6 @@ them unless `priv_bypass` is active.
 | Player Tracers | `enable_player_tracers` | ✅ |
 | NodeESP | `enable_node_esp` | ✅ |
 | NodeTracers | `enable_node_tracers` | ✅ |
-| Task Nodes | `enable_task_nodes` | ✅ |
-| Task Tracers | `enable_task_tracers` | ✅ |
 
 ### Interact
 | Feature | Setting | Status |

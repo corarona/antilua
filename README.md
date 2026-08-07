@@ -83,8 +83,6 @@ setting their corresponding settings.
 | Player Tracers | `enable_player_tracers` | Lines from camera to each player |
 | NodeESP | `enable_node_esp` | Highlighted node bounding boxes |
 | NodeTracers | `enable_node_tracers` | Lines from camera to specified nodes |
-| Task Nodes | `enable_task_nodes` | Persistent colored wireframe boxes for path visualization |
-| Task Tracers | `enable_task_tracers` | Persistent colored tracer lines |
 
 ### Interact
 
