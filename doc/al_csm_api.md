@@ -455,11 +455,11 @@ corresponding setting.
 | | CheatHUD | `cheat_hud` | Active cheats overlay |
 | | EntityHitboxes | `enable_entity_esp` | Entity wireframe hitboxes |
 | | EntityWallhack | `enable_entity_wallhack` | Through-walls entity ESP |
-| | EntityTracers | `enable_entity_tracers` | Entity tracer lines |
+| | EntityTracers | `enable_entity_tracers` | Entity tracer lines (Lua-drawn) |
 | | PlayerHitboxes | `enable_player_esp` | Player wireframe hitboxes |
 | | PlayerWallhack | `enable_player_wallhack` | Through-walls player ESP |
-| | PlayerTracers | `enable_player_tracers` | Player tracer lines |
-| | NodeESP | `enable_node_esp` | Node bounding-box highlights (stub, no C++ rendering) |
+| | PlayerTracers | `enable_player_tracers` | Player tracer lines (Lua-drawn) |
+| | NodeESP | `enable_node_esp` | Node bounding-box highlights |
 | **Interact** | FastDig | `fastdig` | Faster digging |
 | | FastPlace | `fastplace` | Faster placement |
 | | AutoDig | `autodig` | Auto-dig nearest |
@@ -705,6 +705,8 @@ These settings exist only in Antilua. Set via `core.settings:set()`,
 | `prevent_natural_damage` | `true` | No environmental damage |
 | `reach` | `true` | Extended reach |
 | `enable_node_esp` | `false` | Node ESP |
+| `enable_node_tracers` | `false` | Node tracer lines |
+| `node_tracers_color` | `(255,255,0)` | Node tracer line color |
 | `enable_entity_esp` | `false` | Entity wireframe hitboxes |
 | `enable_entity_tracers` | `false` | Entity tracer lines |
 | `enable_entity_wallhack` | `false` | Through-walls entity ESP |
@@ -788,26 +790,38 @@ Colors use RGB tuple format `(R, G, B)`.
 
 ## 8. Rendering: ESP and Tracers
 
-Entity and Player ESP/Tracer rendering is implemented as a custom render
-pipeline step in `DrawTracersAndESP`.
+Entity/Player ESP hitbox boxes and wallhack mode are rendered in C++ by the
+`DrawTracersAndESP` pipeline step. Tracer lines (entity/player/node) are drawn
+from Lua via `core.draw3d` by the wasplib `tracers.lua` cheats, which refresh
+their lines every step while enabled.
 
 ### Settings
 
 - `enable_entity_esp` — Draws wireframe hitboxes around all entities
-- `enable_entity_tracers` — Draws lines from camera to each entity
+- `enable_entity_tracers` — Draws lines from camera to each entity (Lua)
 - `enable_entity_wallhack` — Through-walls entity boxes (ECFN_ALWAYS depth test; no color distinction)
 - `enable_player_esp` — Draws wireframe hitboxes around other players
-- `enable_player_tracers` — Draws lines from camera to each player
+- `enable_player_tracers` — Draws lines from camera to each player (Lua)
 - `enable_player_wallhack` — Through-walls player boxes (ECFN_ALWAYS depth test; no color distinction)
+- `enable_node_esp` — Node bounding-box highlights (C++) using the `node_esp_nodes` filter list
+- `enable_node_tracers` — Draws lines from camera to selected nodes (Lua)
+- `node_tracers_color` — RGB tuple for node tracer line color
 - `entity_esp_color` / `player_esp_color` — RGB tuple for ESP line color
 
 ### Implementation Notes
 
-- The tracer origin is `camera_node_position + (look_dir * 0.2 * BS)`,
-  NOT `camera:getPosition()` (which maps incorrectly in view space).
-- Boxes use `draw3DBox` and lines use `draw3DLine`.
-- `enable_node_esp` (node bounding-box highlights) exists as a setting but has
-  no C++ rendering implementation (stub). Filter list: `node_esp_nodes`.
+- Tracer lines are rendered by `core.draw3d:add_line` from the wasplib
+  `EntityTracers` / `PlayerTracers` / `NodeTracers` cheats
+  (`clientmods/ANTILUA/wasplib/tracers.lua`).
+- The Lua tracer origin is `core.camera:get_pos() + look_dir * 0.2` (a small
+  forward offset avoids near-plane clipping), mirroring the old C++ origin
+  `camera_node_position + (look_dir * 0.2 * BS)`.
+- ESP hitbox boxes use `draw3DBox`; wallhack re-renders occluded CAO meshes
+  with depth overridden.
+- `core.get_node_esp_positions()` returns the node positions matching the
+  current Node ESP list (set via `core.set_node_esp_list`) within the loaded
+  view range; it is used by the NodeTracers cheat. The node scan stays in C++
+  so it stays fast.
 
 ---
 
@@ -1293,10 +1307,7 @@ local ok = core.clear_task_tracer({x=0, y=0, z=0}, {x=10, y=20, z=30})
 
 ### Settings
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `enable_task_nodes` | `true` | Show task node wireframe boxes |
-| `enable_task_tracers` | `true` | Show task tracer lines |
+The task marker API always renders; there is no gating setting for it.
 
 ### Cheat Theme
 
@@ -1363,6 +1374,7 @@ core.can_attack(object_id) -> bool     -- Check if an entity ID is valid for att
 core.get_node_name(pos) -> string      -- Shorthand: get node name string at pos
 core.all_loaded_nodes() -> {pos,...}   -- Table of all currently loaded node positions
 core.nodes_at_block_pos(pos) -> {pos,...} -- Table of all node positions in a mapblock
+core.get_node_esp_positions() -> {pos,...} -- Positions of nodes matching the Node ESP list
 ```
 
 ### Item Utilities
