@@ -4,12 +4,50 @@
 local mpath = core.get_modpath(core.get_current_modname())
 dofile(mpath .. "/spongebot.lua")
 
+local function weighted_node_list()
+	-- Node types in the hotbar (slots 1-9), weighted by stack count
+	local wanted = {}
+	local inv = core.get_inventory("current_player")
+	if not inv then return {}, {}, 0 end
+	for i = 1, 9 do
+		local stack = inv.main[i]
+		if stack and not stack:is_empty() then
+			local name = stack:get_name()
+			local def = core.get_item_def(name)
+			if def and def.type == "node" then
+				wanted[name] = (wanted[name] or 0) + stack:get_count()
+			end
+		end
+	end
+	local names, weights, total = {}, {}, 0
+	for name, count in pairs(wanted) do
+		names[#names + 1] = name
+		total = total + count
+		weights[#weights + 1] = total
+	end
+	return names, weights, total
+end
+
 local function mscaffold(self)
-	if not self._node then return end
+	local random = core.settings:get_bool("scaffold.random", false)
+	if not random and not self._node then return end
 	local width = tonumber(core.settings:get("scaffold.width")) or 5
 	local depth = tonumber(core.settings:get("scaffold.depth")) or 1
 	local above = tonumber(core.settings:get("scaffold.above")) or 0
 	local npt = tonumber(core.settings:get("scaffold.npt")) or ws.get_nodes_per_tick() or 25
+	local names, weights, total
+	if random then
+		names, weights, total = weighted_node_list()
+		if total == 0 then return end
+	end
+	local pick = function()
+		if not random then return self._node end
+		local r = math.random(total)
+		for i, w in ipairs(weights) do
+			if r <= w then return names[i] end
+		end
+		return names[#names]
+	end
 	local y_from = -depth
 	local y_to = -1
 	if above > 0 then
@@ -25,7 +63,7 @@ local function mscaffold(self)
 				local p = ws.dircoord(fo, j, i)
 				local nd = p and core.get_node_or_nil(p)
 				if nd and ws.can_place_at(p) then
-					ws.place(p, self._node)
+					ws.place(p, pick())
 					placed = placed + 1
 				end
 			end
@@ -46,6 +84,7 @@ ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "B
 		depth = { type = "number", default = 1, min = 1, max = 20 },
 		above = { type = "number", default = 0, min = 0, max = 20 },
 		npt = { type = "number", default = 25, min = 1, max = 500 },
+		random = { type = "bool", default = false },
 		ping_tolerance = { type = "number", default = 1500, min = 0, max = 5000 },
 	},
 })

@@ -32,6 +32,7 @@ highway construction, moss farming, and bot-driven sponge/water clearing.
 | `place.width` | int | 5 | Width for MultiScaff |
 | `place.depth` | int | 1 | Depth for MultiScaff |
 | `place.above` | int | 0 | Above-ground offset for MultiScaff |
+| `place.random` | bool | false | Randomly pick placement node from hotbar, weighted by stack count |
 | `placeon.use_wielded` | bool | true | Use wielded item instead of configured node |
 | `placeon.range` | int | 5 | Range for PlaceOn |
 | `placeon.node` | string | `mcl_core:dirt_with_grass` | Node to place (when use_wielded is false) |
