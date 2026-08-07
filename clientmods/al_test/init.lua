@@ -125,6 +125,7 @@ dofile(modpath .. "/test_mapart.lua")
 dofile(modpath .. "/test_chat_logger.lua")
 dofile(modpath .. "/test_core_api.lua")
 dofile(modpath .. "/test_clientmod_features.lua")
+dofile(modpath .. "/test_tracers.lua")
 
 
 -- Run API/registration tests at mod load time
@@ -192,6 +193,7 @@ core.register_on_mods_loaded(function()
 	test_chat_logger(al_test)
 	test_core_api(al_test)
 	test_clientmod_features(al_test)
+	test_tracers(al_test)
 
 	-- Integration tests (deferred — register but don't run yet)
 	test_ws_rg_lifecycle(al_test)
