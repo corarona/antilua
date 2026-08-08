@@ -1648,6 +1648,7 @@ void Game::processKeyInput()
 			if (cheat_key_down && !cheat_key_was_down) {
 				m_cheat_layer_active = true;
 				m_game_ui->m_flags.show_cheat_menu = true;
+				g_cheat_layer_force_hidden = false;
 				if (auto *cur = device->getCursorControl())
 					cur->setVisible(true);
 			} else if (!cheat_key_down && cheat_key_was_down) {
@@ -1937,6 +1938,8 @@ void Game::toggleCheatLayer()
 	m_game_ui->toggleCheatMenu();
 	m_cheat_layer_active = m_game_ui->m_flags.show_cheat_menu;
 	g_cheat_layer_active = m_cheat_layer_active;
+	if (m_cheat_layer_active)
+		g_cheat_layer_force_hidden = false;
 	auto *cur = device->getCursorControl();
 	if (cur)
 		cur->setVisible(m_cheat_layer_active);
