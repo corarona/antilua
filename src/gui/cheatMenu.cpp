@@ -1603,6 +1603,22 @@ static void parseQuickPaletteEntry(lua_State *L, std::vector<QuickPaletteItem> &
 	else
 		lua_pop(L, 1);
 
+	// Second-level options: each is itself an entry table (recursively parsed).
+	lua_getfield(L, -1, "options");
+	if (lua_istable(L, -1)) {
+		lua_pushnil(L);
+		while (lua_next(L, -2)) {
+			if (lua_istable(L, -1)) {
+				std::vector<QuickPaletteItem> tmp;
+				parseQuickPaletteEntry(L, tmp);
+				if (!tmp.empty())
+					item.options.emplace_back(std::move(tmp[0]));
+			}
+			lua_pop(L, 1);
+		}
+	}
+	lua_pop(L, 1);
+
 	items.emplace_back(std::move(item));
 }
 
@@ -1624,6 +1640,7 @@ void CheatMenu::collectQuickPaletteItems()
 	}
 
 	// Cheats (already sorted by name/category in init_cheats)
+	lua_State *L = script->getLuaState();
 	for (auto &cat : script->m_cheat_categories)
 		for (auto &cheat : cat->m_cheats) {
 			auto &item = m_quick_palette_items.emplace_back();
@@ -1631,9 +1648,24 @@ void CheatMenu::collectQuickPaletteItems()
 			item.cheat = cheat;
 			item.label = cheat->m_name;
 			item.category = cat->m_name;
+			// Remember whether the cheat has a settings page (cheat_settings
+			// table or get_formspec) so the submenu can offer it.
+			if (!cheat->m_setting.empty()) {
+				lua_getglobal(L, "core");
+				lua_getfield(L, -1, "cheat_defs");
+				lua_getfield(L, -1, cheat->m_setting.c_str());
+				if (lua_istable(L, -1)) {
+					lua_getfield(L, -1, "cheat_settings");
+					item.has_settings = lua_istable(L, -1) || lua_isfunction(L, -1);
+					lua_pop(L, 1);
+					lua_getfield(L, -1, "get_formspec");
+					if (lua_isfunction(L, -1))
+						item.has_settings = true;
+					lua_pop(L, 1);
+				}
+				lua_pop(L, 3);
+			}
 		}
-
-	lua_State *L = script->getLuaState();
 
 	// Lua-provided entries (providers receive the current search text so they
 	// can tailor their entries to it)
@@ -1693,9 +1725,16 @@ void CheatMenu::clearQuickPaletteItems()
 				luaL_unref(L, LUA_REGISTRYINDEX, item.action_ref);
 			if (item.is_enabled_ref != 0)
 				luaL_unref(L, LUA_REGISTRYINDEX, item.is_enabled_ref);
+			for (auto &opt : item.options) {
+				if (opt.action_ref != 0)
+					luaL_unref(L, LUA_REGISTRYINDEX, opt.action_ref);
+				if (opt.is_enabled_ref != 0)
+					luaL_unref(L, LUA_REGISTRYINDEX, opt.is_enabled_ref);
+			}
 		}
 	}
 	m_quick_palette_items.clear();
+	closePaletteSubmenu();
 }
 
 void CheatMenu::closeQuickPalette()
@@ -1790,6 +1829,12 @@ const std::string &CheatMenu::quickPaletteItemLabel(const QuickPaletteItem &item
 void CheatMenu::getFilteredPaletteItems(std::vector<QuickPaletteItem *> &out)
 {
 	out.clear();
+	// Second level: the submenu shows exactly its options (no search filtering).
+	if (m_quick_palette_submenu) {
+		out.insert(out.end(), m_quick_palette_submenu_items.begin(),
+				m_quick_palette_submenu_items.end());
+		return;
+	}
 	for (auto &item : m_quick_palette_items) {
 		if (!matchesSearch(quickPaletteItemLabel(item), m_quick_palette_text)) {
 			bool keyword_hit = false;
@@ -1888,15 +1933,28 @@ void CheatMenu::drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
 
 	drawRoundedRect(driver, px, py, pw, ph, m_panel_bg, m_bg_color);
 
-	// Search field
+	// Search field, or a breadcrumb header when the second level is open
 	s32 search_y = py + 10;
 	driver->draw2DRectangle(m_item_bg,
 		core::rect<s32>(px + 8, search_y, px + pw - 8, search_y + 34));
-	std::string display = m_quick_palette_text.empty()
-		? "Search..."
-		: "\u2315 " + m_quick_palette_text;
-	drawText(display, px + 14, search_y + (34 - m_fontsize.Y) / 2,
-		m_selected_font_color);
+	std::string display;
+	if (m_quick_palette_submenu) {
+		display = "\u25C0 " + m_quick_palette_submenu_title;
+		drawText(display, px + 14, search_y + (34 - m_fontsize.Y) / 2,
+			m_selected_font_color);
+		if (m_font) {
+			s32 ow = (s32)m_font->getDimension(utf8_to_wide("Options").c_str()).Width;
+			drawText("Options", px + pw - 14 - ow,
+				search_y + (34 - m_fontsize.Y) / 2,
+				video::SColor(150, 255, 255, 255));
+		}
+	} else {
+		display = m_quick_palette_text.empty()
+			? "Search..."
+			: "\u2315 " + m_quick_palette_text;
+		drawText(display, px + 14, search_y + (34 - m_fontsize.Y) / 2,
+			m_selected_font_color);
+	}
 
 	// Collect matching entries
 	std::vector<QuickPaletteItem *> entries;
@@ -1945,6 +2003,7 @@ void CheatMenu::drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
 
 		// Dimmed category/description suffix, right-aligned — truncated with an
 		// ellipsis if it would overlap the label
+		bool has_marker = !m_quick_palette_submenu && item->hasOptions();
 		std::string suffix;
 		if (item->kind == QuickPaletteItem::Kind::CHEAT && !item->category.empty())
 			suffix = item->category;
@@ -1954,7 +2013,7 @@ void CheatMenu::drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
 			video::SColor dim = text_color;
 			dim.setAlpha(130);
 			s32 label_w = (s32)m_font->getDimension(utf8_to_wide(txt).c_str()).Width;
-			s32 suffix_right = px + pw - 10;
+			s32 suffix_right = px + pw - 10 - (has_marker ? 20 : 0);
 			s32 max_w = suffix_right - (px + 10 + label_w) - 12;
 			if (max_w > 0) {
 				std::wstring wsuffix = utf8_to_wide(suffix);
@@ -1979,14 +2038,22 @@ void CheatMenu::drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
 			}
 		}
 
+		// Trailing ▸ marker for entries with a second level (level 1 only)
+		if (has_marker) {
+			drawText("\u25B8", px + pw - 16, list_y + (m_entry_height - m_fontsize.Y) / 2,
+				hover || selected ? m_selected_font_color
+					: video::SColor(180, 255, 255, 255));
+		}
+
 		list_y += m_entry_height + m_gap;
 	}
 
 	// Empty state
 	if (entries.empty()) {
-		std::string msg = m_quick_palette_text.empty()
-			? "No entries"
-			: "No matches for \"" + m_quick_palette_text + "\"";
+		std::string msg = m_quick_palette_submenu ? "No options"
+			: (m_quick_palette_text.empty()
+				? "No entries"
+				: "No matches for \"" + m_quick_palette_text + "\"");
 		s32 y = py + ph / 2 - 10;
 		if (m_font) {
 			u32 mw = m_font->getDimension(utf8_to_wide(msg).c_str()).Width;
@@ -1997,8 +2064,12 @@ void CheatMenu::drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
 	}
 
 	// Footer key hints
-	drawText("\u2191\u2193 Navigate  \u21B5 Run  ~ Close  Scroll", px + 8,
-		py + ph - 24, video::SColor(150, 255, 255, 255));
+	if (m_quick_palette_submenu)
+		drawText("\u2191\u2193 Navigate  \u21B5 Run  TAB/ESC Back  ~ Close", px + 8,
+			py + ph - 24, video::SColor(150, 255, 255, 255));
+	else
+		drawText("\u2191\u2193 Navigate  \u21B5 Run  TAB Options  ~ Close  Scroll", px + 8,
+			py + ph - 24, video::SColor(150, 255, 255, 255));
 }
 
 void CheatMenu::pollQuickPaletteInput()
@@ -2015,6 +2086,12 @@ void CheatMenu::pollQuickPaletteInput()
 	wchar_t c = receiver->cheat_char;
 
 	std::string old_text = m_quick_palette_text;
+	if (m_quick_palette_submenu) {
+		// Second level: ESC goes back to the entry list; typed text is ignored.
+		if (c == 27)
+			closePaletteSubmenu();
+		return;
+	}
 	if (c == 8) {
 		if (!m_quick_palette_text.empty())
 			m_quick_palette_text.pop_back();
@@ -2154,6 +2231,12 @@ void CheatMenu::paletteClick(v2s32 pos)
 	if (!script || !script->m_cheats_loaded)
 		return;
 
+	// Clicking the breadcrumb header in the submenu goes back a level.
+	if (m_quick_palette_submenu && paletteRowAt(pos) == -2) {
+		closePaletteSubmenu();
+		return;
+	}
+
 	int idx = paletteRowAt(pos);
 	if (idx < 0)
 		return; // outside rows (search field or outside box) — ignore
@@ -2164,7 +2247,128 @@ void CheatMenu::paletteClick(v2s32 pos)
 		return;
 
 	m_quick_palette_selected = idx;
+
+	// Level 1: clicking the trailing ▸ of an entry with options opens its
+	// submenu instead of running the primary action.
+	if (!m_quick_palette_submenu && entries[idx]->hasOptions()) {
+		auto *device = RenderingEngine::get_raw_device();
+		if (device) {
+			auto ss = device->getVideoDriver()->getScreenSize();
+			s32 pw = 450;
+			s32 px = ((s32)ss.Width - pw) / 2;
+			if (pos.X >= px + pw - 30) {
+				openPaletteSubmenu(*entries[idx]);
+				return;
+			}
+		}
+	}
+
 	paletteConfirm();
+}
+
+// Open the second level for an entry. Cheats get the standard context-menu
+// option set; Lua entries use the options their provider attached.
+void CheatMenu::openPaletteSubmenu(QuickPaletteItem &parent)
+{
+	closePaletteSubmenu();
+	m_quick_palette_submenu = true;
+	m_quick_palette_submenu_title = parent.label;
+	m_quick_palette_selected = 0;
+	m_quick_palette_scroll = 0;
+
+	if (parent.kind == QuickPaletteItem::Kind::CHEAT) {
+		bool enabled = parent.cheat && parent.cheat->is_enabled();
+		std::string setting = parent.cheat ? parent.cheat->m_setting : "";
+		auto add_owned = [&](const std::string &label, int kind) {
+			QuickPaletteItem opt;
+			opt.kind = QuickPaletteItem::Kind::LUA_ENTRY;
+			opt.label = label;
+			opt.option_kind = kind;
+			opt.cheat_setting = setting;
+			m_quick_palette_submenu_owned.emplace_back(std::move(opt));
+		};
+		add_owned(enabled ? "Disable" : "Enable", 0);
+		if (parent.has_settings)
+			add_owned("Settings", 1);
+		if (!setting.empty()) {
+			add_owned(isFavorite(setting) ? "Unfavorite" : "Favorite", 2);
+			int slot = getSlotForSetting(setting);
+			add_owned(slot ? ("Slot " + std::to_string(slot)) : "Slot...", 3);
+		}
+		// Point into the owned vector only after it is fully built, so
+		// reallocation during emplace_back cannot invalidate the pointers.
+		m_quick_palette_submenu_items.reserve(m_quick_palette_submenu_owned.size());
+		for (auto &opt : m_quick_palette_submenu_owned)
+			m_quick_palette_submenu_items.push_back(&opt);
+	} else {
+		for (auto &opt : parent.options)
+			m_quick_palette_submenu_items.push_back(&opt);
+	}
+}
+
+void CheatMenu::closePaletteSubmenu()
+{
+	m_quick_palette_submenu = false;
+	m_quick_palette_submenu_title.clear();
+	m_quick_palette_submenu_owned.clear();
+	m_quick_palette_submenu_items.clear();
+	m_quick_palette_selected = 0;
+	m_quick_palette_scroll = 0;
+}
+
+// TAB: open the submenu for the selected entry, or back out of it.
+void CheatMenu::paletteTab()
+{
+	if (!m_quick_palette_active)
+		return;
+	if (m_quick_palette_submenu) {
+		closePaletteSubmenu();
+		return;
+	}
+	ClientScripting *script = m_client->getScript();
+	if (!script || !script->m_cheats_loaded)
+		return;
+	std::vector<QuickPaletteItem *> entries;
+	getFilteredPaletteItems(entries);
+	if (m_quick_palette_selected < 0 || m_quick_palette_selected >= (int)entries.size())
+		return;
+	QuickPaletteItem *item = entries[m_quick_palette_selected];
+	if (item->hasOptions())
+		openPaletteSubmenu(*item);
+}
+
+// Run a cheat-standard submenu option (option_kind >= 0).
+void CheatMenu::runPaletteSubmenuOption(const QuickPaletteItem &opt)
+{
+	ClientScripting *script = m_client->getScript();
+	if (!script)
+		return;
+
+	if (opt.option_kind == 0) {
+		if (!script->m_cheats_loaded)
+			return;
+		for (auto &cat : script->m_cheat_categories)
+			for (auto *ch : cat->m_cheats)
+				if (ch->m_setting == opt.cheat_setting) {
+					script->toggle_cheat(ch);
+					addRecentCheat(ch->m_setting);
+					bumpQuickMenuUsage(ch->m_setting);
+					return;
+				}
+	} else if (opt.option_kind == 1) {
+		script->show_cheat_settings(opt.cheat_setting);
+	} else if (opt.option_kind == 2) {
+		toggleFavorite(opt.cheat_setting);
+	} else if (opt.option_kind == 3) {
+		lua_State *L = script->getLuaState();
+		lua_getglobal(L, "core");
+		lua_getfield(L, -1, "show_slot_picker");
+		if (lua_isfunction(L, -1)) {
+			lua_pushstring(L, opt.cheat_setting.c_str());
+			lua_pcall(L, 1, 0, 0);
+		}
+		lua_pop(L, 2);
+	}
 }
 
 // Clamp the scroll offset so the selected entry stays within the visible window.
@@ -2199,6 +2403,23 @@ void CheatMenu::paletteConfirm()
 		return;
 
 	QuickPaletteItem *item = entries[m_quick_palette_selected];
+
+	// Second level: run the selected option instead of the primary action.
+	if (m_quick_palette_submenu) {
+		bool opens_formspec = (item->option_kind == 1 || item->option_kind == 3);
+		if (opens_formspec)
+			closeQuickPalette(); // hide the palette before showing the formspec
+		if (item->option_kind >= 0) {
+			runPaletteSubmenuOption(*item);
+		} else {
+			runQuickPaletteAction(*item);
+			storeLastAction(*item);
+			bumpQuickMenuUsage(item->label);
+		}
+		closeQuickPalette();
+		return;
+	}
+
 	if (item->kind == QuickPaletteItem::Kind::CHEAT) {
 		script->toggle_cheat(item->cheat);
 		addRecentCheat(item->cheat->m_setting);
@@ -2311,6 +2532,54 @@ int CheatMenu::getQuickMenuEntries(lua_State *L)
 				lua_rawseti(L, -2, ki++);
 			}
 			lua_setfield(L, -2, "keywords");
+		}
+		// Second level: expose option labels/kinds so tests and tooling can
+		// inspect them. Cheats report their standard option set; Lua entries
+		// report whatever their provider attached.
+		if (item.kind == QuickPaletteItem::Kind::CHEAT || !item.options.empty()) {
+			lua_newtable(L);
+			int oi = 1;
+			auto emit_opt = [&](const QuickPaletteItem &opt, int kind) {
+				lua_newtable(L);
+				lua_pushstring(L, opt.label.c_str());
+				lua_setfield(L, -2, "label");
+				std::string okind;
+				if (kind == 0)
+					okind = "toggle";
+				else if (kind == 1)
+					okind = "settings";
+				else if (kind == 2)
+					okind = "favorite";
+				else if (kind == 3)
+					okind = "slot";
+				else if (!opt.toggle_settings.empty())
+					okind = "toggle";
+				else
+					okind = "action";
+				lua_pushstring(L, okind.c_str());
+				lua_setfield(L, -2, "kind");
+				lua_rawseti(L, -2, oi++);
+			};
+			if (item.kind == QuickPaletteItem::Kind::CHEAT) {
+				auto mk = [](const std::string &l) {
+					QuickPaletteItem i;
+					i.label = l;
+					return i;
+				};
+				bool enabled = item.cheat && item.cheat->is_enabled();
+				emit_opt(mk(enabled ? "Disable" : "Enable"), 0);
+				if (item.has_settings)
+					emit_opt(mk("Settings"), 1);
+				if (!item.cheat->m_setting.empty()) {
+					emit_opt(mk(isFavorite(item.cheat->m_setting) ? "Unfavorite" : "Favorite"), 2);
+					int slot = getSlotForSetting(item.cheat->m_setting);
+					emit_opt(mk(slot ? ("Slot " + std::to_string(slot)) : "Slot..."), 3);
+				}
+			} else {
+				for (auto &opt : item.options)
+					emit_opt(opt, -1);
+			}
+			lua_setfield(L, -2, "options");
 		}
 		lua_rawseti(L, -2, idx++);
 	}

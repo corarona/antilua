@@ -58,6 +58,20 @@ struct QuickPaletteItem
 	bool enabled_state = false;
 	bool repeat_last = false;
 	std::vector<std::string> toggle_settings;
+	// Second level: provider-defined submenu options (each is a full item).
+	std::vector<QuickPaletteItem> options;
+	// Cheat-standard submenu options are described by a setting + option_kind
+	// (0 = enable/disable, 1 = settings, 2 = favorite, 3 = slot) instead of a
+	// Lua action.
+	std::string cheat_setting;
+	int option_kind = -1;
+	// Whether the cheat defines cheat_settings (queried during collection).
+	bool has_settings = false;
+
+	bool hasOptions() const
+	{
+		return kind == Kind::CHEAT || !options.empty();
+	}
 };
 
 class CheatMenu : public PanelOverlay
@@ -100,6 +114,8 @@ public:
 	void paletteConfirm();
 	void paletteScroll(s32 wheel);
 	void paletteClick(v2s32 pos);
+	void paletteTab();
+	bool isPaletteSubmenuActive() const { return m_quick_palette_submenu; }
 
 	// Lua-accessible helpers for introspection / tests
 	int getQuickMenuEntries(lua_State *L);
@@ -137,6 +153,12 @@ private:
 	std::vector<QuickPaletteItem> m_quick_palette_items;
 	std::map<std::string, int> m_quick_menu_usage;
 
+	// Second-level palette submenu (TAB on an entry)
+	bool m_quick_palette_submenu = false;
+	std::string m_quick_palette_submenu_title;
+	std::vector<QuickPaletteItem> m_quick_palette_submenu_owned;
+	std::vector<QuickPaletteItem *> m_quick_palette_submenu_items;
+
 	// Last activated Lua entry (for the "repeat last" row)
 	bool m_quick_palette_last_valid = false;
 	QuickPaletteItem m_quick_palette_last;
@@ -156,6 +178,9 @@ private:
 	void runLastAction();
 	void saveQuickMenuUsage();
 	void loadQuickMenuUsage();
+	void openPaletteSubmenu(QuickPaletteItem &parent);
+	void closePaletteSubmenu();
+	void runPaletteSubmenuOption(const QuickPaletteItem &opt);
 
 	// Supermenu
 	int m_super_level = 0;

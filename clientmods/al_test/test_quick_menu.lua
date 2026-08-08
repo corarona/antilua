@@ -321,6 +321,56 @@ function test_quick_menu(T)
 		T.assert_eq(found.enabled, true, "Fly toggle enabled reflects setting")
 	end)
 
+	T.run("provider entries can carry second-level options", function()
+		core.register_quick_menu_provider(function()
+			return {
+				{
+					label = "[QM] submenu",
+					action = function() qm_hits = qm_hits + 1 end,
+					options = {
+						{ label = "[QM] opt A", action = function() qm_hits = qm_hits + 100 end },
+						{ label = "[QM] opt toggle", toggle = "airjump" },
+					},
+				},
+			}
+		end)
+		local entries = core.get_quick_menu_entries()
+		local found
+		for _, e in ipairs(entries) do
+			if e.label == "[QM] submenu" then found = e end
+		end
+		T.assert(found ~= nil, "entry with options present")
+		T.assert(type(found.options) == "table", "entry exposes options table")
+		T.assert_eq(#found.options, 2, "options count")
+		T.assert_eq(found.options[1].label, "[QM] opt A", "first option label")
+		T.assert_eq(found.options[1].kind, "action", "first option kind")
+		T.assert_eq(found.options[2].label, "[QM] opt toggle", "second option label")
+		T.assert_eq(found.options[2].kind, "toggle", "second option kind")
+	end)
+
+	T.run("cheat entries expose standard options", function()
+		local entries = core.get_quick_menu_entries()
+		local xray
+		for _, e in ipairs(entries) do
+			if e.label == "Xray" then xray = e end
+		end
+		T.assert(xray ~= nil, "Xray entry present")
+		T.assert(type(xray.options) == "table", "cheat entry exposes options")
+		local labels = {}
+		for _, o in ipairs(xray.options) do
+			labels[o.label] = true
+		end
+		T.assert(labels["Enable"] or labels["Disable"],
+			"cheat options include enable/disable")
+		T.assert(labels["Favorite"] or labels["Unfavorite"],
+			"cheat options include favorite")
+		local has_slot = false
+		for _, o in ipairs(xray.options) do
+			if o.label == "Slot..." or o.label:match("^Slot ") then has_slot = true end
+		end
+		T.assert(has_slot, "cheat options include slot picker")
+	end)
+
 	T.run("quick_menu_open passes search text to providers", function()
 		core.register_quick_menu_provider(function(search)
 			return { { label = "[QM] ctx:" .. (search or "") } }

@@ -517,6 +517,7 @@ exactly one activation behavior:
 | `keywords` | string or table | Extra search terms matched by the palette search box |
 | `description` | string | Short text shown dimmed on the right of the row |
 | `is_enabled` | function | Optional; return a boolean shown as the `[x]/[ ]` state |
+| `options` | table | Optional second-level submenu entries (see below) |
 
 Cheats are always listed first (alphabetical), followed by provider entries.
 When the palette search box has text, the most frequently used entries (tracked
@@ -525,6 +526,34 @@ the entry label **or** any of its `keywords`.
 
 Activating an entry closes the palette. Lua-provided actions are remembered so
 a **"↻ Repeat: …"** row at the top of the palette re-runs the last one.
+
+#### Second level (submenu options)
+
+An entry can carry multiple options. Press **TAB** on a selected entry (or
+click its trailing `▸`) to open a second level listing them; select one with
+`↑/↓` and run it with `↵` (TAB/ESC returns to the entry list).
+
+```lua
+core.register_quick_menu_provider(function()
+	return {
+		{
+			label = "Killaura",
+			toggle = "killaura",
+			options = {
+				{ label = "Toggle", toggle = "killaura" },
+				{ label = "Settings",
+					action = function() core.show_cheat_settings_form("killaura") end },
+			},
+		},
+	}
+end)
+```
+
+Each option is itself an entry table (`label` + exactly one activation behavior
+as above). Cheats listed in the palette always expose a standard option set
+even without a provider: **Enable/Disable**, **Settings** (when the cheat
+defines `cheat_settings` or `get_formspec`), **Favorite/Unfavorite**, and
+**Slot...**.
 
 Programmatic control:
 
@@ -598,6 +627,7 @@ auto-purged.
 ```lua
 -- Returns the current resolved list: { {label=..., kind=..., ...}, ... }
 -- kind is "cheat" (with `enabled`), "toggle" (with `toggle` list), or "action"
+-- Entries with a second level carry an `options` array ({label=..., kind=...}).
 local entries = core.get_quick_menu_entries()
 
 -- Run the action for entry at 1-based index (same order as get_quick_menu_entries)

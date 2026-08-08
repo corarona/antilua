@@ -613,12 +613,14 @@ void Game::run()
 
 		if (!m_is_paused) {
 			LocalPlayer *player = client->getEnv().getLocalPlayer();
-			bool roll_left = isKeyDown(KeyType::CAMERA_ROLL_LEFT);
-			bool roll_right = isKeyDown(KeyType::CAMERA_ROLL_RIGHT);
-			bool any_movement = isKeyDown(KeyType::FORWARD) || isKeyDown(KeyType::BACKWARD) ||
+			bool palette_active = m_cheat_menu && m_cheat_menu->isQuickPaletteActive();
+			bool roll_left = !palette_active && isKeyDown(KeyType::CAMERA_ROLL_LEFT);
+			bool roll_right = !palette_active && isKeyDown(KeyType::CAMERA_ROLL_RIGHT);
+			bool any_movement = !palette_active &&
+				(isKeyDown(KeyType::FORWARD) || isKeyDown(KeyType::BACKWARD) ||
 				isKeyDown(KeyType::LEFT) || isKeyDown(KeyType::RIGHT) ||
 				isKeyDown(KeyType::JUMP) || isKeyDown(KeyType::SNEAK) ||
-				isKeyDown(KeyType::AUX1) || isKeyDown(KeyType::DIG) || isKeyDown(KeyType::PLACE);
+				isKeyDown(KeyType::AUX1) || isKeyDown(KeyType::DIG) || isKeyDown(KeyType::PLACE));
 			m_camera_roll_controller->step(dtime, player, roll_left, roll_right, any_movement);
 		}
 
@@ -1479,6 +1481,39 @@ void Game::processUserInput(f32 dtime)
 
 void Game::processKeyInput()
 {
+	// While the Quick Access Palette is open, the game must not react to what
+	// the user types or clicks: only the palette's own keys (navigation, ~ to
+	// close, TAB for the second level) are processed and everything else —
+	// movement, camera, toggles, chat, pause — is swallowed.
+	if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive()) {
+		static bool palette_tab_was_down = false;
+		bool tab_down = input->isKeyDown(KeyType::TOGGLE_CHEAT_MENU);
+		if (tab_down && !palette_tab_was_down)
+			m_cheat_menu->paletteTab();
+		palette_tab_was_down = tab_down;
+
+		if (wasKeyPressed(KeyType::QUICK_SELECT_MENU)) {
+			m_cheat_menu->toggleQuickPalette();
+			if (!m_cheat_layer_active) {
+				if (auto *cur = device->getCursorControl())
+					cur->setVisible(false);
+			}
+		} else if (wasKeyDown(KeyType::SELECT_UP)) {
+			m_cheat_menu->paletteUp();
+		} else if (wasKeyDown(KeyType::SELECT_DOWN)) {
+			m_cheat_menu->paletteDown();
+		} else if (wasKeyPressed(KeyType::SELECT_CONFIRM)) {
+			m_cheat_menu->paletteConfirm();
+		}
+
+		// Consume typed characters and mouse-wheel scrolling for the palette.
+		m_cheat_menu->pollQuickPaletteInput();
+		s32 wheel = input->getMouseWheel();
+		if (wheel != 0)
+			m_cheat_menu->paletteScroll(wheel);
+		return;
+	}
+
 	if (wasKeyDown(KeyType::DROP)) {
 		dropSelectedItem(isKeyDown(KeyType::SNEAK));
 	} else if (wasKeyDown(KeyType::AUTOFORWARD)) {
@@ -1667,18 +1702,6 @@ void Game::processKeyInput()
 	// Poll cheat menu search bar input
 	if (m_cheat_layer_active && m_cheat_menu && m_cheat_menu->pollInput())
 		toggleCheatLayer();
-
-	// Poll quick palette input
-	if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
-		m_cheat_menu->pollQuickPaletteInput();
-
-	// Quick palette mouse wheel scrolling (consumed here so the hotbar doesn't
-	// also cycle while the palette is open — processItemSelection runs after)
-	if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive()) {
-		s32 wheel = input->getMouseWheel();
-		if (wheel != 0)
-			m_cheat_menu->paletteScroll(wheel);
-	}
 }
 
 void Game::processItemSelection(u16 *new_playeritem)
@@ -2169,7 +2192,8 @@ void Game::updateCameraDirection(CameraOrientation *cam, float dtime)
 	Since we have our own code to synthesize mouse events from touch events,
 	this results in duplicated input. To avoid that, we don't enable relative
 	mouse mode if we're in touchscreen mode. */
-	bool layer = m_cheat_layer_active || (AlBigMap::getActive() != nullptr);
+	bool layer = m_cheat_layer_active || (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
+			|| (AlBigMap::getActive() != nullptr);
 	if (cur_control)
 		cur_control->setRelativeMode(!g_touchcontrols && !isMenuActive() && !layer);
 
@@ -2299,17 +2323,21 @@ void Game::updatePlayerControl(const CameraOrientation &cam)
 
 	//TimeTaker tt("update player control", NULL, PRECISION_NANO);
 
+	// While the quick palette is open, the player must not move from typed
+	// keys or stray mouse buttons — the palette is a modal overlay.
+	const bool palette_active = m_cheat_menu && m_cheat_menu->isQuickPaletteActive();
+
 	PlayerControl control(
-		getAxisValue(KeyType::FORWARD),
-		getAxisValue(KeyType::BACKWARD),
-		getAxisValue(KeyType::LEFT),
-		getAxisValue(KeyType::RIGHT),
-		isKeyDown(KeyType::JUMP) || player->getAutojump(),
-		getTogglableKeyState(KeyType::AUX1,  m_cache_toggle_aux1_key, player->control.aux1),
-		getTogglableKeyState(KeyType::SNEAK, allow_sneak_toggle,      player->control.sneak),
-		isKeyDown(KeyType::ZOOM),
-		isKeyDown(KeyType::DIG) && !m_cheat_layer_active && !AlBigMap::getActive(),
-		isKeyDown(KeyType::PLACE) && !m_cheat_layer_active && !AlBigMap::getActive(),
+		palette_active ? 0.0f : getAxisValue(KeyType::FORWARD),
+		palette_active ? 0.0f : getAxisValue(KeyType::BACKWARD),
+		palette_active ? 0.0f : getAxisValue(KeyType::LEFT),
+		palette_active ? 0.0f : getAxisValue(KeyType::RIGHT),
+		!palette_active && (isKeyDown(KeyType::JUMP) || player->getAutojump()),
+		!palette_active && getTogglableKeyState(KeyType::AUX1, m_cache_toggle_aux1_key, player->control.aux1),
+		!palette_active && getTogglableKeyState(KeyType::SNEAK, allow_sneak_toggle, player->control.sneak),
+		!palette_active && isKeyDown(KeyType::ZOOM),
+		isKeyDown(KeyType::DIG) && !m_cheat_layer_active && !palette_active && !AlBigMap::getActive(),
+		isKeyDown(KeyType::PLACE) && !m_cheat_layer_active && !palette_active && !AlBigMap::getActive(),
 		cam.camera_pitch,
 		cam.camera_yaw
 	);
@@ -2979,9 +3007,11 @@ void Game::processPlayerInteraction(f32 dtime, bool show_hud)
 	if (pointed != runData.pointed_old)
 		infostream << "Pointing at " << pointed.dump() << std::endl;
 
-	// Suppress dig/place when cheat menu or big map is active — clicks go to
-	// menu panels / the map's pan & re-follow button instead.
-	if (m_cheat_layer_active || AlBigMap::getActive()) {
+	// Suppress dig/place when cheat menu, big map, or the quick palette is
+	// active — clicks go to menu panels / the map's pan & re-follow button /
+	// palette rows instead.
+	if (m_cheat_layer_active || (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
+			|| AlBigMap::getActive()) {
 		if (runData.digging) {
 			runData.digging = false;
 			client->interact(INTERACT_STOP_DIGGING, runData.pointed_old);
