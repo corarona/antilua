@@ -46,7 +46,7 @@ public:
 		bool show_minimal_debug = false;
 		bool show_basic_debug = false;
 		bool show_profiler_graph = false;
-		bool show_cheat_menu = true;
+		bool show_cheat_menu = false;
 	};
 
 	void init();
