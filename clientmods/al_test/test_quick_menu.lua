@@ -396,6 +396,46 @@ function test_quick_menu(T)
 			"parent surfaces when a submenu option label matches the query")
 	end)
 
+	T.run("launcher mode '/' offers a server-send entry", function()
+		local entries = core.get_quick_menu_entries("/tp 1 2 3")
+		local found = false
+		for _, e in ipairs(entries) do
+			if e.label == "/tp 1 2 3" then found = true end
+		end
+		T.assert(found, "server send entry present for '/tp 1 2 3'")
+	end)
+
+	T.run("launcher mode '.' lists client commands", function()
+		local entries = core.get_quick_menu_entries(".list")
+		local found = false
+		for _, e in ipairs(entries) do
+			if e.label and e.label:sub(1, 1) == "." then found = true break end
+		end
+		T.assert(found, "client command entries present for '.list'")
+	end)
+
+	T.run("recents section lists last activated entry first", function()
+		local idx
+		for i, e in ipairs(core.get_quick_menu_entries()) do
+			if e.label == "Xray" then idx = i break end
+		end
+		T.assert(idx ~= nil, "Xray present")
+		local orig = core.settings:get_bool("xray")
+		T.assert(core.activate_quick_menu_entry(idx) == true, "activate Xray")
+		core.settings:set_bool("xray", orig)
+		local entries = core.get_quick_menu_entries()
+		local header_pos, xray_pos
+		for i, e in ipairs(entries) do
+			if e.label == "Recent" then header_pos = i end
+			if e.label == "Xray" then xray_pos = i end
+		end
+		T.assert(header_pos ~= nil, "Recent header shown when search empty")
+		T.assert(xray_pos ~= nil, "Xray still present")
+		if header_pos then
+			T.assert_eq(xray_pos, header_pos + 1, "Xray is the first recent")
+		end
+	end)
+
 	T.run("quick_menu_open passes search text to providers", function()
 		core.register_quick_menu_provider(function(search)
 			return { { label = "[QM] ctx:" .. (search or "") } }

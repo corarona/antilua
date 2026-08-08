@@ -67,11 +67,25 @@ struct QuickPaletteItem
 	int option_kind = -1;
 	// Whether the cheat defines cheat_settings (queried during collection).
 	bool has_settings = false;
+	// Non-interactive section header row (e.g. "Recent").
+	bool is_section_header = false;
+	// Launcher-mode entry: activating sends the current palette text as a
+	// chat message ('.' local command or '/' server command).
+	bool command_send = false;
 
 	bool hasOptions() const
 	{
 		return kind == Kind::CHEAT || !options.empty();
 	}
+};
+
+// One level of the palette's second-level submenu stack. Owned cheat-standard
+// options live here; Lua options are pointed into the parent entry's options.
+struct PaletteSubmenuLevel
+{
+	std::string title;
+	std::vector<QuickPaletteItem> owned;
+	std::vector<QuickPaletteItem *> items;
 };
 
 class CheatMenu : public PanelOverlay
@@ -118,7 +132,9 @@ public:
 	void paletteScroll(s32 wheel);
 	void paletteClick(v2s32 pos);
 	void paletteTab();
-	bool isPaletteSubmenuActive() const { return m_quick_palette_submenu; }
+	void paletteRight();
+	void paletteLeft();
+	bool isPaletteSubmenuActive() const { return !m_quick_palette_submenu_stack.empty(); }
 
 	// Lua-accessible helpers for introspection / tests
 	int getQuickMenuEntries(lua_State *L);
@@ -155,12 +171,22 @@ private:
 	int m_quick_palette_scroll = 0;
 	std::vector<QuickPaletteItem> m_quick_palette_items;
 	std::map<std::string, int> m_quick_menu_usage;
+	// Debounced provider re-collection while typing.
+	bool m_quick_palette_collect_pending = false;
+	u64 m_quick_palette_collect_at = 0;
 
-	// Second-level palette submenu (TAB on an entry)
-	bool m_quick_palette_submenu = false;
-	std::string m_quick_palette_submenu_title;
-	std::vector<QuickPaletteItem> m_quick_palette_submenu_owned;
-	std::vector<QuickPaletteItem *> m_quick_palette_submenu_items;
+	// Second-level palette submenu (TAB on an entry); may nest.
+	std::vector<PaletteSubmenuLevel> m_quick_palette_submenu_stack;
+
+	// Palette Recents section (persisted, most-recent-first).
+	static constexpr size_t MAX_PALETTE_RECENT = 8;
+	std::vector<std::string> m_quick_palette_recent;
+	QuickPaletteItem m_palette_recent_header;
+
+	// Launcher mode: '.' lists client commands, '/' sends a server command.
+	std::vector<std::pair<std::string, std::string>> m_quick_palette_commands;
+	std::vector<QuickPaletteItem> m_quick_palette_command_items;
+	QuickPaletteItem m_palette_send_item;
 
 	// Last activated Lua entry (for the "repeat last" row)
 	bool m_quick_palette_last_valid = false;
@@ -182,8 +208,16 @@ private:
 	void saveQuickMenuUsage();
 	void loadQuickMenuUsage();
 	void openPaletteSubmenu(QuickPaletteItem &parent);
+	void openSelectedPaletteSubmenu();
 	void closePaletteSubmenu();
+	void goBackPaletteSubmenu();
 	void runPaletteSubmenuOption(const QuickPaletteItem &opt);
+	void bumpPaletteRecent(const std::string &key);
+	void loadPaletteRecent();
+	void savePaletteRecent();
+	QuickPaletteItem *findPaletteItemByKey(const std::string &key);
+	void buildClientCommandCache();
+	void buildLauncherEntries(std::vector<QuickPaletteItem *> &out);
 
 	// Supermenu
 	int m_super_level = 0;

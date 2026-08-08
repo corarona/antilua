@@ -332,6 +332,10 @@ bool MyEventReceiver::OnEvent(const SEvent &event)
 			} else if (event.KeyInput.Key == KEY_ESCAPE) {
 				cheat_char = 27;
 				cheat_char_avail = true;
+			} else if (event.KeyInput.Key == KEY_KEY_V && event.KeyInput.Control) {
+				// Ctrl+V: paste from the clipboard (sentinel 22)
+				cheat_char = 22;
+				cheat_char_avail = true;
 			}
 		}
 

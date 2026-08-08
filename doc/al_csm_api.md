@@ -520,12 +520,16 @@ exactly one activation behavior:
 | `options` | table | Optional second-level submenu entries (see below) |
 
 Cheats are always listed first (alphabetical), followed by provider entries.
-When the palette search box has text, the most frequently used entries (tracked
-across sessions, keyed by label/setting) are sorted to the top. Search matches
-the entry label **or** any of its `keywords`.
+When the palette search box has text, results are ranked by match quality
+(substring > subsequence > keyword > submenu option label) and then by how
+often they were used, and the matched characters are highlighted. Search is
+**fuzzy**: e.g. `xry` finds **Xray**, `nfr` finds **NoFallDamage**. A query
+that only matches a second-level option label still surfaces the parent entry.
 
 Activating an entry closes the palette. Lua-provided actions are remembered so
-a **"↻ Repeat: …"** row at the top of the palette re-runs the last one.
+a **"↻ Repeat: …"** row at the top of the palette re-runs the last one. When
+the search box is empty, a **Recent** section (last toggled cheats/actions,
+persisted across sessions) is shown first.
 
 #### Second level (submenu options)
 
@@ -553,7 +557,23 @@ Each option is itself an entry table (`label` + exactly one activation behavior
 as above). Cheats listed in the palette always expose a standard option set
 even without a provider: **Enable/Disable**, **Settings** (when the cheat
 defines `cheat_settings` or `get_formspec`), **Favorite/Unfavorite**, and
-**Slot...**.
+**Slot...**. Options may nest — pressing TAB/`→` again descends another level;
+`←`/ESC walks back up (the header shows the breadcrumb path).
+
+#### Launcher modes and shortcuts
+
+The palette doubles as a command launcher:
+
+- Type **`.`** followed by a client chat command name (e.g. `.list`) to list
+  matching commands from `core.registered_chatcommands`; `↵` runs it. Params
+  typed after a space are passed to the command.
+- Type **`/`** to send a server chat command (e.g. `/tp 1 2 3`); the single
+  **Send** entry issues it.
+- **Ctrl+V** pastes the clipboard into the search field.
+- With an empty search, pressing a digit **1-9** toggles the cheat bound to
+  that quick slot, and slot-bound cheats show a `[N]` badge on their row.
+- `↑/↓` navigate, `←/→` walk the submenu stack, `↵` runs, TAB opens/backs out
+  of a submenu, `~` closes.
 
 Programmatic control:
 

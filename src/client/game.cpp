@@ -1502,6 +1502,10 @@ void Game::processKeyInput()
 			m_cheat_menu->paletteUp();
 		} else if (wasKeyDown(KeyType::SELECT_DOWN)) {
 			m_cheat_menu->paletteDown();
+		} else if (wasKeyDown(KeyType::SELECT_RIGHT)) {
+			m_cheat_menu->paletteRight();
+		} else if (wasKeyDown(KeyType::SELECT_LEFT)) {
+			m_cheat_menu->paletteLeft();
 		} else if (wasKeyPressed(KeyType::SELECT_CONFIRM)) {
 			m_cheat_menu->paletteConfirm();
 		}
