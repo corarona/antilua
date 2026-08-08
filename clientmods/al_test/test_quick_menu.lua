@@ -371,6 +371,31 @@ function test_quick_menu(T)
 		T.assert(has_slot, "cheat options include slot picker")
 	end)
 
+	T.run("palette search matches fuzzy subsequences", function()
+		local entries = core.get_quick_menu_entries("xry")
+		local found = false
+		for _, e in ipairs(entries) do
+			if e.label == "Xray" then found = true end
+		end
+		T.assert(found, "fuzzy subsequence 'xry' finds Xray")
+		local entries2 = core.get_quick_menu_entries("fullb")
+		local found2 = false
+		for _, e in ipairs(entries2) do
+			if e.label == "Fullbright" then found2 = true end
+		end
+		T.assert(found2, "substring 'fullb' finds Fullbright")
+	end)
+
+	T.run("palette search matches second-level option labels", function()
+		local entries = core.get_quick_menu_entries("[QM] opt A")
+		local found = false
+		for _, e in ipairs(entries) do
+			if e.label == "[QM] submenu" then found = true end
+		end
+		T.assert(found,
+			"parent surfaces when a submenu option label matches the query")
+	end)
+
 	T.run("quick_menu_open passes search text to providers", function()
 		core.register_quick_menu_provider(function(search)
 			return { { label = "[QM] ctx:" .. (search or "") } }

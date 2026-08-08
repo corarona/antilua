@@ -96,6 +96,9 @@ public:
 	void selectConfirm();
 
 	void drawSearchBar(video::IVideoDriver *driver);
+	void drawTextHighlighted(const std::string &text, s32 x, s32 y,
+		const video::SColor &color, const video::SColor &hl_color,
+		const std::vector<size_t> &positions);
 	bool pollInput();
 	bool hasSearchText() const { return !m_search_text.empty(); }
 	const std::string &getSearchText() const { return m_search_text; }

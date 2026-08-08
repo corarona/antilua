@@ -69,6 +69,50 @@ static bool matchesSearch(const std::string &name, const std::string &search)
 	return n.find(s) != std::string::npos;
 }
 
+// Fuzzy match used by the quick palette: returns 2 for a substring hit, 1 for
+// a subsequence hit, or 0 for no match. When matched, positions receives the
+// (wide) character indices of name that the search consumed — contiguous for
+// substring, scattered for subsequence — so the label can be highlighted.
+static int fuzzyMatchWide(const std::wstring &name, const std::wstring &search,
+		std::vector<size_t> &positions)
+{
+	positions.clear();
+	if (search.empty())
+		return 0;
+	std::wstring n, s;
+	n.reserve(name.size());
+	s.reserve(search.size());
+	for (wchar_t c : name)
+		n += (wchar_t)::towlower(c);
+	for (wchar_t c : search)
+		s += (wchar_t)::towlower(c);
+
+	size_t pos = n.find(s);
+	if (pos != std::string::npos) {
+		for (size_t i = 0; i < s.size(); i++)
+			positions.push_back(pos + i);
+		return 2;
+	}
+	size_t si = 0;
+	for (size_t ni = 0; ni < n.size() && si < s.size(); ni++) {
+		if (n[ni] == s[si]) {
+			positions.push_back(ni);
+			si++;
+		}
+	}
+	if (si == s.size())
+		return 1;
+	positions.clear();
+	return 0;
+}
+
+// Byte-string convenience wrapper: only the match rank is needed for filtering.
+static int fuzzyMatchRank(const std::string &name, const std::string &search)
+{
+	std::vector<size_t> pos;
+	return fuzzyMatchWide(utf8_to_wide(name), utf8_to_wide(search), pos);
+}
+
 static video::SColor parseHexColor(const std::string &hex, u32 alpha = 255)
 {
 	if (hex.empty())
@@ -1835,27 +1879,61 @@ void CheatMenu::getFilteredPaletteItems(std::vector<QuickPaletteItem *> &out)
 				m_quick_palette_submenu_items.end());
 		return;
 	}
+
+	// Match quality ranks results: substring > subsequence > keyword >
+	// second-level option label, so fuzzy hits don't bury exact ones.
+	std::vector<std::pair<QuickPaletteItem *, int>> ranked;
+	const std::string &text = m_quick_palette_text;
 	for (auto &item : m_quick_palette_items) {
-		if (!matchesSearch(quickPaletteItemLabel(item), m_quick_palette_text)) {
-			bool keyword_hit = false;
-			for (const auto &kw : item.keywords)
-				if (matchesSearch(kw, m_quick_palette_text)) {
-					keyword_hit = true;
+		if (text.empty()) {
+			ranked.emplace_back(&item, 0);
+			continue;
+		}
+		std::vector<size_t> pos;
+		int best = fuzzyMatchRank(quickPaletteItemLabel(item), text);
+		if (best == 0) {
+			for (const auto &kw : item.keywords) {
+				int r = fuzzyMatchRank(kw, text);
+				if (r > best)
+					best = r;
+			}
+		}
+		if (best == 0) {
+			// The query matched inside the entry's second-level options.
+			for (const auto &opt : item.options) {
+				if (fuzzyMatchRank(opt.label, text) > 0) {
+					best = 1;
 					break;
 				}
-			if (!keyword_hit)
-				continue;
+				for (const auto &kw : opt.keywords)
+					if (fuzzyMatchRank(kw, text) > 0) {
+						best = 1;
+						break;
+					}
+			}
 		}
-		out.push_back(&item);
+		if (best == 0)
+			continue;
+		ranked.emplace_back(&item, best);
 	}
-	// When searching, most commonly used items float to the top
-	if (!m_quick_palette_text.empty()) {
-		std::stable_sort(out.begin(), out.end(),
-				[this](const QuickPaletteItem *a, const QuickPaletteItem *b) {
-					return m_quick_menu_usage[quickPaletteItemLabel(*a)] >
-							m_quick_menu_usage[quickPaletteItemLabel(*b)];
-				});
+
+	out.reserve(ranked.size());
+	if (text.empty()) {
+		for (auto &p : ranked)
+			out.push_back(p.first);
+		return;
 	}
+	// When searching, higher-quality matches first, then most-used.
+	std::stable_sort(ranked.begin(), ranked.end(),
+		[this](const std::pair<QuickPaletteItem *, int> &a,
+			const std::pair<QuickPaletteItem *, int> &b) {
+			if (a.second != b.second)
+				return a.second > b.second;
+			return m_quick_menu_usage[quickPaletteItemLabel(*a.first)] >
+					m_quick_menu_usage[quickPaletteItemLabel(*b.first)];
+		});
+	for (auto &p : ranked)
+		out.push_back(p.first);
 }
 
 void CheatMenu::bumpQuickMenuUsage(const std::string &key)
@@ -1919,6 +1997,40 @@ void CheatMenu::runQuickPaletteAction(const QuickPaletteItem &item)
 	}
 }
 
+void CheatMenu::drawTextHighlighted(const std::string &text, s32 x, s32 y,
+	const video::SColor &color, const video::SColor &hl_color,
+	const std::vector<size_t> &positions)
+{
+	if (!m_font)
+		return;
+	std::wstring wtext = utf8_to_wide(text);
+	std::vector<bool> hl(wtext.size(), false);
+	for (size_t p : positions)
+		if (p < hl.size())
+			hl[p] = true;
+
+	s32 cx = x;
+	bool run_hl = false;
+	std::wstring run;
+	auto flush = [&]() {
+		if (run.empty())
+			return;
+		s32 fw = m_font->getDimension(run.c_str()).Width;
+		core::rect<s32> r(cx, y, cx + fw,
+			y + m_font->getDimension(L"M").Height);
+		m_font->draw(run.c_str(), r, run_hl ? hl_color : color, false, false);
+		cx += fw;
+		run.clear();
+	};
+	for (size_t i = 0; i < wtext.size(); i++) {
+		if (!run.empty() && hl[i] != run_hl)
+			flush();
+		run_hl = hl[i];
+		run += wtext[i];
+	}
+	flush();
+}
+
 void CheatMenu::drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
 {
 	if (!m_quick_palette_active)
@@ -1980,26 +2092,45 @@ void CheatMenu::drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
 			core::rect<s32>(px + 1, list_y, px + pw - 1, list_y + m_entry_height));
 
 		// Enabled-state prefix
-		std::string txt;
+		std::string prefix;
 		if (item->kind == QuickPaletteItem::Kind::CHEAT) {
-			txt = item->cheat->is_enabled() ? "[x] " : "[ ] ";
+			prefix = item->cheat->is_enabled() ? "[x] " : "[ ] ";
 		} else if (!item->toggle_settings.empty()) {
 			bool enabled = false;
 			try {
 				enabled = g_settings->getBool(item->toggle_settings[0]);
 			} catch (SettingNotFoundException &) {
 			}
-			txt = enabled ? "[x] " : "[ ] ";
+			prefix = enabled ? "[x] " : "[ ] ";
 		} else if (item->has_enabled_state) {
-			txt = item->enabled_state ? "[x] " : "[ ] ";
+			prefix = item->enabled_state ? "[x] " : "[ ] ";
 		} else {
-			txt = "\u25B8 ";
+			prefix = "\u25B8 ";
 		}
-		txt += item->label;
+		std::string txt = prefix + item->label;
 
 		video::SColor text_color = selected ? m_selected_font_color : m_font_color;
-		drawText(txt, px + 10, list_y + (m_entry_height - m_fontsize.Y) / 2,
-			text_color);
+		s32 label_x = px + 10;
+		if (!prefix.empty() && m_font)
+			label_x += (s32)m_font->getDimension(utf8_to_wide(prefix).c_str()).Width;
+		if (m_font)
+			drawText(prefix, px + 10, list_y + (m_entry_height - m_fontsize.Y) / 2,
+				text_color);
+		// Highlight the matched part of the label while searching.
+		if (!m_quick_palette_text.empty() && !m_quick_palette_submenu) {
+			std::vector<size_t> pos;
+			if (fuzzyMatchWide(utf8_to_wide(item->label),
+					utf8_to_wide(m_quick_palette_text), pos) > 0)
+				drawTextHighlighted(item->label, label_x,
+					list_y + (m_entry_height - m_fontsize.Y) / 2, text_color,
+					video::SColor(255, 255, 220, 80), pos);
+			else
+				drawText(item->label, label_x,
+					list_y + (m_entry_height - m_fontsize.Y) / 2, text_color);
+		} else {
+			drawText(item->label, label_x,
+				list_y + (m_entry_height - m_fontsize.Y) / 2, text_color);
+		}
 
 		// Dimmed category/description suffix, right-aligned — truncated with an
 		// ellipsis if it would overlap the label
@@ -2481,9 +2612,23 @@ int CheatMenu::getQuickMenuEntries(lua_State *L)
 {
 	collectQuickPaletteItems();
 
+	// Optional search argument: return only the entries the palette's fuzzy
+	// search would show for that query (for introspection/tests).
+	std::string saved_text = m_quick_palette_text;
+	std::vector<QuickPaletteItem *> view;
+	if (!lua_isnoneornil(L, 1)) {
+		m_quick_palette_text = luaL_checkstring(L, 1);
+		getFilteredPaletteItems(view);
+	} else {
+		view.reserve(m_quick_palette_items.size());
+		for (auto &item : m_quick_palette_items)
+			view.push_back(&item);
+	}
+
 	lua_newtable(L);
 	int idx = 1;
-	for (auto &item : m_quick_palette_items) {
+	for (QuickPaletteItem *p : view) {
+		auto &item = *p;
 		lua_newtable(L);
 		lua_pushstring(L, item.label.c_str());
 		lua_setfield(L, -2, "label");
@@ -2583,6 +2728,7 @@ int CheatMenu::getQuickMenuEntries(lua_State *L)
 		}
 		lua_rawseti(L, -2, idx++);
 	}
+	m_quick_palette_text = saved_text;
 	return 1;
 }
 
