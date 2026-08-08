@@ -84,4 +84,9 @@ void populateSideBySidePipeline(RenderPipeline *pipeline, Client *client, bool h
 		step->setRenderSource(buffer);
 		step->setRenderTarget(screen);
 	}
+
+	// GUI (formspecs, chat) + cheat menu drawn once on top of the composited
+	// stereo frame (not per-eye). The big map overlay isn't part of this
+	// pipeline, so this is the last step like in the plain pipeline.
+	pipeline->addStep<DrawGUI>();
 }

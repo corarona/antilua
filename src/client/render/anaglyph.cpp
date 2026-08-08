@@ -80,4 +80,6 @@ void populateAnaglyphPipeline(RenderPipeline *pipeline, Client *client)
 	pipeline->addStep<AlSceneCapture>();
 	pipeline->addStep<DrawHUD>();
 	pipeline->addStep<AlBigMapOverlay>();
+	// GUI (formspecs, chat) + cheat menu above the big map overlay.
+	pipeline->addStep<DrawGUI>();
 }

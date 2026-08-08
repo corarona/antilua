@@ -235,11 +235,14 @@ void DrawHUD::run(PipelineContext &context)
 	if (context.show_hud) {
 		context.client->getCamera()->drawNametags();
 	}
+}
 
-	// Draw GUI first (formspecs, chat — under the cheat layer)
+void DrawGUI::run(PipelineContext &context)
+{
+	// Draw GUI (formspecs, chat) above the big map overlay, then the cheat
+	// menu overlay + panels on top of everything.
 	context.device->getGUIEnvironment()->drawAll();
 
-	// Draw cheat menu overlay + panels on top of everything
 	if (g_cheat_menu) {
 		video::IVideoDriver *driver = context.device->getVideoDriver();
 		v2s32 mouse_pos = context.device->getCursorControl()->getPosition();
@@ -475,7 +478,11 @@ void populatePlainPipeline(RenderPipeline *pipeline, Client *client)
 
 	pipeline->addStep<DrawHUD>();
 
+	// The big map overlay draws fullscreen above the HUD; the GUI (formspecs,
+	// chat) and cheat menu are drawn after it so dialogs stay visible on top.
 	pipeline->addStep<AlBigMapOverlay>();
+
+	pipeline->addStep<DrawGUI>();
 }
 
 video::ECOLOR_FORMAT selectColorFormat(video::IVideoDriver *driver)

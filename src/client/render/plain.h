@@ -52,6 +52,21 @@ public:
 	virtual void run(PipelineContext &context) override;
 };
 
+/**
+ * Draws the GUI environment (formspecs, chat) and the cheat menu overlays on
+ * top of everything, including the big map overlay. Split out of DrawHUD so
+ * formspecs stay visible above the fullscreen big map.
+ */
+class DrawGUI : public RenderStep
+{
+public:
+	virtual void setRenderSource(RenderSource *) override {}
+	virtual void setRenderTarget(RenderTarget *) override {}
+
+	virtual void reset(PipelineContext &context) override {}
+	virtual void run(PipelineContext &context) override;
+};
+
 class MapPostFxStep : public TrivialRenderStep
 {
 public:
