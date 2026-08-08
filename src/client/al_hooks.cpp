@@ -331,6 +331,8 @@ void on_pre_step(Client *client, float dtime)
 				client->getScript()->on_bigmap_open();
 			else if (result == 2)
 				client->getScript()->on_bigmap_close();
+			if (bigmap->hasPendingClick())
+				client->getScript()->on_bigmap_click(bigmap->takePendingClick());
 		}
 	}
 

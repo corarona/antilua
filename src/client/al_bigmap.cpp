@@ -12,6 +12,7 @@
 #include "client/texturesource.h"
 #include "client/fontengine.h"
 #include "client/texturepaths.h"
+#include "gui/mainmenumanager.h"
 #include "database/database-sqlite3.h"
 #include "database/database.h"
 #include "nodedef.h"
@@ -439,6 +440,18 @@ int AlBigMap::step(float dtime)
 	if (!m_open)
 		return result;
 
+	// While a modal menu (formspec, chat, pause) is open on top of the map,
+	// route input to it: don't pan, zoom, click or add waypoints underneath.
+	if (isMenuActive()) {
+		m_left_down = false;
+		m_click_candidate = false;
+		m_press_in_button = false;
+		m_right_down = false;
+		if (cur)
+			m_last_mouse = cur->getPosition();
+		return result;
+	}
+
 	s32 wheel = receiver->getMouseWheel();
 	if (wheel != 0) {
 		if (m_open_time < 6.0f)
@@ -496,6 +509,23 @@ int AlBigMap::step(float dtime)
 		m_last_mouse = mp;
 	}
 
+	// Right-button click: create a POI waypoint at the clicked map position.
+	// Fired on release so a click is deliberate. The position is stored as a
+	// pending click and consumed by the Lua bridge (on_bigmap_click).
+	bool placing = receiver->IsKeyDown(KeyType::PLACE);
+	if (placing && !m_right_down) {
+		m_right_down = true;
+	} else if (!placing && m_right_down) {
+		m_right_down = false;
+		if (m_open_time < 6.0f)
+			m_open_time = 6.0f; // dismiss the first-open hints on interaction
+		if (cur) {
+			m_pending_click = screenToNode(cur->getPosition(),
+					renderTargetSize());
+			m_pending_click_set = true;
+		}
+	}
+
 	return result;
 }
 
@@ -523,6 +553,8 @@ void AlBigMap::close()
 	if (s_active == this)
 		s_active = nullptr;
 	m_left_down = false;
+	m_right_down = false;
+	m_pending_click_set = false;
 	m_click_candidate = false;
 	m_press_in_button = false;
 	auto *device = RenderingEngine::get_raw_device();
@@ -651,6 +683,54 @@ bool AlBigMap::getPixel(v2s32 node_pos, std::string *name, u8 *param2,
 	if (air_count)
 		*air_count = best->air_count;
 	return true;
+}
+
+s32 AlBigMap::getGroundHeight(v2s32 node_pos, s32 fallback) const
+{
+	// Same column scan as getPixel: find the tallest non-air pixel.
+	v3s16 bp = nodeToBlock(node_pos.X, node_pos.Y);
+	s32 node_min_x = bp.X * MAP_BLOCKSIZE;
+	s32 node_min_z = bp.Z * MAP_BLOCKSIZE;
+
+	int best_height = -32768;
+	for (const auto &kv : m_blocks) {
+		if (kv.first.X != bp.X || kv.first.Z != bp.Z)
+			continue;
+		s32 ix = node_pos.X - node_min_x;
+		s32 iz = node_pos.Y - node_min_z;
+		if (ix < 0 || iz < 0 || ix >= MAP_BLOCKSIZE || iz >= MAP_BLOCKSIZE)
+			continue;
+		const AlBigMapPixel &p = kv.second->pixels[iz * MAP_BLOCKSIZE + ix];
+		if (p.param0 == CONTENT_AIR)
+			continue;
+		s32 h_abs = kv.first.Y * MAP_BLOCKSIZE + p.height;
+		if (h_abs > best_height)
+			best_height = h_abs;
+	}
+
+	return best_height > -32768 ? best_height : fallback;
+}
+
+v3s32 AlBigMap::screenToNode(v2s32 screen_pos, v2u32 target_size) const
+{
+	const f32 W = (f32)target_size.X;
+	const f32 H = (f32)target_size.Y;
+	if (W <= 0 || H <= 0)
+		return v3s32(m_center.X, 0, m_center.Y);
+
+	// Inverse of the rasterize/player-marker mapping (+z north is up on
+	// screen): node_x = center.X + (sx - W/2)/zoom,
+	//               node_z = center.Y - (sz - H/2)/zoom.
+	s32 nx = (s32)std::floor((f32)m_center.X
+			+ ((f32)screen_pos.X - W / 2.0f) / m_zoom);
+	s32 nz = (s32)std::floor((f32)m_center.Y
+			- ((f32)screen_pos.Y - H / 2.0f) / m_zoom);
+
+	s32 fallback_y = 0;
+	LocalPlayer *player = m_client->getEnv().getLocalPlayer();
+	if (player)
+		fallback_y = (s32)std::floor(player->getPosition().Y / BS);
+	return v3s32(nx, getGroundHeight(v2s32(nx, nz), fallback_y), nz);
 }
 
 bool AlBigMap::setPixel(v2s32 node_pos, const std::string &name,
@@ -1495,7 +1575,7 @@ void AlBigMap::drawStatusOverlay(video::IVideoDriver *driver, v2u32 target_size)
 	if (m_open_time < 6.0f) {
 		char hbuf[160];
 		snprintf(hbuf, sizeof(hbuf),
-				"Drag: pan   Scroll: zoom   Click FOLLOW: recenter   M/ESC: close");
+				"Drag: pan   Scroll: zoom   RMB: add waypoint   FOLLOW: recenter   M/ESC: close");
 		core::stringw htext = utf8_to_wide(hbuf);
 		core::dimension2du hdim = font->getDimension(htext.c_str());
 		s32 hw = (s32)hdim.Width + 28;

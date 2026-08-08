@@ -79,6 +79,8 @@ core.registered_on_sending_raw_packet, core.register_on_sending_raw_packet = mak
 -- Big map (per-server minimap persistence)
 core.registered_on_bigmap_open, core.register_on_bigmap_open = make_al_registration()
 core.registered_on_bigmap_close, core.register_on_bigmap_close = make_al_registration()
+-- Right-click on the big map (waypoint placement), arg: {x,y,z} node pos.
+core.registered_on_bigmap_click, core.register_on_bigmap_click = make_al_registration()
 
 -- Antilua data tables
 core.registered_nodes = {}

@@ -39,6 +39,10 @@ function test_bigmap_api(T)
 			"register_on_bigmap_open should be a function")
 		T.assert(type(core.register_on_bigmap_close) == "function",
 			"register_on_bigmap_close should be a function")
+		T.assert(type(core.register_on_bigmap_click) == "function",
+			"register_on_bigmap_click should be a function")
+		T.assert(type(core.registered_on_bigmap_click) == "table",
+			"registered_on_bigmap_click should be a table")
 	end)
 
 	T.run("big map view control (colon and dot syntax)", function()

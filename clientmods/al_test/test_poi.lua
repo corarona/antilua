@@ -322,4 +322,42 @@ function test_poi(T)
 		core.al_bigmap:clear_images()
 		poi.delete_waypoint(name)
 	end)
+
+	-- Right-clicking the big map fires core.register_on_bigmap_click; the poi
+	-- mod answers by opening a name-prompt formspec and storing the waypoint
+	-- at the clicked node on confirm. Simulate the full flow headlessly.
+	T.defer("big map right-click adds a waypoint at the clicked node", function()
+		if not (core.register_on_bigmap_click
+				and type(core.registered_on_bigmap_click) == "table"
+				and #core.registered_on_bigmap_click > 0) then
+			core.log("info", "[AL_TEST] skipping big-map click: no handler registered")
+			return
+		end
+		reset_state()
+
+		local pos = { x = 4242, y = 7, z = -1313 }
+		-- C++ on_bigmap_click fires every registered handler with {x,y,z}.
+		core.registered_on_bigmap_click[1](pos)
+
+		-- The handler opened the "poi-bigmap-add" formspec; submit it as a user
+		-- would after typing a name and clicking Add.
+		for _, handler in ipairs(core.registered_on_formspec_input or {}) do
+			handler("poi-bigmap-add", {
+				new_bigmap_wp_name = "poi_test_bigmap",
+				bigmap_add = "Add",
+			})
+		end
+
+		local stored = poi.get_waypoint("poi_test_bigmap")
+		T.assert(stored ~= nil, "big map click should create a waypoint")
+		T.assert_eq(stored.x, pos.x, "stored x should match the clicked node")
+		T.assert_eq(stored.y, pos.y, "stored y should match the clicked node")
+		T.assert_eq(stored.z, pos.z, "stored z should match the clicked node")
+		T.assert(ws.hud_waypoints[WP_DOT .. "poi_test_bigmap"] ~= nil,
+			"created waypoint should be displayed as a HUD waypoint")
+
+		ws.hud_remove_waypoint(WP_DOT .. "poi_test_bigmap")
+		poi.delete_waypoint("poi_test_bigmap")
+		core.close_formspec("poi-bigmap-add")
+	end)
 end

@@ -643,6 +643,14 @@ first-open control hints (dismissed on interaction). The unexplored void is a
 translucent scrim so the world stays dimly visible; the player position is
 drawn as a rotating arrow (minimap `player_marker.png`) and minimap Lua
 markers (e.g. POI waypoints) are shown as colored dots with their label.
+Right-clicking (RMB) the map fires `on_bigmap_click` at the clicked node
+(ground Y from the saved terrain, else the player's Y); the `poi` clientmod
+answers with a name-prompt formspec that stores and displays a waypoint.
+The overlay renders below the GUI: formspecs, chat and the cheat menu are
+drawn by the `DrawGUI` pipeline step after `AlBigMapOverlay` (in `plain.cpp`
+and `anaglyph.cpp`), so dialogs stay visible on top of the map. While any
+modal menu is open, the map's own pan/zoom/click input is suspended
+(`isMenuActive()` guard in `step()`).
 
 **Lua API (`core.al_bigmap`)** — dot or colon syntax both work:
 - View: `open() close() toggle() is_open()`, `set_center/get_center`,
@@ -657,7 +665,9 @@ markers (e.g. POI waypoints) are shown as colored dots with their label.
   `<savedir>/images/` (registered as a texture search dir on connect).
   `clear_images()` deletes all rendered section PNGs (they otherwise
   accumulate).
-- Callbacks: `core.register_on_bigmap_open/close(fn)` (fired on key-toggle)
+- Callbacks: `core.register_on_bigmap_open/close(fn)` (fired on key-toggle),
+  `core.register_on_bigmap_click(fn)` (fired on RMB click with the clicked
+  node `{x,y,z}`, Y from terrain or player height)
 - `/bigmap` chat command toggles the overlay.
 
 Requires `enable_minimap=true` (default) since that gates minimap block
@@ -667,16 +677,18 @@ generation.
 
 | File | Change |
 |------|--------|
-| `src/client/al_bigmap.h/cpp` | `AlBigMap`: capture, per-server persistence, nodedef remap, tiles, rasterize, input |
+| `src/client/al_bigmap.h/cpp` | `AlBigMap`: capture, per-server persistence, nodedef remap, tiles, rasterize, input, RMB click → node (waypoint placement) |
 | `src/client/render/al_bigmap_overlay.h/cpp` | Fullscreen overlay render step (added in `plain.cpp`/`anaglyph.cpp`) |
-| `src/client/al_hooks.h/cpp` | `on_minimap_block`, bigmap wiring in `on_connect`/`on_disconnect`/`on_pre_step` |
-| `src/script/cpp_api/al/al_callbacks.h/cpp` | `init_bigmap_api()` → `core.al_bigmap`, `on_bigmap_open/close` |
+| `src/client/render/plain.h/cpp` + `anaglyph.cpp` + `sidebyside.cpp` | `DrawGUI` step (split from `DrawHUD`) so formspecs/chat/cheat menu render above the big map overlay |
+| `src/client/al_hooks.h/cpp` | `on_minimap_block`, bigmap wiring in `on_connect`/`on_disconnect`/`on_pre_step` (fires `on_bigmap_click`) |
+| `src/script/cpp_api/al/al_callbacks.h/cpp` | `init_bigmap_api()` → `core.al_bigmap`, `on_bigmap_open/close/click` |
 | `src/client/client.h/cpp` | `m_al_bigmap` member, block-capture hook at `client.cpp` block delivery |
 | `src/client/game.cpp` | `client->setWorldPath(server->getWorldPath())` for singleplayer storage |
 | `src/client/keys.h` + `inputhandler.cpp` | `KeyType::BIG_MAP` ← `keymap_big_map` |
 | `builtin/settingtypes_al.txt` | `enable_minimap_saving`, `minimap_save_max_blocks`, `keymap_big_map` |
-| `builtin/client/register_al.lua` + `cheats.lua` + `chatcommands_al.lua` | callbacks, cheat entry, `/bigmap` |
-| `clientmods/al_test/test_bigmap.lua` | Integration tests |
+| `builtin/client/register_al.lua` + `cheats.lua` + `chatcommands_al.lua` | callbacks (incl. `register_on_bigmap_click`), cheat entry, `/bigmap` |
+| `clientmods/ANTILUA/poi/init.lua` | name-prompt formspec on big-map right-click |
+| `clientmods/al_test/test_bigmap.lua` + `test_poi.lua` | Integration tests |
 
 ## Sky API
 

@@ -117,6 +117,9 @@ public:
 	// Big map (per-server minimap persistence) notifications
 	void on_bigmap_open();
 	void on_bigmap_close();
+	// Right-click on the big map: the clicked node position (waypoint
+	// placement). `pos.y` is the terrain ground height, or the player's Y.
+	void on_bigmap_click(v3s32 pos);
 
 protected:
 	void init_raw_packet_api();

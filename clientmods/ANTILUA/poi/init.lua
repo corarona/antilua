@@ -778,6 +778,48 @@ local function show_add_here_fs()
 	return core.show_formspec("poi-csm", sb:get())
 end
 
+--
+-- Big map: right-click to add a waypoint at the clicked position
+--
+
+local pending_bigmap_pos
+
+local function show_bigmap_add_fs(pos)
+	local af = core.al_formspec
+	local sb = af.begin("size[6,3]")
+	sb:add(
+		af.label(0.35, 0.2, "Add waypoint at " .. pos.x .. ", " .. pos.y .. ", " .. pos.z),
+		af.field(0.3, 1.3, 6, 1, "new_bigmap_wp_name", "Name", default_wp_name(pos)),
+		af.button_exit(0, 2, 3, 1, "bigmap_cancel", "Cancel"),
+		af.button_exit(3, 2, 3, 1, "bigmap_add", "Add")
+	)
+	return core.show_formspec("poi-bigmap-add", sb:get())
+end
+
+core.register_on_bigmap_click(function(pos)
+	if not (pos and pos.x and pos.y and pos.z) then return end
+	pending_bigmap_pos = pos
+	show_bigmap_add_fs(pos)
+end)
+
+core.register_on_formspec_input(function(formname, fields)
+	if formname ~= "poi-bigmap-add" then return end
+	local pos = pending_bigmap_pos
+	pending_bigmap_pos = nil
+	if fields.bigmap_add and pos then
+		local wname = fields.new_bigmap_wp_name or ""
+		if #wname < 1 then
+			ws.notify("Waypoint name cannot be empty.", ws.NOTIFY_ERROR)
+		elseif poi.set_waypoint(pos, wname) then
+			poi.display(pos, wname)
+			ws.notify("Waypoint added.", ws.NOTIFY_SUCCESS)
+		else
+			ws.notify("Error adding waypoint!", ws.NOTIFY_ERROR)
+		end
+	end
+	return true
+end)
+
 local function show_delete_fs(name)
 	local af = core.al_formspec
 	return core.show_formspec("poi-csm", af.confirm_dialog(

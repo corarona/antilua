@@ -84,6 +84,15 @@ public:
 	void close();
 	void toggle() { if (m_open) close(); else open(); }
 
+	// Right-click waypoint placement: a pending click is set when the user
+	// releases RMB on the map. Consumed by the Lua bridge (on_bigmap_click).
+	bool hasPendingClick() const { return m_pending_click_set; }
+	v3s32 takePendingClick()
+	{
+		m_pending_click_set = false;
+		return m_pending_click;
+	}
+
 	// The currently-open big map instance (if any). Used by the input handler
 	// to close the map when ESC is pressed.
 	static AlBigMap *getActive();
@@ -152,6 +161,12 @@ private:
 	video::SColor pixelColor(const AlBigMapBlock &block, size_t idx) const;
 	// Ensure the 16x16 color tile for a block is cached (current nodedef).
 	const std::vector<video::SColor> &getTile(const AlBigMapBlock &block);
+	// Absolute Y of the tallest non-air saved pixel in a column, or `fallback`
+	// when the column has no terrain data.
+	s32 getGroundHeight(v2s32 node_pos, s32 fallback) const;
+	// Convert a screen-space cursor position to the clicked node coordinate
+	// (inverse of the rasterize mapping; Y from terrain, else the player).
+	v3s32 screenToNode(v2s32 screen_pos, v2u32 target_size) const;
 	void invalidateView();
 	void updateFollowCenter();
 	// Draws the player position arrow (mirrors the minimap player marker).
@@ -202,6 +217,11 @@ private:
 
 	// Input bookkeeping.
 	bool m_left_down = false;
+	// Right-button (RMB) press tracking for waypoint placement.
+	bool m_right_down = false;
+	// A right-click on the map waiting to be consumed by the Lua bridge.
+	bool m_pending_click_set = false;
+	v3s32 m_pending_click;
 	v2s32 m_last_mouse = v2s32(0, 0);
 	// Press-tracking for the re-follow button: a press inside the button rect
 	// suppresses panning for its whole duration, and the toggle fires when the

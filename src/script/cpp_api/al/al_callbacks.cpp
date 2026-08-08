@@ -1486,3 +1486,28 @@ void AlScriptApi::on_bigmap_close()
 	}
 	lua_pop(L, 2);
 }
+
+void AlScriptApi::on_bigmap_click(v3s32 pos)
+{
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_bigmap_click");
+
+	// Positions here are s32 node coords; push the table manually (there is
+	// no push_v3s32 helper).
+	lua_newtable(L);
+	lua_pushinteger(L, pos.X);
+	lua_setfield(L, -2, "x");
+	lua_pushinteger(L, pos.Y);
+	lua_setfield(L, -2, "y");
+	lua_pushinteger(L, pos.Z);
+	lua_setfield(L, -2, "z");
+
+	try {
+		runCallbacks(1, RUN_CALLBACKS_MODE_FIRST);
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+	lua_pop(L, 2);
+}
