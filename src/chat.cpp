@@ -821,18 +821,35 @@ ChatBuffer& ChatBackend::getRecentBuffer()
 
 EnrichedString ChatBackend::getRecentChat() const
 {
+	// Read chat overlay styling settings (safe when g_settings is unset,
+	// e.g. in curses mode where this isn't called anyway)
+	u32 background_alpha = 0;
+	video::SColor name_color(255, 255, 255, 255);
+	if (g_settings != nullptr) {
+		background_alpha = rangelim(g_settings->getS32("chat_background_alpha"), 0, 255);
+		std::string name_color_str = g_settings->get("chat_name_color");
+		parseColorString(name_color_str, name_color, false, 255);
+		name_color.setAlpha(255);
+	}
+
 	EnrichedString result;
 	for (u32 i = 0; i < m_recent_buffer.getLineCount(); ++i) {
 		const ChatLine& line = m_recent_buffer.getLine(i);
 		if (i != 0)
 			result += L"\n";
 		if (!line.name.empty()) {
-			result += L"<";
-			result += line.name;
-			result += L"> ";
+			// Colorize the "<name> " prefix as a single run so names are
+			// easy to scan while the message text keeps its own colors.
+			EnrichedString name_part(L"<" + line.name.getString() + L"> ", name_color);
+			result += name_part;
 		}
 		result += line.text;
 	}
+
+	// Full-width translucent bar behind the recent chat text
+	if (!result.empty())
+		result.setBackground(video::SColor(background_alpha, 0, 0, 0));
+
 	return result;
 }
 
