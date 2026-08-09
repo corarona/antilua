@@ -442,6 +442,8 @@ void set_default_settings()
 	settings->setDefault("crosshair_color", "(255,255,255)");
 	settings->setDefault("crosshair_alpha", "255");
 	settings->setDefault("recent_chat_messages", "6");
+	settings->setDefault("chat_background_alpha", "50");
+	settings->setDefault("chat_name_color", "#FFD080");
 	settings->setDefault("hud_scaling", "1.0");
 	settings->setDefault("gui_scaling", "1.0");
 	settings->setDefault("gui_scaling_filter", "false");

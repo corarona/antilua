@@ -31,6 +31,13 @@ minimap_save_max_blocks (Max saved minimap blocks) int 100000 1000 1000000
 #    Enable per-server chat logging to data/server/.
 chat_logging (Chat logging) bool false
 
+#    Alpha (opaqueness, between 0 and 255) of the translucent background bar
+#    behind the recent chat text. 0 disables the background.
+chat_background_alpha (Chat background alpha) int 50 0 255
+
+#    Color of sender names in the recent chat text.
+chat_name_color (Chat name color) string #FFD080
+
 #    Extended interaction range.
 #    Affects digging, placing, and entity interaction.
 reach (Extended reach) bool true

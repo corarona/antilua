@@ -360,6 +360,10 @@ fake_function() {
 	gettext("In-game chat console background color (R,G,B).");
 	gettext("Console alpha");
 	gettext("In-game chat console background alpha (opaqueness, between 0 and 255).");
+	gettext("Chat background alpha");
+	gettext("Alpha (opaqueness, between 0 and 255) of the translucent background bar behind the recent chat text. 0 disables the background.");
+	gettext("Chat name color");
+	gettext("Color of sender names in the recent chat text.");
 	gettext("Weblink color");
 	gettext("Optional override for chat weblink color.");
 	gettext("Chat font size");
