@@ -102,6 +102,9 @@ private:
 	// get_item_def(itemstring)
 	static int l_get_item_def(lua_State *L);
 
+	// get_item_names() — sorted array of all defined item names (no aliases)
+	static int l_get_item_names(lua_State *L);
+
 	// get_node_def(nodename)
 	static int l_get_node_def(lua_State *L);
 

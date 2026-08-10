@@ -481,6 +481,31 @@ int ModApiClient::l_get_item_def(lua_State *L)
 	return 1;
 }
 
+// get_item_names()
+// Returns a sorted array of all defined item names (excluding aliases).
+int ModApiClient::l_get_item_names(lua_State *L)
+{
+	IGameDef *gdef = getGameDef(L);
+	assert(gdef);
+
+	IItemDefManager *idef = gdef->idef();
+	assert(idef);
+
+	std::set<std::string> names;
+	idef->getAll(names);
+
+	lua_newtable(L);
+	int index = 1;
+	for (const std::string &name : names) {
+		// Skip aliases: a real definition resolves to itself.
+		if (idef->getAlias(name) != name)
+			continue;
+		lua_pushstring(L, name.c_str());
+		lua_rawseti(L, -2, index++);
+	}
+	return 1;
+}
+
 // get_node_def(nodename)
 int ModApiClient::l_get_node_def(lua_State *L)
 {
@@ -1864,6 +1889,7 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	// FIXME: sound_play/stop/fade need ISoundManager porting
 	API_FCT(get_server_info);
 	API_FCT(get_item_def);
+	API_FCT(get_item_names);
 	API_FCT(get_node_def);
 	API_FCT(get_privilege_list);
 	API_FCT(get_builtin_path);

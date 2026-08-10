@@ -130,6 +130,20 @@ function al_formspec.image(x, y, w, h, texture)
 	return "image[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";" .. texture .. "]"
 end
 
+function al_formspec.item_image(x, y, w, h, itemname)
+	return "item_image[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";"
+		.. al_formspec.escape(itemname) .. "]"
+end
+
+function al_formspec.tooltip(id, text)
+	return "tooltip[" .. id .. ";" .. al_formspec.escape(text) .. "]"
+end
+
+function al_formspec.scrollbar(x, y, w, h, orientation, name, value)
+	return "scrollbar[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";" .. (orientation or "vertical")
+		.. ";" .. name .. ";" .. (value or 0) .. "]"
+end
+
 function al_formspec.bgcolor(color, fullscreen)
 	return "bgcolor[" .. color .. ";" .. (fullscreen and "true" or "false") .. "]"
 end
@@ -168,7 +182,6 @@ end
 function al_formspec.searchbar(x, y, w, id, opts)
 	opts = opts or {}
 	local bw = opts.button_width or 1.7
-	local bw_half = bw / 2
 	local field_w = w - bw - 0.3
 	return {
 		al_formspec.field(x, y, field_w, 0.8, id, opts.placeholder or "Filter:", opts.default or ""),
@@ -243,8 +256,14 @@ function al_formspec.box(x, y, w, h, color)
 	return "box[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";" .. (color or al_formspec.BG_COLOR) .. "]"
 end
 
-function al_formspec.scroll_container(x, y, w, h, id, orientation)
-	return "scroll_container[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";" .. id .. ";" .. (orientation or "vertical") .. "]"
+function al_formspec.scroll_container(x, y, w, h, id, orientation, opts)
+	orientation = orientation or "vertical"
+	local s = "scroll_container[" .. x .. "," .. y .. ";" .. w .. "," .. h .. ";" .. id .. ";" .. orientation
+	if opts then
+		if opts.factor then s = s .. ";" .. opts.factor end
+		if opts.padding then s = s .. ";" .. opts.padding end
+	end
+	return s .. "]"
 end
 
 function al_formspec.scroll_container_end()
