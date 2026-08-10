@@ -21,6 +21,30 @@ keymap_quick_select_menu (Quick select menu) key SYSTEM_SCANCODE_53
 #    Key to toggle the fullscreen big map overlay.
 keymap_big_map (Toggle big map) key SYSTEM_SCANCODE_50
 
+#    Key to toggle killaura.
+keymap_toggle_killaura (Toggle killaura) key KEY_KEY_X
+
+#    Key to toggle freecam.
+keymap_toggle_freecam (Toggle freecam) key KEY_KEY_G
+
+#    Key to toggle scaffold assist.
+keymap_toggle_scaffold (Toggle scaffold) key KEY_KEY_Y
+
+#    Cheat menu navigation: select up.
+keymap_select_up (Cheat menu up) key KEY_UP
+
+#    Cheat menu navigation: select down.
+keymap_select_down (Cheat menu down) key KEY_DOWN
+
+#    Cheat menu navigation: go back.
+keymap_select_left (Cheat menu left) key KEY_LEFT
+
+#    Cheat menu navigation: enter category / confirm.
+keymap_select_right (Cheat menu right) key KEY_RIGHT
+
+#    Cheat menu navigation: toggle selected cheat.
+keymap_select_confirm (Cheat menu confirm) key SYSTEM_SCANCODE_40
+
 #    Save client-side minimap blocks per server so the big map accumulates
 #    exploration across sessions.
 enable_minimap_saving (Save minimap per server) bool true
