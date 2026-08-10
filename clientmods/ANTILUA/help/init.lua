@@ -1,5 +1,6 @@
 -- help: centralized help system for Antilua client mods
 
+local al_formspec = core.al_formspec
 local md_parser = dofile(core.get_modpath(core.get_current_modname()) .. "/md_parser.lua")
 
 -- Scan all READMEs and populate cheat descriptions
