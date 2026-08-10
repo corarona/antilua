@@ -66,13 +66,6 @@ function load_build(id)
 	return false
 end
 
-function load_job()
-	if not storage then return false end
-	local idx = get_build_index()
-	if #idx == 0 then return false end
-	return load_build(idx[1].id)
-end
-
 function delete_build(id)
 	if not storage then return end
 	storage:set_string(build_data_key(id), "")

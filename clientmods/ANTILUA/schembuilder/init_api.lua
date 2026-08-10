@@ -19,22 +19,6 @@ core.register_chatcommand("schemclear", {
 	end,
 })
 
--- Restore saved job on init and reconnect
-function restore_job()
-	if load_job() and #place_nodes > 0 then
-		for _, n in ipairs(place_nodes) do
-			add_preview_if_needed(n, n.name)
-		end
-		core.after(0.1, update_hud)
-	end
-end
-
-restore_job()
-
-ws.on_connect(function()
-	restore_job()
-end)
-
 -- Undo support
 local undo_stack = {}
 local undo_max = 20
