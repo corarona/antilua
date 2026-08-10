@@ -1,9 +1,5 @@
 -- Schematic browser formspec
-local _bx_status = ""
-local _sel_bx_result = nil
-local _sel_bx_dl = nil
 local schem_cache = {}
-local _selected_schem_name = nil
 
 -- Right-side sub-tab system (shared with other inventory tabs).
 schembuilder.browser_subtabs = core.al_subtabs.new({
@@ -21,12 +17,7 @@ function schembuilder.build_browser_content(tab, cw)
 	local fs = ""
 
 	if tab == 0 then
-		local schem_path
-		if type(core.get_modpath_real) == "function" then
-			schem_path = core.get_modpath_real("schembuilder") .. "/schematics"
-		else
-			schem_path = modpath .. "/schematics"
-		end
+		local schem_path = core.get_modpath_real("schembuilder") .. "/schematics"
 		local user_path = core.get_data_path() .. "schematics"
 		local schems = {}
 		schem_cache = {}
@@ -71,8 +62,8 @@ function schembuilder.build_browser_content(tab, cw)
 				"button[0,8.5;4,0.8;schem_load;Load]" ..
 				"button[0,9.4;4,0.6;schem_stop;Stop Build]"
 			-- Show info for selected schematic
-			if _selected_schem_name and schem_cache[_selected_schem_name] then
-				local info = schem_cache[_selected_schem_name]
+			if schembuilder._selected_schem_name and schem_cache[schembuilder._selected_schem_name] then
+				local info = schem_cache[schembuilder._selected_schem_name]
 				fs = fs .. "label[4.5,8.5;Size: " .. info.size.x .. "x" .. info.size.y .. "x" .. info.size.z
 					.. " (" .. info.count .. " nodes)]"
 			end
@@ -123,7 +114,7 @@ function schembuilder.build_browser_content(tab, cw)
 
 		-- Download button + status
 		if logged_in then
-			local status_text = _bx_status or ""
+			local status_text = schembuilder._bx_status or ""
 			if status_text ~= "" then
 				fs = fs .. "label[0,8;" .. core.formspec_escape(status_text) .. "]"
 			end

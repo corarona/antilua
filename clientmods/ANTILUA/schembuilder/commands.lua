@@ -83,7 +83,7 @@ local _selected_schem = nil
 local _selected_build = nil
 
 function load_bx_schematic(uid, name, mts_data)
-	local schem, err
+	local schem
 	if type(core.read_schematic) == "function" then
 		schem = core.read_schematic(mts_data, {})
 	else
@@ -118,12 +118,7 @@ end
 
 function load_schematic_by_index(event_idx)
 	if not event_idx then return end
-	local schem_path2
-	if type(core.get_modpath_real) == "function" then
-		schem_path2 = core.get_modpath_real("schembuilder") .. "/schematics"
-	else
-		schem_path2 = modpath .. "/schematics"
-	end
+	local schem_path2 = core.get_modpath_real("schembuilder") .. "/schematics"
 	local user_path = core.get_data_path() .. "schematics"
 	local files = core.get_dir_list(schem_path2, false) or {}
 	local user_files = core.get_dir_list(user_path, false) or {}
@@ -141,7 +136,7 @@ function load_schematic_by_index(event_idx)
 	local selected = all_files[event_idx]
 	if selected then
 		local param = "file:" .. selected.path
-		local ok, err, sparam = do_schembuild(param)
+		local ok, _, sparam = do_schembuild(param)
 		if ok then
 			create_build(sparam or param, selected.name)
 		end
@@ -185,12 +180,7 @@ function schembuilder.handle_browser_fields(fields)
 		if idx then
 			_selected_schem = idx
 			-- Also fetch the display name for info display
-			local schem_path
-			if type(core.get_modpath_real) == "function" then
-				schem_path = core.get_modpath_real("schembuilder") .. "/schematics"
-			else
-				schem_path = modpath .. "/schematics"
-			end
+			local schem_path = core.get_modpath_real("schembuilder") .. "/schematics"
 			local user_path = core.get_data_path() .. "schematics"
 			local file_list = {}
 			local function add_dir(dir, prefix)
@@ -204,7 +194,7 @@ function schembuilder.handle_browser_fields(fields)
 			end
 			add_dir(schem_path)
 			add_dir(user_path, "[U] ")
-			_selected_schem_name = file_list[idx]
+			schembuilder._selected_schem_name = file_list[idx]
 			if fields.schem_list:match("^DCL:") then
 				load_schematic_by_index(idx)
 				return true
@@ -220,29 +210,26 @@ function schembuilder.handle_browser_fields(fields)
 	end
 
 	-- Tab 2: BlockExchange actions
-	if fields.tabs and tonumber(fields.tabs) == 4 then
-		-- Tab 3 (Mapart) — state is managed by mapart mod
-	end
 	if fields.tabs and tonumber(fields.tabs) == 3 then
-		_bx_status = ""
+		schembuilder._bx_status = ""
 	end
 
 	if fields.bx_search then
 		local user = fields.bx_user or ""
 		local name = fields.bx_name or ""
 		if user == "" or name == "" then
-			_bx_status = "Enter username and schematic name"
+			schembuilder._bx_status = "Enter username and schematic name"
 			show_browser_form(2)
 			return true
 		end
-		_bx_status = "Searching..."
+		schembuilder._bx_status = "Searching..."
 		show_browser_form(2)
 		if blockexchange and blockexchange.search then
 			blockexchange.search(user, name, function(results)
 				if results and #results > 0 then
-					_bx_status = "Found " .. #results .. " results"
+					schembuilder._bx_status = "Found " .. #results .. " results"
 				else
-					_bx_status = "No results found"
+					schembuilder._bx_status = "No results found"
 				end
 				show_browser_form(2)
 			end)
@@ -251,31 +238,27 @@ function schembuilder.handle_browser_fields(fields)
 	end
 
 	if fields.bx_results then
-		if fields.bx_results:match("^DCL:") then
-			_sel_bx_result = parse_list_event(fields.bx_results)
-		else
-			_sel_bx_result = parse_list_event(fields.bx_results)
-		end
+		schembuilder._sel_bx_result = parse_list_event(fields.bx_results)
 	end
 
-	if fields.bx_download and _sel_bx_result then
+	if fields.bx_download and schembuilder._sel_bx_result then
 		local results = blockexchange and blockexchange.search_results or {}
-		local entry = results[_sel_bx_result]
+		local entry = results[schembuilder._sel_bx_result]
 		if entry then
-			_bx_status = "Downloading " .. entry.name .. "..."
+			schembuilder._bx_status = "Downloading " .. entry.name .. "..."
 			show_browser_form(2)
 			if blockexchange and blockexchange.download then
 			blockexchange.download(entry.uid, entry.name, entry.size_x, entry.size_y, entry.size_z,
 				function(current, total)
-					_bx_status = "Downloading: " .. current .. "/" .. total .. " parts"
+					schembuilder._bx_status = "Downloading: " .. current .. "/" .. total .. " parts"
 					ws.notify_progress("bx_dl", "Downloading " .. entry.name, math.floor(current * 100 / total))
 					show_browser_form(2)
 				end,
 					function(ok, result)
 						if ok then
-							_bx_status = "Done! Saved as " .. result
+							schembuilder._bx_status = "Done! Saved as " .. result
 						else
-							_bx_status = "Error: " .. result
+							schembuilder._bx_status = "Error: " .. result
 						end
 						show_browser_form(2)
 					end
@@ -301,7 +284,7 @@ function schembuilder.handle_browser_fields(fields)
 	end
 
 	if fields.bx_load_dl_sel then
-		_sel_bx_dl = parse_list_event(fields.bx_downloads)
+		schembuilder._sel_bx_dl = parse_list_event(fields.bx_downloads)
 	end
 
 	-- Tab 0: Load schematic button
@@ -334,7 +317,7 @@ function schembuilder.handle_browser_fields(fields)
 			end
 			core.close_formspec("schembuilder:browser")
 		elseif fields.build_restart then
-			local ok, err, sparam = do_schembuild(entry.source)
+			local ok, _, sparam = do_schembuild(entry.source)
 			if ok then
 				delete_build(entry.id)
 				create_build(sparam or entry.source, entry.name)

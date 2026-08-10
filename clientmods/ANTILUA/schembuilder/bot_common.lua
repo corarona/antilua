@@ -2,7 +2,6 @@
 -- Used by: SchemBuilderBot (walk), RhythmBuildBot (teleport)
 if sbots and sbots.register_bot then
 	function schembuilder.create_bot(name, description, movement_type, extra_opts)
-		extra_opts = extra_opts or {}
 		local item_cache = schembuilder.placer.make_item_cache()
 		local strategies = schembuilder.placer.strategies
 
@@ -32,7 +31,6 @@ if sbots and sbots.register_bot then
 			setting = name:lower(),
 			find_pos = function(self, pos)
 				if #place_nodes == 0 then return end
-				local px, py, pz = pos.x, pos.y, pos.z
 				self._current_entry = nil
 				self._strat_state = nil
 				local setting_pref = self._setting or name:lower()
@@ -147,7 +145,7 @@ if sbots and sbots.register_bot then
 					filter_list = core.settings:get(setting_pref .. ".filter_list") or "schembuilder",
 					item_cache = item_cache,
 				}
-				local placed = schembuilder.placer.execute_batch(placer_state, self._current_entry, pos, place_nodes, opts)
+				schembuilder.placer.execute_batch(placer_state, self._current_entry, pos, place_nodes, opts)
 
 				self._last_place_time = placer_state._last_place_time
 				self._strat_state = placer_state._strat_state

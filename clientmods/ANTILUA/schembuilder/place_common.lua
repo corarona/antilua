@@ -517,7 +517,6 @@ function placer.execute_batch(placer_state, target_entry, player_pos, nodes, opt
 	local strat = placer.strategies[strat_name] or placer.strategies.closest
 	local filter_mode = opts.filter_mode or "all"
 	local filter_list = opts.filter_list or "schembuilder"
-	local item_cache = opts.item_cache or make_item_cache()
 
 	local px, py, pz = player_pos.x, player_pos.y, player_pos.z
 	local placed = 0

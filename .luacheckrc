@@ -145,7 +145,17 @@ stds.al_client = {
 
 -- schembuilder shared globals
 files["clientmods/ANTILUA/schembuilder/*.lua"] = {
-        globals = { "hud_id" },
+        globals = {
+                "hud_id",
+                "schembuilder",
+                "schembuilder_api",
+                "place_nodes",
+                "place_nodes_total",
+                "supply_chests",
+                "storage",
+                "current_build_id",
+                "rhythmtp",
+        },
 }
 
 -- Antilua client mods

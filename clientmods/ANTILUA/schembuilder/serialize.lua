@@ -13,39 +13,13 @@ end
 function schembuilder_serialize(pos1, pos2)
 	pos1, pos2 = sort_pos(pos1, pos2)
 	local get_node = core.get_node_or_nil
-	local pos = vector.new(pos1.x, 0, 0)
-	local count = 0
-	local result = {}
-	while pos.x <= pos2.x do
-		pos.y = pos1.y
-		while pos.y <= pos2.y do
-			pos.z = pos1.z
-			while pos.z <= pos2.z do
-				local node = get_node(pos)
-				if node.name ~= "air" and node.name ~= "ignore" then
-					count = count + 1
-					result[count] = {
-						x = pos.x - pos1.x,
-						y = pos.y - pos1.y,
-						z = pos.z - pos1.z,
-						name = node.name,
-						param1 = node.param1 ~= 0 and node.param1 or nil,
-						param2 = node.param2 ~= 0 and node.param2 or nil,
-					}
-				end
-				pos.z = pos.z + 1
-			end
-			pos.y = pos.y + 1
-		end
-		pos.x = pos.x + 1
-	end
 
 	-- Build a schematic table for core.serialize_schematic
 	local schem = {
 		size = {x = pos2.x - pos1.x + 1, y = pos2.y - pos1.y + 1, z = pos2.z - pos1.z + 1},
 		data = {},
 	}
-	-- Fill all positions (air if no node was captured)
+	local count = 0
 	local idx = 1
 	local pos_iter = vector.new(pos1.x, 0, 0)
 	while pos_iter.x <= pos2.x do
@@ -55,6 +29,7 @@ function schembuilder_serialize(pos1, pos2)
 			while pos_iter.z <= pos2.z do
 				local node = get_node(pos_iter)
 				if node.name ~= "air" and node.name ~= "ignore" then
+					count = count + 1
 					schem.data[idx] = {
 						name = node.name,
 						prob = node.param1 ~= 0 and node.param1 * 2 or 254,
