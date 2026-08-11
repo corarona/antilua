@@ -448,3 +448,22 @@ function test_notification_api(T)
 
 
 end
+
+----------------------------------------------------------------------------------
+-- Profile commands
+----------------------------------------------------------------------------------
+function test_al_profile(T)
+	T.run(".al_profile command registered", function()
+		T.assert(type(core.registered_chatcommands["al_profile"]) == "table",
+			".al_profile command should exist")
+	end)
+
+	T.run(".profile is not overridden by qol", function()
+		local def = core.registered_chatcommands["profile"]
+		T.assert(def ~= nil, ".profile command should exist")
+		if def then
+			T.assert(def.mod_origin ~= "qol",
+				".profile should not be registered by qol (it is .al_profile now)")
+		end
+	end)
+end

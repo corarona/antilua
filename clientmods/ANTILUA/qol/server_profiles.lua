@@ -1,7 +1,13 @@
 -- Per-server cheat profile auto-save/load
 -- Uses the existing cheat profile system keyed by server address
 
-local current_server
+-- Auto save/load toggles (default on)
+if core.settings:get("profile_auto_save") == nil then
+	core.settings:set("profile_auto_save", "true")
+end
+if core.settings:get("profile_auto_load") == nil then
+	core.settings:set("profile_auto_load", "true")
+end
 
 local function server_key()
 	local info = core.get_server_info()
@@ -32,17 +38,21 @@ local function load_profile()
 end
 
 ws.on_connect(function()
+	if not core.settings:get_bool("profile_auto_load") then return end
 	core.after(1.0, load_profile)
 end)
 
 core.register_on_disconnect(function()
-	save_profile()
-	current_server = nil
+	if core.settings:get_bool("profile_auto_save") then
+		save_profile()
+	end
 end)
 
-core.register_chatcommand("profile", {
+-- Per-server profile management (renamed from "profile" to avoid clobbering
+-- the builtin .profile command in builtin/client/cheats.lua).
+core.register_chatcommand("al_profile", {
 	params = "save|load|delete <name>",
-	description = "Manage cheat profiles. Default name is the current server.",
+	description = "Manage per-server cheat profiles. Default name is the current server.",
 	func = function(param)
 		local parts = param:split(" ")
 		local cmd = parts[1]
@@ -63,7 +73,7 @@ core.register_chatcommand("profile", {
 			local list = core.list_cheat_profiles()
 			return true, "Profiles: " .. table.concat(list, ", ")
 		else
-			return false, "Usage: .profile save|load|delete|list [name]"
+			return false, "Usage: .al_profile save|load|delete|list [name]"
 		end
 	end,
 })

@@ -208,8 +208,8 @@ if core.register_quick_menu_provider then
 		add_cmd("mapblock_age", "Analyze Mapblock Age")
 		add_cmd("mapblock_age_clear", "Clear Age Markers")
 		add_cmd("bx_logout", "Logout BlockExchange")
-		add_cmd("profile", "Save Cheat Profile (Server)", "save")
-		add_cmd("profile", "Load Cheat Profile (Server)", "load")
+		add_cmd("al_profile", "Save Cheat Profile (Server)", "save")
+		add_cmd("al_profile", "Load Cheat Profile (Server)", "load")
 
 		-- Hidden feature toggles (settings not exposed as cheats)
 		local function add_toggle(label, setting, fields)
