@@ -446,7 +446,35 @@ function test_notification_api(T)
 		T.assert(not custom_called, "custom handler should not be called after restore")
 	end)
 
+	T.run("ws.get_notify_history records default-handler notifications", function()
+		if not ws.get_notify_history then return end
+		local marker = "al_test_history_marker_" .. tostring(math.random(100000))
+		-- Record through the default handler (history is not recorded via custom handlers)
+		ws.notify(marker, ws.NOTIFY_INFO, {toast = false})
+		local hist = ws.get_notify_history(50)
+		local found = false
+		for _, e in ipairs(hist) do
+			if e.text == marker then found = true break end
+		end
+		T.assert(found, "recorded notification should appear in history")
+		-- Clean up
+		ws.clear_notify_history()
+	end)
 
+	T.run("ws.clear_notify_history empties history", function()
+		if not ws.clear_notify_history then return end
+		ws.clear_notify_history()
+		local hist = ws.get_notify_history()
+		T.assert_eq(#hist, 0, "history should be empty after clear")
+	end)
+
+	T.run("ws.show_notify_history builds formspec", function()
+		if not ws.show_notify_history then return end
+		ws.notify("viewer test", ws.NOTIFY_INFO, {toast = false})
+		local ok, err = pcall(ws.show_notify_history)
+		T.assert(ok, "notification viewer should build: " .. tostring(err))
+		ws.clear_notify_history()
+	end)
 end
 
 ----------------------------------------------------------------------------------

@@ -95,7 +95,7 @@ core.register_chatcommand("blockstats", {
 	description = "Show per-server block and entity stats",
 	func = function()
 		if prefix == "" then
-			core.display_chat_message("Not connected to any server yet.")
+			ws.notify("Not connected to any server yet.", ws.NOTIFY_INFO, {toast = false})
 			return true
 		end
 
@@ -122,10 +122,10 @@ core.register_chatcommand("blockstats", {
 		format_items(dnames, dug, "Dug:    ")
 
 		if #lines == 0 then
-			core.display_chat_message("No stats recorded for this server yet.")
+			ws.notify("No stats recorded for this server yet.", ws.NOTIFY_INFO, {toast = false})
 		else
 			for _, line in ipairs(lines) do
-				core.display_chat_message(line)
+				ws.notify(line, ws.NOTIFY_INFO, {toast = false})
 			end
 		end
 		return true

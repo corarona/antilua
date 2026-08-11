@@ -159,6 +159,10 @@ if core.register_quick_menu_provider then
 		-- wasplib utilities
 		local ws = mod("ws")
 		if ws then
+			if ws.show_notify_history then
+				add("Notification History", function() ws.show_notify_history() end,
+					{ keywords = { "notify", "toast", "alerts", "log" } })
+			end
 			add("Constraint Pos1 Here", function()
 				local p = player_pos()
 				if p then ws.set_pos1(p) end

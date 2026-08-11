@@ -642,7 +642,7 @@ core.register_chatcommand("target", {
 		local trimmed = param and param:match("^%s*(.-)%s*$")
 		if not trimmed or trimmed == "" then
 			target_obj = nil
-			core.display_chat_message("Target cleared — attacking all targets.")
+			ws.notify("Target cleared — attacking all targets.", ws.NOTIFY_INFO, {toast = false})
 			return true
 		end
 		local lp = core.localplayer and core.localplayer:get_pos()
@@ -652,16 +652,16 @@ core.register_chatcommand("target", {
 			local olower = (obj:get_name() or ""):lower()
 			if obj:is_player() and olower == tlower then
 				target_obj = obj
-				core.display_chat_message("Now targeting player: " .. (obj:get_name() or "?"))
+				ws.notify("Now targeting player: " .. (obj:get_name() or "?"), ws.NOTIFY_INFO, {toast = false})
 				return true
 			end
 			if olower:find(tlower, 1, true) then
 				target_obj = obj
-				core.display_chat_message("Now targeting entity: " .. (obj:get_name() or "?"))
+				ws.notify("Now targeting entity: " .. (obj:get_name() or "?"), ws.NOTIFY_INFO, {toast = false})
 				return true
 			end
 		end
-		core.display_chat_message("No entity found matching: " .. trimmed)
+		ws.notify("No entity found matching: " .. trimmed, ws.NOTIFY_WARNING, {toast = false})
 		return true
 	end,
 })
