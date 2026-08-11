@@ -463,7 +463,7 @@ function test_core_api(T)
 		local pos = core.localplayer:get_pos()
 		T.assert(pos ~= nil, "player pos exists")
 		local stand = {x = math.floor(pos.x), y = math.floor(pos.y) - 1, z = math.floor(pos.z)}
-		local content, param1, param2, ok = core.get_node_raw(stand)
+		local content, param1, param2, ok = core.get_node_raw(stand.x, stand.y, stand.z)
 		T.assert(type(ok) == "boolean", "pos_ok should be a boolean, got " .. type(ok))
 		T.assert(type(content) == "number", "content should be a number")
 		T.assert(type(param1) == "number", "param1 should be a number")
@@ -477,7 +477,7 @@ function test_core_api(T)
 	end)
 
 	T.defer("get_node_raw on far-away position returns ok=false", function()
-		local _, _, _, ok = core.get_node_raw({x = 30000, y = 0, z = 30000})
+		local _, _, _, ok = core.get_node_raw(30000, 0, 30000)
 		T.assert(ok == false, "unloaded position should report ok=false")
 	end)
 
@@ -548,5 +548,166 @@ function test_core_api(T)
 			{x = pos.x - 10, y = pos.y - 10, z = pos.z - 10},
 			{x = pos.x + 10, y = pos.y + 10, z = pos.z + 10})
 		T.assert(type(objs) == "table", "objects should be a table")
+	end)
+
+	-- Builtin API mirrors (pure-Lua, defined in builtin/client/misc.lua)
+	T.run("core.get_item_group exists", function()
+		T.assert(type(core.get_item_group) == "function",
+			"core.get_item_group should be a function")
+	end)
+
+	T.run("core.hash_node_position exists", function()
+		T.assert(type(core.hash_node_position) == "function",
+			"core.hash_node_position should be a function")
+	end)
+
+	T.run("core.get_position_from_hash exists", function()
+		T.assert(type(core.get_position_from_hash) == "function",
+			"core.get_position_from_hash should be a function")
+	end)
+
+	T.run("core.get_artificial_light exists", function()
+		T.assert(type(core.get_artificial_light) == "function",
+			"core.get_artificial_light should be a function")
+	end)
+
+	T.run("core.get_pointed_thing_position exists", function()
+		T.assert(type(core.get_pointed_thing_position) == "function",
+			"core.get_pointed_thing_position should be a function")
+	end)
+
+	T.run("core.is_player exists", function()
+		T.assert(type(core.is_player) == "function",
+			"core.is_player should be a function")
+	end)
+
+	T.run("core.itemstring_with_palette exists", function()
+		T.assert(type(core.itemstring_with_palette) == "function",
+			"core.itemstring_with_palette should be a function")
+	end)
+
+	T.run("core.itemstring_with_color exists", function()
+		T.assert(type(core.itemstring_with_color) == "function",
+			"core.itemstring_with_color should be a function")
+	end)
+
+	T.run("core.get_node exists", function()
+		T.assert(type(core.get_node) == "function",
+			"core.get_node should be a function")
+	end)
+
+	T.run("core.get_player_radius_area exists", function()
+		T.assert(type(core.get_player_radius_area) == "function",
+			"core.get_player_radius_area should be a function")
+	end)
+
+	T.run("get_item_group returns 0 for unknown item", function()
+		T.assert(core.get_item_group("no_such_item_xyz", "stone") == 0,
+			"unknown item should yield 0")
+	end)
+
+	T.run("get_item_group returns 0 for unknown group", function()
+		T.assert(core.get_item_group("default:stone", "no_such_group_xyz") == 0,
+			"unknown group should yield 0")
+	end)
+
+	T.run("get_item_group returns a rating for a real item", function()
+		local v = core.get_item_group("basenodes:stone", "cracky")
+		T.assert(type(v) == "number", "rating should be a number, got " .. type(v))
+		T.assert(v > 0, "basenodes:stone should be in group cracky")
+	end)
+
+	T.run("get_item_group works for nodes too", function()
+		local v = core.get_item_group("basenodes:dirt", "soil")
+		T.assert(type(v) == "number", "rating should be a number, got " .. type(v))
+		T.assert(v > 0, "basenodes:dirt should be in group soil")
+	end)
+
+	T.run("hash_node_position roundtrips", function()
+		local pos = {x = 12, y = -5, z = 300}
+		local hash = core.hash_node_position(pos)
+		local back = core.get_position_from_hash(hash)
+		T.assert(back.x == pos.x and back.y == pos.y and back.z == pos.z,
+			"hash roundtrip should preserve position")
+	end)
+
+	T.run("hash_node_position is unique for distinct positions", function()
+		local h1 = core.hash_node_position({x = 1, y = 2, z = 3})
+		local h2 = core.hash_node_position({x = 1, y = 2, z = 4})
+		T.assert(h1 ~= h2, "distinct positions should hash distinctly")
+	end)
+
+	T.run("get_artificial_light extracts high nibble", function()
+		T.assert(core.get_artificial_light(0x2A) == 2, "0x2A should yield 2")
+		T.assert(core.get_artificial_light(0xF0) == 15, "0xF0 should yield 15")
+		T.assert(core.get_artificial_light(0x05) == 0, "0x05 should yield 0")
+	end)
+
+	T.run("get_pointed_thing_position node under", function()
+		local pt = {type = "node", under = {x = 1, y = 2, z = 3}, above = {x = 1, y = 3, z = 3}}
+		T.assert_eq(core.get_pointed_thing_position(pt, false), pt.under,
+			"should return under")
+		T.assert_eq(core.get_pointed_thing_position(pt, true), pt.above,
+			"should return above")
+	end)
+
+	T.run("get_pointed_thing_position nothing", function()
+		T.assert(core.get_pointed_thing_position({type = "nothing"}) == nil,
+			"nothing pointed thing should yield nil")
+	end)
+
+	T.run("is_player false for non-players", function()
+		T.assert(core.is_player(nil) == false, "nil is not a player")
+		T.assert(core.is_player({x = 1}) == false, "plain table is not a player")
+		T.assert(core.is_player("not a player") == false, "string is not a player")
+	end)
+
+	T.defer("is_player works on player refs", function()
+		local name = core.localplayer:get_name()
+		local ref = core.get_player_by_name(name)
+		if ref then
+			T.assert(core.is_player(ref) == true, "player ref should be a player")
+		end
+	end)
+
+	T.run("itemstring_with_palette appends palette index", function()
+		local s = core.itemstring_with_palette("default:stone", 3)
+		T.assert(type(s) == "string", "result should be a string")
+		T.assert(string.find(s, "palette_index") ~= nil,
+			"result should carry palette_index metadata")
+	end)
+
+	T.run("itemstring_with_color appends color", function()
+		local s = core.itemstring_with_color("default:stone", "#FF0000")
+		T.assert(type(s) == "string", "result should be a string")
+		T.assert(string.find(s, "color") ~= nil,
+			"result should carry color metadata")
+	end)
+
+	T.run("get_item_group mirrors server via defs", function()
+		-- groups from get_item_def / get_node_def should agree
+		local from_group = core.get_item_group("basenodes:stone", "cracky")
+		local def = core.get_node_def("basenodes:stone")
+		T.assert(def and def.groups and def.groups.cracky == from_group,
+			"get_item_group should match get_node_def groups")
+	end)
+
+	T.defer("get_node returns a node table", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local stand = {x = math.floor(pos.x), y = math.floor(pos.y) - 1, z = math.floor(pos.z)}
+		local node = core.get_node(stand)
+		T.assert(type(node) == "table", "get_node should return a table")
+		T.assert(type(node.name) == "string", "node name should be a string")
+		T.assert(type(node.param1) == "number", "param1 should be a number")
+		T.assert(type(node.param2) == "number", "param2 should be a number")
+	end)
+
+	T.defer("get_player_radius_area returns box around player", function()
+		local name = core.localplayer:get_name()
+		local p1, p2 = core.get_player_radius_area(name, {x = 2, y = 2, z = 2})
+		T.assert(p1 ~= nil and p2 ~= nil, "should return two positions")
+		T.assert(p1.x <= p2.x and p1.y <= p2.y and p1.z <= p2.z,
+			"p1 should be the min corner")
 	end)
 end

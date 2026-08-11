@@ -155,9 +155,9 @@ The following functions mirror their server-side counterparts. They read only
 client-local data, so no server involvement is required.
 
 ```lua
-core.get_node_raw(pos) -> content, param1, param2, pos_ok
-    -- Raw node data at pos (same signature as server-side core.get_node_raw).
-    -- pos_ok is false when the block is not loaded client-side.
+core.get_node_raw(x, y, z) -> content, param1, param2, pos_ok
+    -- Raw node data (3 separate numbers, same signature as server-side
+    -- core.get_node_raw). pos_ok is false when the block is not loaded.
 core.get_node_boxes(box_type, pos[, node]) -> {aabb,...}
     -- "node_box" | "collision_box" | "selection_box" (server signature).
 core.get_natural_light(pos[, time_of_day]) -> number
@@ -190,6 +190,26 @@ core.get_tool_wear_after_use(uses[, wear]) -> number
 core.get_dig_params(groups, tool_capabilities[, wear]) -> table
 core.get_hit_params(groups, tool_capabilities[, time_from_last_punch[, wear]]) -> table
     -- Pure tool-math functions, identical to the server-side versions.
+```
+
+The following are pure-Lua mirrors of server builtin helpers, defined in
+`builtin/client/misc.lua`:
+
+```lua
+core.get_item_group(name, group) -> number
+    -- Group rating (0 if the item or group is unknown). Reads the groups from
+    -- the client's item/node definitions.
+core.hash_node_position(pos) -> number
+core.get_position_from_hash(hash) -> pos
+core.get_artificial_light(param1) -> number
+core.get_pointed_thing_position(pointed_thing, above) -> pos|nil
+core.is_player(player) -> bool
+core.itemstring_with_palette(item, palette_index) -> itemstring
+core.itemstring_with_color(item, colorstring) -> itemstring
+core.get_node(pos) -> {name, param1, param2}
+    -- Built on the client-side get_node_raw port (same as the server impl).
+core.get_player_radius_area(player_name, radius) -> p1, p2|nil
+    -- Box of `radius` around the given player (client-side: local player only).
 ```
 
 ---

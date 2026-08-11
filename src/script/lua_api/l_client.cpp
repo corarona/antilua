@@ -1908,10 +1908,16 @@ int ModApiClient::l_get_node_name(lua_State *L)
 }
 
 // get_node_raw(pos) — mirror of server-side core.get_node_raw
-// Returns content, param1, param2, pos_ok (nil, nil, nil, false if not loaded)
+// Returns content, param1, param2, pos_ok (content is CONTENT_IGNORE and
+// pos_ok is false when the position is not loaded).
 int ModApiClient::l_get_node_raw(lua_State *L)
 {
-	v3s16 pos = read_v3s16(L, 1);
+	// mirrors the server-side implementation (3 separate numbers, not a table)
+	double x = lua_tonumber(L, 1);
+	double y = lua_tonumber(L, 2);
+	double z = lua_tonumber(L, 3);
+	v3s16 pos = doubleToInt(v3d(x, y, z), 1.0);
+
 	bool pos_ok;
 	MapNode n = getClient(L)->CSMGetNode(pos, &pos_ok);
 	lua_pushinteger(L, n.getContent());
