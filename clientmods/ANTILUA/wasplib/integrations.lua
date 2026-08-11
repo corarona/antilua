@@ -409,3 +409,112 @@ function ws.hud_anchor(name, dx, dy)
 		offset = { x = (dx or 0), y = (dy or 0) },
 	}
 end
+
+--
+-- HUD layout registry: assigns non-overlapping vertical slots per anchor so
+-- HUD widgets from different mods never collide. Each widget reserves a slot
+-- with its current height (in text lines) and re-reserves whenever the height
+-- changes; release() frees the slot. Only vertical placement is managed —
+-- each widget keeps its own horizontal placement.
+--
+--   local slot = ws.hud_layout.reserve("mymod", "top_right", 3)
+--   hud_add({ position = slot.position, alignment = slot.alignment,
+--             offset = { x = -10, y = slot.y }, ... })
+--   ... ws.hud_layout.release("mymod")
+--
+local hud_layout_slots = {}  -- anchor -> { id -> { height, y } }
+local hud_layout_order = {}  -- anchor -> array of ids (reservation order)
+local HUD_LINE_H = 15        -- pixels per text line
+local HUD_GAP = 6            -- gap between widgets
+local HUD_TOP = 8            -- top margin
+
+local function layout_anchor(anchor)
+	local a = hud_anchors[anchor]
+	if not a then a = hud_anchors.top_right end
+	return a
+end
+
+local function hud_layout_rebuild(anchor)
+	local slots = hud_layout_slots[anchor]
+	local order = hud_layout_order[anchor]
+	if not slots or not order then return end
+	local y = HUD_TOP
+	for _, id in ipairs(order) do
+		local e = slots[id]
+		e.y = y
+		y = y + e.height * HUD_LINE_H + HUD_GAP
+	end
+end
+
+--- Reserve (or re-reserve) a vertical HUD slot.
+-- @param id     Unique widget id (e.g. mod name). Re-reserving keeps order.
+-- @param anchor Named anchor from ws.hud_anchor (defaults to top_right)
+-- @param height Current height in text lines (recomputed by the caller)
+-- @return { position, alignment, y } where y is the pixel offset from the top
+function ws.hud_layout_reserve(id, anchor, height)
+	height = math.max(tonumber(height) or 1, 1)
+	local a = layout_anchor(anchor)
+	hud_layout_slots[anchor] = hud_layout_slots[anchor] or {}
+	hud_layout_order[anchor] = hud_layout_order[anchor] or {}
+	local slots = hud_layout_slots[anchor]
+	local order = hud_layout_order[anchor]
+	if not slots[id] then
+		slots[id] = { height = height }
+		table.insert(order, id)
+	else
+		slots[id].height = height
+	end
+	hud_layout_rebuild(anchor)
+	return {
+		position = a.pos,
+		alignment = a.align,
+		y = slots[id].y,
+	}
+end
+
+--- Free a widget's HUD slot (from any anchor if anchor is nil).
+function ws.hud_layout_release(id, anchor)
+	if not anchor then
+		for an, slots in pairs(hud_layout_slots) do
+			if slots[id] then
+				slots[id] = nil
+				local order = hud_layout_order[an]
+				for i = #order, 1, -1 do
+					if order[i] == id then table.remove(order, i) end
+				end
+				hud_layout_rebuild(an)
+			end
+		end
+		return
+	end
+	local slots = hud_layout_slots[anchor]
+	local order = hud_layout_order[anchor]
+	if slots and slots[id] then
+		slots[id] = nil
+		for i = #order, 1, -1 do
+			if order[i] == id then table.remove(order, i) end
+		end
+		hud_layout_rebuild(anchor)
+	end
+end
+
+--- Clear all HUD layout slots (or just one anchor).
+function ws.hud_layout_clear(anchor)
+	if anchor then
+		hud_layout_slots[anchor] = {}
+		hud_layout_order[anchor] = {}
+	else
+		hud_layout_slots = {}
+		hud_layout_order = {}
+	end
+end
+
+ws.hud_layout = {
+	reserve = ws.hud_layout_reserve,
+	release = ws.hud_layout_release,
+	clear = ws.hud_layout_clear,
+}
+
+core.register_on_disconnect(function()
+	ws.hud_layout_clear()
+end)

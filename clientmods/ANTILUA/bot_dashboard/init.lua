@@ -61,6 +61,7 @@ end
 local function update_hud()
 	local text = build_status_text()
 	if not text then
+		ws.hud_layout.release("bot_dashboard")
 		if hud_id_text then
 			core.localplayer:hud_remove(hud_id_text)
 			hud_id_text = nil
@@ -72,34 +73,38 @@ local function update_hud()
 		return
 	end
 
+	local line_count = select(2, text:gsub("\n", "")) + 1
+	local slot = ws.hud_layout.reserve("bot_dashboard", "top_right", line_count)
+	local y = slot.y
+
 	if not hud_id_bg then
 		hud_id_bg = core.localplayer:hud_add({
 			hud_elem_type = "image",
 			position = { x = 1, y = 0 },
-			offset = { x = -210, y = 8 },
+			offset = { x = -210, y = y },
 			text = "blank.png",
 			scale = { x = 2, y = 2 },
 			alignment = { x = 0, y = 0 },
 			z_index = 100,
 		})
+	else
+		core.localplayer:hud_change(hud_id_bg, "offset", { x = -210, y = y })
 	end
 
 	if not hud_id_text then
 		hud_id_text = core.localplayer:hud_add({
 			hud_elem_type = "text",
 			position = { x = 1, y = 0 },
-			offset = { x = -205, y = 12 },
+			offset = { x = -205, y = y + 4 },
 			number = 0x00ff00,
 			alignment = { x = 0, y = 0 },
 			z_index = 200,
 		})
+	else
+		core.localplayer:hud_change(hud_id_text, "offset", { x = -205, y = y + 4 })
 	end
 
 	core.localplayer:hud_change(hud_id_text, "text", text)
-
-	local line_count = select(2, text:gsub("\n", "")) + 1
-	local bg_h = 12 + line_count * 14
-	core.localplayer:hud_change(hud_id_bg, "offset", { x = -210, y = 8 })
 end
 
 -- Show activity log formspec
@@ -146,6 +151,7 @@ end)
 
 -- Clean up HUD on disconnect
 core.register_on_disconnect(function()
+	ws.hud_layout.release("bot_dashboard")
 	if hud_id_text then
 		pcall(core.localplayer.hud_remove, core.localplayer, hud_id_text)
 		hud_id_text = nil

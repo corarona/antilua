@@ -19,12 +19,14 @@ function format_per_item(count)
 end
 
 hud_id = nil
+local hud_y = 0
 local place_nodes_initial = 0
 
 -- Remove the build HUD without touching the saved job (update_hud would
 -- call clear_job() when place_nodes is empty, deleting the saved build).
 function schembuilder_clear_hud()
 	place_nodes_initial = 0
+	ws.hud_layout.release("schembuilder")
 	if hud_id then
 		if core.localplayer then
 			core.localplayer:hud_remove(hud_id)
@@ -38,6 +40,7 @@ function update_hud()
 	if #place_nodes == 0 then
 		place_nodes_initial = 0
 		clear_job()
+		ws.hud_layout.release("schembuilder")
 		if hud_id then
 			core.localplayer:hud_remove(hud_id)
 			hud_id = nil
@@ -81,15 +84,21 @@ function update_hud()
 
 	local text = table.concat(lines, "\n")
 
+	local slot = ws.hud_layout.reserve("schembuilder", "top_right", #lines)
 	if hud_id then
 		core.localplayer:hud_change(hud_id, "text", text)
+		if slot.y ~= hud_y then
+			hud_y = slot.y
+			core.localplayer:hud_change(hud_id, "offset", { x = 0, y = slot.y })
+		end
 	else
+		hud_y = slot.y
 		hud_id = core.localplayer:hud_add({
 			type = "text",
 			direction = 0,
-			position = {x = 0.85, y = 0.25},
+			position = {x = 0.85, y = 0},
 			alignment = {x = 1, y = 1},
-			offset = {x = 0, y = 0},
+			offset = {x = 0, y = slot.y},
 			number = 0x00FF00,
 			text = text,
 		})

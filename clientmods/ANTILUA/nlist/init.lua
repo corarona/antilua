@@ -7,6 +7,7 @@ local sl = storage:get_string(INTERNAL_PREFIX .. "selected")
 if sl == "" then sl = "default" end
 local mode = tonumber(storage:get_string(INTERNAL_PREFIX .. "mode")) or 1 -- 1:add, 2:remove, 3:toggle
 local nled_hud
+local nled_hud_y = 0
 local nlist_last_content = "" -- cache for HUD update optimization
 nlist.selected = sl
 
@@ -209,30 +210,47 @@ function nlist.show_list(list, hlp)
 			nlist.set_nled_hud(txt)
 		end
 	end
+	-- Keep the shared top-right slot in sync with entry count / neighbours
+	if nled_hud then
+		local lines = select(2, ("List: " .. txt):gsub("\n", "")) + 1
+		local slot = ws.hud_layout.reserve("nlist", "top_right", lines)
+		if slot.y ~= nled_hud_y then
+			nled_hud_y = slot.y
+			core.localplayer:hud_change(nled_hud, 'offset', {x = 0, y = slot.y})
+		end
+	end
 end
 
 function nlist.hide()
 	if not core.localplayer then return end
 	if nled_hud then core.localplayer:hud_remove(nled_hud) nled_hud=nil end
+	ws.hud_layout.release("nlist")
 end
 
 function nlist.set_nled_hud(ttext)
 	if not core.localplayer then return end
 	if type(ttext) ~= "string" then return end
 	local dtext = "List: " .. ttext
+	local lines = select(2, dtext:gsub("\n", "")) + 1
+	local slot = ws.hud_layout.reserve("nlist", "top_right", lines)
 	if nled_hud then
 		core.localplayer:hud_change(nled_hud, 'text', dtext)
 		core.localplayer:hud_change(nled_hud, 'number', HUD_MODE_COLORS[mode] or 0x00ff00)
+		if slot.y ~= nled_hud_y then
+			nled_hud_y = slot.y
+			core.localplayer:hud_change(nled_hud, 'offset', {x = 0, y = slot.y})
+		end
 	else
+		nled_hud_y = slot.y
 		nled_hud = core.localplayer:hud_add({
 			type = 'text',
 			name = "Nodelist",
 			text = dtext,
 			number = HUD_MODE_COLORS[mode] or 0x00ff00,
 			direction = 0,
-			position = {x = 0.8, y = 0.40},
+			position = {x = 0.8, y = 0},
 			alignment = {x = 1, y = 1},
-			offset = {x = 0, y = 0},
+			offset = {x = 0, y = slot.y},
 		})
 	end
 	return true

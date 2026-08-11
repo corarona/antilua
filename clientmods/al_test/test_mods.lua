@@ -495,3 +495,35 @@ function test_al_profile(T)
 		end
 	end)
 end
+
+----------------------------------------------------------------------------------
+-- HUD layout registry
+----------------------------------------------------------------------------------
+function test_hud_layout(T)
+	if not ws.hud_layout then return end
+
+	T.run("ws.hud_layout.reserve returns distinct y offsets", function()
+		local a = ws.hud_layout.reserve("al_test_a", "top_right", 1)
+		local b = ws.hud_layout.reserve("al_test_b", "top_right", 2)
+		T.assert(a.y >= 0, "first slot y should be >= 0")
+		T.assert(b.y > a.y, "second slot should stack below the first")
+		ws.hud_layout.release("al_test_a")
+		ws.hud_layout.release("al_test_b")
+	end)
+
+	T.run("ws.hud_layout re-reserve keeps slot stable", function()
+		local a1 = ws.hud_layout.reserve("al_test_c", "top_right", 1)
+		local a2 = ws.hud_layout.reserve("al_test_c", "top_right", 1)
+		T.assert_eq(a1.y, a2.y, "re-reserving same id should keep y")
+		ws.hud_layout.release("al_test_c")
+	end)
+
+	T.run("ws.hud_layout.release frees the slot", function()
+		ws.hud_layout.clear()
+		local a = ws.hud_layout.reserve("al_test_d", "top_right", 1)
+		ws.hud_layout.release("al_test_d")
+		local b = ws.hud_layout.reserve("al_test_e", "top_right", 1)
+		T.assert_eq(a.y, b.y, "released slot should be reusable at the same y")
+		ws.hud_layout.clear()
+	end)
+end

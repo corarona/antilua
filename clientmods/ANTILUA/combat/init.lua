@@ -314,6 +314,12 @@ end
 
 local function update_target_hud(closest)
 	if not killaura.hud_id then return end
+	-- Keep the shared slot in sync if widgets stacked above resized
+	local slot = ws.hud_layout.reserve("killaura", "top_right", 1)
+	if slot.y ~= killaura.hud_y then
+		killaura.hud_y = slot.y
+		core.localplayer:hud_change(killaura.hud_id, "offset", { x = -10, y = slot.y })
+	end
 	if not closest then
 		core.localplayer:hud_change(killaura.hud_id, "text", "")
 		return
@@ -399,11 +405,13 @@ ws.rg("Killaura", {
 	description = "Auto-attack all nearby entities",
 	on_start = function(self)
 		if not core.localplayer then return false end
+		local slot = ws.hud_layout.reserve("killaura", "top_right", 1)
+		killaura.hud_y = slot.y
 		killaura.hud_id = core.localplayer:hud_add({
 			type = "text",
-			position = {x = 1, y = 0.28},
+			position = {x = 1, y = 0},
 			alignment = {x = -1, y = 0},
-			offset = {x = -10, y = 0},
+			offset = {x = -10, y = killaura.hud_y},
 			number = 0xFFCCCCCC,
 			scale = {x = 1.5, y = 1.5},
 		})
@@ -480,6 +488,7 @@ ws.rg("Killaura", {
 			core.localplayer:hud_remove(killaura.hud_id)
 			killaura.hud_id = nil
 		end
+		ws.hud_layout.release("killaura")
 	end,
 	cheat_settings = {
 		hph = { type = "number", default = 1, min = 1, max = 10 },

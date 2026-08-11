@@ -6,7 +6,19 @@ core.after(5, function()
 	end
 end)
 
-local hud, ping_hud
+local hud, ping_hud, cur_y
+
+-- Re-reserve the shared top-right HUD slot and apply any y offset change.
+local function apply_layout()
+	if not core.localplayer then return end
+	local slot = ws.hud_layout.reserve("tps_client", "top_right", 1)
+	if hud and slot.y ~= cur_y then
+		cur_y = slot.y
+		core.localplayer:hud_change(hud, "offset", { x = -10, y = cur_y })
+		core.localplayer:hud_change(ping_hud, "offset", { x = -35, y = cur_y })
+	end
+	return slot
+end
 
 core.register_on_modchannel_message(function(channel_name, sender, message)
 	if sender == "" and channel_name == "tps" and core.localplayer then
@@ -14,22 +26,23 @@ core.register_on_modchannel_message(function(channel_name, sender, message)
 		tps_client.ping = 0
 		if hud then
 			core.localplayer:hud_change(hud, "text", message)
+			apply_layout()
 		else
-			local tr = ws.hud_anchor("top_right", -10, 10)
+			local slot = apply_layout()
+			cur_y = slot.y
 			hud = core.localplayer:hud_add({
 				type = "text",
-				position = tr.position,
-				alignment = tr.alignment,
-				offset = tr.offset,
+				position = slot.position,
+				alignment = slot.alignment,
+				offset = { x = -10, y = cur_y },
 				text = message,
 				number = 0xFFFFFF,
 			})
-			tr.offset.x = tr.offset.x - 25
 			ping_hud = core.localplayer:hud_add({
 				type = "text",
-				position = tr.position,
-				alignment = tr.alignment,
-				offset = tr.offset,
+				position = slot.position,
+				alignment = slot.alignment,
+				offset = { x = -35, y = cur_y },
 				text = "0",
 				number = 0xFFF800,
 			})
@@ -43,5 +56,7 @@ core.register_globalstep(function(dtime)
 		if ping_hud and core.localplayer then
 			core.localplayer:hud_change(ping_hud, "text", tostring(math.floor(tps_client.ping * 1000)))
 		end
+		-- Keep the slot in sync if widgets above/below resize
+		apply_layout()
 	end
 end)
