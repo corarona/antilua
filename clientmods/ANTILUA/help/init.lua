@@ -388,4 +388,9 @@ if core.register_cheat then
 		func = show_keybinds,
 		description = "Show auto-generated keybindings reference",
 	})
+	core.register_cheat("Getting Started", {
+		category = "Misc",
+		func = function() show_index() end,
+		description = "Open the help index: mods, cheats, commands and keybinds",
+	})
 end

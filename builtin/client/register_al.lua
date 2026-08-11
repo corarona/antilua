@@ -132,14 +132,30 @@ core.features.codeedit_formspec = true
 -- Server mod editing via mod channel
 core.features.dte_server_edit = true
 
--- First-run tutorial
+-- First-run tutorial. Bumped to _v2 so existing users get the richer tour once.
 core.register_on_mods_loaded(function()
-	if core.settings:get("antilua_onboarded") == nil then
+	local is_new = core.settings:get("antilua_onboarded") == nil
+	local needs_tour = is_new or core.settings:get("antilua_onboarded_v2") == nil
+	if is_new then
 		core.settings:set("antilua_onboarded", "true")
+	end
+	if needs_tour then
+		core.settings:set("antilua_onboarded_v2", "true")
 		core.after(3, function()
 			core.show_toast(
-				"Antilua loaded. Press TAB for the cheat menu. "
-				.. "Configure keybinds in Settings > Key Bindings.",
+				"Antilua loaded. Press TAB for the cheat menu "
+				.. "- `~` (tilde) opens the quick action palette.",
+				"info")
+		end)
+		core.after(7, function()
+			core.show_toast(
+				"Type .help for the client command & keybind reference. "
+				.. ".help commands lists every client command.",
+				"info")
+		end)
+		core.after(11, function()
+			core.show_toast(
+				"Right-click a cheat and pick Slot to bind it to keys 1-9.",
 				"info")
 		end)
 	end
