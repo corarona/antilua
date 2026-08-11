@@ -149,6 +149,49 @@ core.create_client_entity(pos, properties) -> ObjectRef
 Returned by `core.get_objects_inside_radius()`, `core.localplayer:get_object()`,
 and `core.get_nearby_objects()`.
 
+### Server-API mirrors
+
+The following functions mirror their server-side counterparts. They read only
+client-local data, so no server involvement is required.
+
+```lua
+core.get_node_raw(pos) -> content, param1, param2, pos_ok
+    -- Raw node data at pos (same signature as server-side core.get_node_raw).
+    -- pos_ok is false when the block is not loaded client-side.
+core.get_node_boxes(box_type, pos[, node]) -> {aabb,...}
+    -- "node_box" | "collision_box" | "selection_box" (server signature).
+core.get_natural_light(pos[, time_of_day]) -> number
+    -- Sunlight level at pos (server signature; uses a client-side
+    -- findSunlight port that only walks loaded blocks).
+core.get_day_count() -> number
+core.get_loaded_blocks() -> {{x,y,z},...}
+    -- Positions of all currently loaded map blocks.
+core.get_modnames([load_order]) -> {string,...}
+    -- Names of the client's loaded mods.
+core.get_connected_players() -> {ObjectRef,...}
+    -- ObjectRefs for all players the client has as active objects
+    -- (including the local player).
+core.get_player_by_name(name) -> ObjectRef|nil
+core.get_objects_in_area(minp, maxp) -> {ObjectRef,...}
+    -- All active objects whose position lies within the AABB (minp/maxp in
+    -- node coordinates, like the server API).
+
+core.get_player_information([name]) -> table|nil
+    -- Self-scoped mirror of the server API: only the local player's
+    -- connection info (RTT/jitter, protocol_version, formspec_version,
+    -- lang_code, version_string) is available. Passing another player's
+    -- name returns nil.
+core.get_player_window_information([name]) -> table|nil
+    -- Self-scoped mirror: the local client's window info (size,
+    -- max_formspec_size, real_gui_scaling, real_hud_scaling,
+    -- touch_controls). Passing another player's name returns nothing.
+
+core.get_tool_wear_after_use(uses[, wear]) -> number
+core.get_dig_params(groups, tool_capabilities[, wear]) -> table
+core.get_hit_params(groups, tool_capabilities[, time_from_last_punch[, wear]]) -> table
+    -- Pure tool-math functions, identical to the server-side versions.
+```
+
 ---
 
 ## 2. ClientObjectRef (LocalPlayer & entities)

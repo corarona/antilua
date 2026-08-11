@@ -826,6 +826,10 @@ void ModApiUtil::InitializeClient(lua_State *L, int top)
 	API_FCT(urlencode);
 	API_FCT(strip_escapes);
 
+	API_FCT(get_tool_wear_after_use);
+	API_FCT(get_dig_params);
+	API_FCT(get_hit_params);
+
 	LuaSettings::create(L, g_settings, g_settings_path);
 	lua_setfield(L, top, "settings");
 }

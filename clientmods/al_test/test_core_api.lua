@@ -347,4 +347,206 @@ function test_core_api(T)
 		T.assert(type(core.registered_chatcommands["testdraw"].func) == "function",
 			"/testdraw should have a function")
 	end)
+
+	-- Server-API mirrors (client-side ports, no server changes needed)
+	T.run("core.get_node_raw exists", function()
+		T.assert(type(core.get_node_raw) == "function",
+			"core.get_node_raw should be a function")
+	end)
+
+	T.run("core.get_day_count exists", function()
+		T.assert(type(core.get_day_count) == "function",
+			"core.get_day_count should be a function")
+	end)
+
+	T.run("core.get_loaded_blocks exists", function()
+		T.assert(type(core.get_loaded_blocks) == "function",
+			"core.get_loaded_blocks should be a function")
+	end)
+
+	T.run("core.get_modnames exists", function()
+		T.assert(type(core.get_modnames) == "function",
+			"core.get_modnames should be a function")
+	end)
+
+	T.run("core.get_node_boxes exists", function()
+		T.assert(type(core.get_node_boxes) == "function",
+			"core.get_node_boxes should be a function")
+	end)
+
+	T.run("core.get_connected_players exists", function()
+		T.assert(type(core.get_connected_players) == "function",
+			"core.get_connected_players should be a function")
+	end)
+
+	T.run("core.get_player_by_name exists", function()
+		T.assert(type(core.get_player_by_name) == "function",
+			"core.get_player_by_name should be a function")
+	end)
+
+	T.run("core.get_objects_in_area exists", function()
+		T.assert(type(core.get_objects_in_area) == "function",
+			"core.get_objects_in_area should be a function")
+	end)
+
+	T.run("core.get_natural_light exists", function()
+		T.assert(type(core.get_natural_light) == "function",
+			"core.get_natural_light should be a function")
+	end)
+
+	T.run("core.get_tool_wear_after_use exists", function()
+		T.assert(type(core.get_tool_wear_after_use) == "function",
+			"core.get_tool_wear_after_use should be a function")
+	end)
+
+	T.run("core.get_dig_params exists", function()
+		T.assert(type(core.get_dig_params) == "function",
+			"core.get_dig_params should be a function")
+	end)
+
+	T.run("core.get_hit_params exists", function()
+		T.assert(type(core.get_hit_params) == "function",
+			"core.get_hit_params should be a function")
+	end)
+
+	T.run("core.get_player_information exists", function()
+		T.assert(type(core.get_player_information) == "function",
+			"core.get_player_information should be a function")
+	end)
+
+	T.run("core.get_player_window_information exists", function()
+		T.assert(type(core.get_player_window_information) == "function",
+			"core.get_player_window_information should be a function")
+	end)
+
+	T.run("get_tool_wear_after_use computes wear", function()
+		local wear = core.get_tool_wear_after_use(10, 0)
+		T.assert(type(wear) == "number", "wear should be a number, got " .. type(wear))
+		T.assert(wear > 0, "wear should be positive")
+	end)
+
+	T.run("get_modnames returns a list", function()
+		local names = core.get_modnames()
+		T.assert(type(names) == "table", "modnames should be a table")
+		T.assert(#names > 0, "at least one mod should be loaded")
+		for i, name in ipairs(names) do
+			T.assert(type(name) == "string", "modname should be a string")
+		end
+	end)
+
+	T.run("get_day_count returns a number", function()
+		local day = core.get_day_count()
+		T.assert(type(day) == "number", "day count should be a number")
+	end)
+
+	T.run("get_player_information returns self info", function()
+		local info = core.get_player_information()
+		T.assert(type(info) == "table", "info should be a table")
+		T.assert(type(info.protocol_version) == "number", "protocol_version should be numeric")
+		T.assert(type(info.version_string) == "string", "version_string should be a string")
+	end)
+
+	T.run("get_player_information for another player returns nil", function()
+		local info = core.get_player_information("no_such_player_xyz")
+		T.assert(info == nil, "unknown player should yield nil")
+	end)
+
+	T.run("get_player_window_information returns self window info", function()
+		local info = core.get_player_window_information()
+		T.assert(type(info) == "table", "window info should be a table")
+		T.assert(type(info.size) == "table", "size should be a table")
+		T.assert(type(info.real_gui_scaling) == "number", "real_gui_scaling should be numeric")
+		T.assert(type(info.touch_controls) == "boolean", "touch_controls should be boolean")
+	end)
+
+	T.defer("get_node_raw returns raw node data", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local stand = {x = math.floor(pos.x), y = math.floor(pos.y) - 1, z = math.floor(pos.z)}
+		local content, param1, param2, ok = core.get_node_raw(stand)
+		T.assert(type(ok) == "boolean", "pos_ok should be a boolean, got " .. type(ok))
+		T.assert(type(content) == "number", "content should be a number")
+		T.assert(type(param1) == "number", "param1 should be a number")
+		T.assert(type(param2) == "number", "param2 should be a number")
+		-- The node below the player may not be loaded yet; when it is, the
+		-- content must be a real (non-ignore) node.
+		if ok then
+			T.assert(content ~= core.get_content_id("ignore"),
+				"loaded node should not be ignore")
+		end
+	end)
+
+	T.defer("get_node_raw on far-away position returns ok=false", function()
+		local _, _, _, ok = core.get_node_raw({x = 30000, y = 0, z = 30000})
+		T.assert(ok == false, "unloaded position should report ok=false")
+	end)
+
+	T.defer("get_natural_light returns a number when node loaded", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local stand = {x = math.floor(pos.x), y = math.floor(pos.y) - 1, z = math.floor(pos.z)}
+		local light = core.get_natural_light(stand)
+		if light ~= nil then
+			T.assert(type(light) == "number", "natural light should be a number, got " .. type(light))
+			T.assert(light >= 0 and light <= 1000, "natural light should be in 0..1000")
+		end
+	end)
+
+	T.defer("get_loaded_blocks returns block positions", function()
+		local blocks = core.get_loaded_blocks()
+		T.assert(type(blocks) == "table", "loaded blocks should be a table")
+		for i, b in ipairs(blocks) do
+			T.assert(type(b.x) == "number", "block x should be a number")
+			T.assert(type(b.y) == "number", "block y should be a number")
+			T.assert(type(b.z) == "number", "block z should be a number")
+		end
+	end)
+
+	T.defer("get_node_boxes returns box list when node loaded", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local stand = {x = math.floor(pos.x), y = math.floor(pos.y) - 1, z = math.floor(pos.z)}
+		local boxes = core.get_node_boxes("selection_box", stand)
+		if boxes ~= nil then
+			T.assert(type(boxes) == "table", "node boxes should be a table")
+			for i, b in ipairs(boxes) do
+				T.assert(type(b) == "table", "box should be a table")
+			end
+		end
+	end)
+
+	T.defer("get_node_boxes rejects invalid box_type", function()
+		local ok, err = pcall(core.get_node_boxes, "bogus_type", {x = 0, y = 0, z = 0})
+		T.assert(not ok, "invalid box_type should throw")
+		T.assert(string.find(tostring(err), "box_type") ~= nil,
+			"error should mention box_type, got: " .. tostring(err))
+	end)
+
+	T.defer("get_connected_players returns player refs", function()
+		local players = core.get_connected_players()
+		T.assert(type(players) == "table", "players should be a table")
+		T.assert(#players > 0, "at least the local player should be present")
+	end)
+
+	T.defer("get_player_by_name returns the local player", function()
+		local name = core.localplayer:get_name()
+		T.assert(name ~= nil, "player name exists")
+		local ref = core.get_player_by_name(name)
+		T.assert(ref ~= nil, "local player ref should be found")
+		T.assert(ref:get_name() == name, "ref name should match")
+	end)
+
+	T.defer("get_player_by_name unknown returns nil", function()
+		local ref = core.get_player_by_name("no_such_player_xyz")
+		T.assert(ref == nil, "unknown player should yield nil")
+	end)
+
+	T.defer("get_objects_in_area returns objects", function()
+		local pos = core.localplayer:get_pos()
+		T.assert(pos ~= nil, "player pos exists")
+		local objs = core.get_objects_in_area(
+			{x = pos.x - 10, y = pos.y - 10, z = pos.z - 10},
+			{x = pos.x + 10, y = pos.y + 10, z = pos.z + 10})
+		T.assert(type(objs) == "table", "objects should be a table")
+	end)
 end

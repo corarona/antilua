@@ -21,6 +21,8 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "l_client.h"
 #include "chatmessage.h"
 #include "constants.h"
+#include "database/database.h"
+#include "daynightratio.h"
 #include "network/connection.h"
 #include "script/scripting_client.h"
 #include "client/renderingengine.h"
@@ -58,6 +60,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "client/clientmap.h"
 #include "client/content_cao.h"
 #include "client/gameui.h"
+#include "clientdynamicinfo.h"
 #include "server.h"
 #include "porting.h"
 #include "settings.h"
@@ -67,6 +70,9 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "mapgen/mg_schematic.h"
 #include "serialization.h"
 #include "util/serialize.h"
+#include "version.h"
+#include <stack>
+#include <unordered_map>
 
 #define checkCSMRestrictionFlag(flag) \
 	( getClient(L)->checkCSMRestrictionFlag(CSMRestrictionFlags::flag) )
@@ -456,6 +462,118 @@ int ModApiClient::l_get_server_info(lua_State *L)
 	lua_setfield(L, -2, "port");
 	lua_pushinteger(L, client->getProtoVersion());
 	lua_setfield(L, -2, "protocol_version");
+	return 1;
+}
+
+// get_player_information([name]) — self-scoped mirror of server-side
+// core.get_player_information. The client only has data about its own
+// connection, so if `name` is given and does not match the local player,
+// nil is returned.
+int ModApiClient::l_get_player_information(lua_State *L)
+{
+	Client *client = getClient(L);
+
+	if (!lua_isnoneornil(L, 1)) {
+		std::string name = luaL_checkstring(L, 1);
+		if (name != client->getEnv().getLocalPlayer()->getName()) {
+			lua_pushnil(L);
+			return 1;
+		}
+	}
+
+	con::IConnection &conn = client->getConnection();
+
+	auto getConInfo = [&] (con::rtt_stat_type type) -> float {
+		return conn.getPeerStat(PEER_ID_SERVER, type);
+	};
+
+	lua_newtable(L);
+	int table = lua_gettop(L);
+
+	lua_pushstring(L, "min_rtt");
+	lua_pushnumber(L, getConInfo(con::MIN_RTT));
+	lua_settable(L, table);
+
+	lua_pushstring(L, "max_rtt");
+	lua_pushnumber(L, getConInfo(con::MAX_RTT));
+	lua_settable(L, table);
+
+	lua_pushstring(L, "avg_rtt");
+	lua_pushnumber(L, getConInfo(con::AVG_RTT));
+	lua_settable(L, table);
+
+	lua_pushstring(L, "min_jitter");
+	lua_pushnumber(L, getConInfo(con::MIN_JITTER));
+	lua_settable(L, table);
+
+	lua_pushstring(L, "max_jitter");
+	lua_pushnumber(L, getConInfo(con::MAX_JITTER));
+	lua_settable(L, table);
+
+	lua_pushstring(L, "avg_jitter");
+	lua_pushnumber(L, getConInfo(con::AVG_JITTER));
+	lua_settable(L, table);
+
+	lua_pushstring(L, "protocol_version");
+	lua_pushnumber(L, client->getProtoVersion());
+	lua_settable(L, table);
+
+	lua_pushstring(L, "formspec_version");
+	lua_pushnumber(L, FORMSPEC_API_VERSION);
+	lua_settable(L, table);
+
+	lua_pushstring(L, "lang_code");
+	std::string lang = gettext("LANG_CODE");
+	if (lang == "LANG_CODE")
+		lang = "";
+	lua_pushstring(L, lang.c_str());
+	lua_settable(L, table);
+
+	lua_pushstring(L, "version_string");
+	lua_pushstring(L, g_version_string);
+	lua_settable(L, table);
+
+	return 1;
+}
+
+// get_player_window_information([name]) — self-scoped mirror of server-side
+// core.get_player_window_information. The client only knows its own window,
+// so if `name` is given and does not match the local player, returns nothing.
+int ModApiClient::l_get_player_window_information(lua_State *L)
+{
+	Client *client = getClient(L);
+
+	if (!lua_isnoneornil(L, 1)) {
+		std::string name = luaL_checkstring(L, 1);
+		if (name != client->getEnv().getLocalPlayer()->getName())
+			return 0;
+	}
+
+	ClientDynamicInfo dyn = ClientDynamicInfo::getCurrent();
+
+	lua_newtable(L);
+	int table = lua_gettop(L);
+
+	lua_pushstring(L, "size");
+	push_v2u32(L, dyn.render_target_size);
+	lua_settable(L, table);
+
+	lua_pushstring(L, "max_formspec_size");
+	push_v2f(L, dyn.max_fs_size);
+	lua_settable(L, table);
+
+	lua_pushstring(L, "real_gui_scaling");
+	lua_pushnumber(L, dyn.real_gui_scaling);
+	lua_settable(L, table);
+
+	lua_pushstring(L, "real_hud_scaling");
+	lua_pushnumber(L, dyn.real_hud_scaling);
+	lua_settable(L, table);
+
+	lua_pushstring(L, "touch_controls");
+	lua_pushboolean(L, dyn.touch_controls);
+	lua_settable(L, table);
+
 	return 1;
 }
 
@@ -1789,6 +1907,298 @@ int ModApiClient::l_get_node_name(lua_State *L)
 	return 1;
 }
 
+// get_node_raw(pos) — mirror of server-side core.get_node_raw
+// Returns content, param1, param2, pos_ok (nil, nil, nil, false if not loaded)
+int ModApiClient::l_get_node_raw(lua_State *L)
+{
+	v3s16 pos = read_v3s16(L, 1);
+	bool pos_ok;
+	MapNode n = getClient(L)->CSMGetNode(pos, &pos_ok);
+	lua_pushinteger(L, n.getContent());
+	lua_pushinteger(L, n.getParam1());
+	lua_pushinteger(L, n.getParam2());
+	lua_pushboolean(L, pos_ok);
+	return 4;
+}
+
+// get_day_count() — mirror of server-side core.get_day_count
+int ModApiClient::l_get_day_count(lua_State *L)
+{
+	lua_pushnumber(L, getClient(L)->getEnv().getDayCount());
+	return 1;
+}
+
+// get_loaded_blocks() — mirror of server-side core.get_loaded_blocks
+// Returns positions of all blocks the client currently has loaded.
+int ModApiClient::l_get_loaded_blocks(lua_State *L)
+{
+	Client *client = getClient(L);
+	ClientMap &map = client->getEnv().getClientMap();
+	v3s16 cam_pos = floatToInt(
+		client->getEnv().getLocalPlayer()->getPosition(), BS);
+	v3s16 blocks_min, blocks_max;
+	map.getBlocksInViewRange(cam_pos, &blocks_min, &blocks_max);
+	lua_newtable(L);
+	int idx = 1;
+	for (s16 z = blocks_min.Z; z <= blocks_max.Z; z++)
+	for (s16 y = blocks_min.Y; y <= blocks_max.Y; y++)
+	for (s16 x = blocks_min.X; x <= blocks_max.X; x++) {
+		MapBlock *block = map.getBlockNoCreateNoEx(v3s16(x, y, z));
+		if (!block)
+			continue;
+		push_v3s16(L, v3s16(x, y, z));
+		lua_rawseti(L, -2, idx++);
+	}
+	return 1;
+}
+
+// get_modnames([load_order]) — mirror of server-side core.get_modnames
+// Returns the names of the client's loaded mods.
+int ModApiClient::l_get_modnames(lua_State *L)
+{
+	const bool use_load_order = readParam<bool>(L, 1, false);
+
+	std::vector<std::string> modlist;
+	for (const ModSpec &mod : getClient(L)->getMods())
+		modlist.emplace_back(mod.name);
+
+	if (!use_load_order)
+		std::sort(modlist.begin(), modlist.end());
+
+	lua_createtable(L, modlist.size(), 0);
+	for (u16 i = 0; i < modlist.size(); i++) {
+		lua_pushstring(L, modlist[i].c_str());
+		lua_rawseti(L, -2, i + 1);
+	}
+	return 1;
+}
+
+// get_node_boxes(box_type, pos[, node]) — mirror of server-side core.get_node_boxes
+int ModApiClient::l_get_node_boxes(lua_State *L)
+{
+	std::string box_type = luaL_checkstring(L, 1);
+	if (box_type != "node_box" && box_type != "collision_box"
+			&& box_type != "selection_box")
+		luaL_error(L, "get_node_boxes: box_type is invalid. Allowed values: \"node_box\", \"collision_box\", \"selection_box\"");
+
+	v3s16 pos = read_v3s16(L, 2);
+	Client *client = getClient(L);
+	Map &map = client->getEnv().getMap();
+
+	MapNode n;
+	if (lua_istable(L, 3))
+		n = readnode(L, 3);
+	else {
+		bool pos_ok;
+		n = client->CSMGetNode(pos, &pos_ok);
+		if (!pos_ok) {
+			lua_pushnil(L);
+			return 1;
+		}
+	}
+
+	u8 neighbors = n.getNeighbors(pos, &map);
+	const NodeDefManager *ndef = client->getNodeDefManager();
+
+	std::vector<aabb3f> boxes;
+	if (box_type == "node_box")
+		n.getNodeBoxes(ndef, &boxes, neighbors);
+	else if (box_type == "collision_box")
+		n.getCollisionBoxes(ndef, &boxes, neighbors);
+	else
+		n.getSelectionBoxes(ndef, &boxes, neighbors);
+
+	push_aabb3f_vector(L, boxes, BS);
+
+	return 1;
+}
+
+// get_connected_players() — mirror of server-side core.get_connected_players
+// Returns ObjectRefs for all players the client has as active objects
+// (including the local player).
+int ModApiClient::l_get_connected_players(lua_State *L)
+{
+	ClientEnvironment &env = getClient(L)->getEnv();
+	auto pos = env.getLocalPlayer()->getPosition();
+	std::vector<DistanceSortedActiveObject> objs;
+	env.getActiveObjects(pos, 1e8f, objs);
+
+	lua_newtable(L);
+	int i = 0;
+	for (const auto &obj : objs) {
+		GenericCAO *cao = dynamic_cast<GenericCAO *>(obj.obj);
+		if (!cao || !cao->isPlayer())
+			continue;
+		push_objectRef(L, cao->getId());
+		lua_rawseti(L, -2, ++i);
+	}
+	return 1;
+}
+
+// get_player_by_name(name) — mirror of server-side core.get_player_by_name
+int ModApiClient::l_get_player_by_name(lua_State *L)
+{
+	std::string name = luaL_checkstring(L, 1);
+	ClientEnvironment &env = getClient(L)->getEnv();
+	auto pos = env.getLocalPlayer()->getPosition();
+	std::vector<DistanceSortedActiveObject> objs;
+	env.getActiveObjects(pos, 1e8f, objs);
+
+	for (const auto &obj : objs) {
+		GenericCAO *cao = dynamic_cast<GenericCAO *>(obj.obj);
+		if (!cao || !cao->isPlayer() || cao->getName() != name)
+			continue;
+		push_objectRef(L, cao->getId());
+		return 1;
+	}
+	return 0;
+}
+
+// get_objects_in_area(minp, maxp) — mirror of server-side core.get_objects_in_area
+// Returns ObjectRefs for all active objects whose position is within the box.
+int ModApiClient::l_get_objects_in_area(lua_State *L)
+{
+	v3f minp = read_v3f(L, 1) * BS;
+	v3f maxp = read_v3f(L, 2) * BS;
+	aabb3f box(minp, maxp);
+	box.repair();
+
+	ClientEnvironment &env = getClient(L)->getEnv();
+	auto pos = env.getLocalPlayer()->getPosition();
+	std::vector<DistanceSortedActiveObject> objs;
+	env.getActiveObjects(pos, 1e8f, objs);
+
+	lua_newtable(L);
+	int i = 0;
+	for (const auto &obj : objs) {
+		if (!box.isPointInside(obj.obj->getPosition()))
+			continue;
+		push_objectRef(L, obj.obj->getId());
+		lua_rawseti(L, -2, ++i);
+	}
+	return 1;
+}
+
+// Client-side port of ServerEnvironment::findSunlight (serverenvironment.cpp:672).
+// Flood-fills the neighborhood of `pos` to find the highest sunlight value that
+// can reach it. Only walks already-loaded client map data.
+static u8 clientFindSunlight(Client *client, v3s16 pos)
+{
+	// Directions for neighboring nodes with specified order
+	static const v3s16 dirs[] = {
+		v3s16(-1, 0, 0), v3s16(1, 0, 0), v3s16(0, 0, -1), v3s16(0, 0, 1),
+		v3s16(0, -1, 0), v3s16(0, 1, 0)
+	};
+
+	const NodeDefManager *ndef = client->getNodeDefManager();
+	ClientMap &map = client->getEnv().getClientMap();
+
+	// found_light remembers the highest known sunlight value at pos
+	u8 found_light = 0;
+
+	struct stack_entry {
+		v3s16 pos;
+		s16 dist;
+	};
+	std::stack<stack_entry> stack;
+	stack.push({pos, 0});
+
+	std::unordered_map<s64, s8> dists;
+	dists[MapDatabase::getBlockAsInteger(pos)] = 0;
+
+	while (!stack.empty()) {
+		struct stack_entry e = stack.top();
+		stack.pop();
+
+		v3s16 currentPos = e.pos;
+		s8 dist = e.dist + 1;
+
+		for (const v3s16 &off : dirs) {
+			v3s16 neighborPos = currentPos + off;
+			s64 neighborHash = MapDatabase::getBlockAsInteger(neighborPos);
+
+			// Do not walk neighborPos multiple times unless the distance to the start
+			// position is shorter
+			auto it = dists.find(neighborHash);
+			if (it != dists.end() && dist >= it->second)
+				continue;
+
+			bool is_position_ok;
+			MapNode node = map.getNode(neighborPos, &is_position_ok);
+			if (!is_position_ok)
+				continue; // block not loaded client-side
+
+			const ContentFeatures &def = ndef->get(node);
+			if (!def.sunlight_propagates) {
+				// Do not test propagation here again
+				dists[neighborHash] = -1;
+				continue;
+			}
+
+			// Sunlight could have come from here
+			dists[neighborHash] = dist;
+			u8 daylight = node.param1 & 0x0f;
+
+			// In the special case where sunlight shines from above and thus
+			// does not decrease with upwards distance, daylight is always
+			// bigger than nightlight, which never reaches 15
+			int possible_finlight = daylight - dist;
+			if (possible_finlight <= found_light) {
+				// Light from here cannot make a brighter light at currentPos than
+				// found_light
+				continue;
+			}
+
+			u8 nightlight = node.param1 >> 4;
+			if (daylight > nightlight) {
+				// Found a valid daylight
+				found_light = possible_finlight;
+			} else {
+				// Sunlight may be darker, so walk the neighbors
+				stack.push({neighborPos, dist});
+			}
+		}
+	}
+	return found_light;
+}
+
+// get_natural_light(pos[, time_of_day]) — mirror of server-side core.get_natural_light
+int ModApiClient::l_get_natural_light(lua_State *L)
+{
+	Client *client = getClient(L);
+	ClientMap &map = client->getEnv().getClientMap();
+	v3s16 pos = read_v3s16(L, 1);
+
+	bool is_position_ok;
+	MapNode n = map.getNode(pos, &is_position_ok);
+	if (!is_position_ok)
+		return 0;
+
+	// If the daylight is 0, nothing needs to be calculated
+	u8 daylight = n.param1 & 0x0f;
+	if (daylight == 0) {
+		lua_pushinteger(L, 0);
+		return 1;
+	}
+
+	u32 time_of_day;
+	if (lua_isnumber(L, 2)) {
+		time_of_day = 24000.0 * lua_tonumber(L, 2);
+		time_of_day %= 24000;
+	} else {
+		time_of_day = client->getEnv().getTimeOfDay();
+	}
+	u32 dnr = time_to_daynight_ratio(time_of_day, true);
+
+	// If it's the same as the artificial light, the sunlight needs to be
+	// searched for because the value may not emanate from the sun
+	if (daylight == n.param1 >> 4)
+		daylight = clientFindSunlight(client, pos);
+
+	lua_pushinteger(L, dnr * daylight / 1000);
+	return 1;
+}
+
 // add_task_node(pos, color)
 int ModApiClient::l_add_task_node(lua_State *L)
 {
@@ -1942,6 +2352,17 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(can_attack);
 	API_FCT(get_server_url);
 	API_FCT(get_node_name);
+	API_FCT(get_node_raw);
+	API_FCT(get_day_count);
+	API_FCT(get_loaded_blocks);
+	API_FCT(get_modnames);
+	API_FCT(get_node_boxes);
+	API_FCT(get_connected_players);
+	API_FCT(get_player_by_name);
+	API_FCT(get_objects_in_area);
+	API_FCT(get_natural_light);
+	API_FCT(get_player_information);
+	API_FCT(get_player_window_information);
 	API_FCT(add_task_node);
 	API_FCT(clear_task_node);
 	API_FCT(add_task_tracer);

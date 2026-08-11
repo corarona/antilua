@@ -256,6 +256,39 @@ private:
 	// get_node_name(pos) — convenience: get node name string at pos
 	static int l_get_node_name(lua_State *L);
 
+	// get_node_raw(pos) — content, param1, param2, pos_ok
+	static int l_get_node_raw(lua_State *L);
+
+	// get_day_count()
+	static int l_get_day_count(lua_State *L);
+
+	// get_loaded_blocks() — positions of all loaded blocks
+	static int l_get_loaded_blocks(lua_State *L);
+
+	// get_modnames([load_order])
+	static int l_get_modnames(lua_State *L);
+
+	// get_node_boxes(box_type, pos[, node])
+	static int l_get_node_boxes(lua_State *L);
+
+	// get_connected_players()
+	static int l_get_connected_players(lua_State *L);
+
+	// get_player_by_name(name)
+	static int l_get_player_by_name(lua_State *L);
+
+	// get_objects_in_area(minp, maxp)
+	static int l_get_objects_in_area(lua_State *L);
+
+	// get_natural_light(pos[, time_of_day])
+	static int l_get_natural_light(lua_State *L);
+
+	// get_player_information([name]) — self-scoped
+	static int l_get_player_information(lua_State *L);
+
+	// get_player_window_information([name]) — self-scoped
+	static int l_get_player_window_information(lua_State *L);
+
 	// add_task_node(pos, color) — persistent colored wireframe box marker
 	static int l_add_task_node(lua_State *L);
 
