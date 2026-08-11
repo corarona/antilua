@@ -201,6 +201,11 @@ if core.register_quick_menu_provider then
 		add_cmd("schemresume", "Resume Schem Build")
 
 		-- Info / stats / housekeeping commands
+		local help_cmd = cmd("help")
+		if help_cmd then
+			add("Open Command Reference", function() help_cmd.func("commands") end,
+				{ keywords = { "cmd", "command", "help", "list" } })
+		end
 		add_cmd("entityinfo", "Inspect Pointed Thing")
 		add_cmd("stats", "Show Session Stats")
 		add_cmd("blockstats", "Show Block Stats")

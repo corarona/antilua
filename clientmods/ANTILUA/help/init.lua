@@ -133,8 +133,9 @@ local function show_index(filter)
 	local sb = al_formspec.begin("size[9,12,true]")
 	sb:add(
 		al_formspec.searchbar(0, 0, 8.2, "filter", { default = filter }),
-		al_formspec.label(0, 0.9, "Help \226\128\148 Select a mod"),
-		"scroll_container[0,1.5;9,9.5;mscroll;vertical]"
+		al_formspec.button(0, 0.9, 2.2, 0.6, "__commands", "Commands"),
+		al_formspec.label(2.5, 0.95, "Help \226\128\148 Select a mod"),
+		"scroll_container[0,1.5;8.7,9.5;mscroll;vertical]"
 	)
 	local sy = 0
 	for i, entry in ipairs(results) do
@@ -146,8 +147,70 @@ local function show_index(filter)
 		sy = sy + 0.6
 	end
 	sb:add("scroll_container_end[]")
+	sb:add(al_formspec.scrollbar(8.8, 1.5, 0.2, 9.5, "vertical", "mscroll", 0))
 	sb:add(al_formspec.button_exit(3.5, 11.2, 2, 0.8, "", "Close"))
 	core.show_formspec("help:index|" .. filter, sb:get())
+end
+
+-- Show searchable list of all registered client chat commands, grouped by
+-- their originating mod. `filter` matches command name, description or params.
+local function show_commands(filter)
+	filter = (filter or "")
+	local by_mod = {}
+	local total = 0
+	local q = filter:lower()
+	for name, def in pairs(core.registered_chatcommands) do
+		if type(def) == "table" then
+			local origin = def.mod_origin or "??"
+			if origin == "??" then origin = "Other" end
+			local matches = filter == ""
+				or name:lower():find(q, 1, true)
+				or (def.description and def.description:lower():find(q, 1, true))
+				or (def.params and def.params:lower():find(q, 1, true))
+			if matches then
+				by_mod[origin] = by_mod[origin] or {}
+				table.insert(by_mod[origin], { name = name, def = def })
+				total = total + 1
+			end
+		end
+	end
+	local mods = {}
+	for m in pairs(by_mod) do table.insert(mods, m) end
+	table.sort(mods)
+
+	local sb = al_formspec.begin("size[9,12,true]")
+	sb:add(
+		al_formspec.searchbar(0, 0, 8.2, "filter", { default = filter }),
+		al_formspec.button(0, 0.9, 2.2, 0.6, "__index", "Index"),
+		al_formspec.label(2.5, 0.95, "Client Commands (" .. total .. ")"),
+		"scroll_container[0,1.5;8.7,9.5;mscroll;vertical]"
+	)
+	local sy = 0
+	for _, m in ipairs(mods) do
+		sb:add(al_formspec.label(0, sy, "\194\187 " .. m))
+		sy = sy + 0.55
+		table.sort(by_mod[m], function(a, b) return a.name < b.name end)
+		for _, entry in ipairs(by_mod[m]) do
+			local label = "." .. entry.name
+			if entry.def.params and entry.def.params ~= "" then
+				label = label .. " " .. entry.def.params
+			end
+			sb:add(al_formspec.label(0.3, sy, label))
+			local desc = entry.def.description or ""
+			if #desc > 26 then
+				desc = desc:sub(1, 26) .. "\226\128\166"
+			end
+			if desc ~= "" then
+				sb:add(al_formspec.label(4.0, sy, desc))
+			end
+			sy = sy + 0.45
+		end
+		sy = sy + 0.25
+	end
+	sb:add("scroll_container_end[]")
+	sb:add(al_formspec.scrollbar(8.8, 1.5, 0.2, 9.5, "vertical", "mscroll", 0))
+	sb:add(al_formspec.button_exit(3.5, 11.2, 2, 0.8, "", "Close"))
+	core.show_formspec("help:commands|" .. filter, sb:get())
 end
 
 -- Show a mod's README in a formspec textarea
@@ -189,6 +252,12 @@ core.register_on_formspec_input(function(formname, fields)
 	if formname:find("^help:index") then
 		local filter = formname:match("^help:index%|(.+)$") or ""
 
+		-- Commands button
+		if fields.__commands then
+			show_commands()
+			return
+		end
+
 		-- Mod button clicks
 		for raw in pairs(fields) do
 			if raw:find("^mod|") then
@@ -200,6 +269,23 @@ core.register_on_formspec_input(function(formname, fields)
 		-- Filter: Go button or Enter in filter field
 		if fields.__filter_search or (fields.filter and fields.filter ~= filter) then
 			show_index(fields.filter or filter)
+			return
+		end
+
+		return
+	end
+	if formname:find("^help:commands") then
+		local filter = formname:match("^help:commands%|(.+)$") or ""
+
+		-- Index button
+		if fields.__index then
+			show_index()
+			return
+		end
+
+		-- Filter: Go button or Enter in filter field
+		if fields.__filter_search or (fields.filter and fields.filter ~= filter) then
+			show_commands(fields.filter or filter)
 			return
 		end
 
@@ -222,9 +308,22 @@ if core.register_cheat then
 		func = function() show_index() end,
 		description = "Open the cheat help index with search",
 	})
+	core.register_cheat("Commands", {
+		category = "Misc",
+		func = function() show_commands() end,
+		description = "Browse all client chat commands",
+	})
 	core.register_chatcommand("help", {
-		description = "Open help system",
-		func = function() show_index() end,
+		description = "Open help system. Use .help commands [filter] for the command reference",
+		func = function(param)
+			param = param or ""
+			local sub, rest = param:match("^(%S+)%s*(.-)$")
+			if sub == "commands" then
+				show_commands(rest or "")
+			else
+				show_index(param)
+			end
+		end,
 	})
 end
 
