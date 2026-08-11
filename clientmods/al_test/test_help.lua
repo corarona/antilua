@@ -40,4 +40,21 @@ function test_help(T)
 		end
 		T.assert(found, "Commands cheat should be registered")
 	end)
+
+	T.run("help keybinds reference builds without error", function()
+		local keybinds_cheat
+		for _, cats in pairs(core.cheats or {}) do
+			if cats["Keybinds"] then
+				-- func-based cheats store the func directly
+				if type(cats["Keybinds"]) == "function" then
+					keybinds_cheat = { func = cats["Keybinds"] }
+				end
+				break
+			end
+		end
+		if keybinds_cheat and keybinds_cheat.func then
+			local ok, err = pcall(keybinds_cheat.func)
+			T.assert(ok, "keybinds reference should build: " .. tostring(err))
+		end
+	end)
 end

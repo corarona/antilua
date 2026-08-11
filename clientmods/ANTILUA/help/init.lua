@@ -65,24 +65,37 @@ local function show_keybinds()
 	local all = core.settings:get_names()
 	local cats = {}
 	for _, name in ipairs(all) do
-		if name:find("^keymap_") then
+		-- Skip hotbar slot keys (keymap_slot1..32) — noise for a cheat reference
+		if name:find("^keymap_") and not name:find("^keymap_slot%d+$") then
 			local cat = keybind_category(name)
 			cats[cat] = cats[cat] or {}
 			table.insert(cats[cat], name)
 		end
 	end
 
+	-- Quick slot assignments (cheat_slot_1..9 → cheat name)
+	local slots = {}
+	for i = 1, 9 do
+		local setting = core.settings:get("cheat_slot_" .. i)
+		if setting and setting ~= "" then
+			local def = core.cheat_defs and core.cheat_defs[setting]
+			table.insert(slots, { slot = i, label = (def and def.name) or setting })
+		end
+	end
+
 	local sb = al_formspec.begin("size[13,12,true]")
-	sb:add(al_formspec.label(0, 0, "Key Bindings"))
-	local y = 0.6
+	sb:add(
+		al_formspec.label(0, 0, "Key Bindings"),
+		"scroll_container[0,0.6;12.4,10.5;kscroll;vertical]"
+	)
+	local y = 0
 	local order = {"Cheat Menu", "Cheat Toggles", "Movement", "Interaction", "Camera", "UI", "Other"}
 	for _, cat in ipairs(order) do
 		if cats[cat] then
 			table.sort(cats[cat])
-			sb:add(al_formspec.label(0, y, "■ " .. cat))
+			sb:add(al_formspec.label(0, y, "\226\150\160 " .. cat))
 			y = y + 0.55
 			for _, name in ipairs(cats[cat]) do
-				if y > 11 then break end
 				local val = core.settings:get(name) or ""
 				local action = name:gsub("^keymap_", "")
 				sb:add(al_formspec.label(0.5, y, action))
@@ -92,7 +105,45 @@ local function show_keybinds()
 			y = y + 0.25
 		end
 	end
-	sb:add(al_formspec.button(5, math.min(y + 0.3, 11.5), 3, 0.8, "__close", "Close"))
+
+	-- Quick slot hotkeys (1-9)
+	sb:add(al_formspec.label(0, y, "\226\150\160 Quick Slots (1-9 hotkeys)"))
+	y = y + 0.55
+	if #slots == 0 then
+		sb:add(al_formspec.label(0.5, y, "None assigned \226\128\148 right-click a cheat and pick Slot."))
+		y = y + 0.45
+	else
+		for _, s in ipairs(slots) do
+			sb:add(al_formspec.label(0.5, y, "Slot " .. s.slot))
+			sb:add(al_formspec.label(7, y, s.label))
+			y = y + 0.45
+		end
+	end
+	y = y + 0.25
+
+	-- Quick palette reference
+	local palette_keys = {
+		{"~", "Open quick palette"},
+		{"\226\134\145 \226\134\147", "Navigate"},
+		{"Enter", "Run selected"},
+		{"TAB", "Options submenu"},
+		{"\226\134\146 / \226\134\144", "Enter / leave submenu"},
+		{"1-9", "Toggle quick-slot cheat"},
+		{"/", "Send as server command"},
+		{".", "Browse client commands"},
+		{"ESC", "Close / clear"},
+	}
+	sb:add(al_formspec.label(0, y, "\226\150\160 Quick Palette"))
+	y = y + 0.55
+	for _, row in ipairs(palette_keys) do
+		sb:add(al_formspec.label(0.5, y, row[1]))
+		sb:add(al_formspec.label(7, y, row[2]))
+		y = y + 0.45
+	end
+
+	sb:add("scroll_container_end[]")
+	sb:add(al_formspec.scrollbar(12.5, 0.6, 0.2, 10.5, "vertical", "kscroll", 0))
+	sb:add(al_formspec.button_exit(5, 11.3, 3, 0.8, "", "Close"))
 	core.show_formspec("help:keybinds", sb:get())
 end
 
