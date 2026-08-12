@@ -526,4 +526,48 @@ function test_hud_layout(T)
 		T.assert_eq(a.y, b.y, "released slot should be reusable at the same y")
 		ws.hud_layout.clear()
 	end)
+
+	T.run("ws.hud_layout.top is base margin for non-top-right anchors", function()
+		T.assert_eq(ws.hud_layout.top("bottom_left"), 8,
+			"bottom_left stack should use the plain base margin")
+		T.assert_eq(ws.hud_layout.top("top_center"), 8,
+			"top_center stack should use the plain base margin")
+	end)
+
+	T.run("ws.hud_layout.minimap_active returns a boolean", function()
+		local v = ws.hud_layout.minimap_active()
+		T.assert(type(v) == "boolean", "minimap_active should return a boolean")
+	end)
+
+	T.run("ws.hud_layout.minimap_offset honours the avoid fraction", function()
+		-- Default: 1/4 of the given screen height
+		local prev = core.settings:get("ws_hud_minimap_avoid_fraction")
+		core.settings:set("ws_hud_minimap_avoid_fraction", "")
+		local default = ws.hud_layout.minimap_offset(1080)
+		T.assert_eq(default, 270, "default offset should be 1/4 of the screen height")
+
+		-- Custom fraction
+		core.settings:set("ws_hud_minimap_avoid_fraction", "0.25")
+		local custom = ws.hud_layout.minimap_offset(1080)
+		T.assert_eq(custom, 270, "custom fraction should scale the offset")
+
+		-- 0 disables avoidance
+		core.settings:set("ws_hud_minimap_avoid_fraction", "0")
+		T.assert_eq(ws.hud_layout.minimap_offset(1080), 0,
+			"fraction 0 should disable the minimap offset")
+
+		if prev == nil then
+			core.settings:set("ws_hud_minimap_avoid_fraction", "")
+		else
+			core.settings:set("ws_hud_minimap_avoid_fraction", prev)
+		end
+	end)
+
+	T.run("ws.hud_layout.top moves down when the minimap is visible", function()
+		if not ws.hud_layout.minimap_active() then return end
+		local win = core.get_player_window_information()
+		local expected = 8 + ws.hud_layout.minimap_offset(win.size.y)
+		T.assert_eq(ws.hud_layout.top("top_right"), expected,
+			"top_right stack should sit below the minimap when it is visible")
+	end)
 end

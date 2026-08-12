@@ -428,6 +428,38 @@ local HUD_LINE_H = 15        -- pixels per text line
 local HUD_GAP = 6            -- gap between widgets
 local HUD_TOP = 8            -- top margin
 
+--- Whether the minimap is currently drawn in the top-right corner.
+function ws.hud_layout_minimap_active()
+	if not core.settings:get_bool("enable_minimap") then return false end
+	local mm = core.ui and core.ui.minimap
+	if not mm or type(mm.get_mode) ~= "function" then return false end
+	return mm:get_mode() > 0
+end
+
+--- Pixel offset to add below the minimap footprint when it is visible.
+-- Controlled by the ws_hud_minimap_avoid_fraction setting (fraction of the
+-- screen height, default 1/4); 0 disables avoidance entirely.
+function ws.hud_layout_minimap_offset(screen_h)
+	if not screen_h or screen_h <= 0 then return 0 end
+	local frac = tonumber(core.settings:get("ws_hud_minimap_avoid_fraction")) or 0.25
+	if frac <= 0 then return 0 end
+	return math.floor(screen_h * frac)
+end
+
+--- Top margin for a given anchor's stack. The top_right anchor is pushed down
+-- by the minimap footprint when the minimap is visible so HUD widgets don't
+-- overlap it; other anchors are unaffected.
+function ws.hud_layout_top(anchor)
+	local top = HUD_TOP
+	if anchor == "top_right" and ws.hud_layout_minimap_active() then
+		local win = core.get_player_window_information and core.get_player_window_information()
+		if win and win.size and win.size.y then
+			top = top + ws.hud_layout_minimap_offset(win.size.y)
+		end
+	end
+	return top
+end
+
 local function layout_anchor(anchor)
 	local a = hud_anchors[anchor]
 	if not a then a = hud_anchors.top_right end
@@ -438,7 +470,7 @@ local function hud_layout_rebuild(anchor)
 	local slots = hud_layout_slots[anchor]
 	local order = hud_layout_order[anchor]
 	if not slots or not order then return end
-	local y = HUD_TOP
+	local y = ws.hud_layout_top(anchor)
 	for _, id in ipairs(order) do
 		local e = slots[id]
 		e.y = y
@@ -513,6 +545,9 @@ ws.hud_layout = {
 	reserve = ws.hud_layout_reserve,
 	release = ws.hud_layout_release,
 	clear = ws.hud_layout_clear,
+	top = ws.hud_layout_top,
+	minimap_active = ws.hud_layout_minimap_active,
+	minimap_offset = ws.hud_layout_minimap_offset,
 }
 
 core.register_on_disconnect(function()
