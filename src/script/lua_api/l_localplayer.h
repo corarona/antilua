@@ -149,6 +149,9 @@ private:
 	// get_zoom_fov(self)
 	static int l_get_zoom_fov(lua_State *L);
 
+	// set_zoom_fov(self, fov)
+	static int l_set_zoom_fov(lua_State *L);
+
 	LocalPlayer *m_localplayer = nullptr;
 
 public:

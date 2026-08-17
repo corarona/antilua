@@ -274,6 +274,7 @@ core.get_player_radius_area(player_name, radius) -> p1, p2|nil
 :get_autojump() -> bool              -- Current autojump state
 :set_autojump(bool)                  -- Enable/disable autojump
 :get_zoom_fov() -> number            -- Server-granted zoom FOV in degrees (0 = disabled)
+:set_zoom_fov(fov)                   -- Set stored zoom FOV client-side (0 = disabled)
 ```
 
 ### Generic ObjectRef

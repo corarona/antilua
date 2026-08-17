@@ -66,4 +66,13 @@ function test_localplayer_extras(T)
 			T.assert(fov == 15, "zoom_bypass should force fov to 15, got " .. tostring(fov))
 		end
 	end)
+
+	T.defer("localplayer:set_zoom_fov", function()
+		local before = core.localplayer:get_zoom_fov()
+		core.localplayer:set_zoom_fov(20)
+		T.assert(core.localplayer:get_zoom_fov() == 20, "zoom fov should be settable")
+		-- restore
+		core.localplayer:set_zoom_fov(before)
+		T.assert(core.localplayer:get_zoom_fov() == before, "zoom fov should restore")
+	end)
 end

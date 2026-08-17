@@ -536,6 +536,7 @@ Additional read-only getters on `core.localplayer`:
 | `get_autojump()` | boolean | Current autojump state |
 | `set_autojump(bool)` | nil | Enable/disable autojump |
 | `get_zoom_fov()` | number | Server-granted zoom FOV in degrees; `0` = zoom disabled |
+| `set_zoom_fov(fov)` | nil | Set the stored zoom FOV client-side (degrees; `0` disables zoom) |
 
 ### Key files
 
