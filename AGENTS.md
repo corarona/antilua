@@ -233,6 +233,69 @@ Adds an `enable_shaders` toggle (`Settings → Enable shaders`) that falls back 
 - `.clang-tidy` checks are configured as warnings-as-errors for performance items
 - The `vcpkg.json` exists but is not the primary dependency manager on Linux
 
+## Layer System & Cheat-Menu Desktops
+
+UI overlays are unified under a **layer manager** (`src/gui/layerManager.h/cpp`,
+global `g_layer_manager`). A layer is a named, z-ordered UI mode (either a
+`CONTAINER` like the cheat layer, or a `FULLSCREEN` view like the big map).
+The built-in layers are registered in `setupDefaultLayers()`: `cheat`,
+`quick_palette`, `bigmap`. The `DrawGUI` pipeline step (`plain.cpp`,
+`anaglyph.cpp`, `sidebyside.cpp`) delegates to
+`g_layer_manager->drawAboveGUI()`; the bigmap keeps its own `AlBigMapOverlay`
+render step below the GUI. Input routing in `inputhandler.cpp` (ESC-to-close
+via `handleEsc()`, char capture via `anyLayerCapturesChars()`, dynamic layer
+toggle keys via `handleKeyPress()`) queries the manager.
+
+The cheat layer hosts **desktops** (tabs) — `CheatMenu::m_desktops`. Each
+desktop is either a panel workspace (its own `m_panels` arrangement with
+per-desktop layout persistence namespaced by `panel_pos_d_<desktop>_<panel>`)
+or a fullscreen content view. Defaults: `cheats` (panel workspace), `menu`
+(fullscreen supermenu), `palette` (fullscreen quick palette; the standalone
+`~` overlay is unchanged). A tab strip renders at the top of the cheat layer;
+`keymap_cheat_desktop_next/prev` cycle desktops. The active desktop persists
+in `cheat_menu_desktop`.
+
+### Lua API
+
+```lua
+-- Layers
+core.register_layer(id, { title=, opaque=, key="KEY_KEY_X" })
+core.layer_show(id) / core.layer_hide(id) / core.layer_toggle(id)
+core.layer_is_visible(id)
+core.get_layers()                -- {id, title, type, visible}[]
+
+-- Cheat desktops (tabs)
+core.register_cheat_desktop(id, {
+    title = "My Tab", fullscreen = true,
+    on_draw = function() end,    -- may use the 2D draw queue below
+    on_input = function(ev) end, -- ev = {type="click", x, y}
+})
+core.get_cheat_desktops()
+core.cheat_desktop_show(id)
+
+-- 2D immediate-mode draw queue (flushed after an on_draw callback)
+core.draw_rect(x, y, w, h, color)             -- color: "#RRGGBB" or {r,g,b,a}
+core.draw_text(text, x, y, font_size, color)
+core.draw_texture(texture_name, x, y, w, h)
+```
+
+The draw queue lives on `CheatMenu` (`m_draw_queue` /
+`flushDrawQueue()`) and is also used by Lua-registered layers' `on_draw`.
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `src/gui/layerManager.h/cpp` | `AlLayer`, `LayerManager`, `setupDefaultLayers()` |
+| `src/gui/cheatMenu.h/cpp` | `CheatDesktop`, desktop switch/tab bar/fullscreen views, draw queue |
+| `src/gui/overlayPanel.h/cpp` | `m_panel_pos_prefix` for per-desktop panel-position keys |
+| `src/client/inputhandler.cpp` | ESC/char/dynamic-key dispatch via the manager |
+| `src/client/game.cpp` | Manager lifetime, desktop key handling, palette-desktop `~` routing |
+| `src/client/keys.h` | `CHEAT_DESKTOP_NEXT/PREV` |
+| `src/defaultsettings.cpp` + `builtin/settingtypes_al.txt` | `cheat_menu_desktop`, `cheat_menu_opaque`, desktop keys |
+| `src/script/lua_api/l_client.cpp` | Layer/desktop/draw-queue Lua bindings |
+| `clientmods/al_test/test_layers.lua` | Integration tests |
+
 ## Session Detach / Reattach
 
 The client can detach (hide its SDL window, run headlessly) and reattach from

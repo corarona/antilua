@@ -140,6 +140,8 @@ static void set_al_default_settings()
 	settings->setDefault("cheat_hud.speed", "1.0");
 	settings->setDefault("cheat_menu_rearrange", "false");
 	settings->setDefault("cheat_menu_toggle_mode", "false");
+	settings->setDefault("cheat_menu_opaque", "true");
+	settings->setDefault("cheat_menu_desktop", "cheats");
 	settings->setDefault("cheat_menu_favorites", "");
 	settings->setDefault("quick_menu_usage", "");
 	settings->setDefault("node_esp_nodes", "");
@@ -292,6 +294,8 @@ void set_default_settings()
 	settings->setDefault("keymap_cmd_local", "SYSTEM_SCANCODE_55"); // .
 	settings->setDefault("keymap_minimap", "SYSTEM_SCANCODE_25|GAMEPAD_BUTTON_4"); // KEY_KEY_V|Gamepad Back
 	settings->setDefault("keymap_big_map", "SYSTEM_SCANCODE_50"); // KEY_KEY_M
+	settings->setDefault("keymap_cheat_desktop_next", "SYSTEM_SCANCODE_75"); // PageUp
+	settings->setDefault("keymap_cheat_desktop_prev", "SYSTEM_SCANCODE_78"); // PageDown
 	settings->setDefault("keymap_console", "SYSTEM_SCANCODE_67"); // KEY_F10
 
 	// see <https://github.com/luanti-org/luanti/issues/12792>

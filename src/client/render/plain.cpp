@@ -22,7 +22,7 @@
 #include <IGUIEnvironment.h>
 #include "map.h"
 #include "nodedef.h"
-#include "gui/cheatMenu.h"
+#include "gui/layerManager.h"
 #include "gui/mainmenumanager.h"
 #include "client/client.h"
 #include <vector>
@@ -239,26 +239,13 @@ void DrawHUD::run(PipelineContext &context)
 
 void DrawGUI::run(PipelineContext &context)
 {
-	// Draw GUI (formspecs, chat) above the big map overlay, then the cheat
-	// menu overlay + panels on top of everything.
+	// Draw GUI (formspecs, chat) first, then the registered UI layers (cheat
+	// menu overlay + panels, quick palette, future fullscreen layers) on top.
 	context.device->getGUIEnvironment()->drawAll();
 
-	if (g_cheat_menu) {
+	if (g_layer_manager) {
 		video::IVideoDriver *driver = context.device->getVideoDriver();
-		v2s32 mouse_pos = context.device->getCursorControl()->getPosition();
-
-		if (g_cheat_layer_active) {
-			v2u32 ss = driver->getScreenSize();
-			driver->draw2DRectangle(video::SColor(178, 0, 0, 0),
-				core::rect<s32>(0, 0, ss.X, ss.Y));
-			g_cheat_menu->drawSearchBar(driver);
-			g_cheat_menu->drawAll(driver, mouse_pos,
-				g_show_minimal_debug);
-		}
-		g_cheat_menu->drawPinned(driver, mouse_pos);
-
-		if (g_cheat_menu->isQuickPaletteActive())
-			g_cheat_menu->drawQuickPalette(driver, mouse_pos);
+		g_layer_manager->drawAboveGUI(driver, context.target_size);
 	}
 }
 

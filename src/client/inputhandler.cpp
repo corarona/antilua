@@ -10,7 +10,7 @@
 #include "gui/mainmenumanager.h"
 #include "gui/touchcontrols.h"
 #include "gui/cheatMenu.h"
-#include "client/al_bigmap.h"
+#include "gui/layerManager.h"
 #include "hud_element.h"
 #include "log_internal.h"
 #include "client/renderingengine.h"
@@ -100,6 +100,8 @@ void MyEventReceiver::reloadKeybindings()
 	keybindings[KeyType::SELECT_CONFIRM] = getKeySetting("keymap_select_confirm");
 	keybindings[KeyType::QUICK_SELECT_MENU] = getKeySetting("keymap_quick_select_menu");
 	keybindings[KeyType::BIG_MAP] = getKeySetting("keymap_big_map");
+	keybindings[KeyType::CHEAT_DESKTOP_NEXT] = getKeySetting("keymap_cheat_desktop_next");
+	keybindings[KeyType::CHEAT_DESKTOP_PREV] = getKeySetting("keymap_cheat_desktop_prev");
 
 	keybindings[KeyType::QUICKTUNE_NEXT] = getKeySetting("keymap_quicktune_next");
 	keybindings[KeyType::QUICKTUNE_PREV] = getKeySetting("keymap_quicktune_prev");
@@ -297,19 +299,19 @@ bool MyEventReceiver::OnEvent(const SEvent &event)
 	if (event.EventType == EET_KEY_INPUT_EVENT) {
 		KeyPress keyCode(event.KeyInput);
 
-		// ESC closes the big map instead of opening the pause menu. Runs only
-		// when no menu/cheat layer is active (the menu branch above already
-		// handled those), and consumes the event so cancelPressed() sees
-		// nothing.
+		// ESC closes the topmost ESC-closable layer (e.g. the big map) instead
+		// of opening the pause menu. Runs only when no menu is active (the menu
+		// branch above already handled those), and consumes the event so
+		// cancelPressed() sees nothing.
 		if (keyCode == EscapeKey && event.KeyInput.PressedDown
-				&& AlBigMap::getActive() && !g_cheat_layer_active
-				&& !g_quick_palette_active) {
-			AlBigMap::closeActive();
+				&& g_layer_manager && g_layer_manager->handleEsc()) {
 			return true;
 		}
 
-		// Capture character input when cheat layer or quick palette is active
-		if ((g_cheat_layer_active || g_quick_palette_active) && event.KeyInput.PressedDown) {
+		// Capture character input when a character-capturing layer is active
+		// (cheat layer, quick palette)
+		if (g_layer_manager && g_layer_manager->anyLayerCapturesChars()
+				&& event.KeyInput.PressedDown) {
 			// Skip capture for toggle/action keys that have character codes
 			bool is_action = false;
 			{
@@ -338,6 +340,10 @@ bool MyEventReceiver::OnEvent(const SEvent &event)
 				cheat_char_avail = true;
 			}
 		}
+
+		// Registered layer toggle keys (Lua-registered layers).
+		if (g_layer_manager && g_layer_manager->handleKeyPress(keyCode, event.KeyInput.PressedDown))
+			return true;
 
 		if (setKeyDown(keyCode, event.KeyInput.PressedDown))
 			return true;

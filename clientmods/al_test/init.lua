@@ -92,6 +92,7 @@ end
 -- Load test modules
 dofile(modpath .. "/test_api.lua")
 dofile(modpath .. "/test_cheats.lua")
+dofile(modpath .. "/test_layers.lua")
 dofile(modpath .. "/test_quick_menu.lua")
 dofile(modpath .. "/test_clientobject.lua")
 dofile(modpath .. "/test_inventory.lua")
@@ -235,6 +236,7 @@ core.register_on_mods_loaded(function()
 		local max_polls = 60 -- 60 * 0.5s = 30s timeout
 		local function run_quick_menu_tests()
 			if core.get_quick_menu_entries and #core.get_quick_menu_entries() > 0 then
+				test_layers(al_test)
 				test_quick_menu(al_test)
 				al_test.report()
 			elseif max_polls > 0 then

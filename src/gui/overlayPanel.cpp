@@ -533,7 +533,7 @@ void PanelOverlay::handleMouse(v2s32 pos, bool left_down)
 				panel.y = 60;
 				panel.pinned = false;
 				panel.detached = false;
-				g_settings->remove("panel_pos_" + panel.id);
+				g_settings->remove(panelPosKey(panel.id));
 				snapPanel((s32)pi);
 				savePanelPositions();
 				return;
@@ -577,7 +577,7 @@ void PanelOverlay::onLayerClosed()
 
 void PanelOverlay::loadPanelPosition(OverlayPanel &panel)
 {
-	std::string key = "panel_pos_" + panel.id;
+	std::string key = panelPosKey(panel.id);
 	std::string val;
 	if (!g_settings->getNoEx(key, val) || val.empty())
 		return;
@@ -597,10 +597,15 @@ void PanelOverlay::loadPanelPosition(OverlayPanel &panel)
 	}
 }
 
+std::string PanelOverlay::panelPosKey(const std::string &panel_id) const
+{
+	return "panel_pos_" + m_panel_pos_prefix + panel_id;
+}
+
 void PanelOverlay::savePanelPositions()
 {
 	for (auto &panel : m_panels) {
-		std::string key = "panel_pos_" + panel.id;
+		std::string key = panelPosKey(panel.id);
 		std::string val = std::to_string(panel.x) + "," + std::to_string(panel.y);
 		if (panel.pinned) val += ",pinned";
 		if (panel.collapsed) val += ",collapsed";
@@ -612,7 +617,7 @@ void PanelOverlay::rearrangePanels()
 {
 	// Clear all saved positions
 	for (auto &panel : m_panels) {
-		g_settings->remove("panel_pos_" + panel.id);
+		g_settings->remove(panelPosKey(panel.id));
 		panel.x = 0;
 		panel.y = 0;
 		panel.pinned = false;

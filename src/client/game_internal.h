@@ -23,6 +23,7 @@
 #include "sky.h"
 #include "client/camera_roll.h"
 #include "gui/cheatMenu.h"
+#include "gui/layerManager.h"
 #include "gui/toastManager.h"
 #include "util/pointedthing.h"
 

@@ -88,6 +88,27 @@ struct PaletteSubmenuLevel
 	std::vector<QuickPaletteItem *> items;
 };
 
+// One tab/"desktop" of the cheat layer. A desktop is either a panel workspace
+// (non-fullscreen: its own set of draggable panels with per-desktop layout
+// persistence) or a fullscreen content view (e.g. the Supermenu or the Quick
+// Palette, or Lua-registered content).
+struct CheatDesktop
+{
+	std::string id;
+	std::string title;
+	bool fullscreen = false;
+	// Saved panel-workspace state (non-fullscreen desktops only), swapped in
+	// and out when the active desktop changes.
+	std::vector<OverlayPanel> panels;
+	std::string search_text;
+	bool categories_initialized = false;
+	int super_level = 0;
+	int super_selected_category = 0;
+	// Lua fullscreen content callbacks (registry refs).
+	int on_draw = 0;
+	int on_input = 0;
+};
+
 class CheatMenu : public PanelOverlay
 {
 public:
@@ -119,6 +140,55 @@ public:
 
 	// Supermenu
 	void createSupermenuPanel();
+
+	// Desktops (tabs within the cheat layer)
+	size_t getDesktopCount() const { return m_desktops.size(); }
+	const CheatDesktop &getDesktop(size_t idx) const { return m_desktops[idx]; }
+	size_t getActiveDesktop() const { return m_active_desktop; }
+	void switchDesktop(size_t idx);
+	void switchDesktop(const std::string &id);
+	void nextDesktop();
+	void prevDesktop();
+	bool isPaletteDesktopActive() const;
+	bool isMenuDesktopActive() const;
+	bool scrollFullscreenDesktop(s32 wheel);
+	// Whether the cheat search bar should be drawn for the active desktop
+	// (the Palette desktop draws its own search field).
+	bool needsSearchBar() const { return !isPaletteDesktopActive(); }
+	// Whether palette input/drawing mode is active (standalone overlay or the
+	// Palette desktop).
+	bool isPaletteModeActive() const
+	{
+		return m_quick_palette_active || isPaletteDesktopActive();
+	}
+	void drawTabStrip(video::IVideoDriver *driver, v2s32 mouse_pos);
+	bool handleTabClick(v2s32 pos);
+	bool handleTabKey(wchar_t c);
+	bool isTabBarActive() const { return !m_desktops.empty(); }
+	void onDesktopChanged();
+
+	// Lua-accessible helpers for introspection / tests
+	int getCheatDesktops(lua_State *L);
+	int setCheatDesktop(lua_State *L);
+	int registerCheatDesktop(lua_State *L);
+
+	// 2D immediate-mode drawing queue for fullscreen Lua content (cheat
+	// desktops and layers). Queued via core.draw_rect/text/texture while an
+	// on_draw callback runs; flushed right after the callback returns.
+	enum class DrawPrimType { RECT, TEXT, TEXTURE };
+	struct DrawPrim {
+		DrawPrimType type = DrawPrimType::RECT;
+		s32 x = 0, y = 0, w = 0, h = 0;
+		video::SColor color;
+		std::string text;
+		std::string texture;
+		u32 font_size = 0;
+	};
+	std::vector<DrawPrim> m_draw_queue;
+	int queueDrawRect(lua_State *L);
+	int queueDrawText(lua_State *L);
+	int queueDrawTexture(lua_State *L);
+	void flushDrawQueue(video::IVideoDriver *driver, v2u32 ss);
 
 	// Quick Access Palette
 	void toggleQuickPalette();
@@ -222,6 +292,27 @@ private:
 	// Supermenu
 	int m_super_level = 0;
 	int m_super_selected_category = 0;
+
+	// Desktops (tabs)
+	std::vector<CheatDesktop> m_desktops;
+	size_t m_active_desktop = 0;
+	void setupDefaultDesktops();
+	void saveActiveDesktopState();
+	void loadActiveDesktopState();
+	// Fullscreen desktop content
+	void drawFullscreenMenu(video::IVideoDriver *driver, v2s32 mouse_pos);
+	void drawFullscreenPalette(video::IVideoDriver *driver, v2s32 mouse_pos);
+	void drawFullscreenLua(video::IVideoDriver *driver, v2s32 mouse_pos);
+	void handleFullscreenMenuClick(v2s32 pos);
+	void handleFullscreenLuaClick(v2s32 pos);
+	bool fullscreenDesktopAt(v2s32 pos);
+	void enterDesktop(size_t idx);
+	bool desktopNeedsTabBar() const { return m_desktops.size() > 1; }
+	// Fullscreen menu navigation state
+	int m_menu_selected = 0;
+	void menuUp();
+	void menuDown();
+	void menuConfirm();
 
 	// Favorites
 	bool isFavorite(const std::string &setting) const;

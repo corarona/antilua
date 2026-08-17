@@ -203,6 +203,24 @@ private:
 	static int l_quick_menu_open(lua_State *L);
 	static int l_quick_menu_close(lua_State *L);
 
+	// Layer API (unified UI layers)
+	static int l_layer_show(lua_State *L);
+	static int l_layer_hide(lua_State *L);
+	static int l_layer_toggle(lua_State *L);
+	static int l_layer_is_visible(lua_State *L);
+	static int l_get_layers(lua_State *L);
+	static int l_register_layer(lua_State *L);
+
+	// 2D immediate-mode draw queue for fullscreen Lua content
+	static int l_draw_rect(lua_State *L);
+	static int l_draw_text(lua_State *L);
+	static int l_draw_texture(lua_State *L);
+
+	// Cheat-menu desktops (tabs)
+	static int l_get_cheat_desktops(lua_State *L);
+	static int l_cheat_desktop_show(lua_State *L);
+	static int l_register_cheat_desktop(lua_State *L);
+
 	// get_data_path()
 	static int l_get_data_path(lua_State *L);
 

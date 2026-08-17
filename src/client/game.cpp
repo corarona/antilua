@@ -413,6 +413,8 @@ Game::Game() :
 Game::~Game()
 {
 	delete m_cheat_menu;
+	delete g_layer_manager;
+	g_layer_manager = nullptr;
 	delete client;
 	soundmaker.reset();
 	sound_manager.reset();
@@ -483,12 +485,19 @@ bool Game::startup(volatile std::sig_atomic_t *kill,
 	if (!createClient(start_data))
 		return false;
 
+	// UI layer manager: registry + draw/input dispatch for the cheat layer,
+	// quick palette, big map and future fullscreen layers.
+	g_layer_manager = new LayerManager();
+	g_layer_manager->setClient(client);
+	setupDefaultLayers();
+
 	m_cheat_menu = new CheatMenu(client);
 	if (!m_cheat_menu) {
 		errordata.setError("Could not allocate memory for cheat menu");
 		errorstream << "Could not allocate memory for cheat menu" << std::endl;
 		return false;
 	}
+	g_cheat_menu = m_cheat_menu;
 	m_camera_roll_controller = std::make_unique<CameraRollController>();
 
 	m_rendering_engine->initialize(client, hud);
@@ -613,7 +622,7 @@ void Game::run()
 
 		if (!m_is_paused) {
 			LocalPlayer *player = client->getEnv().getLocalPlayer();
-			bool palette_active = m_cheat_menu && m_cheat_menu->isQuickPaletteActive();
+			bool palette_active = m_cheat_menu && m_cheat_menu->isPaletteModeActive();
 			bool roll_left = !palette_active && isKeyDown(KeyType::CAMERA_ROLL_LEFT);
 			bool roll_right = !palette_active && isKeyDown(KeyType::CAMERA_ROLL_RIGHT);
 			bool any_movement = !palette_active &&
@@ -1481,11 +1490,12 @@ void Game::processUserInput(f32 dtime)
 
 void Game::processKeyInput()
 {
-	// While the Quick Access Palette is open, the game must not react to what
-	// the user types or clicks: only the palette's own keys (navigation, ~ to
-	// close, TAB for the second level) are processed and everything else —
-	// movement, camera, toggles, chat, pause — is swallowed.
-	if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive()) {
+	// While the Quick Access Palette is open (standalone overlay or the Palette
+	// desktop), the game must not react to what the user types or clicks: only
+	// the palette's own keys (navigation, ~ to close, TAB for the second level)
+	// are processed and everything else — movement, camera, toggles, chat,
+	// pause — is swallowed.
+	if (m_cheat_menu && m_cheat_menu->isPaletteModeActive()) {
 		static bool palette_tab_was_down = false;
 		bool tab_down = input->isKeyDown(KeyType::TOGGLE_CHEAT_MENU);
 		if (tab_down && !palette_tab_was_down)
@@ -1493,7 +1503,13 @@ void Game::processKeyInput()
 		palette_tab_was_down = tab_down;
 
 		if (wasKeyPressed(KeyType::QUICK_SELECT_MENU)) {
-			m_cheat_menu->toggleQuickPalette();
+			if (m_cheat_layer_active && m_cheat_menu->isPaletteDesktopActive()) {
+				// ~ while on the Palette desktop: switch back to the panel
+				// workspace instead of opening the standalone overlay.
+				m_cheat_menu->switchDesktop("cheats");
+			} else {
+				m_cheat_menu->toggleQuickPalette();
+			}
 			if (!m_cheat_layer_active) {
 				if (auto *cur = device->getCursorControl())
 					cur->setVisible(false);
@@ -1630,12 +1646,12 @@ void Game::processKeyInput()
 	} else if (wasKeyDown(KeyType::QUICKTUNE_DEC)) {
 		quicktune->dec();
 	} else if (wasKeyDown(KeyType::SELECT_UP)) {
-		if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
+		if (m_cheat_menu && m_cheat_menu->isPaletteModeActive())
 			m_cheat_menu->paletteUp();
 		else if (m_cheat_menu)
 			m_cheat_menu->selectUp();
 	} else if (wasKeyDown(KeyType::SELECT_DOWN)) {
-		if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
+		if (m_cheat_menu && m_cheat_menu->isPaletteModeActive())
 			m_cheat_menu->paletteDown();
 		else if (m_cheat_menu)
 			m_cheat_menu->selectDown();
@@ -1646,10 +1662,16 @@ void Game::processKeyInput()
 		if (m_cheat_menu)
 			m_cheat_menu->selectRight();
 	} else if (wasKeyPressed(KeyType::SELECT_CONFIRM)) {
-		if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive())
+		if (m_cheat_menu && m_cheat_menu->isPaletteModeActive())
 			m_cheat_menu->paletteConfirm();
 		else if (m_cheat_menu)
 			m_cheat_menu->selectConfirm();
+	} else if (wasKeyPressed(KeyType::CHEAT_DESKTOP_NEXT)) {
+		if (m_cheat_menu && m_cheat_layer_active)
+			m_cheat_menu->nextDesktop();
+	} else if (wasKeyPressed(KeyType::CHEAT_DESKTOP_PREV)) {
+		if (m_cheat_menu && m_cheat_layer_active)
+			m_cheat_menu->prevDesktop();
 	} else if (wasKeyPressed(KeyType::QUICK_SELECT_MENU)) {
 		if (m_cheat_menu) {
 			m_cheat_menu->toggleQuickPalette();
@@ -2327,9 +2349,10 @@ void Game::updatePlayerControl(const CameraOrientation &cam)
 
 	//TimeTaker tt("update player control", NULL, PRECISION_NANO);
 
-	// While the quick palette is open, the player must not move from typed
-	// keys or stray mouse buttons — the palette is a modal overlay.
-	const bool palette_active = m_cheat_menu && m_cheat_menu->isQuickPaletteActive();
+	// While the quick palette is open (standalone overlay or the Palette
+	// desktop), the player must not move from typed keys or stray mouse
+	// buttons — the palette is a modal overlay.
+	const bool palette_active = m_cheat_menu && m_cheat_menu->isPaletteModeActive();
 
 	PlayerControl control(
 		palette_active ? 0.0f : getAxisValue(KeyType::FORWARD),
@@ -4018,13 +4041,21 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats, f32 dtime)
 		}
 	}
 
-	// Forward left-clicks to the quick palette (row activation)
-	if (m_cheat_menu && m_cheat_menu->isQuickPaletteActive()) {
+	// Forward left-clicks to the quick palette (row activation). Applies to the
+	// standalone overlay and the Palette desktop.
+	if (m_cheat_menu && m_cheat_menu->isPaletteModeActive()) {
 		static bool palette_click_was_down = false;
 		bool click_down = input->isKeyDown(KeyType::DIG);
 		if (click_down && !palette_click_was_down)
 			m_cheat_menu->paletteClick(input->getMousePos());
 		palette_click_was_down = click_down;
+	}
+
+	// Forward mouse-wheel scrolling to the fullscreen Menu desktop.
+	if (m_cheat_layer_active && m_cheat_menu) {
+		s32 wheel = input->getMouseWheel();
+		if (wheel != 0)
+			m_cheat_menu->scrollFullscreenDesktop(wheel);
 	}
 
 	g_cheat_menu = this->m_cheat_menu;

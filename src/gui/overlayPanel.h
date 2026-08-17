@@ -63,6 +63,11 @@ protected:
 	void drawPanelChrome(video::IVideoDriver *driver, OverlayPanel &panel, v2s32 mouse_pos);
 	static bool pointInRect(s32 px, s32 py, s32 x, s32 y, s32 w, s32 h);
 
+	// Panel position persistence keys ("panel_pos_" + prefix + panel.id).
+	// The prefix lets subclasses namespace positions per context (e.g. per
+	// cheat-layer desktop/tab).
+	std::string panelPosKey(const std::string &panel_id) const;
+
 	void loadPanelPosition(OverlayPanel &panel);
 	void savePanelPositions();
 
@@ -87,6 +92,9 @@ protected:
 	std::vector<OverlayPanel> m_panels;
 	v2u32 m_screen_size{0, 0};
 	bool m_categories_initialized = false;
+
+	// Prefix for panel_pos_<id> settings keys, e.g. per-desktop namespacing.
+	std::string m_panel_pos_prefix;
 
 	s32 m_prev_mouse_x = 0, m_prev_mouse_y = 0;
 	bool m_mouse_left_prev = false;

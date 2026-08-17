@@ -27,6 +27,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 #include "script/scripting_client.h"
 #include "client/renderingengine.h"
 #include "gui/cheatMenu.h"
+#include "gui/layerManager.h"
 #include <IFileSystem.h>
 #include <IReadFile.h>
 #include "client/session.h"
@@ -1615,6 +1616,159 @@ int ModApiClient::l_quick_menu_close(lua_State *L)
 	return 0;
 }
 
+// ---------------------------------------------------------------------------
+// Layer API (unified UI layers: cheat layer, big map, Lua-registered layers)
+// ---------------------------------------------------------------------------
+
+static LayerManager *checkLayerManager(lua_State *L)
+{
+	if (!g_layer_manager)
+		luaL_error(L, "layer API: no layer manager available");
+	return g_layer_manager;
+}
+
+// layer_show(id)
+int ModApiClient::l_layer_show(lua_State *L)
+{
+	std::string id = luaL_checkstring(L, 1);
+	LayerManager *mgr = checkLayerManager(L);
+	mgr->setVisible(id, true);
+	lua_pushboolean(L, mgr->isVisible(id));
+	return 1;
+}
+
+// layer_hide(id)
+int ModApiClient::l_layer_hide(lua_State *L)
+{
+	std::string id = luaL_checkstring(L, 1);
+	LayerManager *mgr = checkLayerManager(L);
+	mgr->setVisible(id, false);
+	lua_pushboolean(L, !mgr->isVisible(id));
+	return 1;
+}
+
+// layer_toggle(id)
+int ModApiClient::l_layer_toggle(lua_State *L)
+{
+	std::string id = luaL_checkstring(L, 1);
+	LayerManager *mgr = checkLayerManager(L);
+	mgr->setVisible(id, !mgr->isVisible(id));
+	lua_pushboolean(L, mgr->isVisible(id));
+	return 1;
+}
+
+// layer_is_visible(id)
+int ModApiClient::l_layer_is_visible(lua_State *L)
+{
+	std::string id = luaL_checkstring(L, 1);
+	lua_pushboolean(L, g_layer_manager && g_layer_manager->isVisible(id));
+	return 1;
+}
+
+// get_layers() → array of {id, title, type, visible}
+int ModApiClient::l_get_layers(lua_State *L)
+{
+	if (!g_layer_manager) {
+		lua_newtable(L);
+		return 1;
+	}
+	lua_newtable(L);
+	int idx = 1;
+	for (const auto &l : g_layer_manager->getLayers()) {
+		lua_newtable(L);
+		lua_pushstring(L, l.id.c_str());
+		lua_setfield(L, -2, "id");
+		lua_pushstring(L, l.title.c_str());
+		lua_setfield(L, -2, "title");
+		lua_pushstring(L, l.type == AlLayer::Type::CONTAINER ? "container" : "fullscreen");
+		lua_setfield(L, -2, "type");
+		lua_pushboolean(L, l.isVisible());
+		lua_setfield(L, -2, "visible");
+		lua_rawseti(L, -2, idx++);
+	}
+	return 1;
+}
+
+// register_layer(id, { title=, key=, on_draw=, on_input= })
+int ModApiClient::l_register_layer(lua_State *L)
+{
+	LayerManager *mgr = checkLayerManager(L);
+	std::string id = luaL_checkstring(L, 1);
+	if (!lua_istable(L, 2))
+		return luaL_error(L, "register_layer: def must be a table");
+	if (mgr->getLayer(id))
+		return luaL_error(L, "register_layer: layer '%s' already exists", id.c_str());
+
+	AlLayer layer;
+	layer.id = id;
+	lua_getfield(L, 2, "title");
+	layer.title = lua_isstring(L, -1) ? lua_tostring(L, -1) : id;
+	lua_pop(L, 1);
+	lua_getfield(L, 2, "opaque");
+	layer.opaque = lua_isboolean(L, -1) && lua_toboolean(L, -1);
+	lua_pop(L, 1);
+	lua_getfield(L, 2, "key");
+	layer.key_name = lua_isstring(L, -1) ? lua_tostring(L, -1) : "";
+	lua_pop(L, 1);
+
+	mgr->registerLayer(layer);
+	lua_pushboolean(L, true);
+	return 1;
+}
+
+// draw_rect(x, y, w, h, color) — 2D immediate-mode draw queue for fullscreen
+// Lua content (drawn while a cheat desktop / layer on_draw callback runs).
+int ModApiClient::l_draw_rect(lua_State *L)
+{
+	if (!g_cheat_menu)
+		return luaL_error(L, "draw_rect: no cheat menu");
+	return g_cheat_menu->queueDrawRect(L);
+}
+
+// draw_text(text, x, y, size, color)
+int ModApiClient::l_draw_text(lua_State *L)
+{
+	if (!g_cheat_menu)
+		return luaL_error(L, "draw_text: no cheat menu");
+	return g_cheat_menu->queueDrawText(L);
+}
+
+// draw_texture(texture, x, y, w, h)
+int ModApiClient::l_draw_texture(lua_State *L)
+{
+	if (!g_cheat_menu)
+		return luaL_error(L, "draw_texture: no cheat menu");
+	return g_cheat_menu->queueDrawTexture(L);
+}
+
+// get_cheat_desktops()
+int ModApiClient::l_get_cheat_desktops(lua_State *L)
+{
+	if (!g_cheat_menu) {
+		lua_newtable(L);
+		return 1;
+	}
+	return g_cheat_menu->getCheatDesktops(L);
+}
+
+// cheat_desktop_show(id)
+int ModApiClient::l_cheat_desktop_show(lua_State *L)
+{
+	if (!g_cheat_menu) {
+		lua_pushboolean(L, false);
+		return 1;
+	}
+	return g_cheat_menu->setCheatDesktop(L);
+}
+
+// register_cheat_desktop(id, { title=, fullscreen=, on_draw=, on_input= })
+int ModApiClient::l_register_cheat_desktop(lua_State *L)
+{
+	if (!g_cheat_menu)
+		return luaL_error(L, "register_cheat_desktop: no cheat menu");
+	return g_cheat_menu->registerCheatDesktop(L);
+}
+
 // get_data_path()
 int ModApiClient::l_get_data_path(lua_State *L)
 {
@@ -2341,6 +2495,18 @@ void ModApiClient::Initialize(lua_State *L, int top)
 	API_FCT(open_inventory);
 	API_FCT(quick_menu_open);
 	API_FCT(quick_menu_close);
+	API_FCT(layer_show);
+	API_FCT(layer_hide);
+	API_FCT(layer_toggle);
+	API_FCT(layer_is_visible);
+	API_FCT(get_layers);
+	API_FCT(register_layer);
+	API_FCT(draw_rect);
+	API_FCT(draw_text);
+	API_FCT(draw_texture);
+	API_FCT(get_cheat_desktops);
+	API_FCT(cheat_desktop_show);
+	API_FCT(register_cheat_desktop);
 	API_FCT(get_data_path);
 	API_FCT(get_serverdata_path);
 	// Extended API

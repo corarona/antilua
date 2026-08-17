@@ -6,6 +6,9 @@ cheat_hud (Cheat HUD) bool true
 #    Use toggle mode (press TAB to open/close) instead of hold-to-show.
 cheat_menu_toggle_mode (Cheat menu toggle mode) bool false
 
+#    Draw the dark scrim behind the cheat menu.
+cheat_menu_opaque (Cheat menu opaque) bool true
+
 #    Comma-separated list of favorited cheat settings for the favorites panel.
 cheat_menu_favorites (Cheat menu favorites) string
 
@@ -20,6 +23,15 @@ keymap_quick_select_menu (Quick select menu) key SYSTEM_SCANCODE_53
 
 #    Key to toggle the fullscreen big map overlay.
 keymap_big_map (Toggle big map) key SYSTEM_SCANCODE_50
+
+#    Key to switch to the next cheat-menu desktop (tab).
+keymap_cheat_desktop_next (Next cheat desktop) key SYSTEM_SCANCODE_75
+
+#    Key to switch to the previous cheat-menu desktop (tab).
+keymap_cheat_desktop_prev (Previous cheat desktop) key SYSTEM_SCANCODE_78
+
+#    Id of the cheat-menu desktop (tab) active when the cheat layer opens.
+cheat_menu_desktop (Cheat menu desktop) string cheats
 
 #    Key to toggle killaura.
 keymap_toggle_killaura (Toggle killaura) key KEY_KEY_X

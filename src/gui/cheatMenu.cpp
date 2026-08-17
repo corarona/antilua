@@ -180,6 +180,646 @@ CheatMenu::CheatMenu(Client *client) : PanelOverlay(), m_client(client)
 	m_palette_recent_header.kind = QuickPaletteItem::Kind::LUA_ENTRY;
 	m_palette_recent_header.label = "Recent";
 	m_palette_recent_header.is_section_header = true;
+
+	setupDefaultDesktops();
+}
+
+// ---------------------------------------------------------------------------
+// Desktops (tabs)
+// ---------------------------------------------------------------------------
+
+void CheatMenu::setupDefaultDesktops()
+{
+	m_desktops.clear();
+
+	CheatDesktop cheats;
+	cheats.id = "cheats";
+	cheats.title = "Cheats";
+	cheats.fullscreen = false;
+	m_desktops.push_back(std::move(cheats));
+
+	CheatDesktop menu;
+	menu.id = "menu";
+	menu.title = "Menu";
+	menu.fullscreen = true;
+	m_desktops.push_back(std::move(menu));
+
+	CheatDesktop palette;
+	palette.id = "palette";
+	palette.title = "Palette";
+	palette.fullscreen = true;
+	m_desktops.push_back(std::move(palette));
+
+	// Restore the persisted active desktop.
+	m_active_desktop = 0;
+	std::string saved;
+	if (g_settings->getNoEx("cheat_menu_desktop", saved) && !saved.empty()) {
+		for (size_t i = 0; i < m_desktops.size(); i++)
+			if (m_desktops[i].id == saved) {
+				m_active_desktop = i;
+				break;
+			}
+	}
+	enterDesktop(m_active_desktop);
+}
+
+void CheatMenu::saveActiveDesktopState()
+{
+	if (m_active_desktop >= m_desktops.size())
+		return;
+	CheatDesktop &d = m_desktops[m_active_desktop];
+	d.panels = m_panels;
+	d.search_text = m_search_text;
+	d.categories_initialized = m_categories_initialized;
+	d.super_level = m_super_level;
+	d.super_selected_category = m_super_selected_category;
+}
+
+void CheatMenu::loadActiveDesktopState()
+{
+	if (m_active_desktop >= m_desktops.size())
+		return;
+	const CheatDesktop &d = m_desktops[m_active_desktop];
+	m_panels = d.panels;
+	m_search_text = d.search_text;
+	m_categories_initialized = d.categories_initialized;
+	m_super_level = d.super_level;
+	m_super_selected_category = d.super_selected_category;
+	m_menu_selected = 0;
+}
+
+void CheatMenu::enterDesktop(size_t idx)
+{
+	if (idx >= m_desktops.size())
+		return;
+	saveActiveDesktopState();
+	m_active_desktop = idx;
+	const std::string &did = m_desktops[idx].id;
+	// The default "cheats" desktop keeps the legacy (unprefixed) position keys
+	// so existing saved layouts keep working.
+	m_panel_pos_prefix = (did == "cheats") ? "" : "d_" + did + "_";
+	loadActiveDesktopState();
+	onDesktopChanged();
+}
+
+void CheatMenu::onDesktopChanged()
+{
+	m_drag_panel = -1;
+	m_ctx.active = false;
+	if (m_active_desktop < m_desktops.size()) {
+		if (m_desktops[m_active_desktop].fullscreen)
+			m_categories_initialized = true;
+		g_settings->set("cheat_menu_desktop", m_desktops[m_active_desktop].id);
+	}
+	// Entering the Palette desktop collects its entries once.
+	if (isPaletteDesktopActive() && m_quick_palette_items.empty())
+		collectQuickPaletteItems();
+}
+
+void CheatMenu::switchDesktop(size_t idx)
+{
+	if (idx == m_active_desktop || idx >= m_desktops.size())
+		return;
+	enterDesktop(idx);
+}
+
+void CheatMenu::switchDesktop(const std::string &id)
+{
+	for (size_t i = 0; i < m_desktops.size(); i++)
+		if (m_desktops[i].id == id) {
+			switchDesktop(i);
+			return;
+		}
+}
+
+void CheatMenu::nextDesktop()
+{
+	if (m_desktops.size() < 2)
+		return;
+	switchDesktop((m_active_desktop + 1) % m_desktops.size());
+}
+
+void CheatMenu::prevDesktop()
+{
+	if (m_desktops.size() < 2)
+		return;
+	switchDesktop((m_active_desktop + m_desktops.size() - 1) % m_desktops.size());
+}
+
+bool CheatMenu::isPaletteDesktopActive() const
+{
+	return m_active_desktop < m_desktops.size() &&
+			m_desktops[m_active_desktop].fullscreen &&
+			m_desktops[m_active_desktop].id == "palette";
+}
+
+bool CheatMenu::isMenuDesktopActive() const
+{
+	return m_active_desktop < m_desktops.size() &&
+			m_desktops[m_active_desktop].fullscreen &&
+			m_desktops[m_active_desktop].id == "menu";
+}
+
+void CheatMenu::drawTabStrip(video::IVideoDriver *driver, v2s32 mouse_pos)
+{
+	if (!desktopNeedsTabBar())
+		return;
+
+	s32 tab_h = 34;
+	s32 tab_gap = 4;
+	s32 pad = 14;
+	s32 x = 10;
+	s32 y = 8;
+
+	for (size_t i = 0; i < m_desktops.size(); i++) {
+		auto &d = m_desktops[i];
+		s32 tw = (s32)m_font->getDimension(utf8_to_wide(d.title).c_str()).Width + pad * 2;
+		bool active = (i == m_active_desktop);
+		bool hover = pointInRect(mouse_pos.X, mouse_pos.Y, x, y, tw, tab_h);
+		video::SColor bg = active ? m_active_bg_color :
+				(hover ? m_item_bg.getInterpolated(m_active_bg_color, 0.35f) : m_item_bg);
+		drawRoundedRect(driver, x, y, tw, tab_h, bg, m_bg_color, 4);
+		drawRoundedBorder(driver, x, y, tw, tab_h,
+			active ? m_selected_font_color : m_border_color, 4);
+		drawText(d.title, x + pad, y + (tab_h - m_fontsize.Y) / 2,
+			active ? m_selected_font_color : m_font_color);
+		x += tw + tab_gap;
+	}
+}
+
+bool CheatMenu::handleTabClick(v2s32 pos)
+{
+	if (!desktopNeedsTabBar())
+		return false;
+
+	s32 tab_h = 34;
+	s32 tab_gap = 4;
+	s32 pad = 14;
+	s32 x = 10;
+	s32 y = 8;
+
+	for (size_t i = 0; i < m_desktops.size(); i++) {
+		auto &d = m_desktops[i];
+		s32 tw = (s32)m_font->getDimension(utf8_to_wide(d.title).c_str()).Width + pad * 2;
+		if (pointInRect(pos.X, pos.Y, x, y, tw, tab_h)) {
+			switchDesktop(i);
+			return true;
+		}
+		x += tw + tab_gap;
+	}
+	return false;
+}
+
+// Fullscreen Menu desktop: a centered category/cheat browser sharing the
+// supermenu navigation state (m_super_level / m_super_selected_category).
+void CheatMenu::drawFullscreenMenu(video::IVideoDriver *driver, v2s32 mouse_pos)
+{
+	CHEAT_MENU_GET_SCRIPTPTR
+	auto ss = driver->getScreenSize();
+	s32 cw = 420;
+	s32 cx = ((s32)ss.Width - cw) / 2;
+	s32 cy = 84;
+	s32 ch = (s32)ss.Height - cy - 40;
+
+	drawRoundedRect(driver, cx - 8, cy - 8, cw + 16, ch + 16, m_panel_bg, m_bg_color, 6);
+	drawRoundedBorder(driver, cx - 8, cy - 8, cw + 16, ch + 16, m_border_color, 6);
+
+	s32 iy = cy;
+	int chi = 0;
+	if (m_super_level == 0) {
+		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
+			auto &cat = script->m_cheat_categories[ci];
+			if (!matchesSearch(cat->m_name, m_search_text))
+				continue;
+			bool selected = (chi == m_menu_selected);
+			if (pointInRect(mouse_pos.X, mouse_pos.Y, cx, iy, cw, m_entry_height))
+				m_menu_selected = chi;
+			video::SColor cbg = selected ? m_active_bg_color : m_item_bg;
+			driver->draw2DRectangle(cbg,
+				core::rect<s32>(cx + 1, iy, cx + cw - 1, iy + m_entry_height));
+			drawText("> " + cat->m_name, cx + 12, iy + (m_entry_height - m_fontsize.Y) / 2,
+				selected ? m_selected_font_color : m_font_color);
+			iy += m_entry_height + m_gap;
+			chi++;
+		}
+	} else {
+		bool back_sel = (chi == m_menu_selected);
+		if (pointInRect(mouse_pos.X, mouse_pos.Y, cx, iy, cw, m_entry_height))
+			m_menu_selected = chi;
+		video::SColor cbg = back_sel ? m_active_bg_color : m_item_bg;
+		driver->draw2DRectangle(cbg,
+			core::rect<s32>(cx + 1, iy, cx + cw - 1, iy + m_entry_height));
+		drawText("\u2190 Categories", cx + 12, iy + (m_entry_height - m_fontsize.Y) / 2,
+			back_sel ? m_selected_font_color : m_font_color);
+		iy += m_entry_height + m_gap;
+		chi++;
+
+		if (m_super_selected_category >= 0 &&
+				(size_t)m_super_selected_category < script->m_cheat_categories.size()) {
+			for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats) {
+				if (!matchesSearch(cheat->m_name, m_search_text))
+					continue;
+				bool selected = (chi == m_menu_selected);
+				if (pointInRect(mouse_pos.X, mouse_pos.Y, cx, iy, cw, m_entry_height))
+					m_menu_selected = chi;
+				bool enabled = cheat->is_enabled();
+				video::SColor cbg = selected ? m_active_bg_color : m_item_bg;
+				driver->draw2DRectangle(cbg,
+					core::rect<s32>(cx + 1, iy, cx + cw - 1, iy + m_entry_height));
+				std::string txt = enabled ? "[x] " : "[ ] ";
+				txt += cheat->m_name;
+				drawText(txt, cx + 12, iy + (m_entry_height - m_fontsize.Y) / 2,
+					selected ? m_selected_font_color : m_font_color);
+				iy += m_entry_height + m_gap;
+				chi++;
+			}
+		}
+	}
+}
+
+void CheatMenu::drawFullscreenPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
+{
+	if (m_quick_palette_items.empty())
+		collectQuickPaletteItems();
+	drawQuickPalette(driver, mouse_pos);
+}
+
+void CheatMenu::drawFullscreenLua(video::IVideoDriver *driver, v2s32 mouse_pos)
+{
+	if (m_active_desktop >= m_desktops.size() || m_desktops[m_active_desktop].on_draw == 0)
+		return;
+	ClientScripting *script = m_client->getScript();
+	if (!script)
+		return;
+	lua_State *L = script->getLuaState();
+	int base = lua_gettop(L);
+	m_draw_queue.clear();
+	lua_rawgeti(L, LUA_REGISTRYINDEX, m_desktops[m_active_desktop].on_draw);
+	if (lua_pcall(L, 0, 0, 0) != 0) {
+		const char *err = lua_tostring(L, -1);
+		warningstream << "cheat desktop on_draw error: "
+				<< (err ? err : "(unknown)") << std::endl;
+		m_draw_queue.clear();
+	}
+	lua_settop(L, base);
+	flushDrawQueue(driver, driver->getScreenSize());
+}
+
+// Parse a color from a Lua string or table (nil/omitted → white).
+static video::SColor parseLuaDrawColor(lua_State *L, int idx, u8 alpha = 255)
+{
+	if (lua_isnil(L, idx))
+		return video::SColor(alpha, 255, 255, 255);
+	if (lua_istable(L, idx)) {
+		lua_getfield(L, idx, "r");
+		lua_getfield(L, idx, "g");
+		lua_getfield(L, idx, "b");
+		lua_getfield(L, idx, "a");
+		u8 r = lua_isnumber(L, -4) ? lua_tointeger(L, -4) : 255;
+		u8 g = lua_isnumber(L, -3) ? lua_tointeger(L, -3) : 255;
+		u8 b = lua_isnumber(L, -2) ? lua_tointeger(L, -2) : 255;
+		u8 a = lua_isnumber(L, -1) ? lua_tointeger(L, -1) : alpha;
+		lua_pop(L, 4);
+		return video::SColor(a, r, g, b);
+	}
+	if (lua_isstring(L, idx))
+		return parseHexColor(lua_tostring(L, idx), alpha);
+	return video::SColor(alpha, 255, 255, 255);
+}
+
+int CheatMenu::queueDrawRect(lua_State *L)
+{
+	CheatMenu::DrawPrim p;
+	p.type = CheatMenu::DrawPrimType::RECT;
+	p.x = luaL_optinteger(L, 1, 0);
+	p.y = luaL_optinteger(L, 2, 0);
+	p.w = luaL_optinteger(L, 3, 1);
+	p.h = luaL_optinteger(L, 4, 1);
+	p.color = parseLuaDrawColor(L, 5);
+	m_draw_queue.push_back(p);
+	return 0;
+}
+
+int CheatMenu::queueDrawText(lua_State *L)
+{
+	CheatMenu::DrawPrim p;
+	p.type = CheatMenu::DrawPrimType::TEXT;
+	p.text = luaL_checkstring(L, 1);
+	p.x = luaL_optinteger(L, 2, 0);
+	p.y = luaL_optinteger(L, 3, 0);
+	p.font_size = luaL_optinteger(L, 4, 0);
+	p.color = parseLuaDrawColor(L, 5);
+	m_draw_queue.push_back(p);
+	return 0;
+}
+
+int CheatMenu::queueDrawTexture(lua_State *L)
+{
+	CheatMenu::DrawPrim p;
+	p.type = CheatMenu::DrawPrimType::TEXTURE;
+	p.texture = luaL_checkstring(L, 1);
+	p.x = luaL_optinteger(L, 2, 0);
+	p.y = luaL_optinteger(L, 3, 0);
+	p.w = luaL_optinteger(L, 4, 0);
+	p.h = luaL_optinteger(L, 5, 0);
+	m_draw_queue.push_back(p);
+	return 0;
+}
+
+void CheatMenu::flushDrawQueue(video::IVideoDriver *driver, v2u32 ss)
+{
+	for (auto &p : m_draw_queue) {
+		switch (p.type) {
+		case DrawPrimType::RECT:
+			driver->draw2DRectangle(p.color,
+				core::rect<s32>(p.x, p.y, p.x + p.w, p.y + p.h));
+			break;
+		case DrawPrimType::TEXT:
+			if (m_font) {
+				(void)p.font_size;
+				s32 fw = m_font->getDimension(utf8_to_wide(p.text).c_str()).Width;
+				s32 fh = m_font->getDimension(L"M").Height;
+				core::rect<s32> r(p.x, p.y, p.x + fw, p.y + fh);
+				m_font->draw(utf8_to_wide(p.text).c_str(), r, p.color, false, false);
+			}
+			break;
+		case DrawPrimType::TEXTURE:
+			if (!p.texture.empty() && driver) {
+				video::ITexture *tex = driver->getTexture(p.texture.c_str());
+				if (tex) {
+					core::dimension2d<u32> ts = tex->getOriginalSize();
+					core::rect<s32> src(0, 0, ts.Width, ts.Height);
+					s32 w = p.w > 0 ? p.w : ts.Width;
+					s32 h = p.h > 0 ? p.h : ts.Height;
+					core::rect<s32> dst(p.x, p.y, p.x + w, p.y + h);
+					driver->draw2DImage(tex, dst, src);
+				}
+			}
+			break;
+		}
+	}
+	m_draw_queue.clear();
+}
+
+void CheatMenu::handleFullscreenMenuClick(v2s32 pos)
+{
+	CHEAT_MENU_GET_SCRIPTPTR
+	auto *device = RenderingEngine::get_raw_device();
+	if (!device)
+		return;
+	auto ss = device->getVideoDriver()->getScreenSize();
+	s32 cw = 420;
+	s32 cx = ((s32)ss.Width - cw) / 2;
+	s32 cy = 84;
+	s32 iy = cy;
+	int chi = 0;
+
+	if (m_super_level == 0) {
+		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
+			if (!matchesSearch(script->m_cheat_categories[ci]->m_name, m_search_text))
+				continue;
+			if (pointInRect(pos.X, pos.Y, cx, iy, cw, m_entry_height)) {
+				m_super_level = 1;
+				m_super_selected_category = (int)ci;
+				m_menu_selected = 0;
+				return;
+			}
+			iy += m_entry_height + m_gap;
+			chi++;
+		}
+	} else {
+		if (pointInRect(pos.X, pos.Y, cx, iy, cw, m_entry_height)) {
+			m_super_level = 0;
+			m_menu_selected = 0;
+			return;
+		}
+		iy += m_entry_height + m_gap;
+		if (m_super_selected_category >= 0 &&
+				(size_t)m_super_selected_category < script->m_cheat_categories.size()) {
+			for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats) {
+				if (!matchesSearch(cheat->m_name, m_search_text))
+					continue;
+				if (pointInRect(pos.X, pos.Y, cx, iy, cw, m_entry_height)) {
+					script->toggle_cheat(cheat);
+					addRecentCheat(cheat->m_setting);
+					return;
+				}
+				iy += m_entry_height + m_gap;
+				chi++;
+			}
+		}
+	}
+}
+
+void CheatMenu::handleFullscreenLuaClick(v2s32 pos)
+{
+	if (m_active_desktop >= m_desktops.size() || m_desktops[m_active_desktop].on_input == 0)
+		return;
+	ClientScripting *script = m_client->getScript();
+	if (!script)
+		return;
+	lua_State *L = script->getLuaState();
+	int base = lua_gettop(L);
+	lua_rawgeti(L, LUA_REGISTRYINDEX, m_desktops[m_active_desktop].on_input);
+	lua_newtable(L);
+	lua_pushstring(L, "click");
+	lua_setfield(L, -2, "type");
+	lua_pushinteger(L, pos.X);
+	lua_setfield(L, -2, "x");
+	lua_pushinteger(L, pos.Y);
+	lua_setfield(L, -2, "y");
+	if (lua_pcall(L, 1, 0, 0) != 0) {
+		const char *err = lua_tostring(L, -1);
+		warningstream << "cheat desktop on_input error: "
+				<< (err ? err : "(unknown)") << std::endl;
+	}
+	lua_settop(L, base);
+}
+
+bool CheatMenu::fullscreenDesktopAt(v2s32 pos)
+{
+	if (isPaletteDesktopActive())
+		return paletteRowAt(pos) >= -2;
+	if (isMenuDesktopActive()) {
+		auto *device = RenderingEngine::get_raw_device();
+		if (!device)
+			return false;
+		auto ss = device->getVideoDriver()->getScreenSize();
+		s32 cw = 420;
+		s32 cx = ((s32)ss.Width - cw) / 2;
+		s32 cy = 84;
+		s32 ch = (s32)ss.Height - cy - 40;
+		return pointInRect(pos.X, pos.Y, cx - 8, cy - 8, cw + 16, ch + 16);
+	}
+	if (m_active_desktop < m_desktops.size()
+			&& m_desktops[m_active_desktop].fullscreen
+			&& m_desktops[m_active_desktop].on_draw != 0)
+		return true;
+	return false;
+}
+
+bool CheatMenu::scrollFullscreenDesktop(s32 wheel)
+{
+	if (wheel == 0)
+		return false;
+	if (isMenuDesktopActive()) {
+		if (wheel > 0)
+			menuUp();
+		else
+			menuDown();
+		return true;
+	}
+	return false;
+}
+
+void CheatMenu::menuUp()
+{
+	CHEAT_MENU_GET_SCRIPTPTR
+	int count = 0;
+	if (m_super_level == 0) {
+		for (auto &cat : script->m_cheat_categories)
+			if (matchesSearch(cat->m_name, m_search_text))
+				count++;
+	} else {
+		count = 1;
+		if (m_super_selected_category >= 0 &&
+				(size_t)m_super_selected_category < script->m_cheat_categories.size())
+			for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats)
+				if (matchesSearch(cheat->m_name, m_search_text))
+					count++;
+	}
+	if (count <= 0)
+		return;
+	m_menu_selected--;
+	if (m_menu_selected < 0)
+		m_menu_selected = count - 1;
+}
+
+void CheatMenu::menuDown()
+{
+	CHEAT_MENU_GET_SCRIPTPTR
+	int count = 0;
+	if (m_super_level == 0) {
+		for (auto &cat : script->m_cheat_categories)
+			if (matchesSearch(cat->m_name, m_search_text))
+				count++;
+	} else {
+		count = 1;
+		if (m_super_selected_category >= 0 &&
+				(size_t)m_super_selected_category < script->m_cheat_categories.size())
+			for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats)
+				if (matchesSearch(cheat->m_name, m_search_text))
+					count++;
+	}
+	if (count <= 0)
+		return;
+	m_menu_selected++;
+	if (m_menu_selected >= count)
+		m_menu_selected = 0;
+}
+
+void CheatMenu::menuConfirm()
+{
+	CHEAT_MENU_GET_SCRIPTPTR
+	if (m_super_level == 0) {
+		int cat_idx = 0;
+		for (size_t ci = 0; ci < script->m_cheat_categories.size(); ci++) {
+			if (!matchesSearch(script->m_cheat_categories[ci]->m_name, m_search_text))
+				continue;
+			if (cat_idx == m_menu_selected) {
+				m_super_level = 1;
+				m_super_selected_category = (int)ci;
+				m_menu_selected = 0;
+				return;
+			}
+			cat_idx++;
+		}
+	} else {
+		if (m_menu_selected == 0) {
+			m_super_level = 0;
+			m_menu_selected = 0;
+			return;
+		}
+		int cheat_idx = 1;
+		if (m_super_selected_category >= 0 &&
+				(size_t)m_super_selected_category < script->m_cheat_categories.size()) {
+			for (auto &cheat : script->m_cheat_categories[m_super_selected_category]->m_cheats) {
+				if (!matchesSearch(cheat->m_name, m_search_text))
+					continue;
+				if (cheat_idx == m_menu_selected) {
+					script->toggle_cheat(cheat);
+					addRecentCheat(cheat->m_setting);
+					return;
+				}
+				cheat_idx++;
+			}
+		}
+	}
+}
+
+// Lua-accessible desktop introspection / management.
+
+int CheatMenu::getCheatDesktops(lua_State *L)
+{
+	lua_newtable(L);
+	int idx = 1;
+	for (auto &d : m_desktops) {
+		lua_newtable(L);
+		lua_pushstring(L, d.id.c_str());
+		lua_setfield(L, -2, "id");
+		lua_pushstring(L, d.title.c_str());
+		lua_setfield(L, -2, "title");
+		lua_pushboolean(L, d.fullscreen);
+		lua_setfield(L, -2, "fullscreen");
+		lua_pushboolean(L, (idx - 1) == (int)m_active_desktop);
+		lua_setfield(L, -2, "active");
+		lua_rawseti(L, -2, idx++);
+	}
+	return 1;
+}
+
+int CheatMenu::setCheatDesktop(lua_State *L)
+{
+	std::string id = luaL_checkstring(L, 1);
+	switchDesktop(id);
+	bool ok = m_active_desktop < m_desktops.size() &&
+			m_desktops[m_active_desktop].id == id;
+	lua_pushboolean(L, ok);
+	return 1;
+}
+
+int CheatMenu::registerCheatDesktop(lua_State *L)
+{
+	// arg 1: id, arg 2: def table
+	std::string id = luaL_checkstring(L, 1);
+	if (!lua_istable(L, 2))
+		return luaL_error(L, "register_cheat_desktop: def must be a table");
+	for (auto &d : m_desktops)
+		if (d.id == id)
+			return luaL_error(L, "register_cheat_desktop: desktop '%s' already exists", id.c_str());
+
+	CheatDesktop d;
+	d.id = id;
+	lua_getfield(L, 2, "title");
+	d.title = lua_isstring(L, -1) ? lua_tostring(L, -1) : id;
+	lua_pop(L, 1);
+	lua_getfield(L, 2, "fullscreen");
+	d.fullscreen = lua_isboolean(L, -1) && lua_toboolean(L, -1);
+	lua_pop(L, 1);
+	lua_getfield(L, 2, "on_draw");
+	if (lua_isfunction(L, -1))
+		d.on_draw = luaL_ref(L, LUA_REGISTRYINDEX);
+	else
+		lua_pop(L, 1);
+	lua_getfield(L, 2, "on_input");
+	if (lua_isfunction(L, -1))
+		d.on_input = luaL_ref(L, LUA_REGISTRYINDEX);
+	else
+		lua_pop(L, 1);
+
+	m_desktops.push_back(std::move(d));
+	lua_pushboolean(L, true);
+	return 1;
 }
 
 // Move a cheat setting or Lua label to the front of the palette recents list.
@@ -715,6 +1355,8 @@ void CheatMenu::createCategoryPanels()
 	createSupermenuPanel();
 
 	m_search_text.clear();
+	if (m_active_desktop < m_desktops.size())
+		m_desktops[m_active_desktop].categories_initialized = true;
 }
 
 s32 CheatMenu::getPanelContentHeight(const OverlayPanel &panel)
@@ -1131,36 +1773,43 @@ void CheatMenu::closeForFormspec()
 void CheatMenu::onLayerClosed()
 {
 	m_drag_panel = -1;
-	m_categories_initialized = false;
 	savePanelPositions();
 
-	// Purge stale saved positions for category panels that no longer exist
-	{
+	// Purge stale saved positions for category panels that no longer exist,
+	// across every desktop (each desktop namespaces its keys via prefix).
+	for (const auto &d : m_desktops) {
+		std::string prefix = (d.id == "cheats") ? "" : "d_" + d.id + "_";
 		std::set<std::string> valid_ids;
-		for (auto &panel : m_panels) {
+		for (const auto &panel : d.panels)
 			if (isCatPanel(panel))
 				valid_ids.insert(panel.id);
-		}
 		auto names = g_settings->getNames();
 		for (const auto &name : names) {
-			if (name.compare(0, 10, "panel_pos_") == 0) {
-				std::string id = name.substr(10);
-				if (id.compare(0, 5, "_cat_") == 0 && !valid_ids.count(id))
-					g_settings->remove(name);
-			}
+			std::string key_head = "panel_pos_" + prefix;
+			if (name.compare(0, key_head.size(), key_head) != 0)
+				continue;
+			std::string id = name.substr(key_head.size());
+			if (id.compare(0, 5, "_cat_") == 0 && !valid_ids.count(id))
+				g_settings->remove(name);
 		}
+		// Remove saved positions for special panels so they always reset
+		g_settings->remove("panel_pos_" + prefix + "_fav_0");
+		g_settings->remove("panel_pos_" + prefix + "_super_0");
+		g_settings->remove("panel_pos_" + prefix + "_recent_0");
 	}
-
-	// Remove saved positions for special panels so they always reset to left
-	g_settings->remove("panel_pos__fav_0");
-	g_settings->remove("panel_pos__super_0");
-	g_settings->remove("panel_pos__recent_0");
 
 	for (s32 i = (s32)m_panels.size() - 1; i >= 0; i--) {
 		auto &p = m_panels[i];
 		if ((isCatPanel(p) || isFavPanel(p) || isSuperPanel(p) || isRecentPanel(p)) && !p.pinned)
 			m_panels.erase(m_panels.begin() + i);
 	}
+
+	// Rebuild the panel workspace on next open (pinned panels persist via
+	// their saved positions and are recreated by createCategoryPanels).
+	m_categories_initialized = false;
+
+	// Store the cleaned-up workspace back into the active desktop.
+	saveActiveDesktopState();
 }
 
 void CheatMenu::drawHUD(video::IVideoDriver *driver, double dtime)
@@ -1207,6 +1856,8 @@ void CheatMenu::drawHUD(video::IVideoDriver *driver, double dtime)
 
 void CheatMenu::selectUp()
 {
+	if (isPaletteDesktopActive()) { paletteUp(); return; }
+	if (isMenuDesktopActive()) { menuUp(); return; }
 	CHEAT_MENU_GET_SCRIPTPTR
 	OverlayPanel *panel = nullptr;
 	for (auto &p : m_panels) if (p.keyboard_focus) { panel = &p; break; }
@@ -1247,6 +1898,8 @@ void CheatMenu::selectUp()
 
 void CheatMenu::selectDown()
 {
+	if (isPaletteDesktopActive()) { paletteDown(); return; }
+	if (isMenuDesktopActive()) { menuDown(); return; }
 	CHEAT_MENU_GET_SCRIPTPTR
 	OverlayPanel *panel = nullptr;
 	for (auto &p : m_panels) if (p.keyboard_focus) { panel = &p; break; }
@@ -1311,6 +1964,8 @@ void CheatMenu::selectLeft()
 
 void CheatMenu::selectConfirm()
 {
+	if (isPaletteDesktopActive()) { paletteConfirm(); return; }
+	if (isMenuDesktopActive()) { menuConfirm(); return; }
 	CHEAT_MENU_GET_SCRIPTPTR
 	OverlayPanel *panel = nullptr;
 	for (auto &p : m_panels) if (p.keyboard_focus) { panel = &p; break; }
@@ -1464,6 +2119,30 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 		dismissContextMenu();
 	}
 
+	// Tab strip clicks (always topmost among the cheat layer UI)
+	if (handleTabClick(pos))
+		return;
+
+	// Fullscreen desktops: route the click to the desktop content. Panel
+	// workspace clicks below fall through to the panel handler.
+	if (isPaletteDesktopActive()) {
+		// Palette clicks are handled by game.cpp (paletteClick); nothing else
+		// to do here.
+		return;
+	}
+	if (isMenuDesktopActive()) {
+		if (fullscreenDesktopAt(pos)) {
+			handleFullscreenMenuClick(pos);
+			return;
+		}
+	}
+	if (m_active_desktop < m_desktops.size()
+			&& m_desktops[m_active_desktop].fullscreen
+			&& m_desktops[m_active_desktop].on_draw != 0) {
+		handleFullscreenLuaClick(pos);
+		return;
+	}
+
 	// Forward to panel handler
 	PanelOverlay::handleMouse(pos, left_down);
 
@@ -1487,7 +2166,21 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 
 void CheatMenu::drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug)
 {
+	if (desktopNeedsTabBar())
+		drawTabStrip(driver, mouse_pos);
+
 	PanelOverlay::drawAll(driver, mouse_pos, show_debug);
+
+	// Fullscreen desktop content (panels are empty for these desktops).
+	if (isPaletteDesktopActive())
+		drawFullscreenPalette(driver, mouse_pos);
+	else if (isMenuDesktopActive())
+		drawFullscreenMenu(driver, mouse_pos);
+	else if (m_active_desktop < m_desktops.size()
+			&& m_desktops[m_active_desktop].fullscreen
+			&& m_desktops[m_active_desktop].on_draw != 0)
+		drawFullscreenLua(driver, mouse_pos);
+
 	drawContextMenu(driver);
 	drawProfilesPopup(driver);
 }
@@ -1566,7 +2259,7 @@ bool CheatMenu::pollInput()
 	receiver->consumeCheatChar();
 	wchar_t c = receiver->cheat_char;
 
-	if (m_quick_palette_active) {
+	if (isPaletteModeActive()) {
 	if (c == 22) {
 		// Ctrl+V: paste the clipboard into the search field.
 		auto *device = RenderingEngine::get_raw_device();
@@ -2136,7 +2829,7 @@ void CheatMenu::drawTextHighlighted(const std::string &text, s32 x, s32 y,
 
 void CheatMenu::drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
 {
-	if (!m_quick_palette_active)
+	if (!isPaletteModeActive())
 		return;
 
 	// Run the debounced provider re-collection once its timer expires.
@@ -2386,7 +3079,7 @@ void CheatMenu::drawQuickPalette(video::IVideoDriver *driver, v2s32 mouse_pos)
 
 void CheatMenu::pollQuickPaletteInput()
 {
-	if (!m_quick_palette_active)
+	if (!isPaletteModeActive())
 		return;
 
 	auto *device = RenderingEngine::get_raw_device();
@@ -2440,7 +3133,7 @@ void CheatMenu::pollQuickPaletteInput()
 
 void CheatMenu::paletteUp()
 {
-	if (!m_quick_palette_active) return;
+	if (!isPaletteModeActive()) return;
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded) return;
 
@@ -2457,7 +3150,7 @@ void CheatMenu::paletteUp()
 
 void CheatMenu::paletteDown()
 {
-	if (!m_quick_palette_active) return;
+	if (!isPaletteModeActive()) return;
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded) return;
 
@@ -2474,7 +3167,7 @@ void CheatMenu::paletteDown()
 
 void CheatMenu::paletteScroll(s32 wheel)
 {
-	if (!m_quick_palette_active || wheel == 0)
+	if (!isPaletteModeActive() || wheel == 0)
 		return;
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded)
@@ -2523,7 +3216,7 @@ int CheatMenu::quickPaletteVisibleCount() const
 // -2 if inside the search field, or -1 if outside the list area.
 int CheatMenu::paletteRowAt(v2s32 pos) const
 {
-	if (!m_quick_palette_active)
+	if (!isPaletteModeActive())
 		return -1;
 
 	auto *device = RenderingEngine::get_raw_device();
@@ -2555,7 +3248,7 @@ int CheatMenu::paletteRowAt(v2s32 pos) const
 
 void CheatMenu::paletteClick(v2s32 pos)
 {
-	if (!m_quick_palette_active)
+	if (!isPaletteModeActive())
 		return;
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded)
@@ -2746,7 +3439,7 @@ void CheatMenu::goBackPaletteSubmenu()
 // TAB: open the submenu for the selected entry, or back out of it.
 void CheatMenu::paletteTab()
 {
-	if (!m_quick_palette_active)
+	if (!isPaletteModeActive())
 		return;
 	if (isPaletteSubmenuActive()) {
 		goBackPaletteSubmenu();
@@ -2758,7 +3451,7 @@ void CheatMenu::paletteTab()
 // Right arrow: descend (open submenu / go one level deeper).
 void CheatMenu::paletteRight()
 {
-	if (!m_quick_palette_active)
+	if (!isPaletteModeActive())
 		return;
 	openSelectedPaletteSubmenu();
 }
@@ -2766,7 +3459,7 @@ void CheatMenu::paletteRight()
 // Left arrow: go back one level.
 void CheatMenu::paletteLeft()
 {
-	if (!m_quick_palette_active)
+	if (!isPaletteModeActive())
 		return;
 	goBackPaletteSubmenu();
 }
@@ -2827,7 +3520,7 @@ void CheatMenu::updatePaletteScroll(int total)
 
 void CheatMenu::paletteConfirm()
 {
-	if (!m_quick_palette_active) return;
+	if (!isPaletteModeActive()) return;
 	ClientScripting *script = m_client->getScript();
 	if (!script || !script->m_cheats_loaded) return;
 
