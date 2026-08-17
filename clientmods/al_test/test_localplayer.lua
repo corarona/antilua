@@ -55,4 +55,15 @@ function test_localplayer_extras(T)
 		-- restore
 		core.localplayer:set_autojump(before)
 	end)
+
+	T.defer("localplayer:get_zoom_fov", function()
+		local fov = core.localplayer:get_zoom_fov()
+		T.assert(type(fov) == "number", "should return a number")
+		-- 0 = zoom disabled, otherwise a positive FOV value
+		T.assert(fov >= 0, "zoom fov should be >= 0")
+		-- The zoom_bypass mod forces 15 when priv_bypass is active
+		if core.settings:get_bool("priv_bypass") then
+			T.assert(fov == 15, "zoom_bypass should force fov to 15, got " .. tostring(fov))
+		end
+	end)
 end

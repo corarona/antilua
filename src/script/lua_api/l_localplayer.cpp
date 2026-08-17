@@ -579,6 +579,14 @@ int LuaLocalPlayer::l_set_autojump(lua_State *L)
 	return 0;
 }
 
+// get_zoom_fov(self)
+int LuaLocalPlayer::l_get_zoom_fov(lua_State *L)
+{
+	LocalPlayer *player = getobject(L, 1);
+	lua_pushnumber(L, player->getZoomFOV());
+	return 1;
+}
+
 LuaLocalPlayer *LuaLocalPlayer::checkobject(lua_State *L, int narg)
 {
 	luaL_checktype(L, narg, LUA_TUSERDATA);
@@ -769,6 +777,7 @@ const luaL_Reg LuaLocalPlayer::methods[] = {
 		luamethod(LuaLocalPlayer, get_autojump),
 		luamethod(LuaLocalPlayer, set_autojump),
 
+		luamethod(LuaLocalPlayer, get_zoom_fov),
 
 		{0, 0}
 };

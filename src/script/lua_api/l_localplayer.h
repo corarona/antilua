@@ -146,6 +146,9 @@ private:
 	static int l_get_autojump(lua_State *L);
 	static int l_set_autojump(lua_State *L);
 
+	// get_zoom_fov(self)
+	static int l_get_zoom_fov(lua_State *L);
+
 	LocalPlayer *m_localplayer = nullptr;
 
 public:

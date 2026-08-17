@@ -1631,7 +1631,11 @@ void GenericCAO::processMessage(const std::string &data)
 			collision_box.MaxEdge *= BS;
 			player->setCollisionbox(collision_box);
 			player->setEyeHeight(m_prop.eye_height);
-			player->setZoomFOV(m_prop.zoom_fov);
+			ZoomFovHookResult zr;
+			if (m_client)
+				zr = AlClientHooks::on_zoom_fov_changed(m_client, m_id, m_prop.zoom_fov);
+			if (!zr.blocked)
+				player->setZoomFOV(zr.override ? zr.applied : m_prop.zoom_fov);
 		}
 
 		if ((m_is_player && !m_is_local_player) && m_prop.nametag.empty())

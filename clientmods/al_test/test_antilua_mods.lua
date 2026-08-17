@@ -110,6 +110,24 @@ function test_always_day(T)
 	end)
 end
 
+function test_zoom_bypass(T)
+	T.run("zoom_bypass forces zoom fov 15 when priv_bypass", function()
+		local priv_bypass = core.settings:get_bool("priv_bypass")
+		local found = false
+		for _, fn in ipairs(core.registered_on_zoom_fov_changed) do
+			local ret = fn(0, 0)
+			if ret ~= nil then
+				found = true
+				T.assert(priv_bypass, "zoom override only expected with priv_bypass")
+				T.assert(ret == 15, "should force fov to 15, got " .. tostring(ret))
+			end
+		end
+		if priv_bypass then
+			T.assert(found, "zoom_bypass callback should be registered")
+		end
+	end)
+end
+
 function test_clean_hud(T)
 	T.run("register_on_hud_add exists", function()
 		T.assert(type(core.register_on_hud_add) == "function",

@@ -148,6 +148,30 @@ void AlScriptApi::on_hud_flags_changed()
 	}
 }
 
+ZoomFovHookResult AlScriptApi::on_zoom_fov_changed(u16 id, float new_zoom_fov)
+{
+	ZoomFovHookResult result;
+	SCRIPTAPI_PRECHECKHEADER
+
+	lua_getglobal(L, "core");
+	lua_getfield(L, -1, "registered_on_zoom_fov_changed");
+	lua_pushinteger(L, id);
+	lua_pushnumber(L, new_zoom_fov);
+	try {
+		runCallbacks(2, RUN_CALLBACKS_MODE_FIRST);
+		int type = lua_type(L, -1);
+		if (type == LUA_TBOOLEAN && lua_toboolean(L, -1)) {
+			result.blocked = true;
+		} else if (type == LUA_TNUMBER) {
+			result.override = true;
+			result.applied = lua_tonumber(L, -1);
+		}
+	} catch (LuaError &e) {
+		getClient()->setFatalError(e);
+	}
+	return result;
+}
+
 void AlScriptApi::on_hud_param_changed(u16 param, const std::string &value)
 {
 	SCRIPTAPI_PRECHECKHEADER

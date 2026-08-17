@@ -33,6 +33,13 @@ struct RawPacketHookResult
 	std::string payload; // empty = no modification, non-empty = replacement
 };
 
+struct ZoomFovHookResult
+{
+	bool blocked = false;   // keep previous value, ignore server
+	bool override = false;  // apply `applied` instead of the server value
+	float applied = 0.0f;
+};
+
 namespace AlClientHooks {
 
 void on_movement(Client *client, LocalPlayer *player);
@@ -82,6 +89,7 @@ void on_inventory_action(Client *client);
 bool on_object_add(Client *client, u16 id);
 void on_object_hp_change(Client *client, u16 id, u16 hp);
 void on_object_properties_change(Client *client, u16 id);
+ZoomFovHookResult on_zoom_fov_changed(Client *client, u16 id, float new_zoom_fov);
 
 void on_hp_change(Client *client, u16 hp);
 

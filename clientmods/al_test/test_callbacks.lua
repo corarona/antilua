@@ -68,6 +68,13 @@ function test_callback_registration(T)
 		T.assert(ok, "registering properties change callback should not crash")
 	end)
 
+	T.run("register_on_zoom_fov_changed exists", function()
+		T.assert(type(core.register_on_zoom_fov_changed) == "function",
+			"core.register_on_zoom_fov_changed should be a function")
+		local ok = pcall(core.register_on_zoom_fov_changed, function(id, fov) end)
+		T.assert(ok, "registering zoom fov callback should not crash")
+	end)
+
 	T.run("registered_on_death table exists", function()
 		T.assert(type(core.registered_on_death) == "table",
 			"core.registered_on_death should be a table")

@@ -273,6 +273,7 @@ core.get_player_radius_area(player_name, radius) -> p1, p2|nil
 :can_jump() -> bool                  -- Whether player can jump this frame
 :get_autojump() -> bool              -- Current autojump state
 :set_autojump(bool)                  -- Enable/disable autojump
+:get_zoom_fov() -> number            -- Server-granted zoom FOV in degrees (0 = disabled)
 ```
 
 ### Generic ObjectRef
@@ -377,6 +378,7 @@ core.register_on_receiving_formspec(func(formname, formspec) -> modified_formspe
 core.register_on_hud_add(func(hud_def) -> true to block)
 core.register_on_hud_remove(func(id) -> true to block)
 core.register_on_hud_change(func(id, stat, value) -> true to block)
+core.register_on_zoom_fov_changed(func(id, zoom_fov) -> true|number|nil)
 core.register_on_time_of_day(func(time, speed) -> modified_time)
 ```
 
@@ -386,6 +388,9 @@ core.register_on_time_of_day(func(time, speed) -> modified_time)
   Return a modified formspec to replace, or empty string `""` to block.
 - **`on_hud_add/remove/change`**: Called when server adds/removes/changes a HUD element.
   Return `true` to prevent the change.
+- **`on_zoom_fov_changed`**: Called when the server sends the local player's `zoom_fov`.
+  Return `true` to block the change (keep the old value), a number to override the
+  value, or `nil`/`false` to accept the server value.
 - **`on_time_of_day`**: Called when server updates time of day.
   Return a new time (0-24000) to override, or nil to keep original.
 

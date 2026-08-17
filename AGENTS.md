@@ -535,6 +535,7 @@ Additional read-only getters on `core.localplayer`:
 | `can_jump()` | boolean | Whether the player can initiate a jump this frame |
 | `get_autojump()` | boolean | Current autojump state |
 | `set_autojump(bool)` | nil | Enable/disable autojump |
+| `get_zoom_fov()` | number | Server-granted zoom FOV in degrees; `0` = zoom disabled |
 
 ### Key files
 
@@ -542,7 +543,42 @@ Additional read-only getters on `core.localplayer`:
 |------|--------|
 | `src/client/localplayer.h` | Added `getStandingNode()`, `canJump()`, `setAutojump()` |
 | `src/client/localplayer.cpp` | Added `setAutojump()` implementation |
-| `src/script/lua_api/l_localplayer.h/cpp` | 7 new Lua method bindings |
+| `src/script/lua_api/l_localplayer.h/cpp` | 8 new Lua method bindings |
+
+## Zoom FOV Callback & priv_bypass Mod
+
+The server grants zoom via the player `ObjectProperties.zoom_fov` (value 0 =
+disabled), delivered to the client in `AO_CMD_SET_PROPERTIES`. A veto/override
+callback is fired on every local-player `zoom_fov` update before the value is
+stored.
+
+```lua
+-- Returns nil/false = accept the server value, true = block (keep old value),
+-- or a number to override.
+core.register_on_zoom_fov_changed(function(id, zoom_fov)
+    if core.settings:get_bool("priv_bypass") then
+        return 15
+    end
+    return nil
+end)
+```
+
+The `zoom_bypass` clientmod (`clientmods/ANTILUA/zoom_bypass/`) uses this: when
+`priv_bypass` is enabled (the default), the server's `zoom_fov` (usually 0 in
+survival) is ignored and the stored value stays 15, so
+`core.localplayer:get_zoom_fov()` consistently reports zoom as available. With
+`priv_bypass` off, the server value applies normally.
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `src/client/al_hooks.h/cpp` | `ZoomFovHookResult` struct + `on_zoom_fov_changed()` hook |
+| `src/script/cpp_api/al/al_callbacks.h/cpp` | `AlScriptApi::on_zoom_fov_changed()` → `registered_on_zoom_fov_changed` |
+| `src/client/content_cao.cpp` | Hook fired in the local-player `AO_CMD_SET_PROPERTIES` branch |
+| `builtin/client/register_al.lua` | `register_on_zoom_fov_changed` registration |
+| `src/script/lua_api/l_localplayer.h/cpp` | `get_zoom_fov()` binding |
+| `clientmods/ANTILUA/zoom_bypass/` | Forces zoom FOV to 15 when `priv_bypass` is active |
 
 ## Camera Nametag API
 

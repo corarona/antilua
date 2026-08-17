@@ -47,6 +47,7 @@ core.registered_on_clouds_changed, core.register_on_clouds_changed = make_al_reg
 -- Phase 1h: HUD state notifications
 core.registered_on_hud_flags_changed, core.register_on_hud_flags_changed = make_al_registration()
 core.registered_on_hud_param_changed, core.register_on_hud_param_changed = make_al_registration()
+core.registered_on_zoom_fov_changed, core.register_on_zoom_fov_changed = make_al_registration()
 
 -- Phase 1i: Inventory action notification
 core.registered_on_inventory_action, core.register_on_inventory_action = make_al_registration()

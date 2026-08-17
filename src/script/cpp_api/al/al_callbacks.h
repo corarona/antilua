@@ -72,6 +72,7 @@ public:
 	// Phase 1h: HUD state notifications
 	void on_hud_flags_changed();
 	void on_hud_param_changed(u16 param, const std::string &value);
+	ZoomFovHookResult on_zoom_fov_changed(u16 id, float new_zoom_fov);
 
 	// Phase 1i: Inventory action notification
 	void on_inventory_action();

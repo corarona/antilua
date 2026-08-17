@@ -187,6 +187,14 @@ void on_object_properties_change(Client *client, u16 id)
 		client->getScript()->on_object_properties_change(id);
 }
 
+ZoomFovHookResult on_zoom_fov_changed(Client *client, u16 id, float new_zoom_fov)
+{
+	ZoomFovHookResult result;
+	if (client->modsLoaded())
+		result = client->getScript()->on_zoom_fov_changed(id, new_zoom_fov);
+	return result;
+}
+
 void on_hp_change(Client *client, u16 hp)
 {
 	if (client->modsLoaded())

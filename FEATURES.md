@@ -161,6 +161,7 @@ bots, schematic building, waypoints, formspec editors, and more.
 | `sbots` | Simple bot framework | ✅ |
 | `schembuilder` | MTS schematic preview + placement | ✅ |
 | `tps_client` | Server TPS / ping HUD overlay | ✅ |
+| `zoom_bypass` | Force zoom FOV to 15 when `priv_bypass` is active | ✅ |
 
 See `doc/al_csm_api.md` for the full Antilua-specific CSM API reference,
 and `PLAN.md` for the modpack restructuring plan.
