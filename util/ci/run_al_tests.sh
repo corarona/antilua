@@ -26,7 +26,7 @@ echo "World: $WORLD"
 
 # Create/ensure the world exists with devtest game
 if [ ! -d "worlds/$WORLD" ]; then
-	./bin/antilua --info --world "worlds/$WORLD" --gamename devtest 2>&1 &
+	./bin/antilua --info --world "worlds/$WORLD" --gameid devtest 2>&1 &
 	sleep 2
 	kill %1 2>/dev/null || true
 	wait 2>/dev/null || true
