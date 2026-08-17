@@ -1,6 +1,3 @@
--- CC0/Unlicense Emilia & cora 2020
--- place: world-building/block-placement cheats (renamed from scaffold)
-
 local mpath = core.get_modpath(core.get_current_modname())
 dofile(mpath .. "/spongebot.lua")
 
@@ -71,7 +68,7 @@ local function mscaffold(self)
 	end
 end
 
-ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "Build scaffold beneath you",
+ws.rg('MultiScaff', { category = "Place", setting = "scaffold", description = "Build scaffold beneath you",
 	on_step = function(self, dtime)
 		if tps_client and tonumber(tps_client.ping) and tps_client.ping > (tonumber(core.settings:get("scaffold.ping_tolerance")) or 1500) then return end
 		mscaffold(self)
@@ -89,6 +86,15 @@ ws.rg('MultiScaff', { category = 'Place', setting = 'scaffold', description = "B
 	},
 })
 
+ws.rg("DigAndPlace", { category = "Place", setting = "dig_and_place", description = "Dig and immediately place the wielded node", cheat_settings = {}, })
+
+core.register_on_punchnode(function(pos, node)
+	if core.settings:get_bool("dig_and_place", false) then return end
+	local it = core.localplayer:get_wielded_item()
+	ws.dig(pos)
+	ws.place(pos, it:get_name())
+end)
+
 
 
 
@@ -97,7 +103,7 @@ ws.rg("RandomScaff", { category = "Place", setting = "place_rnd",
 	description = "Place random block scaffold",
 	on_step = function(self, dtime)
 		if not core.localplayer then return end
-		local tgt = vector.add(core.localplayer:get_pos(), {x = 0, y = -1, z = 0})
+		local tgt = vector.offset(core.localplayer:get_pos(), 0, -1, 0)
 		if not ws.inside_constraints(tgt) then return end
 		local below = ws.dircoord(0, -1, 0)
 		local n = core.get_node_or_nil(below)
