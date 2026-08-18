@@ -210,6 +210,10 @@ core.get_node(pos) -> {name, param1, param2}
     -- Built on the client-side get_node_raw port (same as the server impl).
 core.get_player_radius_area(player_name, radius) -> p1, p2|nil
     -- Box of `radius` around the given player (client-side: local player only).
+core.is_creative_enabled() -> bool
+    -- True when the player is in creative mode. In mineclonia/VoxeLibre the
+    -- creative inventory formspec (detached:creative_ grid) is used; all
+    -- other games use the "creative" privilege.
 ```
 
 ---

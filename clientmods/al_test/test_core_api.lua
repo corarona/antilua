@@ -710,4 +710,23 @@ function test_core_api(T)
 		T.assert(p1.x <= p2.x and p1.y <= p2.y and p1.z <= p2.z,
 			"p1 should be the min corner")
 	end)
+
+	T.run("core.is_creative_enabled exists", function()
+		T.assert(type(core.is_creative_enabled) == "function",
+			"core.is_creative_enabled should be a function")
+	end)
+
+	T.run("core.is_creative_enabled returns boolean", function()
+		T.assert(type(core.is_creative_enabled()) == "boolean",
+			"core.is_creative_enabled should return a boolean")
+	end)
+
+	T.defer("is_creative_enabled matches creative privilege outside mcl games", function()
+		if core.get_item_def("mcl_core:stone") then
+			return -- mineclonia/VoxeLibre: formspec-based, not testable on devtest
+		end
+		local privs = core.get_privilege_list()
+		T.assert_eq(core.is_creative_enabled(), privs.creative == true,
+			"is_creative_enabled should equal the creative privilege in non-mcl games")
+	end)
 end

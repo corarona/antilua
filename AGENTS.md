@@ -403,6 +403,34 @@ Attempting to redefine `name` or `type` fields raises a Lua error. Defined in `b
 
 ---
 
+## Creative Mode Detection
+
+`core.is_creative_enabled()` reports whether the player is in creative mode,
+client-side, without server involvement:
+
+- **mineclonia / VoxeLibre**: the creative inventory formspec is detected by
+  its `detached:creative_*` item grid (the creative inventory is the default
+  player inventory, formname `""`, so it is identified by content — the
+  survival inventory has no such grid).
+- **all other games**: the `"creative"` privilege in `core.get_privilege_list()`.
+
+The last received inventory formspec (formname `""`) is captured from the
+`TOCLIENT_INVENTORY_FORMSPEC` packet via
+`core.register_on_receiving_inventory_form` (builtin runs before clientmod
+rewrites, so the raw server formspec is seen) and cleared on disconnect.
+The mineclonia/VoxeLibre gate uses the `mcl_core:stone` item definition
+(present in both games; same pattern as `ws.get_game()`).
+
+### Key files
+
+| File | Change |
+|------|--------|
+| `builtin/client/misc.lua` | `core.is_creative_enabled()`, formspec capture, disconnect reset |
+| `clientmods/al_test/test_core_api.lua` | Integration tests |
+| `doc/al_csm_api.md` | API documentation |
+
+---
+
 ## Schematic API (Client-Side)
 
 Exposes MTS schematic deserialization/serialization to client-side mods. Mirrors the server-side `core.read_schematic()` and `core.serialize_schematic()` signatures.

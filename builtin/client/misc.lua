@@ -91,6 +91,31 @@ function core.is_player(player)
 		type(player.is_player) == "function" and player:is_player()
 end
 
+-- Last received player inventory formspec (formname ""), captured from the
+-- TOCLIENT_INVENTORY_FORMSPEC packet so creative inventories can be sniffed.
+local last_inventory_formspec = ""
+core.register_on_receiving_inventory_form(function(formname, formspec)
+	if formname ~= "" then
+		return formspec
+	end
+	last_inventory_formspec = formspec
+	return formspec
+end)
+
+core.register_on_disconnect(function()
+	last_inventory_formspec = ""
+end)
+
+-- Mineclonia/VoxeLibre detect creative mode from the creative inventory
+-- formspec (the detached:creative_<name> item grid); all other games use
+-- the "creative" privilege.
+function core.is_creative_enabled()
+	if core.get_item_def("mcl_core:stone") then
+		return last_inventory_formspec:find("detached:creative_", 1, true) ~= nil
+	end
+	return core.get_privilege_list().creative == true
+end
+
 function core.itemstring_with_palette(item, palette_index)
 	local stack = ItemStack(item) -- convert to ItemStack
 	stack:get_meta():set_int("palette_index", palette_index)
