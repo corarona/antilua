@@ -70,6 +70,48 @@ function test_layers(T)
 			"duplicate error mentions existing desktop")
 	end)
 
+	T.run("map desktop is a default fullscreen tab", function()
+		local found = nil
+		for _, d in ipairs(core.get_cheat_desktops()) do
+			if d.id == "map" then found = d end
+		end
+		T.assert(found ~= nil, "map desktop listed")
+		T.assert(found.title == "Map", "map desktop title")
+		T.assert(found.fullscreen == true, "map desktop is fullscreen")
+	end)
+
+	T.run("map desktop opens and closes the big map", function()
+		if not (core.al_bigmap and core.al_bigmap.open) then
+			core.log("info", "[AL_TEST] skipping map desktop big map test: al_bigmap unavailable")
+			return
+		end
+		core.al_bigmap:close()
+		local ok = core.cheat_desktop_show("map")
+		T.assert(ok == true, "switch to map desktop succeeds")
+		T.assert(core.al_bigmap:is_open() == true,
+			"big map opens on the map desktop")
+		local ok2 = core.cheat_desktop_show("cheats")
+		T.assert(ok2 == true, "switch back to cheats desktop")
+		T.assert(core.al_bigmap:is_open() == false,
+			"big map closes when leaving the map desktop")
+	end)
+
+	T.run("reopen after closing on a non-cheats desktop keeps it active", function()
+		-- Closing the cheat layer on a fullscreen desktop must not reset the
+		-- panel workspace underneath: reopening shows the same desktop.
+		core.cheat_desktop_show("menu")
+		core.cheat_menu_set_visible(false)
+		core.cheat_menu_set_visible(true)
+		local active = nil
+		for _, d in ipairs(core.get_cheat_desktops()) do
+			if d.active then active = d.id end
+		end
+		T.assert(active == "menu",
+			"menu desktop stays active after reopen, got " .. tostring(active))
+		core.cheat_menu_set_visible(false)
+		core.cheat_desktop_show("cheats")
+	end)
+
 	T.run("layer API functions exist", function()
 		T.assert(type(core.layer_show) == "function", "core.layer_show")
 		T.assert(type(core.layer_hide) == "function", "core.layer_hide")

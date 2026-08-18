@@ -37,6 +37,11 @@ struct AlLayer {
 	// ESC closes this layer before the pause menu opens — but only when it is
 	// the topmost visible layer (a higher visible layer blocks it).
 	bool esc_closes = false;
+	// A visible layer can claim ESC priority over all lower layers when this
+	// predicate returns true (used by the cheat layer on the Map desktop: the
+	// big map belongs to the desktop, so ESC should close the cheat layer
+	// rather than just the map underneath).
+	std::function<bool()> esc_steal;
 	// The layer captures typed characters while visible (cheat search bar,
 	// quick palette).
 	bool captures_chars = false;

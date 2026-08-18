@@ -19,6 +19,7 @@ with this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "script/scripting_client.h"
 #include "client/client.h"
+#include "client/al_bigmap.h"
 #include "client/al_theme.h"
 #include "porting.h"
 #include "cheatMenu.h"
@@ -210,6 +211,12 @@ void CheatMenu::setupDefaultDesktops()
 	palette.fullscreen = true;
 	m_desktops.push_back(std::move(palette));
 
+	CheatDesktop map;
+	map.id = "map";
+	map.title = "Map";
+	map.fullscreen = true;
+	m_desktops.push_back(std::move(map));
+
 	// Restore the persisted active desktop.
 	m_active_desktop = 0;
 	std::string saved;
@@ -267,8 +274,12 @@ void CheatMenu::onDesktopChanged()
 	m_drag_panel = -1;
 	m_ctx.active = false;
 	if (m_active_desktop < m_desktops.size()) {
-		if (m_desktops[m_active_desktop].fullscreen)
+		if (m_desktops[m_active_desktop].fullscreen) {
 			m_categories_initialized = true;
+			// Fullscreen desktops never show a panel workspace; drop any
+			// panels that leaked in so they can't draw under the content.
+			m_panels.clear();
+		}
 		g_settings->set("cheat_menu_desktop", m_desktops[m_active_desktop].id);
 	}
 	// Entering the Palette desktop collects its entries once.
@@ -280,7 +291,17 @@ void CheatMenu::switchDesktop(size_t idx)
 {
 	if (idx == m_active_desktop || idx >= m_desktops.size())
 		return;
+	bool from_map = isMapDesktopActive();
+	bool to_map = m_desktops[idx].fullscreen && m_desktops[idx].id == "map";
 	enterDesktop(idx);
+	// The Map desktop owns the big map: opening it shows the map, leaving it
+	// closes the map again.
+	if (AlBigMap *bigmap = m_client->getAlBigMap()) {
+		if (to_map)
+			bigmap->open();
+		else if (from_map && bigmap->isOpen())
+			bigmap->close();
+	}
 }
 
 void CheatMenu::switchDesktop(const std::string &id)
@@ -318,6 +339,13 @@ bool CheatMenu::isMenuDesktopActive() const
 	return m_active_desktop < m_desktops.size() &&
 			m_desktops[m_active_desktop].fullscreen &&
 			m_desktops[m_active_desktop].id == "menu";
+}
+
+bool CheatMenu::isMapDesktopActive() const
+{
+	return m_active_desktop < m_desktops.size() &&
+			m_desktops[m_active_desktop].fullscreen &&
+			m_desktops[m_active_desktop].id == "map";
 }
 
 void CheatMenu::drawTabStrip(video::IVideoDriver *driver, v2s32 mouse_pos)
@@ -1778,6 +1806,13 @@ void CheatMenu::onLayerClosed()
 	m_drag_panel = -1;
 	savePanelPositions();
 
+	// The Map desktop owns the big map: closing the cheat layer closes the map.
+	if (isMapDesktopActive()) {
+		if (AlBigMap *bigmap = m_client->getAlBigMap())
+			if (bigmap->isOpen())
+				bigmap->close();
+	}
+
 	// Purge stale saved positions for category panels that no longer exist,
 	// across every desktop (each desktop namespaces its keys via prefix).
 	for (const auto &d : m_desktops) {
@@ -1808,8 +1843,11 @@ void CheatMenu::onLayerClosed()
 	}
 
 	// Rebuild the panel workspace on next open (pinned panels persist via
-	// their saved positions and are recreated by createCategoryPanels).
-	m_categories_initialized = false;
+	// their saved positions and are recreated by createCategoryPanels). Only
+	// panel-workspace desktops rebuild panels; fullscreen desktops (menu,
+	// palette, map) never show a panel workspace.
+	if (m_active_desktop < m_desktops.size() && !m_desktops[m_active_desktop].fullscreen)
+		m_categories_initialized = false;
 
 	// Store the cleaned-up workspace back into the active desktop.
 	saveActiveDesktopState();
@@ -2171,6 +2209,15 @@ void CheatMenu::handleMouse(v2s32 pos, bool left_down)
 
 void CheatMenu::drawAll(video::IVideoDriver *driver, v2s32 mouse_pos, bool show_debug)
 {
+	// The Map desktop owns the big map: ensure it is open whenever the layer
+	// is shown on that desktop (covers reopening the layer on a persisted
+	// Map desktop).
+	if (isMapDesktopActive()) {
+		if (AlBigMap *bigmap = m_client->getAlBigMap())
+			if (!bigmap->isOpen())
+				bigmap->open();
+	}
+
 	if (desktopNeedsTabBar())
 		drawTabStrip(driver, mouse_pos);
 
@@ -2274,6 +2321,10 @@ bool CheatMenu::pollInput()
 
 	receiver->consumeCheatChar();
 	wchar_t c = receiver->cheat_char;
+
+	// Desktops without a search bar (Map, Palette) don't consume typed chars.
+	if (isMapDesktopActive())
+		return false;
 
 	if (c == 8) {
 		if (!m_search_text.empty())

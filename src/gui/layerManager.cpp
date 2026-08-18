@@ -5,6 +5,7 @@
 
 #include "client/al_bigmap.h"
 #include "client/client.h"
+#include "client/game_internal.h"
 #include "client/renderingengine.h"
 #include "gui/cheatMenu.h"
 #include "lualib.h"
@@ -75,6 +76,21 @@ bool LayerManager::anyLayerVisible() const
 
 bool LayerManager::handleEsc()
 {
+	// A visible layer can claim ESC priority over all lower layers (the cheat
+	// layer on the Map desktop, where the big map belongs to the desktop: ESC
+	// should close the cheat layer, not just the map underneath).
+	for (auto it = m_layers.rbegin(); it != m_layers.rend(); ++it) {
+		if (!it->isVisible())
+			continue;
+		if (it->esc_steal && it->esc_steal()) {
+			if (it->close_fn)
+				it->close_fn();
+			if (!it->visible_check)
+				it->m_visible = false;
+			return true;
+		}
+	}
+
 	// Walk from the top of the stack down. The first visible layer decides:
 	// an esc_closes layer is closed (consuming the event), any other visible
 	// layer blocks the layers below it.
@@ -192,6 +208,15 @@ void setupDefaultLayers()
 	cheat.type = AlLayer::Type::CONTAINER;
 	cheat.captures_chars = true;
 	cheat.visible_check = []() { return g_cheat_layer_active; };
+	// On the Map desktop the big map belongs to the desktop, so ESC closes
+	// the cheat layer instead of just the map underneath.
+	cheat.esc_steal = []() { return g_cheat_menu && g_cheat_menu->isMapDesktopActive(); };
+	cheat.close_fn = []() {
+		if (g_game)
+			g_game->setCheatLayerActive(false);
+		else
+			g_cheat_layer_active = false;
+	};
 	cheat.draw_above_gui = [](video::IVideoDriver *driver, v2u32) {
 		if (!g_cheat_menu)
 			return;
@@ -201,7 +226,10 @@ void setupDefaultLayers()
 				mouse_pos = cur->getPosition();
 		if (g_cheat_layer_active) {
 			auto ss = driver->getScreenSize();
-			if (g_settings->getBool("cheat_menu_opaque"))
+			// No scrim on the Map desktop: the big map fills the screen and
+			// would be dimmed by the overlay otherwise.
+			if (g_settings->getBool("cheat_menu_opaque") &&
+					!g_cheat_menu->isMapDesktopActive())
 				driver->draw2DRectangle(video::SColor(178, 0, 0, 0),
 					core::rect<s32>(0, 0, ss.Width, ss.Height));
 			if (g_cheat_menu->needsSearchBar())

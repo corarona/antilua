@@ -251,7 +251,10 @@ desktop is either a panel workspace (its own `m_panels` arrangement with
 per-desktop layout persistence namespaced by `panel_pos_d_<desktop>_<panel>`)
 or a fullscreen content view. Defaults: `cheats` (panel workspace), `menu`
 (fullscreen supermenu), `palette` (fullscreen quick palette; the standalone
-`~` overlay is unchanged). A tab strip renders at the top of the cheat layer;
+`~` overlay is unchanged), and `map` (fullscreen big map). The `map` desktop
+owns the big map: switching to it opens the big map, leaving it (or closing
+the cheat layer) closes it again; ESC on the map desktop closes the whole
+cheat layer. A tab strip renders at the top of the cheat layer;
 `keymap_cheat_desktop_next/prev` cycle desktops. The active desktop persists
 in `cheat_menu_desktop`.
 

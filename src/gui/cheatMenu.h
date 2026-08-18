@@ -151,10 +151,12 @@ public:
 	void prevDesktop();
 	bool isPaletteDesktopActive() const;
 	bool isMenuDesktopActive() const;
+	bool isMapDesktopActive() const;
 	bool scrollFullscreenDesktop(s32 wheel);
 	// Whether the cheat search bar should be drawn for the active desktop
-	// (the Palette desktop draws its own search field).
-	bool needsSearchBar() const { return !isPaletteDesktopActive(); }
+	// (the Palette desktop draws its own search field; the Map desktop shows
+	// the big map fullscreen).
+	bool needsSearchBar() const { return !isPaletteDesktopActive() && !isMapDesktopActive(); }
 	// Whether palette input/drawing mode is active (standalone overlay or the
 	// Palette desktop).
 	bool isPaletteModeActive() const
