@@ -259,7 +259,11 @@ in `cheat_menu_desktop`.
 
 ```lua
 -- Layers
-core.register_layer(id, { title=, opaque=, key="KEY_KEY_X" })
+core.register_layer(id, {
+    title = "My Layer", opaque = true, key = "KEY_KEY_X",
+    on_draw = function() end,    -- may use the 2D draw queue below
+    on_input = function(ev) end, -- ev = {type="click", x, y}; return true to consume
+})
 core.layer_show(id) / core.layer_hide(id) / core.layer_toggle(id)
 core.layer_is_visible(id)
 core.get_layers()                -- {id, title, type, visible}[]
@@ -275,7 +279,7 @@ core.cheat_desktop_show(id)
 
 -- 2D immediate-mode draw queue (flushed after an on_draw callback)
 core.draw_rect(x, y, w, h, color)             -- color: "#RRGGBB" or {r,g,b,a}
-core.draw_text(text, x, y, font_size, color)
+core.draw_text(text, x, y, font_size, color)  -- font_size: 0/omitted = default font
 core.draw_texture(texture_name, x, y, w, h)
 ```
 

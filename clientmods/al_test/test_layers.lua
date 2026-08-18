@@ -130,9 +130,62 @@ function test_layers(T)
 		T.assert(core.draw_rect(10, 10, 20, 20, "#ff0000") == nil,
 			"draw_rect queues a rect")
 		T.assert(core.draw_text("hello", 0, 0, 0, "#ffffff") == nil,
-			"draw_text queues text")
+			"draw_text queues text with default size")
+		T.assert(core.draw_text("hello", 0, 0, 24, "#ffffff") == nil,
+			"draw_text queues text with explicit font size")
 		T.assert(core.draw_texture("default_stone.png", 0, 0, 16, 16) == nil,
 			"draw_texture queues a texture")
+	end)
+
+	T.run("register_layer accepts on_draw/on_input callbacks", function()
+		local ok = core.register_layer("test_layer_callbacks", {
+			title = "Callback Layer",
+			opaque = true,
+			on_draw = function() end,
+			on_input = function(ev) return false end,
+		})
+		T.assert(ok == true, "register_layer with callbacks returns true")
+		local layers = core.get_layers()
+		local found = nil
+		for _, l in ipairs(layers) do
+			if l.id == "test_layer_callbacks" then found = l end
+		end
+		T.assert(found ~= nil, "callback layer listed")
+		T.assert(core.layer_is_visible("test_layer_callbacks") == false,
+			"callback layer starts hidden")
+		core.layer_hide("test_layer_callbacks")
+	end)
+
+	T.run("layer on_draw is invoked while visible", function()
+		local drew = false
+		local ok = core.register_layer("test_layer_draw", {
+			title = "Draw Layer",
+			on_draw = function()
+				drew = true
+				core.draw_text("layer draw", 5, 5, 24, "#ffffff")
+				core.draw_rect(1, 1, 10, 10, "#ff0000")
+				core.draw_texture("default_stone.png", 10, 10, 16, 16)
+			end,
+		})
+		if not ok then
+			T.assert(false, "register_layer failed")
+			return
+		end
+		core.layer_show("test_layer_draw")
+		local attempts = 20 -- 20 * 0.25s = 5s timeout
+		local function poll()
+			if drew then
+				core.layer_hide("test_layer_draw")
+				core.log("info", "[AL_TEST] PASS: layer on_draw invoked (async)")
+			elseif attempts > 0 then
+				attempts = attempts - 1
+				core.after(0.25, poll)
+			else
+				core.layer_hide("test_layer_draw")
+				error("layer on_draw never called (timeout)")
+			end
+		end
+		core.after(0.25, poll)
 	end)
 
 	T.run("desktop settings exist", function()

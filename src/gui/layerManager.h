@@ -100,6 +100,12 @@ public:
 	// was consumed.
 	bool handleEsc();
 
+	// Input: dispatches a mouse click to the topmost visible layer with an
+	// on_input callback (in z-order, top first). Each receives
+	// {type="click", x, y}; returning true consumes the event (stops
+	// dispatch to lower layers). Returns true if a layer consumed it.
+	bool handleClick(v2s32 pos);
+
 	// Input: toggles the visibility of any registered layer whose key_name
 	// matches the given key (edge-triggered on press). Returns true if a layer
 	// consumed the event.

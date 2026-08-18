@@ -1996,6 +1996,20 @@ void Game::toggleCheatLayer()
 		m_cheat_menu->onLayerClosed();
 }
 
+void Game::setCheatLayerActive(bool visible)
+{
+	m_cheat_layer_active = visible;
+	m_game_ui->m_flags.show_cheat_menu = visible;
+	g_cheat_layer_active = visible;
+	if (visible)
+		g_cheat_layer_force_hidden = false;
+	auto *cur = device->getCursorControl();
+	if (cur)
+		cur->setVisible(visible);
+	if (!visible && m_cheat_menu)
+		m_cheat_menu->onLayerClosed();
+}
+
 void Game::updateAllMapBlocksCallback(const std::string &, void *data)
 {
 	((Game *)data)->client->updateAllMapBlocks();
@@ -4027,6 +4041,16 @@ void Game::drawScene(ProfilerGraph *graph, RunStats *stats, f32 dtime)
 
 	if (isTouchShootlineUsed())
 		draw_crosshair = false;
+
+	// Forward left-clicks to visible Lua-registered layers (on_input). The
+	// topmost visible layer with an on_input callback consumes the click.
+	if (g_layer_manager) {
+		static bool layer_click_was_down = false;
+		bool click_down = input->isKeyDown(KeyType::DIG);
+		if (click_down && !layer_click_was_down)
+			g_layer_manager->handleClick(input->getMousePos());
+		layer_click_was_down = click_down;
+	}
 
 	// Forward mouse event to cheat menu for panel interaction
 	if (m_cheat_layer_active && m_cheat_menu) {

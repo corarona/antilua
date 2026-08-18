@@ -534,15 +534,18 @@ void CheatMenu::flushDrawQueue(video::IVideoDriver *driver, v2u32 ss)
 			driver->draw2DRectangle(p.color,
 				core::rect<s32>(p.x, p.y, p.x + p.w, p.y + p.h));
 			break;
-		case DrawPrimType::TEXT:
-			if (m_font) {
-				(void)p.font_size;
-				s32 fw = m_font->getDimension(utf8_to_wide(p.text).c_str()).Width;
-				s32 fh = m_font->getDimension(L"M").Height;
+		case DrawPrimType::TEXT: {
+			gui::IGUIFont *font = m_font;
+			if (p.font_size > 0 && g_fontengine)
+				font = g_fontengine->getFont(p.font_size, FM_Standard);
+			if (font) {
+				s32 fw = font->getDimension(utf8_to_wide(p.text).c_str()).Width;
+				s32 fh = font->getDimension(L"M").Height;
 				core::rect<s32> r(p.x, p.y, p.x + fw, p.y + fh);
-				m_font->draw(utf8_to_wide(p.text).c_str(), r, p.color, false, false);
+				font->draw(utf8_to_wide(p.text).c_str(), r, p.color, false, false);
 			}
 			break;
+		}
 		case DrawPrimType::TEXTURE:
 			if (!p.texture.empty() && driver) {
 				video::ITexture *tex = driver->getTexture(p.texture.c_str());
@@ -1865,9 +1868,10 @@ void CheatMenu::selectUp()
 	if (!panel) return;
 
 	if (isCatPanel(*panel)) {
-		int max = (int)script->m_cheat_categories[panel->selected_category]->m_cheats.size() - 1;
+		int count = countFilteredCategoryCheats(script, panel->selected_category);
+		if (count <= 0) return;
 		panel->selected_cheat--;
-		if (panel->selected_cheat < 0) panel->selected_cheat = max;
+		if (panel->selected_cheat < 0) panel->selected_cheat = count - 1;
 	} else if (isFavPanel(*panel)) {
 		int max = countFavoritedCheats(script) - 1;
 		panel->selected_cheat--;
@@ -1907,9 +1911,10 @@ void CheatMenu::selectDown()
 	if (!panel) return;
 
 	if (isCatPanel(*panel)) {
-		int max = (int)script->m_cheat_categories[panel->selected_category]->m_cheats.size() - 1;
+		int count = countFilteredCategoryCheats(script, panel->selected_category);
+		if (count <= 0) return;
 		panel->selected_cheat++;
-		if (panel->selected_cheat > max) panel->selected_cheat = 0;
+		if (panel->selected_cheat >= count) panel->selected_cheat = 0;
 	} else if (isFavPanel(*panel)) {
 		int max = countFavoritedCheats(script) - 1;
 		panel->selected_cheat++;
@@ -2213,6 +2218,17 @@ int CheatMenu::countFavoritedCheats(ClientScripting *script) const
 	return count;
 }
 
+int CheatMenu::countFilteredCategoryCheats(ClientScripting *script, int cat_idx) const
+{
+	if (cat_idx < 0 || (size_t)cat_idx >= script->m_cheat_categories.size())
+		return 0;
+	int count = 0;
+	for (auto &cheat : script->m_cheat_categories[cat_idx]->m_cheats)
+		if (matchesSearch(cheat->m_name, m_search_text))
+			count++;
+	return count;
+}
+
 void CheatMenu::drawSearchBar(video::IVideoDriver *driver)
 {
 	auto ss = driver->getScreenSize();
@@ -2247,7 +2263,7 @@ void CheatMenu::drawSearchBar(video::IVideoDriver *driver)
 
 bool CheatMenu::pollInput()
 {
-	if (!g_cheat_layer_active && !m_quick_palette_active)
+	if (!g_cheat_layer_active)
 		return false;
 
 	auto *device = RenderingEngine::get_raw_device();
@@ -2258,41 +2274,6 @@ bool CheatMenu::pollInput()
 
 	receiver->consumeCheatChar();
 	wchar_t c = receiver->cheat_char;
-
-	if (isPaletteModeActive()) {
-	if (c == 22) {
-		// Ctrl+V: paste the clipboard into the search field.
-		auto *device = RenderingEngine::get_raw_device();
-		if (device && device->getOSOperator()) {
-			const char *clip = device->getOSOperator()->getTextFromClipboard();
-			if (clip) {
-				for (; *clip; clip++) {
-					unsigned char ch = (unsigned char)*clip;
-					if (ch >= 32 && ch != 127)
-						m_quick_palette_text += (char)ch;
-				}
-			}
-		}
-		m_quick_palette_selected = 0;
-		m_quick_palette_scroll = 0;
-	} else if (c == 8) {
-			if (!m_quick_palette_text.empty())
-				m_quick_palette_text.pop_back();
-		} else if (c == 27) {
-			if (!m_quick_palette_text.empty()) {
-				m_quick_palette_text.clear();
-			} else {
-				m_quick_palette_active = false;
-				if (auto *device = RenderingEngine::get_raw_device())
-					if (auto *cur = device->getCursorControl())
-						cur->setVisible(false);
-			}
-		} else if (c >= 32) {
-			m_quick_palette_text += (char)c;
-		}
-		m_quick_palette_selected = 0;
-		return false;
-	}
 
 	if (c == 8) {
 		if (!m_search_text.empty())

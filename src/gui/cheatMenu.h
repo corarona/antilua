@@ -360,6 +360,10 @@ private:
 	// Conflicts
 	bool hasActiveConflict(ScriptApiCheatsCheat *cheat) const;
 
+	// Number of cheats in the given category matching the current search text
+	// (used by keyboard navigation so wrap-around matches the visible rows).
+	int countFilteredCategoryCheats(ClientScripting *script, int cat_idx) const;
+
 	// Close cheat layer before opening a formspec from within the menu
 	static void closeForFormspec();
 };

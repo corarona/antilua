@@ -129,6 +129,10 @@ public:
 	void dropSelectedItem(bool single_item = false);
 	void processItemSelection(u16 *new_playeritem);
 
+	// Sets the cheat-layer visibility from Lua (core.cheat_menu_set_visible),
+	// keeping the authoritative m_cheat_layer_active flag in sync.
+	void setCheatLayerActive(bool visible);
+
 	// Pre-calculated value
 	int crack_animation_length;
 

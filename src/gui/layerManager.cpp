@@ -92,6 +92,41 @@ bool LayerManager::handleEsc()
 	return false;
 }
 
+bool LayerManager::handleClick(v2s32 pos)
+{
+	// Dispatch the click to the topmost visible layer with an on_input
+	// callback. The callback receives {type="click", x, y} and may return
+	// true to consume the event (stopping dispatch to lower layers).
+	for (auto it = m_layers.rbegin(); it != m_layers.rend(); ++it) {
+		if (!it->isVisible() || it->on_input == 0)
+			continue;
+		if (!m_client || !m_client->getScript())
+			return false;
+		lua_State *L = m_client->getScript()->getLuaState();
+		int base = lua_gettop(L);
+		lua_rawgeti(L, LUA_REGISTRYINDEX, it->on_input);
+		lua_newtable(L);
+		lua_pushstring(L, "click");
+		lua_setfield(L, -2, "type");
+		lua_pushinteger(L, pos.X);
+		lua_setfield(L, -2, "x");
+		lua_pushinteger(L, pos.Y);
+		lua_setfield(L, -2, "y");
+		if (lua_pcall(L, 1, 1, 0) != 0) {
+			const char *err = lua_tostring(L, -1);
+			warningstream << "layer on_input error: "
+					<< (err ? err : "(unknown)") << std::endl;
+			lua_settop(L, base);
+			return true;
+		}
+		bool consumed = lua_toboolean(L, -1);
+		lua_settop(L, base);
+		if (consumed)
+			return true;
+	}
+	return false;
+}
+
 bool LayerManager::handleKeyPress(const KeyPress &key, bool pressed)
 {
 	bool handled = false;

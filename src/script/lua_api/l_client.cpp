@@ -1558,16 +1558,20 @@ int ModApiClient::l_reattach(lua_State *L)
 int ModApiClient::l_cheat_menu_set_visible(lua_State *L)
 {
 	bool visible = readParam<bool>(L, 1);
-	if (visible)
-		g_cheat_layer_force_hidden = false;
-	g_cheat_layer_active = visible;
-	auto *device = RenderingEngine::get_raw_device();
-	if (device) {
-		if (auto *cur = device->getCursorControl())
-			cur->setVisible(visible);
+	if (g_game) {
+		g_game->setCheatLayerActive(visible);
+	} else {
+		if (visible)
+			g_cheat_layer_force_hidden = false;
+		g_cheat_layer_active = visible;
+		auto *device = RenderingEngine::get_raw_device();
+		if (device) {
+			if (auto *cur = device->getCursorControl())
+				cur->setVisible(visible);
+		}
+		if (!visible && g_cheat_menu)
+			g_cheat_menu->onLayerClosed();
 	}
-	if (!visible && g_cheat_menu)
-		g_cheat_menu->onLayerClosed();
 	return 0;
 }
 
@@ -1710,6 +1714,16 @@ int ModApiClient::l_register_layer(lua_State *L)
 	lua_getfield(L, 2, "key");
 	layer.key_name = lua_isstring(L, -1) ? lua_tostring(L, -1) : "";
 	lua_pop(L, 1);
+	lua_getfield(L, 2, "on_draw");
+	if (lua_isfunction(L, -1))
+		layer.on_draw = luaL_ref(L, LUA_REGISTRYINDEX);
+	else
+		lua_pop(L, 1);
+	lua_getfield(L, 2, "on_input");
+	if (lua_isfunction(L, -1))
+		layer.on_input = luaL_ref(L, LUA_REGISTRYINDEX);
+	else
+		lua_pop(L, 1);
 
 	mgr->registerLayer(layer);
 	lua_pushboolean(L, true);
