@@ -46,6 +46,12 @@ local function mscaffold(self)
 		end
 		return names[#names]
 	end
+	local eligible = function(p)
+		local n = core.get_node_or_nil(p)
+		if not n then return false end
+		if random then return ws.in_list(n.name, names) end
+		return n.name == self._node
+	end
 	local y_from = -depth
 	local y_to = -1
 	if above > 0 then
@@ -65,7 +71,7 @@ local function mscaffold(self)
 					if ws.can_place_at(p) then
 						ws.place(p, name)
 						placed = placed + 1
-					elseif not ws.isnode(p, name) and dig then
+					elseif dig and not eligible(p) then
 						ws.dig(p)
 						ws.place(p, name)
 						placed = placed + 1
