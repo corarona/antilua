@@ -32,6 +32,7 @@ local function mscaffold(self)
 	local depth = tonumber(core.settings:get("scaffold.depth")) or 1
 	local above = tonumber(core.settings:get("scaffold.above")) or 0
 	local npt = tonumber(core.settings:get("scaffold.npt")) or ws.get_nodes_per_tick() or 25
+	local dig = core.settings:get_bool("scaffold.dig", false)
 	local names, weights, total
 	if random then
 		names, weights, total = weighted_node_list()
@@ -59,9 +60,16 @@ local function mscaffold(self)
 				if placed >= npt then return end
 				local p = ws.dircoord(fo, j, i)
 				local nd = p and core.get_node_or_nil(p)
-				if nd and ws.can_place_at(p) then
-					ws.place(p, pick())
-					placed = placed + 1
+				if nd then
+					local name = pick()
+					if ws.can_place_at(p) then
+						ws.place(p, name)
+						placed = placed + 1
+					elseif not ws.isnode(p, name) and dig then
+						ws.dig(p)
+						ws.place(p, name)
+						placed = placed + 1
+					end
 				end
 			end
 		end
@@ -82,6 +90,7 @@ ws.rg('MultiScaff', { category = "Place", setting = "scaffold", description = "B
 		above = { type = "number", default = 0, min = 0, max = 20 },
 		npt = { type = "number", default = 25, min = 1, max = 500 },
 		random = { type = "bool", default = false },
+		dig = { type = "bool", default = false },
 		ping_tolerance = { type = "number", default = 1500, min = 0, max = 5000 },
 	},
 })
