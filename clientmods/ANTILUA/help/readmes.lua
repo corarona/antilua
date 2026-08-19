@@ -438,7 +438,7 @@ None. Library mod — no cheats registered.
 	["fishbot"] = [[
 # fishbot
 
-Automated fishing bot for MineClone (and similar). Uses a state machine to cast, wait for a bite, and reel in.
+Automated fishing bot for Mineclonia / VoxeLibre. Uses a state machine to cast, wait for a bite, and reel in. Bites are detected via the bobber's bubble particles (VoxeLibre) or bobber movement (Mineclonia).
 
 ## Player usage
 
@@ -446,7 +446,7 @@ Automated fishing bot for MineClone (and similar). Uses a state machine to cast,
 
 | Cheat | Category | Setting | Description |
 |-------|----------|---------|-------------|
-| FishBot | Bots | `fishbot` | Automated fishing — casts rod, waits for bobber movement, reels in |
+| FishBot | Bots | `fishbot` | Automated fishing — casts rod, reels in on bite (bubble particles or bobber movement) |
 
 ### Settings
 
@@ -458,12 +458,12 @@ Automated fishing bot for MineClone (and similar). Uses a state machine to cast,
 
 | State | Description |
 |-------|-------------|
-| 0 | Cast the fishing rod |
-| 1 | Wait — monitor bobber position; if it stops moving, advance to state 2 |
-| 2 | Bobber stationary — wait for movement (bite); reel in if bobber moves or if water beneath it disappears |
-| 3 | Cooldown — wait until bobber is gone, then reset to state 0 |
+| 1 | No bobber — cast the rod (throttled to avoid spam) |
+| 2 | Bobber present — wait for it to settle; if it stops moving, advance to state 3 |
+| 3 | Bobber settled — wait for a bite (bubble particles near the bobber on VoxeLibre, or bobber movement on Mineclonia); reel in, or recast if the bobber sits on land |
+| 4 | Cooldown — wait until bobber is gone, then reset to state 1 |
 
-FishBot auto-equips an enchanted fishing rod (falls back to normal) from the hotbar. Requires MineClone/IA game.
+FishBot auto-equips an enchanted fishing rod (falls back to normal) from the hotbar. Requires Mineclonia/VoxeLibre game.
 
 ### Daughter mods
 
@@ -477,7 +477,7 @@ None.
 
 | Cheat | Setting | Description |
 |-------|---------|-------------|
-| FishBot | `fishbot` | Automated fishing — casts rod, waits for bobber movement, reels in |
+| FishBot | `fishbot` | Automated fishing — casts rod, reels in on bite (bubble particles or bobber movement) |
 ]],
 	["inv_open"] = [[
 # inv_open

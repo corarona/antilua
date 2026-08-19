@@ -149,7 +149,7 @@ bots, schematic building, waypoints, formspec editors, and more.
 | `dig` | Dig timing + bulk excavation | ✅ |
 | `dte` | In-game Lua/formspec editor | ✅ |
 | `farmtool` | Automated farming + FarmBot | ✅ |
-| `fishbot` | Automated fishing state machine | ✅ |
+| `fishbot` | Automated fishing state machine (Mineclonia/VoxeLibre) | ✅ |
 | `help` | Centralized help system | ✅ |
 | `invsaver` | Auto-transfer to ender chest | ✅ |
 | `lockview` | Lock camera yaw/pitch | ✅ |
