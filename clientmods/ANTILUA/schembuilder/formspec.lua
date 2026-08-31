@@ -148,14 +148,15 @@ function schembuilder.build_browser_content(tab, cw)
 		for i, n in ipairs(shape_names) do
 			if n == saved_shape then shape_idx = i; break end
 		end
-		local node_w = cw - 5.6
+		local node_w = cw - 6.1
 		local dim_z_w = cw - 7.1
 		local btn_w = (cw - 0.3) / 2
 		fs = fs ..
-			"dropdown[0,1;5,0.8;shape_type;" ..
+			"dropdown[0,1;4,0.8;shape_type;" ..
 				table.concat(shape_names, ",") .. ";" .. shape_idx .. "]" ..
-			"field[5.5,1;" .. node_w .. ",0.8;node_name;Node Name;" ..
+			"field[4.5,1;" .. node_w .. ",0.8;node_name;Node Name;" ..
 				core.formspec_escape(sv("schembuilder_node_name", "mcl_core:stone")) .. "]" ..
+			"button[" .. (cw - 1.5) .. ",1;1.4,0.8;node_wield;Wielded]" ..
 			"field[0,2;3,0.8;dim_x;Width;" .. sv("schembuilder_dim_x", "8") .. "]" ..
 			"field[3.5,2;3,0.8;dim_y;Height;" .. sv("schembuilder_dim_y", "8") .. "]" ..
 			"field[7.1,2;" .. dim_z_w .. ",0.8;dim_z;Depth;" .. sv("schembuilder_dim_z", "8") .. "]" ..

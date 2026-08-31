@@ -438,4 +438,17 @@ function test_schembuilder(T)
 		T.assert(found, "Stop Schematic Build entry should be in the quick menu")
 		place_nodes = orig or {}
 	end)
+
+	T.run("create-shapes tab renders wielded button next to node field", function()
+		local out = schembuilder.build_browser_content(4, 10)
+		T.assert(out:find("node_wield", 1, true) ~= nil,
+			"wielded button should be present in create-shapes tab")
+		T.assert(out:find("button[" .. (10 - 1.5) .. ",1;1.4,0.8;node_wield;Wielded]", 1, true) ~= nil,
+			"wielded button should sit right of the node field")
+	end)
+
+	T.run("wielded button handler consumes fields", function()
+		T.assert(schembuilder.handle_browser_fields({ node_wield = true }) == true,
+			"node_wield should be consumed by schembuilder")
+	end)
 end

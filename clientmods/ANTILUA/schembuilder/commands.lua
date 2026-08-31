@@ -357,6 +357,21 @@ function schembuilder.handle_browser_fields(fields)
 		return true
 	end
 
+	-- Tab 4: Fill node name from the wielded item
+	if fields.node_wield then
+		core.settings:set("schembuilder_shape_type", fields.shape_type or "Cube")
+		local it = core.localplayer and core.localplayer:get_wielded_item()
+		if it and not it:is_empty() then
+			local name = it:get_name()
+			core.settings:set("schembuilder_node_name", name)
+			ws.notify("Set node: " .. name, ws.NOTIFY_INFO)
+		else
+			ws.notify("Nothing wielded", ws.NOTIFY_WARNING)
+		end
+		show_browser_form(4)
+		return true
+	end
+
 	-- Tab 4: Shape generation actions
 	if fields.shape_generate or fields.shape_genplace then
 		core.settings:set("schembuilder_shape_type", fields.shape_type or "Cube")
