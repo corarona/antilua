@@ -292,9 +292,9 @@ keymap_toggle_block_bounds (Toggle block bounds) key
 
 keymap_camera_mode (Toggle camera mode) key SYSTEM_SCANCODE_6
 
-keymap_camera_roll_left (Camera roll left) key SYSTEM_SCANCODE_20
+keymap_camera_roll_left (Camera roll left) key
 
-keymap_camera_roll_right (Camera roll right) key SYSTEM_SCANCODE_8
+keymap_camera_roll_right (Camera roll right) key
 
 keymap_increase_viewing_range_min (Increase view range) key SYSTEM_SCANCODE_46
 

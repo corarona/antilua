@@ -45,7 +45,7 @@ setting their corresponding settings.
 |---------|---------|-------------|
 | Freecam | `freecam` | Detached camera — fly through world while player stays |
 | Freelook | `freelook` | Mouse-look without holding a button |
-| Camera Roll | `keymap_camera_roll_{left,right}` | Roll camera around look axis (Q/E, configurable speed/max/auto-reset) |
+| Camera Roll | `keymap_camera_roll_{left,right}` | Roll camera around look axis (unbound by default, configurable speed/max/auto-reset) |
 | Pitch Wraparound | `pitch_wraparound` | Allow pitch past ±90° for loopings |
 | AirJump | `airjump` | Jump in mid-air |
 | Spider | `spider` | Climb any walkable wall |

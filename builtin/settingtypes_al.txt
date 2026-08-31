@@ -4,7 +4,7 @@
 cheat_hud (Cheat HUD) bool true
 
 #    Use toggle mode (press TAB to open/close) instead of hold-to-show.
-cheat_menu_toggle_mode (Cheat menu toggle mode) bool false
+cheat_menu_toggle_mode (Cheat menu toggle mode) bool true
 
 #    Draw the dark scrim behind the cheat menu.
 cheat_menu_opaque (Cheat menu opaque) bool true

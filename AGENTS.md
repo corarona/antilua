@@ -525,7 +525,8 @@ Response file format: first line is `ok` or `error`, followed by the result.
 ## Camera Roll
 
 Adds camera roll support — rotating the camera around its look direction axis.
-Controllable via player keybindings (default: Q/E) and Lua API.
+Controllable via player keybindings (unbound by default; bind
+`keymap_camera_roll_{left,right}` to use) and Lua API.
 
 Roll is stored on `LocalPlayer` (radians) and applied in `Camera::update()` by
 rotating the up vector around the camera direction via a quaternion. This
@@ -535,8 +536,8 @@ produces a mathematically pure roll unaffected by pitch or yaw.
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `keymap_camera_roll_left` | Q | Roll camera counterclockwise |
-| `keymap_camera_roll_right` | E | Roll camera clockwise |
+| `keymap_camera_roll_left` | unbound | Roll camera counterclockwise |
+| `keymap_camera_roll_right` | unbound | Roll camera clockwise |
 | `camera_roll_speed` | 90 | Degrees per second |
 | `camera_roll_max` | 180 | Maximum roll angle in degrees (set to 360 for full barrel roll) |
 | `camera_roll_auto_reset` | true | Auto-reset camera roll to 0 when idle |
@@ -544,8 +545,7 @@ produces a mathematically pure roll unaffected by pitch or yaw.
 | `camera_roll_auto_reset_duration` | 0.3 | Duration of smooth roll decay |
 | `camera_roll_adaptive_mouse` | both | `both` or `pitch` — whether mouse movement adapts to camera roll |
 
-Note: `keymap_drop` was unbound (was Q) and `keymap_aux1` moved to Left Ctrl
-(was E) to free Q/E for camera roll.
+Note: camera roll keys are unbound by default.
 
 ### Lua API
 

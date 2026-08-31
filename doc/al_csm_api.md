@@ -901,8 +901,8 @@ Colors use RGB tuple format `(R, G, B)`.
 | `keymap_toggle_freecam` | `G` | Toggle freecam |
 | `keymap_toggle_scaffold` | `Y` | Toggle scaffold assist |
 | `keymap_enderchest` | `H` | Open ender chest |
-| `keymap_camera_roll_left` | `Q` | Roll camera counter-clockwise |
-| `keymap_camera_roll_right` | `E` | Roll camera clockwise |
+| `keymap_camera_roll_left` | unbound | Roll camera counter-clockwise |
+| `keymap_camera_roll_right` | unbound | Roll camera clockwise |
 | `keymap_select_up` | `Up` | Cheat menu up |
 | `keymap_select_down` | `Down` | Cheat menu down |
 | `keymap_select_left` | `Left` | Cheat menu back |

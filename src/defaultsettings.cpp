@@ -139,7 +139,7 @@ static void set_al_default_settings()
 	settings->setDefault("cheat_hud", "true");
 	settings->setDefault("cheat_hud.speed", "1.0");
 	settings->setDefault("cheat_menu_rearrange", "false");
-	settings->setDefault("cheat_menu_toggle_mode", "false");
+	settings->setDefault("cheat_menu_toggle_mode", "true");
 	settings->setDefault("cheat_menu_opaque", "true");
 	settings->setDefault("cheat_menu_desktop", "cheats");
 	settings->setDefault("cheat_menu_favorites", "");
@@ -190,11 +190,9 @@ static void set_al_default_settings()
 	settings->setDefault("camera_roll_adaptive_mouse", "both");
 	settings->setDefault("pitch_wraparound", "false");
 
-	// Key binding overrides (upstream defaults: drop=Q, aux1=E)
-	settings->setDefault("keymap_drop", "");              // unbound for camera roll
-	settings->setDefault("keymap_aux1", "SYSTEM_SCANCODE_224"); // KEY_LCONTROL
-	settings->setDefault("keymap_camera_roll_left", "SYSTEM_SCANCODE_20"); // KEY_KEY_Q
-	settings->setDefault("keymap_camera_roll_right", "SYSTEM_SCANCODE_8"); // KEY_KEY_E
+	// Camera roll keys are unbound by default (bind via settings)
+	settings->setDefault("keymap_camera_roll_left", "");
+	settings->setDefault("keymap_camera_roll_right", "");
 
 	// Client Lua pipe
 	settings->setDefault("pipe_lua_enable", "false");
@@ -282,13 +280,11 @@ void set_default_settings()
 	settings->setDefault("keymap_sneak", "SYSTEM_SCANCODE_225|GAMEPAD_BUTTON_1"); // KEY_LSHIFT|Gamepad East
 	settings->setDefault("keymap_dig", "MOUSE_BUTTON_1|GAMEPAD_AXIS_PLUS_5"); // LMB|Gamepad RT
 	settings->setDefault("keymap_place", "MOUSE_BUTTON_3|GAMEPAD_AXIS_PLUS_4"); // RMB|Gamepad LT
-	settings->setDefault("keymap_drop", ""); // was KEY_KEY_Q, now unbound (Q → camera roll)
+	settings->setDefault("keymap_drop", "SYSTEM_SCANCODE_20"); // KEY_KEY_Q
 	settings->setDefault("keymap_zoom", "SYSTEM_SCANCODE_29|GAMEPAD_BUTTON_11"); // KEY_KEY_Z|D-Pad Up
 	settings->setDefault("keymap_inventory", "SYSTEM_SCANCODE_12|GAMEPAD_BUTTON_3"); // KEY_KEY_I|Gamepad North
 	settings->setDefault("keymap_pause", "GAMEPAD_BUTTON_6"); // Gamepad Start
-	settings->setDefault("keymap_aux1", "SYSTEM_SCANCODE_224"); // KEY_LCONTROL (was KEY_KEY_E, E → camera roll)
-	settings->setDefault("keymap_camera_roll_left", "SYSTEM_SCANCODE_20"); // KEY_KEY_Q
-	settings->setDefault("keymap_camera_roll_right", "SYSTEM_SCANCODE_8"); // KEY_KEY_E
+	settings->setDefault("keymap_aux1", "SYSTEM_SCANCODE_8"); // KEY_KEY_E
 	settings->setDefault("keymap_chat", "SYSTEM_SCANCODE_23"); // KEY_KEY_T
 	settings->setDefault("keymap_cmd", "SYSTEM_SCANCODE_56"); // /
 	settings->setDefault("keymap_cmd_local", "SYSTEM_SCANCODE_55"); // .
@@ -327,8 +323,6 @@ void set_default_settings()
 	settings->setDefault("keymap_camera_yaw_right", "GAMEPAD_AXIS_PLUS_2"); // Right Joystick
 	settings->setDefault("keymap_camera_pitch_up", "GAMEPAD_AXIS_MINUS_3"); // Right Joystick
 	settings->setDefault("keymap_camera_pitch_down", "GAMEPAD_AXIS_PLUS_3"); // Right Joystick
-	settings->setDefault("keymap_camera_roll_left", "SYSTEM_SCANCODE_20"); // KEY_KEY_Q
-	settings->setDefault("keymap_camera_roll_right", "SYSTEM_SCANCODE_8"); // KEY_KEY_E
 	settings->setDefault("keymap_screenshot", "SYSTEM_SCANCODE_69|GAMEPAD_BUTTON_14"); // KEY_F12|D-Pad Right
 	settings->setDefault("keymap_fullscreen", "SYSTEM_SCANCODE_68"); // KEY_F11
 	settings->setDefault("keymap_increase_viewing_range_min", "SYSTEM_SCANCODE_46"); // +
