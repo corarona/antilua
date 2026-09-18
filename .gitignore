@@ -152,3 +152,6 @@ clientmods/ANTILUA/priv/
 clientmods/PRIV/
 __pycache__/
 tests/
+
+# Python tooling (util/mcp)
+util/mcp/.venv/
