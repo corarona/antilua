@@ -1014,6 +1014,22 @@ ok
 
 On error, the first line is `error` followed by the error message.
 
+Set `"serialize":true` to have the result serialized as JSON instead of the
+lossy `tostring()` text (tables otherwise come back as `table: 0x...`).
+Tables are serialized recursively — arrays when the keys are contiguous
+integers `1..N`, objects otherwise; circular references and excessive nesting
+become `null`; userdata and functions fall back to their `tostring()`. Multiple
+return values are wrapped in a JSON array:
+
+```json
+{"code":"return core.localplayer:get_pos()", "file":"/tmp/resp", "serialize":true}
+```
+
+```
+ok
+{"x":100,"y":20,"z":-30}
+```
+
 ---
 
 # 13. Session Detach / Reattach

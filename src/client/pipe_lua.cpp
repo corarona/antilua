@@ -7,7 +7,9 @@
 
 #include <json/json.h>
 
+#include <cmath>
 #include <fstream>
+#include <set>
 #include <sstream>
 
 // Lua 5.1 compat: LUA_OK was introduced in 5.2
@@ -124,6 +126,112 @@ void ClientLuaPipe::writeResult(const std::string &file, bool ok,
 		ofs << content << std::endl;
 }
 
+// Serialize a Lua value to JSON (used when the 'serialize' request field is
+// set). Tables are serialized recursively: arrays when the keys are contiguous
+// integers 1..N, objects otherwise. Cycles and excessive nesting are guarded
+// by an ancestor set and a depth limit. Userdata, functions and threads fall
+// back to their tostring representation.
+static void serializeLuaValue(lua_State *L, int idx, Json::Value &out,
+	int depth, std::set<const void *> &ancestors)
+{
+	if (idx < 0)
+		idx = lua_gettop(L) + idx + 1;
+
+	if (depth > 32) {
+		out = Json::nullValue;
+		return;
+	}
+
+	if (lua_isnumber(L, idx)) {
+		double num = lua_tonumber(L, idx);
+		if (!std::isfinite(num)) {
+			out = Json::nullValue;
+		} else if (num == std::floor(num) &&
+				num >= -9223372036854775808.0 &&
+				num < 9223372036854775808.0) {
+			// integral value: serialize as an integer, not "1.0"
+			out = (Json::Value::Int64)num;
+		} else {
+			out = num;
+		}
+	} else if (lua_isboolean(L, idx)) {
+		// lua_toboolean returns int in Lua 5.1; cast so JSON is true/false
+		out = (lua_toboolean(L, idx) != 0);
+	} else if (lua_isstring(L, idx)) {
+		// lua_isstring also reports numbers, but those were handled above
+		size_t len = 0;
+		const char *str = lua_tolstring(L, idx, &len);
+		out = std::string(str, len);
+	} else if (lua_isnil(L, idx)) {
+		out = Json::nullValue;
+	} else if (lua_istable(L, idx)) {
+		const void *ptr = lua_topointer(L, idx);
+		if (ancestors.count(ptr) != 0) {
+			out = Json::nullValue; // circular reference
+			return;
+		}
+		ancestors.insert(ptr);
+
+		// Determine whether the table is a sequence 1..n
+		bool is_array = true;
+		Json::UInt count = 0;
+		Json::UInt max_index = 0;
+		lua_pushnil(L);
+		while (lua_next(L, idx) != 0) {
+			// key is at -2, value at -1
+			if (!lua_isnumber(L, -2)) {
+				is_array = false;
+			} else {
+				double key_num = lua_tonumber(L, -2);
+				if (key_num < 1.0 || std::floor(key_num) != key_num)
+					is_array = false;
+				Json::UInt key = (Json::UInt)key_num;
+				if (key > max_index)
+					max_index = key;
+			}
+			count++;
+			lua_pop(L, 1);
+		}
+		if (count != max_index)
+			is_array = false;
+
+		if (is_array) {
+			out = Json::arrayValue;
+			out.resize(max_index);
+			for (Json::UInt i = 1; i <= max_index; i++) {
+				lua_rawgeti(L, idx, i);
+				serializeLuaValue(L, -1, out[(Json::ArrayIndex)(i - 1)],
+					depth + 1, ancestors);
+				lua_pop(L, 1);
+			}
+		} else {
+			out = Json::objectValue;
+			lua_pushnil(L);
+			while (lua_next(L, idx) != 0) {
+				// key is at -2, value at -1
+				std::string key;
+				size_t len = 0;
+				const char *str = lua_tolstring(L, -2, &len);
+				key = std::string(str, len);
+				serializeLuaValue(L, -1, out[key], depth + 1, ancestors);
+				lua_pop(L, 1);
+			}
+		}
+
+		ancestors.erase(ptr);
+	} else {
+		// userdata, lightuserdata, function, thread: fall back to tostring
+		lua_pushvalue(L, idx);
+		lua_getglobal(L, "tostring");
+		lua_pushvalue(L, -2);
+		lua_call(L, 1, 1);
+		size_t len = 0;
+		const char *str = lua_tolstring(L, -1, &len);
+		out = std::string(str, len);
+		lua_pop(L, 2);
+	}
+}
+
 void ClientLuaPipe::processLine(const std::string &line)
 {
 	Json::Value root;
@@ -146,6 +254,7 @@ void ClientLuaPipe::processLine(const std::string &line)
 
 	std::string code = root["code"].asString();
 	std::string response_file = root.get("file", "").asString();
+	bool serialize = root.get("serialize", false).asBool();
 	if (response_file.empty()) {
 #ifdef _WIN32
 		static const std::string fallback = fs::TempPath() + "\\antilua_lua_response";
@@ -190,27 +299,42 @@ void ClientLuaPipe::processLine(const std::string &line)
 	}
 
 	std::ostringstream oss;
-	for (int i = 1; i <= nresults; i++) {
-		int idx = top + i;
-		if (lua_isstring(L, idx) && !lua_isnumber(L, idx)) {
-			oss << lua_tostring(L, idx);
-		} else if (lua_isboolean(L, idx)) {
-			oss << (lua_toboolean(L, idx) ? "true" : "false");
-		} else if (lua_isnil(L, idx)) {
-			oss << "nil";
-		} else if (lua_isnumber(L, idx)) {
-			oss << lua_tonumber(L, idx);
+	if (serialize) {
+		std::set<const void *> ancestors;
+		if (nresults == 1) {
+			serializeLuaValue(L, top + 1, root, 0, ancestors);
 		} else {
-			// Fallback: push tostring and call it
-			lua_pushvalue(L, idx);
-			lua_getglobal(L, "tostring");
-			lua_pushvalue(L, -2);
-			lua_call(L, 1, 1);
-			oss << lua_tostring(L, -1);
-			lua_pop(L, 2);
+			root = Json::arrayValue;
+			for (int i = 1; i <= nresults; i++)
+				serializeLuaValue(L, top + i, root[(Json::ArrayIndex)(i - 1)],
+					0, ancestors);
 		}
-		if (i < nresults)
-			oss << std::endl;
+		Json::StreamWriterBuilder builder;
+		builder["indentation"] = "";
+		oss << Json::writeString(builder, root);
+	} else {
+		for (int i = 1; i <= nresults; i++) {
+			int idx = top + i;
+			if (lua_isstring(L, idx) && !lua_isnumber(L, idx)) {
+				oss << lua_tostring(L, idx);
+			} else if (lua_isboolean(L, idx)) {
+				oss << (lua_toboolean(L, idx) ? "true" : "false");
+			} else if (lua_isnil(L, idx)) {
+				oss << "nil";
+			} else if (lua_isnumber(L, idx)) {
+				oss << lua_tonumber(L, idx);
+			} else {
+				// Fallback: push tostring and call it
+				lua_pushvalue(L, idx);
+				lua_getglobal(L, "tostring");
+				lua_pushvalue(L, -2);
+				lua_call(L, 1, 1);
+				oss << lua_tostring(L, -1);
+				lua_pop(L, 2);
+			}
+			if (i < nresults)
+				oss << std::endl;
+		}
 	}
 
 	lua_pop(L, nresults);
