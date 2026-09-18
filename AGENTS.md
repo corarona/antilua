@@ -6,6 +6,7 @@ open-source voxel game engine with client-side enhancements.
 ## Skills
 
 - `skills/antilua-lua-pipe/SKILL.md` — Control the Antilua client via the named pipe IPC (Lua pipe). Use when the client is running and you need to send Lua commands, interact with the world, craft items, or manage inventory through the FIFO at `/tmp/antilua_lua`.
+- `skills/mineclonia-pr-review/SKILL.md` — Review and test a Mineclonia pull request (Codeberg) against the Antilua engine: check out the PR branch in `games/mineclonia`, smoke-test server + client, lint, then drive every modified code path via the Lua pipe and review the diff for exploits. Use when given a Mineclonia PR number to verify.
 
 ## Remotes
 
