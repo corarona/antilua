@@ -134,14 +134,21 @@ def get_node(pos: dict) -> dict:
 def dig_node(pos: dict) -> dict:
 	"""Dig the node at {x, y, z}. Returns {digged: true/false}."""
 	return client.run_lua(
-		"return {digged=(core.dig_node(%s) == true)}" % lua_pos(pos)
+		"local ok, err = pcall(core.dig_node, %s); "
+		"return {digged=ok, error=err}" % lua_pos(pos)
 	)
 
 
 @mcp.tool()
 def place_node(pos: dict) -> dict:
-	"""Place the wielded item as a node at {x, y, z}."""
-	return client.run_lua("return {placed=core.place_node(%s) == true}" % lua_pos(pos))
+	"""Place the wielded item as a node at {x, y, z}. Returns {placed, node}
+	with node being the resulting node (or null)."""
+	return client.run_lua(
+		"local p = %s; "
+		"local ok, err = pcall(core.place_node, p); "
+		"return {placed=ok, node=ok and core.get_node_or_nil(p) or nil, error=err}"
+		% lua_pos(pos)
+	)
 
 
 @mcp.tool()
