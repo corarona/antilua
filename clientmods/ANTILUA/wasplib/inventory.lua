@@ -1,7 +1,14 @@
 
 function ws.find_empty(inv)
+	-- Prefer the main inventory above the hotbar so bots keep the hotbar
+	-- free for wielding.
 	for i, v in ipairs(inv) do
-		if v:is_empty() then
+		if i > 9 and v:is_empty() then
+			return i
+		end
+	end
+	for i, v in ipairs(inv) do
+		if i <= 9 and v:is_empty() then
 			return i
 		end
 	end
@@ -21,19 +28,30 @@ end
 
 
 function ws.to_hotbar(it, hslot)
-	local tpos = nil
 	local plinv = core.get_inventory("current_player")
-	if hslot and hslot < 10 then
+	local tpos
+	if hslot and hslot < 10 and plinv.main[hslot]:is_empty() then
 		tpos = hslot
 	else
-		for i, v in ipairs(plinv.main) do
-			if i < 10 and v:is_empty() then
+		for i = 1, 9 do
+			if plinv.main[i]:is_empty() then
 				tpos = i
 				break
 			end
 		end
 	end
-	if tpos == nil then tpos = ws.hotbar_slot end
+	if tpos == nil then
+		-- Hotbar is full: swap the source stack into a hotbar slot via any
+		-- free main slot. Without a free slot there is nothing to do.
+		local empty = ws.find_empty(plinv.main)
+		if not empty then
+			return nil
+		end
+		tpos = hslot or ws.hotbar_slot or 8
+		if not plinv.main[tpos]:is_empty() then
+			ws.move_stack("current_player", "main", tpos, "current_player", "main", empty)
+		end
+	end
 	ws.move_stack("current_player", "main", it, "current_player", "main", tpos)
 	return tpos
 end
@@ -49,7 +67,11 @@ function ws.switch_to_item(itname, hslot)
 	end
 	local pos = ws.find_named(plinv.main, itname)
 	if pos then
-		core.localplayer:set_wield_index(ws.to_hotbar(pos, hslot))
+		local tpos = ws.to_hotbar(pos, hslot)
+		if not tpos then
+			return false
+		end
+		core.localplayer:set_wield_index(tpos)
 		return true
 	end
 	return false
@@ -132,6 +154,63 @@ function ws.make_blocks()
 end
 
 core.register_cheat("MakeBlocks", { category = "Inventory", func = ws.make_blocks, description = "Create a block of the selected node type" })
+
+--- Total count of an item across player main inventory and ender chest.
+function ws.count_item(name)
+	local total = 0
+	local inv = core.get_inventory("current_player")
+	if not inv then return 0 end
+	for _, listname in ipairs({"main", "enderchest"}) do
+		local stacks = inv[listname]
+		if stacks then
+			for _, stack in ipairs(stacks) do
+				if not stack:is_empty() and stack:get_name() == name then
+					total = total + stack:get_count()
+				end
+			end
+		end
+	end
+	return total
+end
+
+--- Find a light-emitting placeable node in the player inventory.
+-- Prefers known-good light blocks, then falls back to any node item whose
+-- definition has light_source >= min_light. Returns the item name or nil.
+local light_block_prefs = {
+	"mcl_nether:glowstone",
+	"mcl_ocean:sea_lantern",
+	"mcl_crimson:shroomlight",
+}
+
+function ws.find_light_block(min_light)
+	min_light = min_light or 10
+	local inv = core.get_inventory("current_player")
+	if not inv then return nil end
+	local candidates = {}
+	for _, stack in ipairs(inv.main) do
+		if not stack:is_empty() then
+			local name = stack:get_name()
+			local def = core.get_item_def(name)
+			if def and def.type == "node" and not candidates[name] then
+				local ndef = core.get_node_def(name)
+				local ls = ndef and ndef.light_source or 0
+				if ls >= min_light then
+					candidates[name] = ls
+				end
+			end
+		end
+	end
+	for _, pref in ipairs(light_block_prefs) do
+		if candidates[pref] then return pref end
+	end
+	local best, best_ls
+	for name, ls in pairs(candidates) do
+		if not best_ls or ls > best_ls then
+			best, best_ls = name, ls
+		end
+	end
+	return best
+end
 
 --- Loot matching items from nearby containers into player inventory.
 function ws.loot_list(items, range, max_per_scan)

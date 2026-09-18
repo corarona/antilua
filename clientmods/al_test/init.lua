@@ -47,6 +47,29 @@ function al_test.known_failure(name, fn)
 	end
 end
 
+-- Finish an asynchronous test that was started inside a deferred fn and
+-- resolved later (e.g. a bot run polled with core.after). Records the result
+-- and logs the same PASS/FAIL line the CI script greps for.
+function al_test.finish(name, ok, msg)
+	if ok then
+		results.passed = results.passed + 1
+		core.log("info", "[AL_TEST] PASS: " .. name)
+	else
+		results.failed = results.failed + 1
+		table.insert(results.errors, { name = name, err = msg or "async failure" })
+		core.log("warning", "[AL_TEST] FAIL: " .. name .. " — " .. tostring(msg))
+	end
+end
+
+-- Test group filter: when al_test_group is set, only the named test module
+-- runs (used by the CI script for game-specific passes, e.g. railbot tests
+-- under mineclonia). Empty or "all" runs everything.
+local test_group = core.settings:get("al_test_group") or "all"
+
+function al_test.group_matches(name)
+	return test_group == "all" or test_group == name
+end
+
 function al_test.report()
 	core.log("action", "============================================")
 	core.log("action", "[AL_TEST] Results: " .. results.passed .. " passed, "
@@ -128,12 +151,56 @@ dofile(modpath .. "/test_chat_logger.lua")
 dofile(modpath .. "/test_core_api.lua")
 dofile(modpath .. "/test_clientmod_features.lua")
 dofile(modpath .. "/test_tracers.lua")
+dofile(modpath .. "/test_railbot.lua")
 
+
+-- Run deferred tests after localplayer + CAO are ready (shared by the full
+-- suite and focused group passes).
+local function run_deferred()
+	if #deferred_tests > 0 then
+		core.log("action", "[AL_TEST] " .. #deferred_tests .. " tests deferred until localplayer is ready")
+
+		local max_polls = 60 -- 60 * 0.5s = 30s timeout
+		local function check_and_run()
+			if core.localplayer and core.localplayer:get_object() then
+				for _, t in ipairs(deferred_tests) do
+					al_test.run(t.name, t.fn)
+				end
+				core.log("action", "[AL_TEST] Deferred tests complete")
+				al_test.report()
+			elseif max_polls > 0 then
+				max_polls = max_polls - 1
+				core.after(0.5, check_and_run)
+			else
+				core.log("warning", "[AL_TEST] Deferred tests timed out waiting for localplayer/CAO")
+				al_test.report()
+			end
+		end
+		core.after(1, check_and_run)
+	else
+		al_test.report()
+	end
+end
 
 -- Run API/registration tests at mod load time
 core.register_on_mods_loaded(function()
 	local t0 = core.get_us_time()
 	core.log("action", "[AL_TEST] Starting Antilua integration tests")
+
+	if test_group ~= "all" then
+		-- Focused pass (e.g. railbot under mineclonia): only run the named
+		-- group's tests. The full suite keeps devtest assumptions and would
+		-- report false failures on other games.
+		core.log("action", "[AL_TEST] Test group: " .. test_group)
+		if test_group == "railbot" then
+			test_railbot(al_test)
+			test_railbot_integration(al_test)
+		end
+		run_deferred()
+		local elapsed = (core.get_us_time() - t0) / 1000000
+		core.log("action", "[AL_TEST] Immediate tests completed in " .. string.format("%.2f", elapsed) .. "s")
+		return
+	end
 
 	test_cheat_settings(al_test)
 	test_callback_registration(al_test)
@@ -169,6 +236,7 @@ core.register_on_mods_loaded(function()
 	test_raw_packet_api(al_test)
 	test_autominer(al_test)
 	test_fishbot(al_test)
+	test_railbot(al_test)
 	test_combat(al_test)
 	test_schembuilder(al_test)
 	test_autoeat(al_test)
@@ -207,28 +275,7 @@ core.register_on_mods_loaded(function()
 	test_inventory_action_integration(al_test)
 	test_world_interaction(al_test)
 
-	-- Defer localplayer-dependent tests (poll until localplayer + its CAO are ready)
-	if #deferred_tests > 0 then
-		core.log("action", "[AL_TEST] " .. #deferred_tests .. " tests deferred until localplayer is ready")
-
-		local max_polls = 60 -- 60 * 0.5s = 30s timeout
-		local function check_and_run()
-			if core.localplayer and core.localplayer:get_object() then
-				for _, t in ipairs(deferred_tests) do
-					al_test.run(t.name, t.fn)
-				end
-				core.log("action", "[AL_TEST] Deferred tests complete")
-				al_test.report()
-			elseif max_polls > 0 then
-				max_polls = max_polls - 1
-				core.after(0.5, check_and_run)
-			else
-				core.log("warning", "[AL_TEST] Deferred tests timed out waiting for localplayer/CAO")
-				al_test.report()
-			end
-		end
-		core.after(1, check_and_run)
-	end
+	run_deferred()
 
 	-- Quick menu tests need the cheat menu instance, which is wired into the
 	-- global g_cheat_menu on the first rendered frame (after mods load).
