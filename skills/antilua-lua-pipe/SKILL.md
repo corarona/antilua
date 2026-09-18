@@ -150,3 +150,12 @@ core.settings:set_bool("autojump", true)    -- auto-jump obstacles
 ```
 
 See `doc/al_csm_api.md` for the full list of cheat settings.
+
+## MCP Server Alternative
+
+If an MCP host has the `antilua-mcp` server registered, prefer its structured
+tools over raw pipe writes (see `skills/antilua-mcp/SKILL.md`). It wraps this
+same pipe, returns JSON, and covers player/world/inventory/server/cheat actions
+plus a scene-only `screenshot()` — no response-file management or `sleep`
+pacing needed. Raw pipe access remains available for anything the tools don't
+cover (via `run_lua`).

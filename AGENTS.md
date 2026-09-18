@@ -6,6 +6,7 @@ open-source voxel game engine with client-side enhancements.
 ## Skills
 
 - `skills/antilua-lua-pipe/SKILL.md` — Control the Antilua client via the named pipe IPC (Lua pipe). Use when the client is running and you need to send Lua commands, interact with the world, craft items, or manage inventory through the FIFO at `/tmp/antilua_lua`.
+- `skills/antilua-mcp/SKILL.md` — Control the Antilua client through its MCP server (structured tools over the Lua pipe): position, movement, world interaction, inventory/crafting, server chat, cheats, and screenshots. Prefer this when the MCP server is registered in the host.
 - `skills/mineclonia-pr-review/SKILL.md` — Review and test a Mineclonia pull request (Codeberg) against the Antilua engine: check out the PR branch in `games/mineclonia`, smoke-test server + client, lint, then drive every modified code path via the Lua pipe and review the diff for exploits. Use when given a Mineclonia PR number to verify.
 
 ## Remotes
@@ -510,8 +511,14 @@ Requests are JSON lines (one per line, terminated by `\n`) written to the FIFO:
 |-------|----------|-------------|
 | `code` | Yes | Lua code to execute in the shared client scripting state |
 | `file` | No | Response file path (default: `/tmp/antilua_lua_response`) |
+| `serialize` | No | If `true`, return values are JSON-serialized instead of `tostring()` text |
 
 Response file format: first line is `ok` or `error`, followed by the result.
+
+With `"serialize":true`, tables come back as real JSON (arrays for contiguous
+integer keys `1..N`, objects otherwise; circular refs / >32 levels → `null`;
+userdata/functions → `tostring`). Multiple return values are wrapped in a JSON
+array.
 
 ### Key files
 
@@ -522,6 +529,53 @@ Response file format: first line is `ok` or `error`, followed by the result.
 | `src/client/client.h` | `m_pipe_lua` member on `Client` |
 | `src/client/client.cpp` | Init in `loadMods()`, poll in `step()` |
 | `src/defaultsettings.cpp` | `pipe_lua_enable`, `pipe_lua_path` defaults |
+
+## MCP Server
+
+`util/mcp/` is a FastMCP (Python, `mcp<2`) stdio server that exposes a running
+Antilua client to agents via the Lua pipe — no raw Lua required. It works with
+any MCP host (opencode, Claude Desktop, Cursor, ...).
+
+### Install / run
+
+```sh
+# One-time setup (uv is preferred; pip works too):
+uv sync --project util/mcp
+# or: pip install -r util/mcp/requirements.txt
+
+# Register with an MCP host (opencode uses mcp.json; for others see their docs):
+#   command: uv run --project util/mcp antilua-mcp
+#   args:    []
+#   env:     ANTILUA_PIPE_PATH (default /tmp/antilua_lua), ANTILUA_TIMEOUT (10)
+
+# Requires the client to be running with:
+#   pipe_lua_enable = true
+```
+
+`util/mcp/test_mcp.sh` boots a headless client (xvfb) and drives the server
+over the real MCP protocol as a smoke test.
+
+### Tools
+
+| Tool | Description |
+|------|-------------|
+| `run_lua(code)` | Raw escape hatch: run any Lua, result JSON-serialized |
+| `get_player_pos` / `get_player_look` | Position / yaw+pitch (deg) + roll (rad) |
+| `teleport(pos)` / `set_look(yaw, pitch)` | Move / aim the camera |
+| `get_node` / `dig_node` / `place_node` / `find_nodes_near` / `get_pointed_thing` | World interaction |
+| `get_inventory` / `move_item` / `craft` / `take_craft_result` | Inventory & crafting |
+| `run_server_chatcommand` / `send_chat` / `get_server_info` / `get_player_names` / `get_privilege_list` | Server communication |
+| `set_setting` / `toggle_cheat` | Settings & cheats (jetpack, fullbright, ...) |
+| `screenshot()` | Scene-only PNG (returns an image; needs a rendering client, not detached) |
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `util/mcp/server.py` | FastMCP app + tools |
+| `util/mcp/antilua_client.py` | FIFO transport with polling, `run_lua()`, `screenshot()` |
+| `util/mcp/pyproject.toml` / `requirements.txt` | `mcp<2` dependency (FastMCP API) |
+| `util/mcp/test_mcp.sh` + `test_mcp_driver.py` | End-to-end MCP smoke test |
 
 ## Camera Roll
 
