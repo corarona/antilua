@@ -209,10 +209,45 @@ static void serializeLuaValue(lua_State *L, int idx, Json::Value &out,
 			lua_pushnil(L);
 			while (lua_next(L, idx) != 0) {
 				// key is at -2, value at -1
+				// NOTE: never call lua_tolstring on the traversal key
+				// directly: for numbers it converts the key in-place to a
+				// string, so the next lua_next fails with
+				// "invalid key to 'next'" (unprotected -> LUA PANIC).
+				// Operate on a copy instead.
 				std::string key;
+				lua_pushvalue(L, -2); // copy of key
 				size_t len = 0;
-				const char *str = lua_tolstring(L, -2, &len);
-				key = std::string(str, len);
+				const char *str = lua_tolstring(L, -1, &len);
+				if (str) {
+					key.assign(str, len);
+					lua_pop(L, 1); // pop key copy
+				} else {
+					lua_pop(L, 1); // pop key copy
+					// Non-string/number key (bool, table, ...):
+					// fall back to tostring() via protected call.
+					lua_pushvalue(L, -2); // copy of key
+					lua_getglobal(L, "tostring");
+					if (!lua_isfunction(L, -1)) {
+						lua_pop(L, 2); // key copy + non-function
+						key = "<non-string key>";
+					} else {
+						lua_pushvalue(L, -2); // key copy as arg
+						if (lua_pcall(L, 1, 1, 0) != LUA_OK) {
+							lua_pop(L, 2); // key copy + error
+							key = "<non-string key>";
+						} else {
+							size_t tlen = 0;
+							const char *tstr =
+								lua_tolstring(L, -1, &tlen);
+							if (tstr)
+								key.assign(tstr, tlen);
+							else
+								key = "<non-string key>";
+							lua_pop(L, 1); // pop tostring result
+							lua_pop(L, 1); // pop key copy
+						}
+					}
+				}
 				serializeLuaValue(L, -1, out[key], depth + 1, ancestors);
 				lua_pop(L, 1);
 			}
@@ -221,13 +256,26 @@ static void serializeLuaValue(lua_State *L, int idx, Json::Value &out,
 		ancestors.erase(ptr);
 	} else {
 		// userdata, lightuserdata, function, thread: fall back to tostring
+		// via protected call so a failing __tostring can't panic the client.
 		lua_pushvalue(L, idx);
 		lua_getglobal(L, "tostring");
-		lua_pushvalue(L, -2);
-		lua_call(L, 1, 1);
+		if (!lua_isfunction(L, -1)) {
+			lua_pop(L, 2); // value copy + non-function
+			out = Json::nullValue;
+			return;
+		}
+		lua_pushvalue(L, -2); // value copy as arg
+		if (lua_pcall(L, 1, 1, 0) != LUA_OK) {
+			lua_pop(L, 2); // value copy + error
+			out = Json::nullValue;
+			return;
+		}
 		size_t len = 0;
 		const char *str = lua_tolstring(L, -1, &len);
-		out = std::string(str, len);
+		if (str)
+			out = std::string(str, len);
+		else
+			out = Json::nullValue;
 		lua_pop(L, 2);
 	}
 }
@@ -324,13 +372,24 @@ void ClientLuaPipe::processLine(const std::string &line)
 			} else if (lua_isnumber(L, idx)) {
 				oss << lua_tonumber(L, idx);
 			} else {
-				// Fallback: push tostring and call it
+				// Fallback: push tostring and call it (protected so a
+				// failing __tostring can't panic the client).
 				lua_pushvalue(L, idx);
 				lua_getglobal(L, "tostring");
-				lua_pushvalue(L, -2);
-				lua_call(L, 1, 1);
-				oss << lua_tostring(L, -1);
-				lua_pop(L, 2);
+				if (!lua_isfunction(L, -1)) {
+					lua_pop(L, 2);
+					oss << "<unprintable>";
+				} else {
+					lua_pushvalue(L, -2);
+					if (lua_pcall(L, 1, 1, 0) != LUA_OK) {
+						lua_pop(L, 2);
+						oss << "<tostring error>";
+					} else {
+						const char *s = lua_tostring(L, -1);
+						oss << (s ? s : "<unprintable>");
+						lua_pop(L, 2);
+					}
+				}
 			}
 			if (i < nresults)
 				oss << std::endl;
