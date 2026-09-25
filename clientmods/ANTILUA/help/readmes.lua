@@ -362,11 +362,6 @@ Scripts and files are persisted in mod storage using key prefixes:
 | `_lua_files_list` | Comma-separated file name list |
 | `_UI_files_list` | UI file list (formspec editor) |
 
-### 3rd-party
-
-The `3rdparty/Highlighter/` directory contains a syntax highlighter bundled
-with the mod (used by the formspec editor).
-
 ## Cheats
 
 | Cheat | Setting | Description |
