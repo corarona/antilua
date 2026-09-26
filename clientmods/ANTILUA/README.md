@@ -83,6 +83,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 |-----|-------------|
 | **session_logger** | Chat alerts, name colorizer, join/leave toasts, session stats. `.stats` command. |
 | **chat_logger** | Persistent per-server chat file logger. |
+| **mcp_chat** | In-memory chat ring buffer for the MCP server (`mcp_chat.recent/since`). |
 | **event_logger** | Entity/node/block event logger. BlockLogger logs digs/places with nlist-based ignore. |
 | **particle_hooks** | Particle blocker + saver for filtering server particles. |
 
