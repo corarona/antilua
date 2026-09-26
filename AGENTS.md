@@ -559,14 +559,20 @@ over the real MCP protocol as a smoke test.
 
 | Tool | Description |
 |------|-------------|
-| `run_lua(code)` | Raw escape hatch: run any Lua, result JSON-serialized |
+| `run_lua(code)` | Raw escape hatch: run any Lua, `{ok, value}` / `{ok, error}` |
 | `get_player_pos` / `get_player_look` | Position / yaw+pitch (deg) + roll (rad) |
 | `teleport(pos)` / `set_look(yaw, pitch)` | Move / aim the camera |
-| `get_node` / `dig_node` / `place_node` / `find_nodes_near` / `get_pointed_thing` | World interaction |
-| `get_inventory` / `move_item` / `craft` / `take_craft_result` | Inventory & crafting |
-| `run_server_chatcommand` / `send_chat` / `get_server_info` / `get_player_names` / `get_privilege_list` | Server communication |
-| `set_setting` / `toggle_cheat` | Settings & cheats (jetpack, fullbright, ...) |
-| `screenshot()` | Scene-only PNG (returns an image; needs a rendering client, not detached) |
+| `get_node` / `dig_node` / `place_node` / `find_nodes_near` / `find_nodes_near_under_air` / `get_pointed_thing` | World interaction |
+| `get_node_meta(pos, keys?)` / `set_node_meta(pos, fields)` | Node metadata read / formspec-field submit |
+| `interact(action, pointed)` | Real right-click/use/place/dig via `core.interact` (opens formspecs) |
+| `get_objects_near(pos, radius)` | Active objects `{id, pos, name, is_player}` |
+| `get_inventory(location?)` / `move_item` / `move_items` / `craft` / `take_craft_result` | Inventory & crafting (location: `current_player`, `nodemeta:x,y,z`, `detached:name`) |
+| `wield_item(name)` / `give_and_wield(name)` | Hotbar wield / give-then-wield composite |
+| `run_server_chatcommand(cmd, args?, wait?)` / `send_chat` / `get_chat_log` / `get_server_info` / `get_player_names` / `get_privilege_list` | Server communication (chatcommand returns the server's chat response lines) |
+| `wait_until(code, timeout?, interval?)` | Poll a Lua expression until truthy |
+| `set_time(value)` / `set_setting` / `toggle_cheat` | Time of day, settings & cheats (jetpack, fullbright, ...) |
+| `get_client_status()` | Pipe/join/chat-buffer diagnostic snapshot |
+| `screenshot(pos?)` | Scene-only PNG (optionally aims the camera at a world position; needs a rendering client, not detached) |
 
 ### Key files
 
@@ -576,6 +582,7 @@ over the real MCP protocol as a smoke test.
 | `util/mcp/antilua_client.py` | FIFO transport with polling, `run_lua()`, `screenshot()` |
 | `util/mcp/pyproject.toml` / `requirements.txt` | `mcp<2` dependency (FastMCP API) |
 | `util/mcp/test_mcp.sh` + `test_mcp_driver.py` | End-to-end MCP smoke test |
+| `clientmods/ANTILUA/mcp_chat/` | In-memory chat ring buffer read by the MCP server |
 
 ## Camera Roll
 

@@ -139,13 +139,14 @@ a running client as structured tools — use them instead of hand-writing Lua-pi
 requests. `mcla_pr_review.sh <PR> --client` boots a headless client on the PR
 branch with the pipe live; then drive it:
 
-- Orient: `get_player_pos()` → `screenshot()` → `get_player_look()`.
-- Setup: `run_server_chatcommand("giveme", ...)` / `teleport` /
-  `set_setting("enable_damage", "false")`.
+- Orient: `get_player_pos()` → `screenshot()` → `get_player_look()`
+  (or `get_client_status()` if tools misbehave).
+- Setup: `give_and_wield("item", count)` / `teleport` /
+  `set_setting("enable_damage", "false")` / `set_time("noon")`.
 - Interact: `place_node` / `dig_node` run the **same server-side code paths as
   real player interaction** (`register_on_placenode`, `register_on_dignode`,
   `on_construct`, `on_dig`, ABM/redstone callbacks). Prefer
-  `core.interact("place", {type="node", under, above})` via `run_lua` when
+  `interact("place", {type="node", under, above})` when
   `place_node` mispredicts (it places the client's stale wielded item and
   `under == above == pos` breaks wall/sign `on_place`).
 - Inventory: `get_inventory` / `move_item` / `craft` / `take_craft_result` and
@@ -206,25 +207,30 @@ xvfb-run -a ./bin/antilua --go --world worlds/test_mcl --config /tmp/mcl_pipe.co
   runs leaves stale walls that make new walls connect unexpectedly. Dig the
   whole rig (with the right tool) between scenarios and verify the pixels
   returned to terrain first.
-- **Give items** via `core.run_server_chatcommand("giveme", "name 64")`;
-  put them in the hotbar with `InventoryAction("move")` to main slot 1 +
-  `core.localplayer:set_wield_index(1)` before placing.
+- **Give items** via `give_and_wield("name", 64)` — gives via /giveme,
+  waits for the client inventory to sync, moves the stack into a free hotbar
+  slot and wields it, returning `{slot, name, inventory}`. For items you
+  already hold, `wield_item("substring")` does the same without giving.
 - **Write valid JSON to the FIFO** (python `json.dumps` or `jq -n`); a hand
   escaped `\"` in a bash string corrupts the request and you get a
   `ClientLuaPipe: JSON parse error`. Use a unique response file per request
   and `sleep` 1-2s between writes.
 - **`core.place_node(pos, node)` ignores the 2nd arg** — it places the
-  client's *wielded* item. To place a specific item, move it to the hotbar
-  (`InventoryAction("move")`), `set_wield_index(slot)`, verify
-  `get_wielded_item():get_name()`, then place. `core.interact("place",
+  client's *wielded* item. To place a specific item, `give_and_wield(item)`
+  then place (verify with the returned `name`). `interact("place",
   {type="node", under=..., above=...})` sends a real placement with proper
   pointed thing (needed for standing signs/walls where `under != above`).
-- **The client's inventory and wield state lag badly headless.** `giveme` +
-  `core.get_inventory` can take 10s+ to sync (read repeatedly until the item
-  appears). `set_wield_index` does NOT reliably change what the *server*
-  places: the server may place its own stale wielded item. Confirm what the
-  server actually placed via the debug log (`ACTION[Server]: ... places node
-  <name> at (x,y,z)`), not via client reads.
+- **The client's inventory and wield state lag a beat headless.** Instead of
+  hand-rolled polling loops, use `wait_until(code, timeout)` to poll any Lua
+  expression until truthy, and `give_and_wield` which already waits for the
+  item to appear. `set_wield_index` does NOT reliably change what the
+  *server* places: the server may place its own stale wielded item. Confirm
+  what the server actually placed via the debug log
+  (`ACTION[Server]: ... places node <name> at (x,y,z)`), not via client reads.
+- **Server command responses are in the chat log.**
+  `run_server_chatcommand("grantme", "all")` returns the server's reply lines
+  in `chat` (e.g. "You don't have permission (missing privilege: give)") —
+  check them instead of guessing; `get_chat_log(20)` reads recent lines.
 - **The server debug log is ground truth for placements/digs.** Grep
   `places node|digs node|uses .*pointing` in the debug.txt. The client map
   (`get_node_or_nil`) shows client-side *predictions* and stale data; the
@@ -240,10 +246,21 @@ xvfb-run -a ./bin/antilua --go --world worlds/test_mcl --config /tmp/mcl_pipe.co
   (node meta/inventory DO sync to the client, unlike `get_node_or_nil`).
 - **`core.get_meta(pos):get_inventory()` does NOT exist client-side.** Use
   `core.get_inventory("nodemeta:x,y,z")` (returns `{input={...}, output={...}}`).
-- **`InventoryAction("move"):from("player:singleplayer","main",N):to("nodemeta:x,y,z","input",1):set_count(1):apply()`**
-  fires the real server `on_metadata_inventory_*` handlers (e.g. stonecutter
-  recompute). Use `player:singleplayer`, NOT `current_player` (the server
-  rejects CURRENT_PLAYER locations). `apply()` both sends and predicts locally.
+- **`InventoryAction` methods must be separate statements, NOT chained.**
+  `from`/`to`/`set_count`/`craft`/`apply` each return `nil`, so
+  `InventoryAction("move"):from(...):to(...)` dies with `attempt to index a
+  nil value`. Call them line by line:
+  ```
+  local a = InventoryAction("move")
+  a:from("player:singleplayer", "main", N)
+  a:to("nodemeta:x,y,z", "input", 1)
+  a:set_count(1)
+  a:apply()
+  ```
+  This fires the real server `on_metadata_inventory_*` handlers (e.g.
+  stonecutter recompute). Prefer `player:singleplayer` over `current_player`
+  (a client-internal location the server rewrites via `applyCurrentPlayer`).
+  `apply()` both sends and predicts locally.
 - **Node-formspec callbacks (`on_receive_fields`) via `core.send_nodemeta_fields`.**
   Hand-rolled raw `TOSERVER_NODEMETA_FIELDS` packets fail with `Reading
   outside packet` — use the API. Global `register_on_player_receive_fields`

@@ -31,28 +31,51 @@ world. Use the raw Lua pipe (`skills/antilua-lua-pipe/SKILL.md`, or the
 | `get_player_look()` | `{yaw, pitch}` (deg), `roll` (rad) |
 | `teleport({x, y, z})` | Move the player; returns new pos |
 | `set_look(yaw, pitch)` | Aim the camera (deg) |
+| `set_time("noon")` / `"6"` / `"midnight"` | Server time of day (needs settime priv) |
+| `get_client_status()` | `{connected, joined, player_name, chat_buffer}` — check first when tools fail |
 | `run_lua("return core.localplayer:get_hp()")` | HP (0-20); also `get_name()`, `get_wielded_item()`, `get_wield_index()` |
 
 ## World Interaction
 
 | MCP tool | Notes |
 |----------|-------|
-| `get_node({x,y,z})` | `{name, param1, param2}` or null (client map — can lag; cross-check with `screenshot()`) |
+| `get_node({x,y,z})` | `{node: {name, param1, param2}}` or `{node: null}` if unloaded (client map — can lag; cross-check with `screenshot()`) |
 | `dig_node({x,y,z})` | Punch/dig a block `{digged: true/false}` |
 | `place_node({x,y,z})` | Places the *wielded* item |
-| `find_nodes_near(pos, radius, [names])` | Positions list |
-| `get_pointed_thing()` | What the camera is looking at |
+| `interact(action, pointed)` | Real right-click/`use`/`activate`/`place`/`dig` — `use` opens node formspecs (`pointed` from `get_pointed_thing()`) |
+| `find_nodes_near(pos, radius, [names])` | `{count, positions}` |
+| `find_nodes_near_under_air(pos, radius, [except])` | `{count, positions}` — solid surfaces with air above (placement spots) |
+| `get_objects_near(pos, radius)` | `{objects: [{id, pos, name, is_player}]}` |
+| `get_pointed_thing()` | `{type: node\|object\|nothing, ...}` |
 
-Note: `place_node` places whatever is wielded. Put the item in the hotbar
-(`move_item` within `main`) and select it first (via `run_lua`:
-`core.localplayer:set_wield_index(n)`, slots 1-9).
+Note: `place_node` places whatever is wielded — use `give_and_wield(item)`
+or `wield_item(item)` (substring match) instead of the old
+move-then-`set_wield_index` dance.
+
+## Waiting for sync
+
+Client state (inventory, wield, node meta) lags a beat behind the server.
+Don't hand-roll polling — `wait_until(code, timeout, interval)` runs a Lua
+expression repeatedly and returns `{ok, value}` when truthy:
+
+```lua
+-- run via wait_until's `code`:
+return core.get_inventory("current_player") and find_stack_name() ~= nil
+```
+
+Server chat commands report their result through the chat log:
+`run_server_chatcommand("giveme", "mcl_core:stone 1")` returns the server's
+reply lines in `chat` (e.g. "…added to inventory."), and `get_chat_log(20)`
+reads recent lines at any time.
 
 ## Inventory
 
-`get_inventory()` returns `{list: [{slot, name, count}, ...]}` for `main` (36;
-1-9 hotbar), `craft` (9), `craftresult` (1), `craftpreview` (1), `armor`,
-`hand`. Use `move_item(from_list, from_slot, to_list, to_slot, count)` —
-`count` 0 = whole stack. Check `get_inventory()` after moves (server sync).
+`get_inventory(location?)` returns `{list: [{slot, name, count}, ...]}` for
+`main` (36; 1-9 hotbar), `craft` (9), `craftresult` (1), `craftpreview` (1),
+`armor`, `hand` — and, with a location, other inventories: `player:<name>`,
+`nodemeta:x,y,z` (chests/furnaces), `detached:<name>` (creative). Use
+`move_item(from_list, from_slot, to_list, to_slot, count)` (or
+`move_items([...])` for batches) — `count` 0 = whole stack.
 
 ## Crafting System
 
@@ -132,7 +155,7 @@ verifying placements the client map misreports.
 
 | Mistake | Fix |
 |---------|-----|
-| `place_node` puts the wrong block | It places the *wielded* item — move to hotbar + `set_wield_index`, verify via `run_lua`, and confirm `digged/placed` in the tool result (server wield lags headless) |
+| `place_node` puts the wrong block | It places the *wielded* item — use `give_and_wield(item)` / `wield_item(item)`, and confirm `digged/placed` in the tool result (server wield lags headless) |
 | `get_node` disagrees with reality | Client map lags/predicts; confirm placements with `screenshot()` or re-sync |
 | Craft grid indices wrong for 2x2 | Use 1,2,4,5 (not 1,2,3,4) — craft list has width=3 internally |
 | Crafting a 3x3 recipe fails | Needs a placed crafting table nearby |
