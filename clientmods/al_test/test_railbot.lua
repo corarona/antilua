@@ -494,7 +494,7 @@ local function run_setup_steps()
 		end},
 
 		{label = "enable bot", fn = function(done)
-			core.settings:set_string("railbuilder.direction", "+x")
+			core.settings:set("railbuilder.direction", "+x")
 			core.settings:set("railbuilder.redstone_sparsity", "1")
 			core.settings:set("railbuilder.light_every", "8")
 			core.settings:set("railbuilder.light_above", "3")
