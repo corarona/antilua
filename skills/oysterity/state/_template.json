@@ -1,0 +1,17 @@
+{
+  "account": "ophelia",
+  "created": null,
+  "updated": null,
+  "greetings_used": [],
+  "base": {
+    "origin": null,
+    "note": "",
+    "established": null
+  },
+  "stash": {
+    "location": null,
+    "items": {}
+  },
+  "known_bases": [],
+  "sessions": []
+}
