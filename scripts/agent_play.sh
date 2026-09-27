@@ -5,12 +5,17 @@
 # Usage:
 #   scripts/agent_play.sh [--server HOST:PORT] [--name NAME] [--password PW]
 #                         [--password-file FILE] [--headless] [--world W]
-#                         [--fresh] [--sound]
+#                         [--fresh] [--sound] [--minimap-max-blocks N]
 #
-# Defaults: oy.edgy1.net:30420 (oysterity anarchy), name "hamlet".
-# Fresh agents use Shakespearean character names (hamlet, ophelia, horatio,
-# falstaff, ...); `--name` overrides. `--fresh` wipes the agent's per-server
-# client data dir (mod storage) first.
+# Defaults: oy.edgy1.net:30420 (oysterity anarchy), name "ophelia".
+# Fresh agents use Shakespearean character names (ophelia, horatio, falstaff,
+# ...); `--name` overrides. `--fresh` wipes the agent's per-server client data
+# dir (mod storage) first.
+#
+# --minimap-max-blocks raises minimap_save_max_blocks for the session. The
+# cap is read when the saved map loads, so it must be set here rather than at
+# runtime: servers with a large persisted map (oysterity keeps >160k blocks)
+# otherwise get their farthest blocks pruned on every join.
 #
 # The script exits as soon as the Lua pipe answers (the client keeps running).
 
@@ -18,13 +23,14 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BIN="$REPO_ROOT/bin/antilua"
 
 SERVER="oy.edgy1.net:30420"
-NAME="hamlet"
+NAME="ophelia"
 PASSWORD=""
 PASSWORD_FILE=""
 HEADLESS=0
 WORLD=""
 FRESH=0
 SOUND=0
+MINIMAP_MAX_BLOCKS=0
 PIPE_PATH="/tmp/antilua_lua"
 
 usage() { grep '^#' "$0" | head -16; exit 0; }
@@ -40,6 +46,7 @@ while [ $# -gt 0 ]; do
 	--world) WORLD="$2"; shift 2 ;;
 	--fresh) FRESH=1; shift ;;
 	--sound) SOUND=1; shift ;;
+	--minimap-max-blocks) MINIMAP_MAX_BLOCKS="$2"; shift 2 ;;
 	--pipe) PIPE_PATH="$2"; shift 2 ;;
 	*) echo "Unknown option: $1"; usage ;;
 	esac
@@ -74,6 +81,10 @@ auto_reconnect_delay = 3.0
 mute_sound = $([ $SOUND -eq 1 ] && echo false || echo true)
 ENDCONF
 
+if [ "$MINIMAP_MAX_BLOCKS" -gt 0 ] 2>/dev/null; then
+	echo "minimap_save_max_blocks = $MINIMAP_MAX_BLOCKS" >> "$CONF"
+fi
+
 ARGS=(--go --config "$CONF" --logfile /tmp/antilua_agent_debug.txt --name "$NAME")
 [ -n "$PASSWORD" ] && ARGS+=(--password "$PASSWORD")
 [ -n "$PASSWORD_FILE" ] && ARGS+=(--password-file "$PASSWORD_FILE")
@@ -87,8 +98,18 @@ fi
 rm -f "$PIPE_PATH" /tmp/antilua_agent_probe
 
 if [ $FRESH -eq 1 ]; then
-	DIR="$HOME/.local/share/antilua/data/server/${HOST}_${PORT}"
-	[ -d "$DIR" ] && rm -rf "$DIR" && echo "Cleared $DIR"
+	# Run-in-place builds keep the per-server data inside the repo; installed
+	# builds use the user data dir.
+	if [ -d "$REPO_ROOT/data/server" ]; then
+		DATA_ROOT="$REPO_ROOT/data/server"
+	else
+		DATA_ROOT="$HOME/.local/share/antilua/data/server"
+	fi
+	DIR="$DATA_ROOT/${HOST}_${PORT}"
+	if [ -d "$DIR" ]; then
+		rm -rf "$DIR"
+		echo "Cleared $DIR"
+	fi
 fi
 
 echo "=== agent_play: $NAME -> $SERVER (pipe: $PIPE_PATH) ==="
