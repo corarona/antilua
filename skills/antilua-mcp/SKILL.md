@@ -35,9 +35,9 @@ Start by orienting yourself:
    its inventory.
 4. `get_inventory()` / `agent_events(since)` — what do I have, what happened?
 
-No client running? `scripts/agent_play.sh --name hamlet` (windowed;
-`--headless` for xvfb) boots one with the pipe enabled on
-oy.edgy1.net:30420.
+No client running? `scripts/agent_play.sh` (windowed; `--headless` for xvfb)
+boots one with the pipe enabled, defaulting to the Oysterity anarchy server as
+`ophelia`; see `skills/oysterity/SKILL.md` for that server's specifics.
 
 ## Tools
 

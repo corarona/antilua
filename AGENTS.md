@@ -8,6 +8,7 @@ open-source voxel game engine with client-side enhancements.
 - `skills/antilua-lua-pipe/SKILL.md` — Control the Antilua client via the named pipe IPC (Lua pipe). Use when the client is running and you need to send Lua commands, interact with the world, craft items, or manage inventory through the FIFO at `/tmp/antilua_lua`.
 - `skills/antilua-mcp/SKILL.md` — Control the Antilua client through its MCP server (structured tools over the Lua pipe): position, movement, world interaction, inventory/crafting, server chat, cheats, and screenshots. Prefer this when the MCP server is registered in the host.
 - `skills/mineclonia-pr-review/SKILL.md` — Two-phase Mineclonia pull request (Codeberg) review: (1) automated review (smoke-test server + client, lint, code review, behavioral tests via the `antilua` MCP tools), then (2) user manual testing (open PR in browser, launch the game on the PR branch in a dedicated `mcla_test_pr_<PR>_<branch>` world). Ready-to-go `scripts/mcla_*.sh` cover listing, fetching, safe checkout/restore, smoke+lint, world creation, browser open, one-command review, and interactive launch — prefer them over ad-hoc commands. Use when given a Mineclonia PR number (or criteria to find PRs) to review and test against the Antilua engine.
+- `skills/oysterity/SKILL.md` — Play Oysterity (oy.edgy1.net:30420), the 2b2t-style Luanti anarchy server: connecting as the standard `ophelia` account, the one-time greeting (`state.py greet`), mob-dangerous spawn, the persisted per-server map (raise `minimap_save_max_blocks` or far-field data is pruned every join), base scouting, builder playbook, opt-in raider playbook, and cross-session state. Use when the task mentions Oysterity, oy.edgy1.net or port 30420.
 
 ## Remotes
 
@@ -583,7 +584,7 @@ over the real MCP protocol as a smoke test.
 
 `scripts/agent_play.sh` launches a windowed/headless client connected to a
 server with the pipe enabled, ready for agent play (default:
-oy.edgy1.net:30420, name `hamlet`; Shakespearean character names).
+oy.edgy1.net:30420, name `ophelia`; Shakespearean character names).
 
 ### Operating rules (learned from live sessions)
 

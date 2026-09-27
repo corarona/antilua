@@ -19,15 +19,16 @@ world. Use the raw Lua pipe (`skills/antilua-lua-pipe/SKILL.md`, or the
 
 ### Quick Start
 
-0. **No client running?** Launch one: `scripts/agent_play.sh --name hamlet`
-   (defaults to oy.edgy1.net:30420; `--headless` for xvfb, `--world W` for
-   local, `--server HOST:PORT` to override). Use Shakespearean names for
-   fresh accounts on shared servers.
+0. **No client running?** Launch one: `scripts/agent_play.sh` (defaults to the
+   Oysterity anarchy server as `ophelia`; `--headless` for xvfb, `--world W` for
+   local, `--server HOST:PORT` to override). Use Shakespearean names for fresh
+   accounts. On Oysterity, read `skills/oysterity/SKILL.md` first — it has the
+   server's own rules, the greeting flow and the saved-map workflow.
 1. Orient: `agent_ctx()` (one call: pos/look/hp/inventory/objects/ping) →
    `screenshot()` if the client is rendering.
 2. Prep: `survival(true)` (autoeat, autototem, autojump, autorespawn,
-   autotool) — on hostile servers hamlet will die otherwise, and deaths
-   scatter the inventory.
+   autotool) — on hostile servers the agent will die otherwise, and deaths
+   scatter the inventory (Oysterity's spawn is creeper-infested).
 3. Act: `goto` / `dig_at` / `place_at` / `use_node` / `move_item` / `craft`.
 4. Verify: `get_inventory()` / `agent_events(since)` / `screenshot()`.
 
