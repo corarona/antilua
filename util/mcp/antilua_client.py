@@ -16,7 +16,13 @@ import threading
 import time
 
 DEFAULT_PIPE_PATH = "/tmp/antilua_lua"
-DEFAULT_TIMEOUT = 10.0
+DEFAULT_TIMEOUT = 20.0
+DEFAULT_RETRIES = 2
+RETRYABLE_MARKERS = (
+	"no response from client",
+	"empty response from client",
+	"short write to Lua pipe",
+)
 
 
 class AntiluaError(Exception):
@@ -52,14 +58,37 @@ class AntiluaClient:
 		self._lock = threading.Lock()
 		self._counter = 0
 
-	def run_lua(self, code, serialize=True, timeout=None):
+	def run_lua(self, code, serialize=True, timeout=None, retries=None):
 		"""Execute Lua code in the client and return the result.
 
 		With ``serialize=True`` (default) the result is parsed into Python
 		objects (lists/dicts/numbers/bools/null); ``serialize=False`` returns
 		the raw response body text. Raises :class:`LuaError` on Lua errors and
 		:class:`AntiluaError` on transport problems.
+
+		Transient transport failures (the client busy emerging after a
+		teleport, missing a deadline) are retried with backoff; Lua errors
+		are never retried.
 		"""
+		last_error = None
+		for attempt in range((retries if retries is not None
+				else DEFAULT_RETRIES) + 1):
+			try:
+				return self._run_lua_once(code, serialize=serialize,
+					timeout=timeout)
+			except LuaError:
+				raise
+			except AntiluaError as exc:
+				last_error = exc
+				if str(exc) and not any(marker in str(exc)
+						for marker in RETRYABLE_MARKERS):
+					raise
+				if attempt < (retries if retries is not None
+						else DEFAULT_RETRIES):
+					time.sleep(0.5 * (attempt + 1))
+		raise last_error
+
+	def _run_lua_once(self, code, serialize=True, timeout=None):
 		deadline_timeout = timeout or self.timeout
 		with self._lock:
 			self._counter += 1
