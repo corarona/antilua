@@ -175,3 +175,7 @@ files["clientmods/ANTILUA/**/init.lua"] = { std = "+al_client" }
 files["clientmods/ANTILUA/**/*.lua"] = { std = "+al_client" }
 files["clientmods/al_test/init.lua"] = { std = "+al_client" }
 files["clientmods/al_test/*.lua"] = { std = "+al_client" }
+files["clientmods/al_test/test_agent.lua"] = {
+	std = "+al_client",
+	read_globals = { "agent" },
+}

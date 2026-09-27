@@ -152,6 +152,7 @@ dofile(modpath .. "/test_core_api.lua")
 dofile(modpath .. "/test_clientmod_features.lua")
 dofile(modpath .. "/test_tracers.lua")
 dofile(modpath .. "/test_railbot.lua")
+dofile(modpath .. "/test_agent.lua")
 
 
 -- Run deferred tests after localplayer + CAO are ready (shared by the full
@@ -195,6 +196,9 @@ core.register_on_mods_loaded(function()
 		if test_group == "railbot" then
 			test_railbot(al_test)
 			test_railbot_integration(al_test)
+		elseif test_group == "agent" then
+			test_agent(al_test)
+			test_agent_integration(al_test)
 		end
 		run_deferred()
 		local elapsed = (core.get_us_time() - t0) / 1000000
@@ -268,12 +272,14 @@ core.register_on_mods_loaded(function()
 	test_core_api(al_test)
 	test_clientmod_features(al_test)
 	test_tracers(al_test)
+	test_agent(al_test)
 
 	-- Integration tests (deferred — register but don't run yet)
 	test_ws_rg_lifecycle(al_test)
 	test_inventory_structure(al_test)
 	test_inventory_action_integration(al_test)
 	test_world_interaction(al_test)
+	test_agent_integration(al_test)
 
 	run_deferred()
 
