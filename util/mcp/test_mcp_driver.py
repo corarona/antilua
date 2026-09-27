@@ -30,6 +30,12 @@ EXPECTED_TOOLS = {
 	"wait_until", "get_client_status", "send_chat", "get_server_info",
 	"get_player_names", "get_privilege_list", "set_time", "set_setting",
 	"toggle_cheat", "screenshot",
+	# agent tools
+	"agent_ctx", "agent_events", "wait_event", "goto", "move_state",
+	"stop_move", "dig_at", "place_at", "use_node", "punch_object", "aim_at",
+	"jump", "eat", "respawn", "survival", "agent_mem", "raycast",
+	"find_nodes_in_area", "line_of_sight", "bigmap_pixel", "bigmap_coverage",
+	"bigmap_section", "detach", "reattach",
 }
 
 
@@ -449,6 +455,119 @@ async def main():
 				{"code": "error('boom')"})
 			print("run_lua(error):", rl)
 			assert rl.get("ok") is False and "boom" in rl.get("error", ""), rl
+
+			# --- agent tools: context, events, movement, verified actions ---
+			# Re-locate to dry land first (spawn terrain varies between
+			# fresh worlds; the player may have ended up in a cavity).
+			await call_json(session, "teleport",
+				{"pos": {"x": 8.5, "y": 150.5, "z": 8.5}})
+			await wait_for_landed(session)
+
+			ctx = await call_json(session, "agent_ctx", {})
+			print("agent_ctx: pos=%s hp=%s objects=%d" % (
+				ctx.get("pos"), ctx.get("hp"),
+				len(ctx.get("objects_near") or [])))
+			assert ctx.get("joined") is True and ctx.get("pos"), ctx
+			assert "hp" in ctx and isinstance(ctx.get("inv"), dict), ctx
+			assert isinstance(ctx.get("objects_near"), list), ctx
+
+			ev0 = await call_json(session, "agent_events", {})
+			cursor = ev0.get("cursor", 0)
+			assert isinstance(ev0.get("events"), list), ev0
+			await call_json(session, "send_chat",
+				{"message": "agent event test"})
+			we = await wait_for(session, "wait_event",
+				{"type": "chat", "timeout": 8.0, "since": cursor},
+				lambda w: w.get("ok") is True, tries=10)
+			assert we.get("event", {}).get("type") == "chat", we
+			assert we.get("cursor", 0) > cursor, we
+
+			sv = await call_json(session, "survival", {"enabled": True})
+			assert sv.get("applied", {}).get("autoeat") is True, sv
+			sv = await call_json(session, "survival", {"enabled": False})
+			assert sv.get("applied", {}).get("autoeat") is False, sv
+
+			ms = await call_json(session, "move_state", {})
+			assert ms.get("active") is False, ms
+
+			player = await call_json(session, "get_player_pos", {})
+			# Pick a nearby, genuinely walkable target (open ground).
+			ot = await call_json(session, "run_lua",
+				{"code": "return agent.open_target(4)"})
+			if not ot.get("value"):
+				# e.g. spawned in deep water: hop out and retry once
+				await call_json(session, "teleport",
+					{"pos": {"x": player["x"] + 32, "y": 80.5,
+						"z": player["z"] + 32}})
+				await wait_for_landed(session)
+				ot = await call_json(session, "run_lua",
+					{"code": "return agent.open_target(4)"})
+			assert ot.get("ok") is True and ot.get("value"), ot
+			g = await wait_for(session, "goto",
+				{"pos": ot["value"], "mode": "walk"},
+				lambda r: r.get("ok") is True and r.get("state") == "done",
+				tries=30, delay=1.0)
+			print("goto(walk): state=%s dist=%s" % (g.get("state"),
+				g.get("dist")))
+			player = await call_json(session, "get_player_pos", {})
+
+			# The walk moved the player: re-pick a build spot near the new
+			# position (the pre-walk spot's client map may be stale/out of
+			# reach now).
+			spot = await pick_build_spot(session)
+			if spot is None:
+				spot = await seek_build_spot(session)
+			assert spot is not None, "no build spot after the walk"
+			print("post-walk spot:", spot)
+
+			pa = await wait_for(session, "place_at",
+				{"pos": spot, "item": "basenodes:cobble"},
+				lambda r: r.get("ok") is True and r.get("state") == "done",
+				tries=10, delay=1.0)
+			print("place_at: state=%s placed=%s" % (pa.get("state"),
+				pa.get("placed_node")))
+			assert pa.get("placed_node") == "basenodes:cobble", pa
+
+			dg = await call_json(session, "dig_at", {"pos": spot})
+			print("dig_at: state=%s result=%s" % (dg.get("state"),
+				dg.get("result")))
+			assert dg.get("ok") is True and dg.get("state") == "done", dg
+
+			rc = await call_json(session, "raycast",
+				{"from_pos": {"x": player["x"], "y": player["y"] + 4,
+					"z": player["z"]},
+					"to_pos": {"x": player["x"], "y": player["y"] - 4,
+						"z": player["z"]}, "objects": False})
+			print("raycast:", rc)
+			assert rc.get("type") == "node", rc
+
+			fna = await call_json(session, "find_nodes_in_area",
+				{"min_pos": {"x": player["x"] - 3, "y": player["y"] - 1,
+					"z": player["z"] - 3},
+					"max_pos": {"x": player["x"] + 3, "y": player["y"] + 2,
+						"z": player["z"] + 3},
+					"node_names": ["air"]})
+			print("find_nodes_in_area(air): count=%s" % fna.get("count"))
+			assert fna.get("count", 0) > 0, fna
+
+			los = await call_json(session, "line_of_sight",
+				{"from_pos": {"x": player["x"], "y": player["y"] + 2,
+					"z": player["z"]},
+					"to_pos": {"x": player["x"], "y": player["y"] + 8,
+						"z": player["z"]}})
+			print("line_of_sight:", los)
+			assert isinstance(los.get("visible"), bool), los
+
+			bc = await call_json(session, "bigmap_coverage", {})
+			print("bigmap_coverage:", bc)
+			assert isinstance(bc, dict), bc
+
+			am = await call_json(session, "agent_mem",
+				{"key": "mcp_test", "value": "42"})
+			assert am.get("ok") is True, am
+			am = await call_json(session, "agent_mem", {"key": "mcp_test"})
+			# numeric-looking strings come back as numbers (pipe serializer)
+			assert str(am["mcp_test"]) == "42", am
 
 			# --- screenshot ---
 			for name, args in [("screenshot", {}), ("screenshot", {"pos": spot})]:
