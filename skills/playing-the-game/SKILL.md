@@ -1,6 +1,6 @@
 ---
 name: playing-the-game
-description: Guide for playing MineClonia/MineClone2 through a running Antilua client — gathering resources, crafting tools, mining, and surviving. Prefers the antilua MCP server's structured tools (position, teleport, dig/place, inventory, crafting, chat, screenshots); falls back to the raw Lua pipe. Use when you need to automate gameplay tasks, craft items, or interact with the world programmatically.
+description: Guide for playing MineClonia/MineClone2 through a running Antilua client — gathering resources, crafting tools, mining, and surviving. Prefers the antilua MCP server's agent tools (agent_ctx/agent_events/walk/fly/goto, verified dig/place/use, inventory, crafting, chat, screenshots); falls back to the raw Lua pipe. Use when you need to automate gameplay tasks, craft items, or interact with the world programmatically.
 ---
 
 # Playing The Game via the Antilua MCP Server
@@ -19,9 +19,20 @@ world. Use the raw Lua pipe (`skills/antilua-lua-pipe/SKILL.md`, or the
 
 ### Quick Start
 
-1. Orient: `get_player_pos()` → `screenshot()` → `get_player_look()`.
-2. Act: `teleport` / `dig_node` / `place_node` / `move_item` / `craft`.
-3. Verify: `get_node` / `get_inventory` / `screenshot()`.
+0. **No client running?** Launch one: `scripts/agent_play.sh --name hamlet`
+   (defaults to oy.edgy1.net:30420; `--headless` for xvfb, `--world W` for
+   local, `--server HOST:PORT` to override). Use Shakespearean names for
+   fresh accounts on shared servers.
+1. Orient: `agent_ctx()` (one call: pos/look/hp/inventory/objects/ping) →
+   `screenshot()` if the client is rendering.
+2. Prep: `survival(true)` (autoeat, autototem, autojump, autorespawn,
+   autotool) — on hostile servers hamlet will die otherwise, and deaths
+   scatter the inventory.
+3. Act: `goto` / `dig_at` / `place_at` / `use_node` / `move_item` / `craft`.
+4. Verify: `get_inventory()` / `agent_events(since)` / `screenshot()`.
+
+`agent_ctx()` replaces the old `get_player_pos` + `get_player_look` +
+`get_inventory` triple for orientation; the older tools still work.
 
 ## Player Info
 
@@ -91,24 +102,35 @@ internally); place a crafting table for 3x3.
 
 ## Complete: Get a Stone Pickaxe
 
-Orient first (`get_player_pos()`, `screenshot()`), then:
+Orient first (`agent_ctx()`, `screenshot()`), then — the verified-tool
+version of the classic progression (fall back to the raw tools noted inline
+if a tool is unavailable):
 
-1. **Wood**: `find_nodes_near(pos, 20, ["mcl_trees:tree_pale_oak"])` → `teleport`
-   next to the log → `dig_node(log)` → `teleport` onto the spot to pick up drops.
+1. **Wood**: `find_nodes_near(pos, 20, ["mcl_trees:tree_pale_oak"])` → `goto`
+   to within ~4 nodes of the log (`run_lua` `agent.open_target(4)` if the
+   destination is unknown) → `dig_at(log)` (returns `{ok, state: "done"}` once
+   the server confirms removal) → **collect the drop immediately**: walk/tp
+   onto the item entity, then check `get_inventory()`. Drops despawn after a
+   few minutes, and picking up requires being within ~1.5 nodes.
 2. **Planks**: `move_item("main", log_slot, "craft", 1, 1)` → `craft()` →
    `take_craft_result(slot)` — `mcl_trees:wood_pale_oak` x4.
 3. **Crafting table**: planks into `craft` 1,2,4,5 → `craft()` → take —
-   `mcl_crafting_table:crafting_table`; move to hotbar, wield, `place_node`
-   adjacent (3x3 grid needs the table nearby).
+   `mcl_crafting_table:crafting_table`; `place_at(<air next to the player>,
+   "mcl_crafting_table")` (3x3 grid needs the table nearby — and remember
+   `place_at` wants the **air node above the surface**, not the surface).
 4. **Sticks**: planks vertical at `craft` 1,4 → `craft()` → take —
    `mcl_core:stick` x4.
 5. **Wooden pickaxe**: planks across `craft` 1,2,3 + sticks at 5,8 → `craft()` →
    take — `mcl_tools:pick_wood`.
-6. **Stone**: wield the wooden pickaxe (`run_lua` `set_wield_index`),
-   `find_nodes_near(pos, 20, ["mcl_core:stone"])`, dig, collect.
+6. **Stone**: `dig_at` auto-selects the best tool in the inventory, so no
+   manual wield is needed; `find_nodes_near(pos, 20, ["mcl_core:stone"])`,
+   `goto` into reach, `dig_at`, collect.
 7. **Stone pickaxe**: 3 cobble across 1,2,3 + 2 sticks at 5,8 → `mcl_tools:pick_stone`.
 
 Verify each step with `get_inventory()` (and `screenshot()` for placement).
+When `dig_at` reports `timeout`, the node is still there: the tool was too
+weak (bare-hand stone ≈ 7 s, and the server's dig pool can reject very fast
+digs), out of reach, or a mob interrupted the dig.
 
 ## Respawning
 
@@ -127,7 +149,64 @@ or keep to a safe area. (`core.send_respawn()` is a dead legacy packet.)
 `toggle_cheat(name, enabled)` / `set_setting(name, value)`:
 `jetpack`, `fullbright`, `fastdig`, `autojump`, `fly`, `noclip`, …
 
-See `doc/al_csm_api.md` for the full cheat list.
+See `doc/al_csm_api.md` for the full cheat list. `survival(true)` enables the
+survival preset at once (autoeat, autototem, autojump, autorespawn, autotool).
+
+## Agent tools (preferred for autonomous play)
+
+The `agent` clientmod adds verified, non-blocking tools — prefer them over
+raw dig/place once a session is running:
+
+| Tool | Notes |
+|------|-------|
+| `agent_ctx()` | One-call orientation: pos/look/hp/flags/wielded/inventory summary/objects near/ping |
+| `agent_events(since)` / `wait_event(type)` | Event feed: chat, death, damage, dig/place confirmations, inventory changes, formspecs |
+| `goto(pos, mode)` | `walk` (A* + lua controls, default), `sprint`, `fly` (free_move flight), `rtp` (burst teleports), `tp`; returns `{ok, state, dist}` |
+| `dig_at(pos)` / `place_at(pos, item)` | Verified with hold-to-dig timing, auto tool selection and server-side confirmation |
+| `use_node(pos)` | Right-click a node (chests/doors/furnaces); returns the opened formspec name |
+| `punch_object(id)` / `aim_at(pos, velocity, gravity)` | Aim (gravity-compensated for projectiles) and attack an entity |
+| `survival(true)` / `eat()` / `respawn()` / `agent_mem(key, value?)` | Survival preset, persistent memory |
+
+Movement note: `open_target(4)` (via `run_lua`) returns a nearby genuinely
+walkable target — use it to avoid cliffs when the destination is unknown.
+
+### Real-server findings (oy.edgy1.net, mineclonia anarchy)
+
+- **`rtp` is throttled by the server's anticheat** — burst teleports get the
+  position reset (effective ~1 node/s). Use `walk`, or `fly` on servers that
+  tolerate flight.
+- **Flight recipe** (works when the server grants no `fly` priv, because
+  `priv_bypass` defaults to true and `checkPrivilege()` honours it):
+  `priv_bypass = true`, `free_move = true`, plus `noclip = true` to avoid
+  terrain collision, then drive `core.localplayer:set_velocity(dir * speed)`
+  every step. `agent.go_to(pos, "fly")` does everything except `noclip` —
+  set `set_setting("noclip", "true")` yourself when the path may cross
+  terrain (flight still collides with blocks, and progress then stalls with
+  `stuck: no progress`). `free_move` is turned off automatically when the
+  flight ends.
+- **`free_move` alone does not lift** — the client's `applyControl` only maps
+  `control.jump` to upward motion, and that field is rebuilt from real keys
+  every frame. `set_lua_control` from a pipe call lasts one frame;
+  `set_autojump(true)` is the only Lua path that survives (it is OR-ed into
+  `control.jump` in `Game::updatePlayerControl`).
+- **Never register a `globalstep` from a pipe chunk** — there is no
+  unregister API, so it keeps running forever (a stray autojump pulse will
+  fly the player to the sky). Long-lived behaviour belongs in a clientmod
+  (like `agent`) with a guard flag.
+- **Timers (`core.after`) registered from a pipe chunk may not fire** — chain
+  one action per pipe call instead of scheduling the next step from Lua.
+- **Deaths scatter the inventory** and respawn points are far apart; a
+  `goto` in progress reports `failed: no progress` when a respawn teleport
+  happens mid-walk. With `survival(true)` (autorespawn) the loop recovers, but
+  expect to re-gather resources after a death.
+- **Node-level verification is the only reliable one.** For your own
+  placements the server skips `AddNode` (it assumes the client predicted), so
+  `on_node_add` may not fire — the agent's action sweep therefore confirms
+  placements by reading the actual node state, not by waiting for the event.
+- **Enum cheat settings are crash-fatal when invalid.** Writing e.g.
+  `killaura.target_mode = "true"` used to kill the client through a nil lookup
+  in a globalstep; `resolve_mode()` now falls back to a valid mode. Prefer
+  `toggle_cheat` and documented enum values.
 
 ## Screenshots
 
@@ -155,15 +234,23 @@ verifying placements the client map misreports.
 
 | Mistake | Fix |
 |---------|-----|
-| `place_node` puts the wrong block | It places the *wielded* item — use `give_and_wield(item)` / `wield_item(item)`, and confirm `digged/placed` in the tool result (server wield lags headless) |
-| `get_node` disagrees with reality | Client map lags/predicts; confirm placements with `screenshot()` or re-sync |
+| New MCP tools don't appear in your tool list | The host caches the tool list at MCP-server start — restart the `antilua-mcp` server (or the host) after editing `util/mcp/server.py`. Until then, drive the same API with `run_lua("return agent.…")` |
+| `place_at` says `not buildable` | You targeted a *solid* node. `find_nodes_near_under_air` returns the surface — build at `surface + {0,1,0}` |
+| `dig_at` times out | Tool too weak (bare hand on stone ≈ 7 s), out of reach, or a mob interrupted. `dig_at` picks the best tool in the inventory automatically; re-run it or get a better one |
+| `goto` ends `failed: no progress`/`stuck` | Cliffs/water you can't walk up, a respawn teleport mid-walk, or anticheat throttling. Use `agent.open_target(n)`, retry, or switch to `fly`/`tp` |
+| `goto` on `rtp` crawls at ~1 node/s | The server's anticheat resets burst teleports. Prefer `walk` or `fly` |
+| Everything is ignored after death | Dead players' interacts are dropped. `survival(true)` auto-respawns; otherwise `respawn()` |
+| Inventory empty after a risky trip | You died — deaths scatter items as drops. Expect to re-gather |
+| `place_node` puts the wrong block | It places the *wielded* item — use `place_at(pos, item)`, or `give_and_wield(item)` / `wield_item(item)` |
+| `get_node` disagrees with reality | Client map lags/predicts; confirm with `dig_at`/`place_at` results, `screenshot()` or re-sync |
 | Craft grid indices wrong for 2x2 | Use 1,2,4,5 (not 1,2,3,4) — craft list has width=3 internally |
 | Crafting a 3x3 recipe fails | Needs a placed crafting table nearby |
-| Items missing after digging | Teleport onto the drop spot; check `get_inventory()` (server sync) |
+| Items missing after digging | Walk/tp onto the item entity (pickup radius ~1.5) and re-check `get_inventory()`; drops despawn |
 | Server command fails | `{ok:false, error:...}` — inspect the error, don't assume success |
 | Screenshot fails | Client detached/hidden — reattach; needs a rendering frame |
-| Need raw Lua | `run_lua(code)` — same client state, JSON results; see `skills/antilua-lua-pipe/SKILL.md` for the pipe itself |
-| Pipe stops responding | Don't delete/recreate the FIFO — the client keeps the old inode; restart the client |
+| Setting an enum cheat to a bogus value | Can kill the client (fatal globalstep error). Use documented values / `toggle_cheat` |
+| Need raw Lua | `run_lua(code)` — same client state, JSON results; see `skills/antilua-lua-pipe/SKILL.md` |
+| Pipe stops responding | Don't delete/recreate the FIFO — the client keeps the old inode; restart the client. One client per pipe path |
 
 ## Helper Scripts
 

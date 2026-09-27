@@ -34,7 +34,7 @@ Table of Contents
 20. Task Markers & Tracers
 21. Extended Object & Entity API
 22. LocalPlayer & ClientObjectRef Extensions
-23. Strata Pathfinding Bot
+23. Agent Mod (AI-agent control surface)
 
 ---
 
@@ -1603,211 +1603,86 @@ core.load_media(filename) -> string|nil
 
 ---
 
-## 23. Strata Pathfinding Bot
+## 23. Agent Mod (AI-agent control surface)
 
-The Strata mod (`clientmods/ANTILUA/strata/`) provides autonomous player
-movement using A* pathfinding, block mining, and block placement. It
-acts as a client-side bot that navigates to a target coordinate by
-breaking through obstacles and placing blocks as needed.
+The agent mod (`clientmods/ANTILUA/agent/`) provides a control surface for
+AI agents driving the client over the Lua pipe / MCP server. Everything is
+non-blocking so the client keeps running freely while the agent works.
 
-### Cheat Setting
-
-Set `strata = true` to enable. Accessible from the cheat menu under
-"Player" category, or via:
+### Event feed
 
 ```lua
-core.settings:set_bool("strata", true)
+agent.events(since, types) -> {events = [{id, ts, type, data}], cursor, dropped}
+agent.last_event_id() -> id
 ```
 
-### How It Works
+Event types: `chat`, `death`, `damage`, `hp`, `breath`, `dignode`,
+`placenode`, `node_add`, `node_remove`, `object_add`, `object_hp`,
+`inventory`, `inventory_action`, `detached_inv`, `formspec`, `connect`,
+`disconnect`, `move`, `action`, `eat`, `survival`.
 
-1. **`core.find_path()`** computes an A* path from the player's current
-   position to the target.
-2. **`Strata.compute_actions_required_to_complete_path()`** converts the
-   node path into executable actions: `walk`, `jump`, `fall`,
-   `mine_block`, `place_block`.
-3. Actions are visualized with **task nodes** (red for mining, green for
-   placing) and **task tracers** (colored lines between waypoints) via
-   `core.add_task_node()` and `core.add_task_tracer()`.
-4. A `core.register_globalstep()` handler executes actions one at a time,
-   using `core.localplayer:set_lua_control()` for movement and
-   `core.interact()` for digging/placing.
-5. On completion, a green node appears at the destination. On timeout
-   (2 seconds per action), the path is recalculated.
-
-### API
+### Context snapshot
 
 ```lua
-Strata.set_target(pos)       -- Set destination and start pathfinding
-Strata.clear_actions()       -- Stop bot and clear all queued actions
-Strata.clear_path_visuals()  -- Remove all task nodes and tracers
+agent.ctx(radius) -> table
+-- pos, look, velocity, hp, breath, dead, touching_ground, in_liquid,
+-- is_climbing, attached, standing_node, wielded, wield_index, inv
+-- (item -> count map), moving, move, last_chat_id, last_event_id,
+-- last_formspec, server, day_count, brightness, ping, tps, pointed,
+-- objects_near (sorted by distance, within radius, default 16)
 ```
 
-### Settings
-
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `strata` | `false` | Enable Strata pathfinding bot |
-
-### Dependencies
-
-- `wasplib` — provides `ws.aim()`, `ws.select_best_tool()`,
-  `ws.can_place_at()`, `ws.get_digtime()`
-- Uses `core.find_path()`, `core.add_task_node/clear_task_node`,
-  `core.add_task_tracer/clear_task_tracer`,
-  `core.localplayer:set_lua_control()`, `core.interact()`,
-  `core.get_inventory()`, `InventoryAction`
-
----
-
-## 24. Draw3D API
-
-Client-side 3D shape rendering. Shapes are rendered via a dedicated render
-pipeline and persist until cleared. Each shape belongs to an optional group
-(default `0`); `clear()` with a group ID removes only that group's shapes.
+### Persistent memory
 
 ```lua
-core.draw3d:add_sphere(pos, radius, color [, segments, group_id])
-    -- pos: v3f center position
-    -- radius: float
-    -- color: CSS color string or {r,g,b,a} table
-    -- segments: int (default 16), sphere tessellation
-    -- group_id: int (default 0), grouping for bulk clear
-
-core.draw3d:add_wiresphere(pos, radius, color [, segments, group_id])
-
-core.draw3d:add_box(minp, maxp, color [, group_id])
-    -- Axis-aligned filled box from minp to maxp
-
-core.draw3d:add_wirebox(minp, maxp, color [, group_id])
-    -- Wireframe (outline) box
-
-core.draw3d:add_line(from, to, color [, group_id])
-    -- Line between two positions
-
-core.draw3d:add_circle(pos, radius, color [, segments, group_id])
-    -- Horizontal circle at pos (in XZ plane)
-
-core.draw3d:clear([group_id])
-    -- Remove all shapes, or all shapes in a specific group
+agent.mem(key) -> value
+agent.mem(key, value)  -- strings, numbers, bools or tables (JSON encoded)
 ```
 
----
-
-## 25. Sky API
-
-Control sky, sun, moon, stars, fog, and cloud parameters client-side.
+### Movement controller
 
 ```lua
-core.sky:set_sun_visible(bool)
-core.sky:set_moon_visible(bool)
-core.sky:set_stars_visible(bool)
-core.sky:set_star_count(int)
-core.sky:set_star_color("#RRGGBB")
-core.sky:set_star_scale(float)
-core.sky:set_sun_scale(float)
-core.sky:set_moon_scale(float)
-core.sky:set_body_orbit_tilt(float)      -- Earth axial tilt in degrees
-core.sky:set_clouds_enabled(bool)
-core.sky:set_fog_distance(float)          -- Far plane distance
-core.sky:set_fog_start(float)             -- Fog start ratio (0.0-1.0)
-core.sky:set_fog_color("#RRGGBB")
-
-local brightness = core.sky:get_brightness()       -- float 0.0-1.0
-local sun_dir   = core.sky:get_sun_direction()     -- {x,y,z} normalized
-local moon_dir  = core.sky:get_moon_direction()    -- {x,y,z} normalized
-local cloud_col = core.sky:get_cloud_color()       -- {r,g,b,a} table
+agent.go_to(pos, mode, opts) -> mstate
+agent.stop() / agent.moving() / agent.mstate()
+agent.open_target(want) -> pos|nil
+agent.set_fly_mode(enabled) / agent.fly_to(pos, speed, timeout)
 ```
 
----
+Modes: `walk` (default; A* `core.find_path` with per-waypoint lua controls,
+auto-jump and stuck/no-progress detection; segments across unloaded areas),
+`sprint`, `fly` (velocity-driven flight — enables `free_move` +
+`priv_bypass`, drives `set_velocity` each step, disables free_move on
+arrival/failure; enable `noclip` yourself if the path may cross terrain,
+since flight still collides with blocks), `rtp` (rhythmtp burst teleports),
+`tp` (instant client teleport). `opts` may override `arrival`, `timeout` and
+`speed` (fly). `agent.open_target(want)` finds a nearby, genuinely walkable
+target in the most open direction (flat or downhill), used to avoid
+cliff/obstacle targets.
 
-## 26. Clouds API
+### Verified actions
 
-Control cloud parameters client-side.
+Actions return a key and resolve asynchronously via the event feed /
+`agent.action(key)` (`state`: `pending` -> `done`/`timeout`). Completion is
+verified against the real server state (node removal / placed node), not
+client prediction.
 
 ```lua
-core.clouds:set_density(float)            -- 0.0-1.0 cloud coverage
-core.clouds:set_height(float)             -- Cloud layer Y height
-core.clouds:set_thickness(float)          -- Cloud layer thickness
-core.clouds:set_speed({x, z})             -- Cloud movement vector
-
-core.clouds:set_color_bright("#RRGGBB")
-core.clouds:set_color_ambient("#RRGGBB")
-core.clouds:set_color_shadow("#RRGGBB")
-
-local c = core.clouds:get_color()                   -- {r,g,b,a} table
-local inside = core.clouds:is_camera_inside()       -- bool
+agent.dig(pos, opts)      -- auto tool selection + hold-to-dig timing
+agent.place(pos, item, opts)
+agent.use(pos, opts)      -- right-click; resolves when a formspec opens
+agent.punch(object_id)
+agent.aim(pos, velocity, gravity)  -- gravity-compensated projectile aim
+agent.look(yaw, pitch) / agent.jump()
+agent.eat()               -- via the autoeat mod
+agent.respawn()           -- requires hp 0
+agent.survival(enabled)   -- autoeat, autototem, autojump, autorespawn, autotool
+agent.formspec()          -- last received formspec name
+agent.action(key)         -- poll a pending action's state
 ```
 
----
-
-## 27. Minimap Marker API
-
-Add colored world-position markers rendered on the minimap surface.
-
-```lua
-local id = core.ui.minimap:add_marker({
-    pos   = { x = 0, y = 10, z = 0 },
-    color = "#FF0000",        -- optional: CSS color string (default red)
-})  -- returns numeric id
-
-local ok = core.ui.minimap:remove_marker(id)    -- Remove by id
-core.ui.minimap:clear_markers()                  -- Remove all markers
-
--- Also available on the minimap object:
-core.ui.minimap:show() / :hide()
-core.ui.minimap:get_pos() / :set_pos(pos)
-core.ui.minimap:get_angle() / :set_angle(angle)
-core.ui.minimap:get_mode() / :set_mode(mode)
-core.ui.minimap:get_shape() / :set_shape(shape)
-```
-
----
-
-## 28. Camera Nametag API
-
-Add world-space nametags rendered as projected 2D text.
-
-```lua
-local id = core.camera:add_nametag({
-    pos      = { x = 0, y = 10, z = 0 },
-    text     = "Hello World",
-    color    = "#FFFFFF",        -- optional (default white)
-    bgcolor  = "#000000",        -- optional (default transparent)
-    size     = 24,               -- optional font size (default 16)
-    scale_z  = true,             -- optional distance-based scaling
-})
-
-local ok = core.camera:remove_nametag(id)
-core.camera:clear_nametags()
-
--- Also available on the camera object:
-core.camera:get_pos() -> pos
-core.camera:get_look_dir() -> {x,y,z}
-core.camera:get_look_vertical() / :get_look_horizontal() -> degrees
-core.camera:get_fov() -> float
-core.camera:get_aspect_ratio() -> float
-core.camera:set_camera_mode(mode) / :get_camera_mode() -> int
-```
-
----
-
-## 29. IPC API (Inter-Mod Communication)
-
-A shared key-value store accessible from any client-side mod. Supports
-compare-and-swap for synchronisation and polling for coordination.
-
-```lua
-core.ipc_get(key)                -- Read a value (any Lua type, nil if missing)
-core.ipc_set(key, value)         -- Write a value (overwrites existing)
-core.ipc_cas(key, old, new)      -- Atomic compare-and-swap (returns bool)
-    -- Sets key to new only if current value == old (by reference).
-    -- Returns true on success, false on mismatch.
-
-core.ipc_poll(key, timeout_ms)   -- Block until key is set, then return value
-    -- Polls every ~1ms for up to timeout_ms. Returns nil on timeout.
-    -- Useful for synchronisation between mods.
-```
+`opts` may set `timeout`, `max_time` (dig), `autotool` (dig), `above`
+(place/use). Chat commands for interactive debugging: `.agentgoto x,y,z
+[mode]`, `.agentstop`, `.agentstate`.
 
 ---
 

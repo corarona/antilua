@@ -26,12 +26,48 @@ On error, first line is `error` followed by the Lua error message.
 
 ## Basic Commands
 
-Always use unique response files to avoid races:
+Always use unique response files to avoid races — and **delete the response
+file before writing the request**, otherwise a stale file from the previous
+request looks like an instant reply:
 
 ```bash
+rm -f /tmp/r1
 echo '{"code":"return 1+1", "file":"/tmp/r1"}' > /tmp/antilua_lua
 sleep 0.3 && cat /tmp/r1
 ```
+
+Better: use `util/mcp/antilua_client.py` (or the MCP server), which does
+this per request, retries transient timeouts and paces writes for you.
+
+### Agent API (clientmods/ANTILUA/agent)
+
+The `agent` clientmod exposes the building blocks for autonomous play over
+the same pipe — prefer these over hand-rolling digs/places:
+
+```lua
+return agent.ctx(16)                       -- orientation snapshot
+return agent.events(since_id, {"chat"})    -- event feed
+return agent.go_to({x=1,y=2,z=3}, "walk")  -- walk|sprint|fly|rtp|tp
+return agent.dig({x,y,z})                  -- verified dig (auto tool)
+return agent.place({x,y,z}, "item:name")   -- verified place
+return agent.survival(true)                -- survival preset
+return agent.mem("note", "text")           -- persistent memory
+```
+
+## What NOT to do from a pipe chunk
+
+- **Don't `core.register_globalstep(...)`** — there is no unregister API, so
+  the callback runs for the rest of the session (a stray `set_autojump`
+  pulse will fly the player to the sky). Long-lived behaviour belongs in a
+  clientmod with a guard flag.
+- **Don't chain steps with `core.after(...)`** — timers registered from a
+  one-shot pipe chunk don't reliably fire. Do **one action per request** and
+  let the caller (or a clientmod) sequence them.
+- **Don't busy-wait** (`while os.clock() ...`) — the pipe runs on the
+  client's main thread; the client freezes and every later request times out.
+- **Don't write invalid enum cheat settings** (e.g.
+  `killaura.target_mode = "true"`) — a globalstep error is fatal and shuts
+  the client down. Stick to documented values / `toggle_cheat`.
 
 ### Position & Movement
 
@@ -130,10 +166,16 @@ a:apply()
 
 | Mistake | Fix |
 |---------|-----|
+| Stale response file read as the answer | `rm -f` the response file **before** writing the request; use `antilua_client.py` instead |
 | Multiple commands share the same response file | Use unique file paths per request |
 | `InventoryAction` method chaining (`:from():to()`) doesn't return `self` | Assign to local variable, call each method separately |
 | Race: commands execute out of order | Add `sleep 0.3` between pipe writes |
-| Table values returned as `table: 0x...` (unserializable) | Use `dump()` or `core.write_json()` |
+| Table values returned as `table: 0x...` (unserializable) | Use `dump()` or `core.write_json()`, or send `"serialize": true` in the request |
+| A string like `"42"` comes back as the number `42` | The serializer coerces numeric-looking strings (Lua `lua_isnumber("42")` is true). Wrap the value in a table if the type matters |
+| `set_lua_control` seems to do nothing | It is overwritten by `Game::updatePlayerControl` every frame — it only survives the frame the request ran in. Use `set_autojump(true)` for a jump pulse, or settings-based cheats |
+| `globalstep` registered from the pipe keeps running forever | No unregister API — see "What NOT to do" above |
+| `core.after` chains from a pipe chunk never fire | One action per request; sequence from the caller |
+| Enum cheat setting with a bogus value | Fatal globalstep error kills the client — use documented values |
 | Craft grid has items but craftpreview is empty | Might require server sync; check both `craftresult` and `craftpreview` |
 | `core.get_wielded_item()` vs `core.localplayer:get_wielded_item()` | Use the latter (the former may not exist in some contexts) |
 | `minetest.*` alias vs `core.*` | Use `core.*` (both work) |

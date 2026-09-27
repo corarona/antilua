@@ -1,6 +1,6 @@
 ---
 name: antilua-mcp
-description: Use when controlling a running Antilua client through its MCP server (structured tools over the Lua pipe) — getting player position/look, teleporting, digging/placing nodes, inventory and crafting, running server chat commands, toggling cheats, or taking screenshots. Prefer this over raw `antilua-lua-pipe` bash when the MCP server is available in the host.
+description: Use when controlling a running Antilua client through its MCP server (structured tools over the Lua pipe) — orientation and context (agent_ctx), event feed (agent_events/wait_event), movement (goto walk/sprint/fly/tp), verified world actions (dig_at/place_at/use_node), inventory and crafting, server chat commands, cheats, and screenshots. Prefer this over raw `antilua-lua-pipe` bash when the MCP server is available in the host.
 ---
 
 # Antilua MCP Control
@@ -25,12 +25,19 @@ uv sync --project util/mcp
 
 Start by orienting yourself:
 
-1. `get_player_pos()` — where am I? (`get_client_status()` if tools fail)
+1. `agent_ctx()` — where am I, am I alive, what do I carry, what's near?
+   (one call covers what the next three used to). Fall back to
+   `get_player_pos()` / `get_client_status()` if tools fail.
 2. `screenshot()` — what does the world look like? (scene-only PNG; needs a
    rendering client, not detached/hidden)
-3. `get_player_look()` / `get_pointed_thing()` — where am I looking / what am
-   I pointing at?
-4. `get_inventory()` — what do I have?
+3. `survival(true)` on hostile servers (autoeat/autototem/autojump/
+   autorespawn/autotool) — the agent will otherwise die repeatedly and lose
+   its inventory.
+4. `get_inventory()` / `agent_events(since)` — what do I have, what happened?
+
+No client running? `scripts/agent_play.sh --name hamlet` (windowed;
+`--headless` for xvfb) boots one with the pipe enabled on
+oy.edgy1.net:30420.
 
 ## Tools
 
@@ -53,6 +60,16 @@ Start by orienting yourself:
 | `get_client_status()` | `{connected, joined, player_name, chat_buffer}` diagnostics |
 | `set_time(value)` / `set_setting` / `toggle_cheat` | e.g. `set_time("noon")`, cheats like `jetpack`, `fullbright`, `fastdig` |
 | `screenshot(pos?)` | Scene-only PNG; `pos` aims the camera (look restored after) |
+| `agent_ctx(radius?)` | One-shot orientation: pos/look/hp/flags/wielded/inv summary/objects near/ping/pointed |
+| `agent_events(since?, types?)` / `wait_event(type, timeout?)` | Gameplay event feed (chat, death, damage, dig/place confirmations, inventory, formspec, movement) |
+| `goto(pos, mode?)` / `stop_move()` / `move_state()` | A*-walk (default), `sprint`, `rtp`, `tp`; returns the final state `{ok, state, dist}` |
+| `dig_at(pos)` / `place_at(pos, item?)` | Verified dig/place: hold-to-dig timing, auto tool, server-side confirmation (`{ok, state, result}`) |
+| `use_node(pos)` | Right-click a node; returns the opened formspec name |
+| `punch_object(id)` / `aim_at(pos, velocity?, gravity?)` / `jump()` / `eat()` / `respawn()` / `survival(bool)` | Combat aim + gravity-compensated projectile pitch, survival preset |
+| `agent_mem(key, value?)` | Persistent memory across restarts |
+| `raycast(from, to)` / `line_of_sight(a, b)` / `find_nodes_in_area(min, max, names?)` | Perception helpers |
+| `bigmap_pixel(x, z)` / `bigmap_coverage()` / `bigmap_section(min, max)` | Client-persisted big-map data (ground truth per column) |
+| `detach()` / `reattach()` | Hide/show the client window (screenshots stop while detached) |
 
 ## Common pitfalls
 
@@ -73,5 +90,28 @@ Start by orienting yourself:
   fields for nodes whose formspec it never sent to the player.
 - **Screenshot fails if the client is detached/hidden** (no frames rendered);
   reattach first.
+- **Prefer `dig_at`/`place_at` over raw `dig_node`/`place_node`** — the
+  verified tools wait for the server's real state instead of client
+  prediction, pick the best tool, and report `state: done/timeout`.
+- **`goto` walking is terrain-aware but not magic** — use `agent_ctx()` and
+  `open_target` (via `run_lua`) to pick reachable targets; the mover gives up
+  with `{state: failed, reason: "no progress"/"stuck"}` instead of hanging.
+- **Agent clientmod must be loaded** — tools return
+  `{ok: false, error: "agent clientmod not loaded"}` otherwise; the ANTILUA
+  clientmod pack ships it, so any normally-started client has it.
+- **On servers with movement anticheat, `rtp` is throttled** (position gets
+  reset) — prefer `walk`, or `fly` where tolerated.
+- **One action per call**: don't rely on `core.after` chains started from a
+  `run_lua` chunk — timers registered from a one-shot pipe chunk may not fire.
+- **Enum cheat settings can be crash-fatal if invalid** (a globalstep error
+  kills the client). Use documented values / `toggle_cheat`.
+- **Do not register globalsteps from `run_lua`** — there is no unregister
+  API; put long-lived behaviour in a clientmod (`agent`) instead.
+- **Numeric-looking strings come back as numbers** — the pipe serializer
+  coerces them (Lua's `lua_isnumber("42")` is true). Wrap scalar returns in a
+  table when the exact type matters.
+- **Editing `util/mcp/server.py` needs an MCP-server restart** to take
+  effect — the host enumerates tools once at startup. Until you restart, the
+  same functionality is reachable through `run_lua("return agent.…")`.
 - **Anything not covered** — use `run_lua(code)`; it executes in the same
   client scripting state as the pipe, with `core.*` and `ws.*` available.

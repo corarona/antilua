@@ -84,6 +84,7 @@ All mods are individual directories under this folder, loaded via `clientmods/mo
 | **session_logger** | Chat alerts, name colorizer, join/leave toasts, session stats. `.stats` command. |
 | **chat_logger** | Persistent per-server chat file logger. |
 | **mcp_chat** | In-memory chat ring buffer for the MCP server (`mcp_chat.recent/since`). |
+| **agent** | AI-agent control surface: gameplay event feed (`agent.events`), context snapshot (`agent.ctx`), A* movement controller (`agent.go_to` walk/sprint/rtp/tp), verified dig/place/use actions, survival preset, persistent memory. Driven by the MCP server / Lua pipe; see `doc/al_csm_api.md` §23. |
 | **event_logger** | Entity/node/block event logger. BlockLogger logs digs/places with nlist-based ignore. |
 | **particle_hooks** | Particle blocker + saver for filtering server particles. |
 

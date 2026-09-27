@@ -261,6 +261,33 @@ xvfb-run -a ./bin/antilua --go --world worlds/test_mcl --config /tmp/mcl_pipe.co
   stonecutter recompute). Prefer `player:singleplayer` over `current_player`
   (a client-internal location the server rewrites via `applyCurrentPlayer`).
   `apply()` both sends and predicts locally.
+- **Your OWN placements never produce a `register_on_node_add` event.** The
+  server assumes the placing client predicted the node: for items with a
+  `node_placement_prediction` it calls `SetBlockNotSent` (a full block
+  re-send, no `TOCLIENT_ADDNODE`), and for others `ResendBlockIfOnWire`
+  (usually a no-op) — so the block arrives as `TOCLIENT_BLOCKDATA` and the
+  AddNode hook never fires. Verify placements with `get_node`/bigmap pixels,
+  not events. (Digs DO emit `register_on_node_remove`: the server keeps the
+  block "sent" for successful digs.)
+- **A Lua error inside a clientmod globalstep is FATAL** — the client shuts
+  down ("Access denied. Reason: Lua: Runtime error … in callback
+  environment_step()"). Invalid *enum* cheat settings reach such code (e.g.
+  `killaura.target_mode = "true"` used to nil-index a check function), so
+  only write documented values; `toggle_cheat`/the cheat menu are safe. After
+  such a crash the pipe and window are gone — relaunch and note the world
+  may need re-setup.
+- **`set_lua_control` lasts a single frame** — `Game::updatePlayerControl`
+  rebuilds `player->control` from the real keys before the pipe runs each
+  frame, so control values set from a pipe request are consumed by that
+  frame's `applyControl` and then overwritten. Long-running control changes
+  (sustained forward/jump) must go through settings (`continuous_forward`,
+  `free_move`, `jetpack`) or `core.set_keypress`/`set_autojump`, applied
+  from a globalstep.
+- **Never register a globalstep from a pipe chunk** during tests (it can
+  never be removed and will fight the test's own actions), and do not chain
+  steps with `core.after` from a pipe chunk — those timers do not reliably
+  fire. Do one action per request, or use the `agent` clientmod
+  (`agent.go_to`/`agent.dig`/`agent.place`) which owns its long-lived logic.
 - **Node-formspec callbacks (`on_receive_fields`) via `core.send_nodemeta_fields`.**
   Hand-rolled raw `TOSERVER_NODEMETA_FIELDS` packets fail with `Reading
   outside packet` — use the API. Global `register_on_player_receive_fields`
@@ -282,6 +309,15 @@ xvfb-run -a ./bin/antilua --go --world worlds/test_mcl --config /tmp/mcl_pipe.co
   process's inherited fds). Start clients with
   `setsid xvfb-run -a ./bin/antilua ... >log 2>&1 < /dev/null &`, and after
   killing, verify with `ps` in a fresh command.
+- **Check for a stale client before launching the next one.** Only one client
+  may own a pipe path, and a leftover process (or a live one you forgot about)
+  makes the new run look broken: `cannot open Lua pipe … No such file or
+  directory` or a client that never creates the FIFO. Do
+  `pkill -9 -x antilua; pkill -9 Xvfb; ps aux | grep '[b]in/antilua'` first.
+- **After a client crash (fatal Lua error) or several force-kills, a
+  *windowed* launch on the real X display can hang** — the log stops after the
+  first separator and no FIFO appears. `xvfb-run -a` still works, so fall
+  back to headless; don't debug the mod code in that situation.
 - **Always add new tricky findings / noteworthy details to this skill file.**
   If a future run surfaces a non-obvious gotcha (sync lag, API quirk, packet
   format, setting that doesn't take effect, tool hang, etc.) that isn't

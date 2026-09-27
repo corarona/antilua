@@ -573,16 +573,49 @@ over the real MCP protocol as a smoke test.
 | `set_time(value)` / `set_setting` / `toggle_cheat` | Time of day, settings & cheats (jetpack, fullbright, ...) |
 | `get_client_status()` | Pipe/join/chat-buffer diagnostic snapshot |
 | `screenshot(pos?)` | Scene-only PNG (optionally aims the camera at a world position; needs a rendering client, not detached) |
+| `agent_ctx` / `agent_events` / `wait_event` | Agent orientation snapshot / gameplay event feed (chat, death, damage, dig/place confirmations) |
+| `goto(pos, mode?)` / `stop_move` / `move_state` | A*-walk (default), sprint, rtp, tp movement with stuck/no-progress detection |
+| `dig_at(pos)` / `place_at(pos, item?)` / `use_node(pos)` | Verified dig/place/use: hold-to-dig timing, auto tool, server-side confirmation |
+| `punch_object(id)` / `aim_at(pos, velocity?, gravity?)` / `jump` / `eat` / `respawn` / `survival(bool)` / `agent_mem(key, value?)` | Combat/survival actions and persistent memory |
+| `raycast(from, to)` / `line_of_sight(a, b)` / `find_nodes_in_area(min, max, names?)` | Perception helpers |
+| `bigmap_pixel(x, z)` / `bigmap_coverage` / `bigmap_section(min, max)` | Client-persisted big-map ground truth |
+| `detach` / `reattach` | Hide/show the client window (screenshots stop while detached) |
+
+`scripts/agent_play.sh` launches a windowed/headless client connected to a
+server with the pipe enabled, ready for agent play (default:
+oy.edgy1.net:30420, name `hamlet`; Shakespearean character names).
+
+### Operating rules (learned from live sessions)
+
+- **Restart the MCP server after editing `util/mcp/server.py`** — the host
+  enumerates tools once at startup, so new tools stay invisible until then.
+  Until a restart, reach the same API with
+  `run_lua("return agent.go_to({x=..,y=..,z=..}, \"walk\")")`.
+- **Never register a globalstep from a pipe chunk** (no unregister API) and
+  don't chain steps with `core.after` from one — timers set that way don't
+  reliably fire. Long-lived logic lives in `clientmods/ANTILUA/agent/`.
+- **A Lua error inside a clientmod globalstep is fatal** and shuts the client
+  down; invalid enum cheat settings (e.g. `killaura.target_mode`) reached
+  exactly that. `clientmods/ANTILUA/combat/init.lua` validates its mode.
+- **Own placements don't fire `on_node_add`** — the server assumes client
+  prediction and re-sends the block instead. Verify with actual node state
+  (`agent.dig`/`agent.place` sweeps, `bigmap_pixel`).
+- `set_lua_control` survives only one frame; `set_autojump(true)` is the
+  persistent Lua path for continuous jumps.
+- One client per pipe path: kill stale `antilua`/`Xvfb` processes before
+  relaunching (`cannot open Lua pipe` usually means a dead/stale client).
 
 ### Key files
 
 | File | Purpose |
 |------|---------|
 | `util/mcp/server.py` | FastMCP app + tools |
-| `util/mcp/antilua_client.py` | FIFO transport with polling, `run_lua()`, `screenshot()` |
+| `util/mcp/antilua_client.py` | FIFO transport with polling, `run_lua()`, `screenshot()`, retry/backoff |
 | `util/mcp/pyproject.toml` / `requirements.txt` | `mcp<2` dependency (FastMCP API) |
 | `util/mcp/test_mcp.sh` + `test_mcp_driver.py` | End-to-end MCP smoke test |
 | `clientmods/ANTILUA/mcp_chat/` | In-memory chat ring buffer read by the MCP server |
+| `clientmods/ANTILUA/agent/` | Agent clientmod: event feed, context snapshot, movement controller, verified actions |
+| `scripts/agent_play.sh` | Launch a pipe-enabled client for agent play on a server |
 
 ## Camera Roll
 
