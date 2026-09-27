@@ -110,6 +110,10 @@ local function get_hp_color(hp, max_hp)
 	return 0xFFFF8888
 end
 
+-- Forward declaration: resolve_mode() validates against PLAYER_CHECKS,
+-- which is defined further down.
+local PLAYER_CHECKS
+
 local function resolve_mode(mode)
 	local aliases = {
 		players_enemies = "neutral",
@@ -117,7 +121,13 @@ local function resolve_mode(mode)
 		mobs = "neutral",
 		all = "aggressive",
 	}
-	return aliases[mode] or mode or "aggressive"
+	local resolved = aliases[mode] or mode
+	-- An unknown mode (e.g. written directly into the settings) must not
+	-- crash the client: a globalstep error is fatal.
+	if not PLAYER_CHECKS[resolved] then
+		resolved = "aggressive"
+	end
+	return resolved
 end
 
 local function find_closest_non_friend(from_pos)
@@ -194,7 +204,7 @@ local function target_check(obj)
 	return target_obj == nil or obj == target_obj
 end
 
-local PLAYER_CHECKS = {
+PLAYER_CHECKS = {
 	aggressive = function(obj) return not_in_friendlist(obj) end,
 	neutral = function(obj) return in_enemylist(obj) end,
 	retaliate = function(obj)
