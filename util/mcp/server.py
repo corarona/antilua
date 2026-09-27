@@ -676,6 +676,333 @@ def screenshot(pos: dict | None = None) -> tuple:
 	return "Screenshot saved to %s" % path, Image(data=data, format="png")
 
 
+# ---------------------------------------------------------------------------
+# Agent (clientmods/ANTILUA/agent): events, context, movement, verified actions
+# ---------------------------------------------------------------------------
+
+def _agent_available():
+	try:
+		return bool(client.run_lua("return agent ~= nil"))
+	except (AntiluaError, LuaError):
+		return False
+
+
+def _poll_state(code, done, timeout, interval=0.5):
+	"""Poll a Lua expression until `done(state)` holds. Returns the last
+	state; {ok: False, error: "timeout", state: ...} when the deadline is hit."""
+	deadline = time.monotonic() + max(0.0, timeout)
+	state = None
+	while True:
+		try:
+			state = client.run_lua(code)
+		except LuaError as exc:
+			return {"ok": False, "error": str(exc), "state": state}
+		if state is not None and done(state):
+			return {"ok": True, **state}
+		if time.monotonic() >= deadline:
+			return {"ok": False, "error": "timeout", "state": state}
+		time.sleep(interval)
+
+
+@mcp.tool()
+def agent_ctx(radius: float = 16.0) -> dict:
+	"""One-shot orientation snapshot: position/look, hp/breath/dead flags,
+	player state flags, wielded item, inventory summary, movement state,
+	last chat id, last formspec, server info, ping/tps, pointed thing and
+	nearby objects (sorted by distance, within `radius`)."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	return client.run_lua("return agent.ctx(%r)" % radius)
+
+
+@mcp.tool()
+def agent_events(since: int = 0, types: list[str] | None = None) -> dict:
+	"""Gameplay events newer than `since` (cursor id): chat, death, damage,
+	hp, dig/place/node_add/node_remove, object add/hp, inventory changes,
+	formspec opens, movement status, survival toggles.
+	Returns {events: [{id, ts, type, data}], cursor, dropped}."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	lua_types = ", ".join(lua_str(t) for t in types or [])
+	return client.run_lua("return agent.events(%d, {%s})" % (since, lua_types))
+
+
+@mcp.tool()
+def wait_event(type: str, timeout: float = 10.0, since: int = 0) -> dict:
+	"""Block until a gameplay event of `type` occurs (or timeout). Event types:
+	chat, death, damage, hp, dignode, placenode, node_add, node_remove,
+	object_add, object_hp, inventory, inventory_action, detached_inv,
+	formspec, connect, disconnect, move, action, eat, survival."""
+	result = _poll_state(
+		"return agent.events(%d, {%s})" % (since, lua_str(type)),
+		lambda evs: isinstance(evs, dict) and bool(evs.get("events")),
+		timeout, interval=0.3)
+	if result.get("ok") and isinstance(result.get("events"), list) \
+			and result["events"]:
+		events = result["events"]
+		return {"ok": True, "event": events[0], "cursor": events[-1]["id"]}
+	return {"ok": False, "error": result.get("error", "timeout"),
+		"cursor": result.get("cursor", since)}
+
+
+@mcp.tool()
+def goto(pos: dict, mode: str = "walk", timeout: float | None = None) -> dict:
+	"""Move the agent to {x, y, z}. Modes: "walk" (default; A* pathfinding +
+	lua-controlled walking, works on legit servers), "sprint", "fly"
+	(velocity-driven flight via free_move/priv_bypass; enable the noclip
+	setting yourself if the path may cross terrain), "rtp" (rhythmtp
+	burst teleports), "tp" (instant client teleport).
+	Returns the final move state {ok, state, dist, ...}."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	opts = "{timeout=%r}" % timeout if timeout else ""
+	res = client.run_lua(
+		"return agent.go_to(%s, %s%s)" % (lua_pos(pos), lua_str(mode),
+			(", " + opts) if opts else ""))
+	if not isinstance(res, dict):
+		return {"ok": False, "error": "go_to failed", "result": res}
+	if res.get("ok") is False:
+		return {"ok": False, "error": res.get("error", "go_to failed")}
+	if res.get("state") == "done" or res.get("active") is False:
+		return {"ok": True, **res}
+	poll_timeout = (timeout + 15) if timeout else 120.0
+	return _poll_state("return agent.mstate()",
+		lambda s: not s.get("active"), poll_timeout)
+
+
+@mcp.tool()
+def move_state() -> dict:
+	"""Current movement controller state: {active, mode, state, target, dist,
+	started, deadline} or {active: false, state: "idle"}."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	return client.run_lua("return agent.mstate()")
+
+
+@mcp.tool()
+def stop_move() -> dict:
+	"""Stop the agent's movement controller."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	return client.run_lua("return agent.stop()")
+
+
+def _await_action(start_result, extra_timeout=5.0):
+	if not start_result or not start_result.get("ok"):
+		return {"ok": False, "error": (start_result or {}).get("error",
+			"action failed"), **(start_result or {})}
+	key = start_result.get("key")
+	timeout = start_result.get("timeout", 10) + extra_timeout
+	return _poll_state("return agent.action(%s)" % lua_str(key),
+		lambda a: not a or a.get("state") != "pending", timeout)
+
+
+@mcp.tool()
+def dig_at(pos: dict, max_time: float = 0, autotool: bool = True,
+		timeout: float = 5.0) -> dict:
+	"""Dig the node at {x, y, z} with real hold-to-dig timing, auto tool
+	selection and server-side verification (watches for the node removal).
+	Returns {ok, state: "done"|"timeout", result, node, ...}."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	opts = "{max_time=%r, autotool=%s, timeout=%r}" % (max_time,
+		"true" if autotool else "false", timeout)
+	start = client.run_lua("return agent.dig(%s, %s)" % (lua_pos(pos), opts))
+	result = _await_action(start)
+	result.setdefault("digtime", start.get("digtime") if start else None)
+	result.setdefault("node", start.get("node") if start else None)
+	return result
+
+
+@mcp.tool()
+def place_at(pos: dict, item: str = "", timeout: float = 5.0) -> dict:
+	"""Place `item` (wields it first; empty string = currently wielded) as a
+	node at {x, y, z}. Verified against the server's node add.
+	Returns {ok, state, result: node_name, ...}."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	start = client.run_lua(
+		"return agent.place(%s, %s, {timeout=%r})"
+		% (lua_pos(pos), lua_str(item), timeout))
+	result = _await_action(start)
+	if result.get("ok") and isinstance(result.get("result"), str):
+		result["placed_node"] = result["result"]
+	return result
+
+
+@mcp.tool()
+def use_node(pos: dict, timeout: float = 4.0) -> dict:
+	"""Right-click the node at {x, y, z} (opens chests/doors/furnaces).
+	Returns {ok, state, result: formname} — the formspec that opened, or
+	timeout when the node had no right-click handler."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	start = client.run_lua(
+		"return agent.use(%s, {timeout=%r})" % (lua_pos(pos), timeout))
+	return _await_action(start)
+
+
+@mcp.tool()
+def punch_object(object_id: int) -> dict:
+	"""Aim at and punch the active object (entity/player) with the given id.
+	Object ids come from get_objects_near / agent_ctx."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	return client.run_lua("return agent.punch(%d)" % object_id)
+
+
+@mcp.tool()
+def aim_at(pos: dict, velocity: float = 0, gravity: float = 9.81) -> dict:
+	"""Aim the camera at a world position. With `velocity` > 0, applies a
+	gravity-compensated ballistic pitch for projectiles (gravity in
+	nodes/s²). Returns the resulting look angles."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	return client.run_lua("return agent.aim(%s, %r, %r)"
+		% (lua_pos(pos), velocity, gravity))
+
+
+@mcp.tool()
+def jump() -> dict:
+	"""Trigger a single jump."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	return client.run_lua("return agent.jump()")
+
+
+@mcp.tool()
+def eat() -> dict:
+	"""Eat the best available food (uses the autoeat clientmod).
+	Verify success via agent_events type "eat"."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	return client.run_lua("return agent.eat()")
+
+
+@mcp.tool()
+def respawn() -> dict:
+	"""Respawn when dead (hp 0)."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	return client.run_lua("return agent.respawn()")
+
+
+@mcp.tool()
+def survival(enabled: bool = True) -> dict:
+	"""Toggle the survival preset: autoeat, autototem, autojump, autorespawn
+	and autotool on/off. Returns {applied: {setting: value}}."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	return client.run_lua("return agent.survival(%s)"
+		% ("true" if enabled else "false"))
+
+
+@mcp.tool()
+def agent_mem(key: str, value: str | None = None) -> dict:
+	"""Read/write the agent's persistent memory (survives restarts).
+	With `value` omitted, returns {key: value}; tables/numbers round-trip."""
+	if not _agent_available():
+		return {"ok": False, "error": "agent clientmod not loaded"}
+	if value is None:
+		v = client.run_lua("return agent.mem(%s)" % lua_str(key))
+		return {key: v}
+	client.run_lua("return agent.mem(%s, %s)"
+		% (lua_str(key), lua_str(value)))
+	return {"ok": True, "key": key, "value": value}
+
+
+# ---------------------------------------------------------------------------
+# Perception helpers
+# ---------------------------------------------------------------------------
+
+@mcp.tool()
+def raycast(from_pos: dict, to_pos: dict, objects: bool = True,
+		liquids: bool = False, max_points: int = 20) -> dict:
+	"""Cast a ray and return hit points {type: "node"|"object", under, above,
+	box_id, ...} up to `max_points` (default stops at the first hit; pass a
+	larger max_points to see through)."""
+	code = (
+		"local out = {}; "
+		"for pt in core.raycast(%s, %s, %s, %s) do "
+		"pt.box_id = nil; out[#out + 1] = pt; "
+		"if #out >= %d then break end; "
+		"end; return out"
+		% (lua_pos(from_pos), lua_pos(to_pos),
+			"true" if objects else "false",
+			"true" if liquids else "false", max(1, max_points)))
+	return client.run_lua(code)
+
+
+@mcp.tool()
+def find_nodes_in_area(min_pos: dict, max_pos: dict,
+		node_names: list[str] | None = None) -> dict:
+	"""Find nodes inside the box (client-loaded area only). With `node_names`
+	filtering; returns {count, positions} (positions capped at 400)."""
+	if node_names:
+		names = ", ".join(lua_str(n) for n in node_names)
+		name_part = ", {%s}" % names
+	else:
+		name_part = ""
+	positions = client.run_lua(
+		"local pts = core.find_nodes_in_area(%s, %s%s); "
+		"local capped = {}; "
+		"for i = 1, math.min(#pts, 400) do capped[i] = pts[i] end; "
+		"return {count=#pts, positions=capped}"
+		% (lua_pos(min_pos), lua_pos(max_pos), name_part))
+	return positions
+
+
+@mcp.tool()
+def line_of_sight(from_pos: dict, to_pos: dict) -> dict:
+	"""True when no loaded node blocks the straight line."""
+	visible = client.run_lua(
+		"return core.line_of_sight(%s, %s)" % (lua_pos(from_pos),
+			lua_pos(to_pos)))
+	return {"visible": bool(visible)}
+
+
+@mcp.tool()
+def bigmap_pixel(x: int, z: int) -> dict:
+	"""Topmost node of a map column from the client-persisted big map:
+	{node, param2, height, air_count} or {known: false}."""
+	result = client.run_lua(
+		"local p = core.al_bigmap:get_pixel(%d, %d); "
+		"return p and p or {known=false}" % (x, z))
+	return result
+
+
+@mcp.tool()
+def bigmap_coverage() -> dict:
+	"""Big map data coverage: {count, bounds} of saved 16x16 blocks."""
+	return client.run_lua("return core.al_bigmap:get_coverage()")
+
+
+@mcp.tool()
+def bigmap_section(min_pos: dict, max_pos: dict) -> dict:
+	"""Render a section of the saved big map (node columns) to a PNG and
+	return its texture path (usable in formspecs; also readable as an image
+	file). min_pos/max_pos are {x, z} node column bounds."""
+	code = (
+		"local tex = core.al_bigmap:render_section("
+		"{min={x=%d, z=%d}, max={x=%d, z=%d}}); "
+		"return tex and {texture=tex} or {ok=false}"
+		% (min_pos["x"], min_pos["z"], max_pos["x"], max_pos["z"]))
+	return client.run_lua(code)
+
+
+@mcp.tool()
+def detach() -> dict:
+	"""Detach the client (hide window, keep running; screenshots stop working
+	until reattach). The session stays addressable via the Lua pipe."""
+	return client.run_lua("return core.detach()") or {"ok": True}
+
+
+@mcp.tool()
+def reattach() -> dict:
+	"""Reattach a detached client (show its window again)."""
+	return client.run_lua("return core.reattach()") or {"ok": True}
+
+
 def main():
 	"""Entry point for the console script / `python -m`."""
 	mcp.run()
