@@ -158,6 +158,16 @@ files["clientmods/ANTILUA/schembuilder/*.lua"] = {
         },
 }
 
+-- agent mod globals
+files["clientmods/ANTILUA/agent/*.lua"] = {
+        globals = {
+                "agent",
+        },
+        read_globals = {
+                "mcp_chat", "dig", "rhythmtp", "autoeat",
+        },
+}
+
 -- Antilua client mods
 files["clientmods/ANTILUA/wasplib/init.lua"] = { std = "+al_client" }
 files["clientmods/ANTILUA/wasplib/*.lua"] = { std = "+al_client" }
