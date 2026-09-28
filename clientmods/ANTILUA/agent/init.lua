@@ -891,9 +891,12 @@ core.register_on_dignode(function(pos, node)
 	ev("dignode", {pos = pos, node = node and node.name})
 end)
 
+-- The second argument is an item definition table (name/description), not an
+-- ItemStack, so it has no methods: item:get_name() is nil and calling it threw
+-- on every node placement.
 core.register_on_placenode(function(pointed, item)
 	ev("placenode", {under = pointed and pointed.under, above = pointed and pointed.above,
-		item = item and item:get_name()})
+		item = item and item.name})
 end)
 
 core.register_on_node_add(function(pos, node)
