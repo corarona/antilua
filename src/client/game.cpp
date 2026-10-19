@@ -3640,7 +3640,8 @@ void Game::handleDigging(const PointedThing &pointed, const v3s16 &nodepos,
 		// I guess nobody will wait for this long
 		runData.dig_time_complete = 10000000.0;
 	} else {
-		runData.dig_time_complete = params.time;
+		// InstantBreak cheat: break the node without waiting for the dig time
+		runData.dig_time_complete = g_settings->getBool("instant_break") ? 0 : params.time;
 
 		client->getParticleManager()->addNodeParticle(player, nodepos, n);
 	}
