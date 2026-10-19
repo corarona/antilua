@@ -124,7 +124,47 @@ end
 ------------------------------------------------------------------------------
 -- place mod
 ------------------------------------------------------------------------------
+local function find_diggable_near(pos, radius)
+	local best, best_d = nil, math.huge
+	local feet = vector.round(pos)
+	for dx = -radius, radius do
+		for dy = -1, 2 do
+			for dz = -radius, radius do
+				if not (dx == 0 and dz == 0 and dy <= 0) then
+					local p = {x = feet.x + dx, y = feet.y + dy, z = feet.z + dz}
+					local nd = core.get_node_or_nil(p)
+					local d = vector.distance(pos, p)
+					local def = nd and core.get_node_def(nd.name)
+					if def and def.diggable and d <= radius + 0.5 and d < best_d then
+						best = p
+						best_d = d
+					end
+				end
+			end
+		end
+	end
+	return best
+end
+
 function test_place_mod(T)
+	T.run("place/init: DigAndPlace setting exists", function()
+		T.assert(core.settings:get("dig_and_place") ~= nil)
+	end)
+	-- Integration: needs localplayer for get_pos() and loaded map around it
+	T.defer("place/init: punching a node does not dig it while DigAndPlace is off", function()
+		local prev = core.settings:get("dig_and_place")
+		core.settings:set("dig_and_place", "false")
+		local pos = find_diggable_near(core.localplayer:get_pos(), 4)
+		T.assert(pos, "no diggable node near the player to test with")
+		local before = core.get_node_or_nil(pos)
+		for _, callback in ipairs(core.registered_on_punchnode) do
+			callback(pos, before)
+		end
+		local after = core.get_node_or_nil(pos)
+		core.settings:set("dig_and_place", prev)
+		T.assert_eq(after.name, before.name,
+			"punching a node must not break it while DigAndPlace is disabled")
+	end)
 	T.run("place/init: BlockSources setting exists", function()
 		T.assert(core.settings:get("block_sources") ~= nil, "block_sources setting should exist")
 	end)

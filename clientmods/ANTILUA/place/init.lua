@@ -104,7 +104,7 @@ ws.rg('MultiScaff', { category = "Place", setting = "scaffold", description = "B
 ws.rg("DigAndPlace", { category = "Place", setting = "dig_and_place", description = "Dig and immediately place the wielded node", cheat_settings = {}, })
 
 core.register_on_punchnode(function(pos, node)
-	if core.settings:get_bool("dig_and_place", false) then return end
+	if not core.settings:get_bool("dig_and_place", false) then return end
 	local it = core.localplayer:get_wielded_item()
 	ws.dig(pos)
 	ws.place(pos, it:get_name())
